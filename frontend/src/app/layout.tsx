@@ -24,9 +24,9 @@ export default function RootLayout({
       dir="rtl"
       className={`${vazirmatn.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-black font-sans selection:bg-black selection:text-white">
+      <body className="min-h-full flex flex-col bg-[#0a0a0a] text-white font-sans selection:bg-white selection:text-black">
         <Navbar />
-        <div className="pt-16 flex-1">
+        <div className="flex-1">
           {children}
         </div>
       </body>

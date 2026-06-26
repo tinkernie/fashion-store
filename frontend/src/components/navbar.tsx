@@ -11,13 +11,13 @@ export default function Navbar() {
         </Link>
 
         {/* Categories */}
-        <div className="hidden md:flex items-center space-x-reverse space-x-10 text-sm font-medium text-gray-300">
+        <div className="hidden md:flex items-center gap-12 text-base font-medium text-gray-300">
           <Link href="/women" className="hover:text-white transition-colors">کالکشن بانوان</Link>
           <Link href="/men" className="hover:text-white transition-colors">کالکشن آقایان</Link>
         </div>
 
         {/* Action Icons */}
-        <div className="flex items-center space-x-reverse space-x-6 text-gray-300">
+        <div className="flex items-center gap-6 text-gray-300">
           <button className="hover:text-white transition-colors"><Search className="w-5 h-5" /></button>
           <button className="hover:text-white transition-colors"><User className="w-5 h-5" /></button>
           <button className="relative hover:text-white transition-colors">
