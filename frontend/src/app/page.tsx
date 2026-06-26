@@ -2,98 +2,92 @@
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import ProductCard from "@/components/product-card";
-
-const MOCK_PRODUCTS = [
-  {
-    id: "1",
-    name: "لباس مجلسی ابریشم کلاسیک",
-    price: "۲,۴۰۰,۰۰۰ تومان",
-    category: "پیراهن",
-    imageUrl: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=600&auto=format&fit=crop",
-  },
-  {
-    id: "2",
-    name: "بارانی پشمی مینیمال",
-    price: "۴,۲۰۰,۰۰۰ تومان",
-    category: "پوشاک زمستانه",
-    imageUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=600&auto=format&fit=crop",
-  },
-  {
-    id: "3",
-    name: "شومیز کتان اورسایز",
-    price: "۱,۱۰۰,۰۰۰ تومان",
-    category: "شومیز",
-    imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=600&auto=format&fit=crop",
-  },
-  {
-    id: "4",
-    name: "شلوار فاق بلند کلاسیک",
-    price: "۱,۸۰۰,۰۰۰ تومان",
-    category: "شلوار",
-    imageUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=600&auto=format&fit=crop",
-  },
-];
 
 export default function Home() {
   return (
-    <div className="bg-white">
-      {/* Hero Section */}
-      <main className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-[#fcfcfc] px-6">
-        <div className="max-w-4xl text-center space-y-8">
-          <motion.p 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-xs uppercase tracking-[0.4em] text-gray-400 font-bold"
-          >
-            مجموعه تابستانه ۲۰۲۶
-          </motion.p>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-extralight tracking-tight text-gray-900 uppercase leading-[1.3]"
-          >
-            اصالت در <span className="font-serif italic font-normal">سادگی‌ست</span>
-          </motion.h1>
+    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex flex-col justify-between">
+      {/* Background Image with Heavy Dark Gradient Overlay */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop" 
+          alt="Fashion Background" 
+          className="w-full h-full object-cover opacity-40"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-transparent to-[#0a0a0a]" />
+        <div className="absolute inset-0 bg-[#0a0a0a]/50" />
+      </div>
 
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="max-w-2xl mx-auto text-base md:text-xl text-gray-500 leading-relaxed font-light"
-          >
-            طراحی شده برای بانوی مدرن؛ کسانی که برای خطوط پاک، پارچه‌های پرمیوم و استایل ماندگار ارزش قائلند.
-          </motion.p>
+      {/* Main Hero Content */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 mt-20">
+        
+        {/* Small Top Badge */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex items-center space-x-reverse space-x-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mb-8 backdrop-blur-sm"
+        >
+          <span className="text-[10px] tracking-[0.2em] uppercase text-gray-300 font-medium font-sans">We Make More Shine</span>
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+        </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.45 }}
-            className="pt-4"
-          >
-            <Button className="rounded-none bg-black text-white hover:bg-neutral-800 px-10 py-6 text-sm font-medium transition-all duration-300">
-              مشاهده محصولات
-            </Button>
-          </motion.div>
-        </div>
+        {/* Massive Typography */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.7, delay: 0.1 }}
+          className="text-center flex flex-col items-center leading-none"
+        >
+          <h1 className="text-[80px] md:text-[140px] font-black tracking-tighter text-white uppercase font-sans drop-shadow-2xl">
+            A-A
+          </h1>
+          <h1 className="text-[60px] md:text-[120px] font-black tracking-tighter text-white uppercase font-sans -mt-4 md:-mt-8 drop-shadow-2xl">
+            STUDIOS
+          </h1>
+        </motion.div>
+
+        {/* Dual Buttons */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-reverse sm:space-x-4 mt-12"
+        >
+          <Button className="w-48 h-14 rounded-2xl bg-[#f4f4f4] text-black hover:bg-white text-base font-bold transition-all">
+            کالکشن بانوان
+          </Button>
+          <Button className="w-48 h-14 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 text-base font-bold transition-all">
+            کالکشن آقایان
+          </Button>
+        </motion.div>
       </main>
 
-      {/* Product Grid Section */}
-      <section className="max-w-7xl mx-auto px-6 py-24">
-        <div className="flex flex-col space-y-2 mb-12">
-          <h2 className="text-xl font-light uppercase tracking-widest text-neutral-900">قطعات برگزیده</h2>
-          <div className="h-[1px] w-12 bg-neutral-900" />
+      {/* Bottom Glassmorphism Stats Cards */}
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.5 }}
+        className="relative z-10 w-full max-w-6xl mx-auto px-4 pb-12 pt-20"
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="flex flex-col items-center justify-center py-8 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md">
+            <span className="text-3xl md:text-4xl font-bold text-white font-sans">%99</span>
+            <span className="text-xs md:text-sm text-gray-400 mt-2">رضایت مشتریان</span>
+          </div>
+          <div className="flex flex-col items-center justify-center py-8 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md">
+            <span className="text-3xl md:text-4xl font-bold text-white font-sans">+120</span>
+            <span className="text-xs md:text-sm text-gray-400 mt-2">محصول</span>
+          </div>
+          <div className="flex flex-col items-center justify-center py-8 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md">
+            <span className="text-3xl md:text-4xl font-bold text-white font-sans">+5</span>
+            <span className="text-xs md:text-sm text-gray-400 mt-2">شعبه فعال</span>
+          </div>
+          <div className="flex flex-col items-center justify-center py-8 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md">
+            <span className="text-3xl md:text-4xl font-bold text-white font-sans">+20K</span>
+            <span className="text-xs md:text-sm text-gray-400 mt-2">مشتری</span>
+          </div>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-12">
-          {MOCK_PRODUCTS.map((product) => (
-            <ProductCard key={product.id} {...product} />
-          ))}
-        </div>
-      </section>
+      </motion.div>
     </div>
   );
 }
