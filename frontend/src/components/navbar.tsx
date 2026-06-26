@@ -7,7 +7,7 @@ export default function Navbar() {
       <nav className="w-full max-w-5xl bg-[#111111]/80 backdrop-blur-xl border border-white/10 rounded-full h-16 flex items-center justify-between px-8 text-white shadow-2xl">
         {/* Brand Logo */}
         <Link href="/" className="text-xl font-black tracking-widest uppercase text-white">
-          امیرعظیمی
+          فشن استور
         </Link>
 
         {/* Categories */}
