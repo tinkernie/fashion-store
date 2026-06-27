@@ -13,10 +13,11 @@ import {
 import { useCart } from "@/store/cart";
 
 export default function Navbar() {
-  const { items, removeItem, getTotal } = useCart();
+  const { items, removeItem } = useCart();
   
-  // Calculate total amount of items in the cart
+  // Calculate reactive totals directly in the component
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
+  const cartTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
 
   return (
     <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
