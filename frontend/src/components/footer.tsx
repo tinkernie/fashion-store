@@ -9,6 +9,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
           
+          {/* Column 1: Brand & Contact */}
           <div className="md:col-span-5 flex flex-col space-y-6">
             <Link href="/" className="text-3xl font-black tracking-widest uppercase text-white">
               فشن استور
@@ -71,10 +72,10 @@ export default function Footer() {
             © 2026 Fashion Store. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-gray-500">
-            <Link href="#" className="hover:text-white transition-colors">
+            <Link href="https://instagram.com/your_username" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
               <Instagram className="w-5 h-5" />
             </Link>
-            <Link href="#" className="hover:text-white transition-colors">
+            <Link href="mailto:your_email@example.com" className="hover:text-white transition-colors">
               <Mail className="w-5 h-5" />
             </Link>
           </div>
