@@ -23,7 +23,7 @@ export default function RootLayout({
     <html
       lang="fa"
       dir="rtl"
-      className={`${vazirmatn.variable} h-full antialiased`}
+      className={`${vazirmatn.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-[#0a0a0a] text-white font-sans selection:bg-white selection:text-black">
         <Navbar />
