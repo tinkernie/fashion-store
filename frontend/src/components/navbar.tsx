@@ -9,6 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 import { useCart } from "@/store/cart";
 
@@ -95,9 +96,11 @@ export default function Navbar() {
                     <span>جمع کل:</span>
                     <span>{cartTotal.toLocaleString('fa-IR')} تومان</span>
                   </div>
-                  <Button asChild className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                    <Link href="/checkout">ثبت سفارش</Link>
-                  </Button>
+                  <SheetClose asChild>
+                    <Button asChild className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                      <Link href="/checkout">ثبت سفارش</Link>
+                    </Button>
+                  </SheetClose>
                 </div>
               )}
             </SheetContent>
