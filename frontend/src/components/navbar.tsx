@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ShoppingBag, User, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,13 +13,38 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useCart } from "@/store/cart";
+import { ALL_PRODUCTS } from "@/lib/mock-data";
 
 export default function Navbar() {
+  const router = useRouter();
   const { items, removeItem } = useCart();
   
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  
+  // Cart Totals
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
+
+  // Filter logic
+  const filteredProducts = ALL_PRODUCTS.filter((product) => 
+    product.name.includes(searchQuery) || product.category.includes(searchQuery)
+  );
+
+  const handleProductClick = (id: string) => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    router.push(`/products/${id}`);
+  };
 
   return (
     <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
@@ -35,7 +62,62 @@ export default function Navbar() {
 
         {/* Action Icons */}
         <div className="flex items-center gap-6 text-gray-300">
-          <button className="hover:text-white transition-colors"><Search className="w-5 h-5" /></button>
+          
+          {/* Search Spotlight Modal */}
+          <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+            <DialogTrigger asChild>
+              <button className="hover:text-white transition-colors"><Search className="w-5 h-5" /></button>
+            </DialogTrigger>
+            <DialogContent className="bg-[#0a0a0a] border border-white/10 text-white sm:max-w-2xl gap-0 p-0 overflow-hidden shadow-2xl">
+              <DialogHeader className="sr-only">
+                <DialogTitle>جستجوی محصولات</DialogTitle>
+              </DialogHeader>
+              
+              {/* Search Input */}
+              <div className="flex items-center border-b border-white/10 px-6 py-4">
+                <Search className="w-6 h-6 text-gray-500 ml-4 shrink-0" />
+                <input 
+                  className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-600 font-sans text-xl"
+                  placeholder="جستجوی محصول، دسته‌بندی..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              {/* Search Results */}
+              <div className="max-h-[50vh] overflow-y-auto p-4 space-y-2">
+                {searchQuery.length > 0 && filteredProducts.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">محصولی یافت نشد.</p>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <div 
+                      key={product.id}
+                      onClick={() => handleProductClick(product.id)}
+                      className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl cursor-pointer transition-colors"
+                    >
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name} 
+                        className="w-14 h-16 object-cover rounded-xl border border-white/5"
+                      />
+                      <div className="flex flex-col">
+                        <h4 className="font-bold text-sm text-white">{product.name}</h4>
+                        <span className="text-xs text-gray-500 mt-1">{product.category}</span>
+                      </div>
+                      <div className="mr-auto text-sm text-gray-300 font-medium">
+                        {product.price}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {searchQuery.length === 0 && (
+                  <p className="text-center text-gray-600 py-8 text-sm">برای جستجو شروع به تایپ کنید...</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <button className="hover:text-white transition-colors"><User className="w-5 h-5" /></button>
           
           {/* Cart Slide-out Sheet */}
