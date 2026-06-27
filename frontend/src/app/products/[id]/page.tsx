@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
 import { ALL_PRODUCTS } from "@/lib/mock-data";
+import { toast } from "sonner";
 
 export default function ProductPage() {
   const params = useParams();
@@ -14,7 +15,7 @@ export default function ProductPage() {
   // Find the exact product based on the URL ID
   const product = ALL_PRODUCTS.find((p) => p.id === id);
 
-  // Initialize selected size state (default to an empty string initially to prevent hydration errors)
+  // Initialize selected size state
   const [selectedSize, setSelectedSize] = useState("");
   const addItem = useCart((state) => state.addItem);
 
@@ -25,7 +26,7 @@ export default function ProductPage() {
     }
   }, [product]);
 
-  // If the user navigates to an ID that doesn't exist in our mock data
+  // If the user navigates to an ID that doesn't exist
   if (!product) {
     return (
       <main className="min-h-screen pt-40 text-center flex flex-col items-center">
@@ -44,6 +45,11 @@ export default function ProductPage() {
       imageUrl: product.imageUrl,
       size: selectedSize,
       quantity: 1,
+    });
+    
+    // Fire the confirmation toast
+    toast.success("به سبد خرید اضافه شد", {
+      description: `${product.name} (سایز: ${selectedSize})`,
     });
   };
 

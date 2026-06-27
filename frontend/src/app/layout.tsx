@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navbar";
+import { Toaster } from "@/components/ui/sonner";
 
 const vazirmatn = Vazirmatn({
   subsets: ["arabic"],
@@ -29,6 +30,7 @@ export default function RootLayout({
         <div className="flex-1">
           {children}
         </div>
+        <Toaster theme="dark" position="bottom-center" />
       </body>
     </html>
   );
