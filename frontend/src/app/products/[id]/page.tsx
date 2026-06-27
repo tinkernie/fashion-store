@@ -1,32 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
-
-// Added rawPrice for mathematical calculations
-const MOCK_PRODUCT = {
-  id: "1",
-  name: "کت چرم اورسایز مشکی",
-  price: "۶,۵۰۰,۰۰۰ تومان",
-  rawPrice: 6500000, 
-  category: "پوشاک زمستانه",
-  description: "طراحی شده با بهترین چرم مصنوعی، دارای استایل دارک مینیمال مناسب برای استفاده روزمره و استایل‌های خیابانی. دوخت دقیق و متریال پرمیوم.",
-  imageUrl: "https://images.unsplash.com/photo-1550614000-4b95d466f128?q=80&w=1000&auto=format&fit=crop",
-  sizes: ["S", "M", "L", "XL"],
-};
+import { ALL_PRODUCTS } from "@/lib/mock-data";
 
 export default function ProductPage() {
-  const [selectedSize, setSelectedSize] = useState(MOCK_PRODUCT.sizes[0]);
+  const params = useParams();
+  const id = params.id as string;
+  
+  // Find the exact product based on the URL ID
+  const product = ALL_PRODUCTS.find((p) => p.id === id);
+
+  // Initialize selected size state (default to an empty string initially to prevent hydration errors)
+  const [selectedSize, setSelectedSize] = useState("");
   const addItem = useCart((state) => state.addItem);
 
+  // Set the default size once the product loads
+  useEffect(() => {
+    if (product && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0]);
+    }
+  }, [product]);
+
+  // If the user navigates to an ID that doesn't exist in our mock data
+  if (!product) {
+    return (
+      <main className="min-h-screen pt-40 text-center flex flex-col items-center">
+        <h1 className="text-4xl font-bold text-white mb-4">محصول پیدا نشد</h1>
+        <p className="text-gray-400">محصولی با این شناسه در سیستم وجود ندارد.</p>
+      </main>
+    );
+  }
+
   const handleAddToCart = () => {
+    if (!selectedSize) return;
     addItem({
-      id: MOCK_PRODUCT.id,
-      name: MOCK_PRODUCT.name,
-      price: MOCK_PRODUCT.rawPrice,
-      imageUrl: MOCK_PRODUCT.imageUrl,
+      id: product.id,
+      name: product.name,
+      price: product.rawPrice,
+      imageUrl: product.imageUrl,
       size: selectedSize,
       quantity: 1,
     });
@@ -44,8 +59,8 @@ export default function ProductPage() {
           className="relative aspect-[3/4] bg-[#111111] rounded-3xl overflow-hidden border border-white/5"
         >
           <img
-            src={MOCK_PRODUCT.imageUrl}
-            alt={MOCK_PRODUCT.name}
+            src={product.imageUrl}
+            alt={product.name}
             className="w-full h-full object-cover opacity-90"
           />
         </motion.div>
@@ -59,24 +74,24 @@ export default function ProductPage() {
         >
           <div className="space-y-4">
             <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">
-              {MOCK_PRODUCT.category}
+              {product.category}
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
-              {MOCK_PRODUCT.name}
+              {product.name}
             </h1>
             <p className="text-2xl font-medium text-gray-300">
-              {MOCK_PRODUCT.price}
+              {product.price}
             </p>
           </div>
 
           <p className="text-gray-400 text-base leading-relaxed">
-            {MOCK_PRODUCT.description}
+            {product.description}
           </p>
 
           <div className="space-y-5">
             <span className="text-sm font-bold text-white">انتخاب سایز: {selectedSize}</span>
             <div className="flex gap-4">
-              {MOCK_PRODUCT.sizes.map((size) => (
+              {product.sizes.map((size) => (
                 <button 
                   key={size}
                   onClick={() => setSelectedSize(size)}
