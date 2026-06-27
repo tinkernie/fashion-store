@@ -13,13 +13,12 @@ export default function CheckoutPage() {
   const { items, clearCart } = useCart();
   const [mounted, setMounted] = useState(false);
 
-  // Prevent hydration mismatch when rendering Zustand state on the client
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const cartTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const shippingCost = 50000; // Mock fixed shipping cost
+  const shippingCost = 50000;
   const finalTotal = cartTotal + shippingCost;
 
   const handleCheckout = (e: React.FormEvent) => {
@@ -30,12 +29,10 @@ export default function CheckoutPage() {
       return;
     }
     
-    // Fire success notification
     toast.success("سفارش شما با موفقیت ثبت شد!", {
       description: "شماره پیگیری: FS-" + Math.floor(Math.random() * 1000000),
     });
     
-    // Clear the cart and redirect to home
     clearCart();
     router.push("/");
   };
