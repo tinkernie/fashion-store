@@ -94,7 +94,7 @@ export default function Navbar() {
                 <div className="pt-6 border-t border-white/10 space-y-6">
                   <div className="flex justify-between text-lg font-bold text-white">
                     <span>جمع کل:</span>
-                    <span>{getTotal().toLocaleString('fa-IR')} تومان</span>
+                    <span>{cartTotal.toLocaleString('fa-IR')} تومان</span>
                   </div>
                   <Button className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                     ثبت سفارش
