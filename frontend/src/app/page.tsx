@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -51,13 +52,13 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-reverse sm:space-x-4 mt-12"
+          className="flex flex-col sm:flex-row items-center gap-4 mt-12"
         >
-          <Button className="w-48 h-14 rounded-2xl bg-[#f4f4f4] text-black hover:bg-white text-base font-bold transition-all">
-            کالکشن بانوان
+          <Button asChild className="w-48 h-14 rounded-2xl bg-[#f4f4f4] text-black hover:bg-white text-base font-bold transition-all">
+            <Link href="/women">کالکشن بانوان</Link>
           </Button>
-          <Button className="w-48 h-14 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 text-base font-bold transition-all">
-            کالکشن آقایان
+          <Button asChild className="w-48 h-14 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 text-base font-bold transition-all">
+            <Link href="/men">کالکشن آقایان</Link>
           </Button>
         </motion.div>
       </main>
