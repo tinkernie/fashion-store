@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import ProductCard from "@/components/product-card";
 
-// Mock Data for the Men's Collection
 const MEN_PRODUCTS = [
   {
     id: "m1",

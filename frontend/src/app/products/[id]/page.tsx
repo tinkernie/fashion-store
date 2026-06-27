@@ -12,21 +12,17 @@ export default function ProductPage() {
   const params = useParams();
   const id = params.id as string;
   
-  // Find the exact product based on the URL ID
   const product = ALL_PRODUCTS.find((p) => p.id === id);
 
-  // Initialize selected size state
   const [selectedSize, setSelectedSize] = useState("");
   const addItem = useCart((state) => state.addItem);
 
-  // Set the default size once the product loads
   useEffect(() => {
     if (product && product.sizes.length > 0) {
       setSelectedSize(product.sizes[0]);
     }
   }, [product]);
 
-  // If the user navigates to an ID that doesn't exist
   if (!product) {
     return (
       <main className="min-h-screen pt-40 text-center flex flex-col items-center">
@@ -47,7 +43,6 @@ export default function ProductPage() {
       quantity: 1,
     });
     
-    // Fire the confirmation toast
     toast.success("به سبد خرید اضافه شد", {
       description: `${product.name} (سایز: ${selectedSize})`,
     });

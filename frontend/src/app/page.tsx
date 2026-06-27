@@ -7,7 +7,6 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex flex-col justify-between">
-      {/* Background Image with Heavy Dark Gradient Overlay */}
       <div className="absolute inset-0 z-0">
         <img 
           src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop" 
