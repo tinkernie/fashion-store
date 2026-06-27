@@ -14,7 +14,6 @@ interface ProductCardProps {
 export default function ProductCard({ id, name, price, category, imageUrl }: ProductCardProps) {
   return (
     <Link href={`/products/${id}`} className="group block cursor-pointer">
-      {/* Image Container with Dark Overlay & Zoom */}
       <div className="relative aspect-[3/4] overflow-hidden bg-[#111111] rounded-2xl border border-white/5">
         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500 z-10" />
         <motion.img
