@@ -118,7 +118,7 @@ export default function Navbar() {
             </DialogContent>
           </Dialog>
 
-          <button className="hover:text-white transition-colors"><User className="w-5 h-5" /></button>
+          <Link href="/auth" className="hover:text-white transition-colors"><User className="w-5 h-5" /></Link>
           
           {/* Cart Slide-out Sheet */}
           <Sheet>
