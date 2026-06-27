@@ -11,8 +11,8 @@ const vazirmatn = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "فروشگاه لباس زنانه",
-  description: "طراحی مینیمال و باکلاس برای بانوان",
+  title: "Fashion Store",
+  description: "فروشگاه لباس",
 };
 
 export default function RootLayout({
