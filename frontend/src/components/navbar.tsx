@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { ShoppingBag, User, Search } from "lucide-react";
+import { ShoppingBag, User, Search, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export default function Navbar() {
   return (
@@ -20,10 +28,55 @@ export default function Navbar() {
         <div className="flex items-center gap-6 text-gray-300">
           <button className="hover:text-white transition-colors"><Search className="w-5 h-5" /></button>
           <button className="hover:text-white transition-colors"><User className="w-5 h-5" /></button>
-          <button className="relative hover:text-white transition-colors">
-            <ShoppingBag className="w-5 h-5" />
-            <span className="absolute -top-1.5 -left-2 bg-white text-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">۰</span>
-          </button>
+          
+          {/* Cart Slide-out Sheet */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="relative hover:text-white transition-colors cursor-pointer">
+                <ShoppingBag className="w-5 h-5" />
+                <span className="absolute -top-1.5 -left-2 bg-white text-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">۱</span>
+              </button>
+            </SheetTrigger>
+            
+            <SheetContent side="left" className="bg-[#0a0a0a] border-r-white/10 text-white w-full sm:max-w-md flex flex-col p-6">
+              <SheetHeader className="text-right pb-6 border-b border-white/10">
+                <SheetTitle className="text-white text-2xl font-black font-sans">سبد خرید</SheetTitle>
+              </SheetHeader>
+              
+              {/* Mock Cart Items Container */}
+              <div className="flex-1 overflow-y-auto py-6 flex flex-col gap-6">
+                {/* Single Cart Item */}
+                <div className="flex gap-4 items-center">
+                  <div className="w-20 h-24 bg-[#111111] rounded-xl overflow-hidden border border-white/5 shrink-0">
+                    <img 
+                      src="https://images.unsplash.com/photo-1550614000-4b95d466f128?q=80&w=200&auto=format&fit=crop" 
+                      alt="Product" 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <h4 className="text-sm font-bold text-white">کت چرم اورسایز مشکی</h4>
+                    <span className="text-xs text-gray-400">سایز: M</span>
+                    <span className="text-sm font-medium text-gray-300 mt-2">۶,۵۰۰,۰۰۰ تومان</span>
+                  </div>
+                  <button className="text-gray-500 hover:text-red-500 transition-colors shrink-0">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Checkout Summary */}
+              <div className="pt-6 border-t border-white/10 space-y-6">
+                <div className="flex justify-between text-lg font-bold text-white">
+                  <span>جمع کل:</span>
+                  <span>۶,۵۰۰,۰۰۰ تومان</span>
+                </div>
+                <Button className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                  ثبت سفارش
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </nav>
     </div>
