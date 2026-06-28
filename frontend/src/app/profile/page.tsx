@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Package, MapPin, User, LogOut, ChevronLeft } from "lucide-react";
+import { Package, MapPin, User, LogOut, ChevronLeft, Heart, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useWishlist } from "@/store/wishlist";
+import Link from "next/link";
 
 // Mock Data
 const MOCK_ORDERS = [
@@ -22,6 +24,15 @@ const MOCK_ADDRESSES = [
 export default function ProfilePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  
+  // Wishlist Store
+  const { items: wishlistItems, removeItem: removeWishlistItem } = useWishlist();
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     toast.success("از حساب کاربری خارج شدید");
@@ -36,6 +47,8 @@ export default function ProfilePage() {
       toast.success("اطلاعات حساب با موفقیت بروزرسانی شد");
     }, 1000);
   };
+
+  if (!mounted) return null;
 
   return (
     <main className="min-h-screen pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto">
@@ -72,6 +85,10 @@ export default function ProfilePage() {
                 <Package className="w-4 h-4" />
                 سفارش‌های من
               </TabsTrigger>
+              <TabsTrigger value="wishlist" className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 rounded-xl px-6 py-3 transition-all flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                علاقه‌مندی‌ها
+              </TabsTrigger>
               <TabsTrigger value="addresses" className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 rounded-xl px-6 py-3 transition-all flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 آدرس‌ها
@@ -106,6 +123,38 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ))}
+            </TabsContent>
+
+            {/* Wishlist Tab */}
+            <TabsContent value="wishlist" className="space-y-4 outline-none">
+              <h3 className="text-xl font-bold text-white mb-6">لیست علاقه‌مندی‌ها</h3>
+              {wishlistItems.length === 0 ? (
+                <div className="text-center py-12 bg-[#111111] border border-white/5 rounded-2xl">
+                  <Heart className="w-12 h-12 text-gray-600 mx-auto mb-4 opacity-50" />
+                  <p className="text-gray-400">هیچ محصولی در لیست علاقه‌مندی‌های شما وجود ندارد.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {wishlistItems.map((item) => (
+                    <div key={item.id} className="bg-[#111111] border border-white/5 rounded-2xl p-4 flex items-center gap-4 hover:border-white/10 transition-colors">
+                      <div className="w-20 h-24 bg-[#0a0a0a] rounded-xl overflow-hidden shrink-0">
+                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/products/${item.id}`} className="text-sm font-bold text-white hover:underline line-clamp-1 mb-1">{item.name}</Link>
+                        <p className="text-xs text-gray-500 mb-2">{item.category}</p>
+                        <p className="text-sm font-medium text-gray-300">{item.price.toLocaleString('fa-IR')} تومان</p>
+                      </div>
+                      <button 
+                        onClick={() => removeWishlistItem(item.id)}
+                        className="text-gray-500 hover:text-red-500 transition-colors p-2 shrink-0"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             {/* Addresses Tab */}
