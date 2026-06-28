@@ -42,8 +42,8 @@ export default function Footer() {
             <div className="flex flex-col space-y-4 text-sm text-gray-400">
               <Link href="/women" className="hover:text-white transition-colors">کالکشن بانوان</Link>
               <Link href="/men" className="hover:text-white transition-colors">کالکشن آقایان</Link>
-              <Link href="#" className="hover:text-white transition-colors">درباره ما</Link>
-              <Link href="#" className="hover:text-white transition-colors">پیگیری سفارش</Link>
+              <Link href="/about" className="hover:text-white transition-colors">درباره ما</Link>
+              <Link href="/contact" className="hover:text-white transition-colors">تماس با ما</Link>
               <Link href="#" className="hover:text-white transition-colors">قوانین و مقررات</Link>
             </div>
           </div>
