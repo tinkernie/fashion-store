@@ -32,6 +32,14 @@ export default function ProductDetailPage() {
     );
   }
 
+  const numericPrice = typeof product.price === 'number' 
+    ? product.price 
+    : Number(
+        String(product.price)
+          .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString())
+          .replace(/\D/g, '')
+      );
+
   const isSaved = isInWishlist(product.id);
 
   const handleAddToCart = () => {
@@ -43,7 +51,7 @@ export default function ProductDetailPage() {
     addToCart({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: numericPrice,
       size: selectedSize,
       quantity: 1,
       imageUrl: product.imageUrl,
@@ -62,7 +70,7 @@ export default function ProductDetailPage() {
       addToWishlist({
         id: product.id,
         name: product.name,
-        price: product.price,
+        price: numericPrice,
         imageUrl: product.imageUrl,
         category: product.category,
       });
@@ -115,7 +123,7 @@ export default function ProductDetailPage() {
           </h1>
           
           <p className="text-xl md:text-2xl font-bold text-gray-300 mb-8 font-sans">
-            {product.price.toLocaleString('fa-IR')} <span className="text-sm text-gray-500 font-normal">تومان</span>
+            {numericPrice.toLocaleString('fa-IR')} <span className="text-sm text-gray-500 font-normal">تومان</span>
           </p>
 
           <p className="text-gray-400 leading-relaxed mb-10 text-sm md:text-base">
