@@ -7,15 +7,22 @@ import { ALL_PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
-import { ShoppingBag, Star, ShieldCheck, Truck, ArrowRight, Heart } from "lucide-react";
+import { ShoppingBag, Star, ShieldCheck, Truck, ArrowRight, Heart, MessageSquare, Send } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+
+// Mock Reviews
+const MOCK_REVIEWS = [
+  { id: 1, user: "امیرحسین م.", rating: 5, date: "۲۴ اردیبهشت ۱۴۰۵", text: "کیفیت دوخت و متریال واقعا عالیه. دقیقا همون چیزی بود که تو عکس دیدم." },
+  { id: 2, user: "سارا ت.", rating: 4, date: "۱۸ فروردین ۱۴۰۵", text: "طراحیش خیلی خاصه، فقط ارسالش یکم طول کشید." },
+];
 
 export default function ProductDetailPage() {
   const params = useParams();
   const product = ALL_PRODUCTS.find((p) => p.id === params.id);
   
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [reviewText, setReviewText] = useState("");
   const { addItem: addToCart } = useCart();
   
   // Wishlist Hooks
@@ -78,6 +85,16 @@ export default function ProductDetailPage() {
     }
   };
 
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (reviewText.trim().length < 10) {
+      toast.error("متن نظر باید حداقل ۱۰ کاراکتر باشد.");
+      return;
+    }
+    toast.success("نظر شما با موفقیت ثبت شد و پس از تایید نمایش داده می‌شود.");
+    setReviewText("");
+  };
+
   return (
     <main className="min-h-screen pt-32 pb-24 px-6 max-w-7xl mx-auto">
       <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-colors mb-8">
@@ -85,7 +102,7 @@ export default function ProductDetailPage() {
         بازگشت
       </Link>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 mb-20">
         
         {/* Product Image Gallery */}
         <motion.div 
@@ -188,6 +205,75 @@ export default function ProductDetailPage() {
           </div>
 
         </motion.div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="border-t border-white/10 pt-16">
+        <h2 className="text-2xl font-black text-white mb-8 flex items-center gap-3">
+          <MessageSquare className="w-6 h-6" />
+          نظرات کاربران
+        </h2>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          
+          {/* Review List */}
+          <div className="lg:col-span-7 space-y-6">
+            {MOCK_REVIEWS.map((review) => (
+              <div key={review.id} className="bg-[#111111] border border-white/5 rounded-3xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold">
+                      {review.user.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="text-white font-bold text-sm">{review.user}</h4>
+                      <span className="text-gray-500 text-xs">{review.date}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-yellow-500">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-current' : 'text-gray-700'}`} />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  {review.text}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Add Review Form */}
+          <div className="lg:col-span-5">
+            <div className="bg-[#111111] border border-white/5 rounded-3xl p-6 sticky top-24">
+              <h3 className="text-lg font-bold text-white mb-6">ثبت نظر جدید</h3>
+              <form onSubmit={handleReviewSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">امتیاز شما</label>
+                  <div className="flex items-center gap-1 text-gray-600 cursor-pointer">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star key={star} className="w-6 h-6 hover:text-yellow-500 transition-colors" />
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">دیدگاه شما</label>
+                  <textarea 
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    placeholder="نظرتان در مورد این محصول چیست؟" 
+                    className="w-full bg-[#0a0a0a] border border-white/10 rounded-2xl p-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-white/30 min-h-[120px] resize-none"
+                  />
+                </div>
+                <Button type="submit" className="w-full h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-bold transition-all gap-2">
+                  <Send className="w-4 h-4" />
+                  ثبت دیدگاه
+                </Button>
+              </form>
+            </div>
+          </div>
+
+        </div>
       </div>
     </main>
   );
