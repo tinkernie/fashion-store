@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, User, Search, Trash2 } from "lucide-react";
+import { ShoppingBag, User, Search, Trash2, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -55,27 +55,52 @@ export default function Navbar() {
 
   return (
     <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
-      <nav className="w-full max-w-5xl bg-[#111111]/80 backdrop-blur-xl border border-white/10 rounded-full h-16 flex items-center justify-between px-8 text-white shadow-2xl">
+      <nav className="w-full max-w-5xl bg-[#111111]/80 backdrop-blur-xl border border-white/10 rounded-full h-16 flex items-center justify-between px-6 md:px-8 text-white shadow-2xl">
+        
         {/* Brand Logo */}
         <Link href="/" className="text-xl font-black tracking-widest uppercase text-white">
           فشن استور
         </Link>
 
-        {/* Categories */}
+        {/* Desktop Categories */}
         <div className="hidden md:flex items-center gap-12 text-base font-medium text-gray-300">
           <Link href="/women" className="hover:text-white transition-colors">کالکشن بانوان</Link>
           <Link href="/men" className="hover:text-white transition-colors">کالکشن آقایان</Link>
         </div>
 
         {/* Action Icons */}
-        <div className="flex items-center gap-6 text-gray-300">
+        <div className="flex items-center gap-4 md:gap-6 text-gray-300">
           
+          {/* Mobile Navigation Menu (Hidden on Desktop) */}
+          <div className="md:hidden flex items-center">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="hover:text-white transition-colors cursor-pointer outline-none">
+                  <Menu className="w-5 h-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="bg-[#0a0a0a] border-l border-white/10 text-white w-[280px] flex flex-col p-6" dir="rtl">
+                <SheetHeader className="text-right pb-6 border-b border-white/10">
+                  <SheetTitle className="text-white text-2xl font-black font-sans">منو</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-6 py-6 text-lg font-medium">
+                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">کالکشن بانوان</Link></SheetClose>
+                  <SheetClose asChild><Link href="/men" className="hover:text-gray-300 transition-colors">کالکشن آقایان</Link></SheetClose>
+                  <div className="border-t border-white/10 pt-6 flex flex-col gap-6">
+                    <SheetClose asChild><Link href="/profile" className="hover:text-gray-300 transition-colors">پروفایل کاربری</Link></SheetClose>
+                    <SheetClose asChild><Link href="/auth" className="hover:text-gray-300 transition-colors">ورود / ثبت‌نام</Link></SheetClose>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
           {/* Search Spotlight Modal */}
           <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
             <DialogTrigger asChild>
               <button className="hover:text-white transition-colors"><Search className="w-5 h-5" /></button>
             </DialogTrigger>
-            <DialogContent className="bg-[#0a0a0a] border border-white/10 text-white sm:max-w-2xl gap-0 p-0 overflow-hidden shadow-2xl">
+            <DialogContent className="bg-[#0a0a0a] border border-white/10 text-white sm:max-w-2xl gap-0 p-0 overflow-hidden shadow-2xl" dir="rtl">
               <DialogHeader className="sr-only">
                 <DialogTitle>جستجوی محصولات</DialogTitle>
               </DialogHeader>
@@ -113,7 +138,7 @@ export default function Navbar() {
                         <span className="text-xs text-gray-500 mt-1">{product.category}</span>
                       </div>
                       <div className="mr-auto text-sm text-gray-300 font-medium">
-                        {product.price}
+                        {typeof product.price === 'number' ? product.price.toLocaleString('fa-IR') : product.price} تومان
                       </div>
                     </div>
                   ))
@@ -125,29 +150,31 @@ export default function Navbar() {
             </DialogContent>
           </Dialog>
 
-          {/* User Dropdown */}
-          <DropdownMenu dir="rtl">
-            <DropdownMenuTrigger asChild>
-              <button className="hover:text-white transition-colors outline-none cursor-pointer"><User className="w-5 h-5" /></button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-[#111111] border border-white/10 text-white w-48 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
-              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
-                <Link href="/profile" className="flex items-center w-full">پروفایل کاربری</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
-                <Link href="/profile" className="flex items-center w-full">سفارشات من</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10 my-1" />
-              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl text-gray-400 focus:text-white">
-                <Link href="/auth" className="flex items-center w-full">ورود / ثبت‌نام</Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* User Dropdown (Hidden on mobile to save space, moved to mobile menu) */}
+          <div className="hidden md:block">
+            <DropdownMenu dir="rtl">
+              <DropdownMenuTrigger asChild>
+                <button className="hover:text-white transition-colors outline-none cursor-pointer flex items-center"><User className="w-5 h-5" /></button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-[#111111] border border-white/10 text-white w-48 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
+                <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
+                  <Link href="/profile" className="flex items-center w-full">پروفایل کاربری</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
+                  <Link href="/profile" className="flex items-center w-full">سفارشات من</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/10 my-1" />
+                <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl text-gray-400 focus:text-white">
+                  <Link href="/auth" className="flex items-center w-full">ورود / ثبت‌نام</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           
           {/* Cart Slide-out Sheet */}
           <Sheet>
             <SheetTrigger asChild>
-              <button className="relative hover:text-white transition-colors cursor-pointer">
+              <button className="relative hover:text-white transition-colors cursor-pointer outline-none">
                 <ShoppingBag className="w-5 h-5" />
                 <span className="absolute -top-1.5 -left-2 bg-white text-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
                   {itemCount.toLocaleString('fa-IR')}
@@ -155,7 +182,7 @@ export default function Navbar() {
               </button>
             </SheetTrigger>
             
-            <SheetContent side="left" className="bg-[#0a0a0a] border-r-white/10 text-white w-full sm:max-w-md flex flex-col p-6">
+            <SheetContent side="left" className="bg-[#0a0a0a] border-r border-white/10 text-white w-full sm:max-w-md flex flex-col p-6" dir="rtl">
               <SheetHeader className="text-right pb-6 border-b border-white/10">
                 <SheetTitle className="text-white text-2xl font-black font-sans">سبد خرید</SheetTitle>
               </SheetHeader>
@@ -186,7 +213,7 @@ export default function Navbar() {
                       </div>
                       <button 
                         onClick={() => removeItem(item.id, item.size)}
-                        className="text-gray-500 hover:text-red-500 transition-colors shrink-0"
+                        className="text-gray-500 hover:text-red-500 transition-colors shrink-0 outline-none"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
