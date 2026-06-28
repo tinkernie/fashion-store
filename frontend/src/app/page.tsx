@@ -11,7 +11,7 @@ export default function HomePage() {
   const bestsellers = ALL_PRODUCTS.slice(0, 4);
 
   return (
-    <main className="min-h-screen pt-24 pb-24">
+    <main className="min-h-screen pb-24">
       
       {/* Hero Section */}
       <section className="relative w-full h-[80vh] min-h-[600px] flex items-center justify-center overflow-hidden px-6">
