@@ -12,14 +12,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 // --- Validation Schemas ---
+const phoneRegex = /^09\d{9}$/;
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const identifierValidator = z.string().refine(
+  (value) => phoneRegex.test(value) || emailRegex.test(value),
+  { message: "فرمت ایمیل یا شماره موبایل (مثال: 09123456789) نامعتبر است" }
+);
+
 const loginSchema = z.object({
-  identifier: z.string().min(3, "ایمیل یا شماره موبایل الزامی است"),
+  identifier: identifierValidator,
   password: z.string().min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد"),
 });
 
 const registerSchema = z.object({
   fullName: z.string().min(3, "نام باید حداقل ۳ کاراکتر باشد"),
-  identifier: z.string().min(3, "ایمیل یا شماره موبایل الزامی است"),
+  identifier: identifierValidator,
   password: z.string().min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد"),
 });
 
