@@ -90,7 +90,7 @@ export default function MenCategoryPage() {
                 <h3 className="text-lg font-bold text-white mb-1 line-clamp-1">{product.name}</h3>
                 <span className="text-sm text-gray-500 mb-2">{product.category}</span>
                 <span className="text-white font-medium">
-                  {typeof product.price === 'number' ? product.price.toLocaleString('fa-IR') : product.price} تومان
+                  {product.price} تومان
                 </span>
               </div>
             </motion.div>
