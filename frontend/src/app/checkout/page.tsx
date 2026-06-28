@@ -9,12 +9,32 @@ import { Input } from "@/components/ui/input";
 import { useCart } from "@/store/cart";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+// --- Validation Schema ---
+const checkoutSchema = z.object({
+  fullName: z.string().min(3, "نام و نام خانوادگی باید حداقل ۳ کاراکتر باشد"),
+  phone: z.string().regex(/^09\d{9}$/, "شماره موبایل باید با 09 شروع شود و ۱۱ رقم باشد"),
+  province: z.string().min(2, "استان الزامی است"),
+  city: z.string().min(2, "شهر الزامی است"),
+  address: z.string().min(10, "آدرس باید کامل و دقیق باشد (حداقل ۱۰ کاراکتر)"),
+  postalCode: z.string().regex(/^\d{10}$/, "کد پستی باید دقیقاً ۱۰ رقم باشد"),
+});
+
+type CheckoutForm = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items } = useCart();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Form Hook
+  const { register, handleSubmit, formState: { errors } } = useForm<CheckoutForm>({
+    resolver: zodResolver(checkoutSchema),
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -24,8 +44,7 @@ export default function CheckoutPage() {
   const shippingCost = cartTotal > 5000000 ? 0 : 45000;
   const finalTotal = cartTotal + shippingCost;
 
-  const handleCheckout = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onCheckout = (data: CheckoutForm) => {
     setIsLoading(true);
 
     // Mock API Call
@@ -72,34 +91,40 @@ export default function CheckoutPage() {
               <h2 className="text-2xl font-black text-white">اطلاعات ارسال</h2>
             </div>
 
-            <form id="checkout-form" onSubmit={handleCheckout} className="space-y-6">
+            <form id="checkout-form" onSubmit={handleSubmit(onCheckout)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-300">نام و نام خانوادگی</label>
-                  <Input required placeholder="مثال: علی رضایی" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30" />
+                  <Input {...register("fullName")} placeholder="مثال: علی رضایی" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30" />
+                  {errors.fullName && <p className="text-red-500 text-xs mt-1">{errors.fullName.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-300">شماره موبایل</label>
-                  <Input required placeholder="09123456789" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30 font-sans" dir="ltr" />
+                  <Input {...register("phone")} placeholder="09123456789" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30 font-sans" dir="ltr" />
+                  {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-300">استان</label>
-                  <Input required placeholder="مثال: تهران" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30" />
+                  <Input {...register("province")} placeholder="مثال: تهران" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30" />
+                  {errors.province && <p className="text-red-500 text-xs mt-1">{errors.province.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-300">شهر</label>
-                  <Input required placeholder="مثال: تهران" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30" />
+                  <Input {...register("city")} placeholder="مثال: تهران" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30" />
+                  {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
                 </div>
               </div>
               
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">آدرس دقیق پستی</label>
-                <Input required placeholder="خیابان، کوچه، پلاک، واحد..." className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30" />
+                <Input {...register("address")} placeholder="خیابان، کوچه، پلاک، واحد..." className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30" />
+                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">کد پستی (۱۰ رقمی)</label>
-                <Input required placeholder="1234567890" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30 font-sans" dir="ltr" />
+                <Input {...register("postalCode")} placeholder="1234567890" className="bg-[#0a0a0a] border-white/10 h-12 text-white focus-visible:ring-1 focus-visible:ring-white/30 font-sans" dir="ltr" />
+                {errors.postalCode && <p className="text-red-500 text-xs mt-1">{errors.postalCode.message}</p>}
               </div>
             </form>
           </div>
