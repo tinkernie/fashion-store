@@ -96,8 +96,12 @@ export default function HomePage() {
       </section>
 
       {/* Bestsellers Section */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex items-end justify-between mb-12">
+      <section className="relative max-w-7xl mx-auto px-6 py-20 z-0">
+        
+        {/* Ambient Glow Effect */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] md:w-[1000px] h-[600px] md:h-[1000px] bg-white/[0.03] rounded-full blur-[120px] pointer-events-none -z-10"></div>
+        
+        <div className="flex items-end justify-between mb-12 relative z-10">
           <div>
             <div className="flex items-center gap-3 mb-4">
               <TrendingUp className="w-6 h-6 text-white" />
