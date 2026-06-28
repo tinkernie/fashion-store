@@ -138,7 +138,7 @@ export default function Navbar() {
                         <span className="text-xs text-gray-500 mt-1">{product.category}</span>
                       </div>
                       <div className="mr-auto text-sm text-gray-300 font-medium">
-                        {typeof product.price === 'number' ? product.price.toLocaleString('fa-IR') : product.price} تومان
+                        {product.price} تومان
                       </div>
                     </div>
                   ))
