@@ -20,6 +20,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCart } from "@/store/cart";
 import { ALL_PRODUCTS } from "@/lib/mock-data";
 
@@ -118,7 +125,24 @@ export default function Navbar() {
             </DialogContent>
           </Dialog>
 
-          <Link href="/auth" className="hover:text-white transition-colors"><User className="w-5 h-5" /></Link>
+          {/* User Dropdown */}
+          <DropdownMenu dir="rtl">
+            <DropdownMenuTrigger asChild>
+              <button className="hover:text-white transition-colors outline-none cursor-pointer"><User className="w-5 h-5" /></button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-[#111111] border border-white/10 text-white w-48 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
+              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
+                <Link href="/profile" className="flex items-center w-full">پروفایل کاربری</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
+                <Link href="/profile" className="flex items-center w-full">سفارشات من</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10 my-1" />
+              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl text-gray-400 focus:text-white">
+                <Link href="/auth" className="flex items-center w-full">ورود / ثبت‌نام</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           {/* Cart Slide-out Sheet */}
           <Sheet>
