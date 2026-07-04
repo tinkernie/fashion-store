@@ -74,10 +74,30 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Categories */}
-        <div className="hidden md:flex items-center gap-12 text-base font-medium text-gray-300">
+        <div className="hidden md:flex items-center gap-8 text-base font-medium text-gray-300">
+          <DropdownMenu dir="rtl">
+            <DropdownMenuTrigger className="hover:text-white transition-colors outline-none flex items-center cursor-pointer">
+              دسته‌بندی‌ها
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-[#111111] border border-white/10 text-white w-48 rounded-2xl shadow-2xl mt-4 p-2 font-sans">
+              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
+                <Link href="/category/manteau" className="w-full text-right">مانتو</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
+                <Link href="/category/tshirt" className="w-full text-right">تی‌شرت و کراپ</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
+                <Link href="/category/pants" className="w-full text-right">شلوار</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl">
+                <Link href="/category/scarf" className="w-full text-right">شال و روسری</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Link href="/women" className="hover:text-white transition-colors">فروش ویژه</Link>
           <Link href="/women" className="hover:text-white transition-colors">جدیدترین محصولات</Link>
-          <Link href="/women" className="hover:text-white transition-colors">پرفروش ترین محصولات</Link>
+          <Link href="/women" className="hover:text-white transition-colors">پرفروش‌ترین‌ها</Link>
         </div>
 
         {/* Action Icons */}
@@ -96,9 +116,16 @@ export default function Navbar() {
                   <SheetTitle className="text-white text-2xl font-black font-sans">منو</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-6 py-6 text-lg font-medium">
+                  <div className="flex flex-col gap-4 mb-2">
+                    <span className="text-white font-bold text-xl border-b border-white/10 pb-2">دسته‌بندی‌ها</span>
+                    <SheetClose asChild><Link href="/category/manteau" className="text-gray-400 hover:text-white transition-colors pr-4 border-r-2 border-white/20">مانتو</Link></SheetClose>
+                    <SheetClose asChild><Link href="/category/tshirt" className="text-gray-400 hover:text-white transition-colors pr-4 border-r-2 border-white/20">تی‌شرت و کراپ</Link></SheetClose>
+                    <SheetClose asChild><Link href="/category/pants" className="text-gray-400 hover:text-white transition-colors pr-4 border-r-2 border-white/20">شلوار</Link></SheetClose>
+                    <SheetClose asChild><Link href="/category/scarf" className="text-gray-400 hover:text-white transition-colors pr-4 border-r-2 border-white/20">شال و روسری</Link></SheetClose>
+                  </div>
                   <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">فروش ویژه</Link></SheetClose>
                   <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">جدیدترین محصولات</Link></SheetClose>
-                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">پرفروش ترین محصولات</Link></SheetClose>
+                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">پرفروش‌ترین‌ها</Link></SheetClose>
                   <div className="border-t border-white/10 pt-6 flex flex-col gap-6">
                     <SheetClose asChild><Link href="/profile" className="hover:text-gray-300 transition-colors">پروفایل کاربری</Link></SheetClose>
                     <SheetClose asChild><Link href="/auth" className="hover:text-gray-300 transition-colors">ورود / ثبت‌نام</Link></SheetClose>
