@@ -75,8 +75,9 @@ export default function Navbar() {
 
         {/* Desktop Categories */}
         <div className="hidden md:flex items-center gap-12 text-base font-medium text-gray-300">
-          <Link href="/women" className="hover:text-white transition-colors">کالکشن بانوان</Link>
-          <Link href="/men" className="hover:text-white transition-colors">کالکشن آقایان</Link>
+          <Link href="/women" className="hover:text-white transition-colors">فروش ویژه</Link>
+          <Link href="/women" className="hover:text-white transition-colors">جدیدترین محصولات</Link>
+          <Link href="/women" className="hover:text-white transition-colors">پرفروش ترین محصولات</Link>
         </div>
 
         {/* Action Icons */}
@@ -95,8 +96,9 @@ export default function Navbar() {
                   <SheetTitle className="text-white text-2xl font-black font-sans">منو</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-6 py-6 text-lg font-medium">
-                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">کالکشن بانوان</Link></SheetClose>
-                  <SheetClose asChild><Link href="/men" className="hover:text-gray-300 transition-colors">کالکشن آقایان</Link></SheetClose>
+                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">فروش ویژه</Link></SheetClose>
+                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">جدیدترین محصولات</Link></SheetClose>
+                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">پرفروش ترین محصولات</Link></SheetClose>
                   <div className="border-t border-white/10 pt-6 flex flex-col gap-6">
                     <SheetClose asChild><Link href="/profile" className="hover:text-gray-300 transition-colors">پروفایل کاربری</Link></SheetClose>
                     <SheetClose asChild><Link href="/auth" className="hover:text-gray-300 transition-colors">ورود / ثبت‌نام</Link></SheetClose>

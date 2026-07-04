@@ -7,7 +7,6 @@ import { ArrowLeft, ShoppingBag, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
-  // Get a few items for the bestsellers section
   const bestsellers = ALL_PRODUCTS.slice(0, 4);
 
   return (
@@ -39,35 +38,42 @@ export default function HomePage() {
           <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
             جدیدترین طراحی‌های استایل خیابانی و مینیمال. تولید شده با بهترین متریال برای استفاده روزمره.
           </p>
+          
+          {/* Updated Hero Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-white text-black hover:bg-gray-200 text-lg font-bold transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)]">
-              <Link href="/men">
-                کالکشن آقایان
+            <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-lg font-bold transition-all backdrop-blur-md">
+              <Link href="/women">
+                فروش ویژه
               </Link>
             </Button>
-            <Button asChild variant="outline" className="w-full sm:w-auto h-14 px-8 rounded-2xl border-white/20 text-white hover:bg-white/10 text-lg font-bold transition-all backdrop-blur-md">
+            <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-lg font-bold transition-all backdrop-blur-md">
               <Link href="/women">
-                کالکشن بانوان
+                جدیدترین محصولات
+              </Link>
+            </Button>
+            <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-lg font-bold transition-all backdrop-blur-md">
+              <Link href="/women">
+                پرفروش ترین محصولات
               </Link>
             </Button>
           </div>
         </motion.div>
       </section>
 
-      {/* Featured Categories */}
+      {/* Featured Categories - Updated for Women Only */}
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link href="/women" className="group relative h-[400px] rounded-3xl overflow-hidden bg-[#111111]">
             <img 
               src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop" 
-              alt="Women Category" 
+              alt="New Products" 
               className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
             <div className="absolute bottom-0 left-0 right-0 p-8 flex items-end justify-between">
               <div>
-                <h3 className="text-3xl font-black text-white mb-2">بانوان</h3>
-                <p className="text-gray-300 font-medium">مشاهده جدیدترین مدل‌ها</p>
+                <h3 className="text-3xl font-black text-white mb-2">جدیدترین محصولات</h3>
+                <p className="text-gray-300 font-medium">مشاهده کالکشن جدید</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
                 <ArrowLeft className="w-5 h-5" />
@@ -75,17 +81,17 @@ export default function HomePage() {
             </div>
           </Link>
 
-          <Link href="/men" className="group relative h-[400px] rounded-3xl overflow-hidden bg-[#111111]">
+          <Link href="/women" className="group relative h-[400px] rounded-3xl overflow-hidden bg-[#111111]">
             <img 
-              src="https://images.unsplash.com/photo-1517423568366-8b83523034fd?q=80&w=800&auto=format&fit=crop" 
-              alt="Men Category" 
+              src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=800&auto=format&fit=crop" 
+              alt="Special Sale" 
               className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
             <div className="absolute bottom-0 left-0 right-0 p-8 flex items-end justify-between">
               <div>
-                <h3 className="text-3xl font-black text-white mb-2">آقایان</h3>
-                <p className="text-gray-300 font-medium">استایل‌های کلاسیک و مدرن</p>
+                <h3 className="text-3xl font-black text-white mb-2">فروش ویژه</h3>
+                <p className="text-gray-300 font-medium">تخفیف‌های استثنایی</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
                 <ArrowLeft className="w-5 h-5" />
@@ -150,7 +156,7 @@ export default function HomePage() {
         </div>
         
         <div className="mt-8 text-center md:hidden">
-          <Button asChild variant="outline" className="w-full h-12 rounded-xl border-white/20 text-white">
+          <Button asChild variant="outline" className="w-full h-12 rounded-xl border-white/20 text-white hover:bg-white hover:text-black transition-colors">
             <Link href="/women">مشاهده همه محصولات</Link>
           </Button>
         </div>
