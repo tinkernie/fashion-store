@@ -5,7 +5,7 @@ export const ALL_PRODUCTS = [
     price: "۴,۵۰۰,۰۰۰",
     category: "مانتو",
     categoryId: "manteau",
-    imageUrl: "https://images.unsplash.com/photo-1550614000-4b95d466f128?q=80&w=800&auto=format&fit=crop",
+    imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop",
   },
   {
     id: "w2",

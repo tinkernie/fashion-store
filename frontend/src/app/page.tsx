@@ -53,7 +53,6 @@ const BannerSlider = ({ title, subtitle, href, images }: { title: string, subtit
       
       <Link href={href} className="absolute inset-0 z-20" aria-label={title}></Link>
 
-      {/* Scaled down padding and text for mobile */}
       <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 md:p-16 flex items-end justify-between z-30 pointer-events-none">
         <div>
           <h3 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2 md:mb-4">{title}</h3>
@@ -130,7 +129,6 @@ export default function HomePage() {
             کالکشن جدید تابستانه
           </span>
           
-          {/* Scaled down h1 for mobile to prevent awkward wrapping */}
           <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight md:leading-tight tracking-tight">
             استایل خود را <br className="hidden sm:block" /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-600">بازتعریف کنید</span>
           </h1>
@@ -139,7 +137,6 @@ export default function HomePage() {
             جدیدترین طراحی‌های استایل خیابانی و مینیمال. تولید شده با بهترین متریال برای استفاده روزمره.
           </p>
           
-          {/* Slimmer buttons on mobile */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 pt-2 md:pt-4 w-full max-w-xs sm:max-w-none mx-auto">
             <Button asChild className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-base md:text-lg font-bold transition-all backdrop-blur-md">
               <Link href="/women">فروش ویژه</Link>
@@ -154,7 +151,6 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Dynamic Sliders Section */}
       <section className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20">
         <div className="grid grid-cols-1 gap-6 md:gap-8">
           <BannerSlider 
@@ -172,7 +168,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Bestsellers Section (Maintains the horizontal swipe from Phase 34) */}
       <section className="relative max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 z-0 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] md:w-[1000px] h-[600px] md:h-[1000px] bg-white/[0.03] rounded-full blur-[120px] pointer-events-none -z-10"></div>
         
@@ -190,7 +185,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 hide-scrollbar">
+        <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-8 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 hide-scrollbar">
           {bestsellers.map((product, index) => (
             <motion.div 
               key={product.id}
@@ -198,25 +193,25 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="group flex flex-col min-w-[260px] sm:min-w-[300px] md:min-w-0 shrink-0 snap-center"
+              className="group flex flex-col min-w-[150px] sm:min-w-[200px] md:min-w-0 shrink-0 snap-start"
             >
-              <Link href={`/products/${product.id}`} className="block relative aspect-[3/4] overflow-hidden rounded-2xl md:rounded-3xl bg-[#111111] border border-white/5 mb-3 md:mb-4">
+              <Link href={`/products/${product.id}`} className="block relative aspect-[4/5] md:aspect-[3/4] overflow-hidden rounded-2xl md:rounded-3xl bg-[#111111] border border-white/5 mb-2 md:mb-4">
                 <img 
                   src={product.imageUrl} 
                   alt={product.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <span className="bg-white text-black px-4 md:px-6 py-2 md:py-3 rounded-full font-bold text-xs md:text-sm transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4" />
-                    مشاهده محصول
+                  <span className="bg-white text-black px-3 md:px-6 py-2 md:py-3 rounded-full font-bold text-[10px] md:text-sm transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-1 md:gap-2">
+                    <ShoppingBag className="w-3 h-3 md:w-4 md:h-4" />
+                    مشاهده
                   </span>
                 </div>
               </Link>
-              <div className="flex flex-col px-1 md:px-2">
-                <h3 className="text-base md:text-lg font-bold text-white mb-1 line-clamp-1">{product.name}</h3>
-                <span className="text-xs md:text-sm text-gray-500 mb-1.5 md:mb-2">{product.category.split('-')[1]?.trim() || product.category}</span>
-                <span className="text-white font-medium text-sm md:text-base">
+              <div className="flex flex-col px-1">
+                <h3 className="text-sm md:text-lg font-bold text-white mb-0.5 md:mb-1 line-clamp-1">{product.name}</h3>
+                <span className="text-[10px] md:text-sm text-gray-500 mb-1 md:mb-2">{product.category.split('-')[1]?.trim() || product.category}</span>
+                <span className="text-white font-medium text-xs md:text-base">
                   {product.price} تومان
                 </span>
               </div>
