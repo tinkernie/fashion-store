@@ -11,12 +11,9 @@ export default function WomenCategoryPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   let filteredProducts = ALL_PRODUCTS.filter((p) => {
-    const isWomen = p.category.includes("زنان") || p.category.includes("بانوان");
-    const matchesCat = selectedCategory === "all" || p.category.includes(selectedCategory);
-    return isWomen && matchesCat;
+    return selectedCategory === "all" || p.categoryId === selectedCategory;
   });
 
-  // Apply Sorting
   if (sortBy === "price-low") {
     filteredProducts.sort((a, b) => {
       const priceA = typeof a.price === 'number' ? a.price : Number(String(a.price).replace(/\D/g, ''));
@@ -33,10 +30,10 @@ export default function WomenCategoryPage() {
 
   const categories = [
     { id: "all", label: "همه محصولات" },
-    { id: "Outerwear", label: "ژاکت و پالتو (Outerwear)" },
-    { id: "Streetwear", label: "استریت‌ویر (Streetwear)" },
-    { id: "Pants", label: "شلوار (Pants)" },
-    { id: "Tops", label: "تی‌شرت و کراپ (Tops)" },
+    { id: "manteau", label: "مانتو" },
+    { id: "tshirt", label: "تی‌شرت و کراپ" },
+    { id: "pants", label: "شلوار" },
+    { id: "scarf", label: "شال و روسری" },
   ];
 
   return (
@@ -52,7 +49,7 @@ export default function WomenCategoryPage() {
             <ArrowRight className="w-4 h-4" />
             بازگشت به خانه
           </Link>
-          <h1 className="text-4xl md:text-5xl font-black text-white">کالکشن بانوان</h1>
+          <h1 className="text-4xl md:text-5xl font-black text-white">فروشگاه</h1>
           <p className="text-gray-400 mt-3">نمایش {filteredProducts.length} محصول</p>
         </motion.div>
 
