@@ -197,6 +197,22 @@ export default function CheckoutPage() {
         </motion.div>
 
       </div>
+    {/* Sticky Mobile Payment Bar */}
+      <div className="fixed bottom-16 left-0 right-0 p-4 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-white/10 z-40 md:hidden flex items-center justify-between gap-4">
+        <div className="flex flex-col">
+          <span className="text-gray-400 text-xs">مبلغ قابل پرداخت</span>
+          <span className="text-white font-bold text-[13px]">{finalTotal.toLocaleString('fa-IR')} تومان</span>
+        </div>
+        <Button 
+          type="submit" 
+          form="checkout-form"
+          disabled={isLoading}
+          className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 text-sm font-bold transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] gap-2"
+        >
+          <CreditCard className="w-4 h-4" />
+          {isLoading ? "پردازش..." : "ثبت سفارش"}
+        </Button>
+      </div>
     </main>
   );
 }
