@@ -190,7 +190,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 hide-scrollbar">
           {bestsellers.map((product, index) => (
             <motion.div 
               key={product.id}
@@ -198,7 +198,7 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="group flex flex-col"
+              className="group flex flex-col min-w-[260px] sm:min-w-[300px] md:min-w-0 shrink-0 snap-center"
             >
               <Link href={`/products/${product.id}`} className="block relative aspect-[3/4] overflow-hidden rounded-3xl bg-[#111111] border border-white/5 mb-4">
                 <img 
