@@ -1,13 +1,114 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ALL_PRODUCTS } from "@/lib/mock-data";
-import { ArrowLeft, ShoppingBag, TrendingUp } from "lucide-react";
+import { ArrowLeft, ShoppingBag, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// --- Banner Slider Component ---
+const BannerSlider = ({ title, subtitle, href, images }: { title: string, subtitle: string, href: string, images: string[] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [images.length]);
+
+  const nextSlide = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevSlide = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  return (
+    <div className="group relative h-[500px] md:h-[600px] rounded-3xl overflow-hidden bg-[#111111]">
+      {/* Images with CSS Crossfade & Zoom */}
+      {images.map((img, idx) => (
+        <div
+          key={idx}
+          className={`absolute inset-0 transition-opacity duration-1000 ${
+            idx === currentIndex ? "opacity-60 z-0" : "opacity-0 -z-10"
+          }`}
+        >
+          <img 
+            src={img} 
+            alt={title} 
+            className={`w-full h-full object-cover transition-transform duration-[10000ms] ease-linear ${
+              idx === currentIndex ? "scale-105" : "scale-100"
+            }`}
+          />
+        </div>
+      ))}
+      
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10 pointer-events-none"></div>
+      
+      {/* Invisible clickable layer for the whole banner */}
+      <Link href={href} className="absolute inset-0 z-20" aria-label={title}></Link>
+
+      {/* Text Content */}
+      <div className="absolute bottom-0 left-0 right-0 p-10 md:p-16 flex items-end justify-between z-30 pointer-events-none">
+        <div>
+          <h3 className="text-4xl md:text-5xl font-black text-white mb-4">{title}</h3>
+          <p className="text-gray-300 font-medium text-lg md:text-xl">{subtitle}</p>
+        </div>
+        <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
+          <ArrowLeft className="w-6 h-6" />
+        </div>
+      </div>
+
+      {/* Navigation Arrows */}
+      <button 
+        onClick={prevSlide} 
+        className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80 z-40 outline-none backdrop-blur-md border border-white/10"
+      >
+        <ChevronLeft className="w-6 h-6 pr-1" />
+      </button>
+      <button 
+        onClick={nextSlide} 
+        className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80 z-40 outline-none backdrop-blur-md border border-white/10"
+      >
+        <ChevronRight className="w-6 h-6 pl-1" />
+      </button>
+
+      {/* Slider Indicators */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-30 pointer-events-none">
+        {images.map((_, idx) => (
+          <div 
+            key={idx} 
+            className={`h-1.5 rounded-full transition-all duration-500 ${
+              idx === currentIndex ? "w-6 bg-white" : "w-1.5 bg-white/40"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default function HomePage() {
   const bestsellers = ALL_PRODUCTS.slice(0, 4);
+
+  const newProductsImages = [
+    "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1920&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1920&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1920&auto=format&fit=crop"
+  ];
+
+  const specialSaleImages = [
+    "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1920&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1485230895905-ef350c3d9a74?q=80&w=1920&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1434389678232-04ce6c41b80a?q=80&w=1920&auto=format&fit=crop"
+  ];
 
   return (
     <main className="min-h-screen pb-24">
@@ -39,72 +140,40 @@ export default function HomePage() {
             جدیدترین طراحی‌های استایل خیابانی و مینیمال. تولید شده با بهترین متریال برای استفاده روزمره.
           </p>
           
-          {/* Updated Hero Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-lg font-bold transition-all backdrop-blur-md">
-              <Link href="/women">
-                فروش ویژه
-              </Link>
+              <Link href="/women">فروش ویژه</Link>
             </Button>
             <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-lg font-bold transition-all backdrop-blur-md">
-              <Link href="/women">
-                جدیدترین محصولات
-              </Link>
+              <Link href="/women">جدیدترین محصولات</Link>
             </Button>
             <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-lg font-bold transition-all backdrop-blur-md">
-              <Link href="/women">
-                پرفروش ترین محصولات
-              </Link>
+              <Link href="/women">پرفروش ترین محصولات</Link>
             </Button>
           </div>
         </motion.div>
       </section>
 
-      {/* Featured Categories - Massive Banners */}
+      {/* Dynamic Sliders Section */}
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 gap-8">
-          <Link href="/women" className="group relative h-[500px] md:h-[600px] rounded-3xl overflow-hidden bg-[#111111]">
-            <img 
-              src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1920&auto=format&fit=crop" 
-              alt="New Products" 
-              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-1000"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 right-0 p-10 md:p-16 flex items-end justify-between">
-              <div>
-                <h3 className="text-4xl md:text-5xl font-black text-white mb-4">جدیدترین محصولات</h3>
-                <p className="text-gray-300 font-medium text-lg md:text-xl">مشاهده کالکشن جدید</p>
-              </div>
-              <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
-                <ArrowLeft className="w-6 h-6" />
-              </div>
-            </div>
-          </Link>
-
-          <Link href="/women" className="group relative h-[500px] md:h-[600px] rounded-3xl overflow-hidden bg-[#111111]">
-            <img 
-              src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1920&auto=format&fit=crop" 
-              alt="Special Sale" 
-              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-1000"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 right-0 p-10 md:p-16 flex items-end justify-between">
-              <div>
-                <h3 className="text-4xl md:text-5xl font-black text-white mb-4">فروش ویژه</h3>
-                <p className="text-gray-300 font-medium text-lg md:text-xl">تخفیف‌های استثنایی</p>
-              </div>
-              <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
-                <ArrowLeft className="w-6 h-6" />
-              </div>
-            </div>
-          </Link>
+          <BannerSlider 
+            title="جدیدترین محصولات" 
+            subtitle="مشاهده کالکشن جدید" 
+            href="/women" 
+            images={newProductsImages} 
+          />
+          <BannerSlider 
+            title="فروش ویژه" 
+            subtitle="تخفیف‌های استثنایی" 
+            href="/women" 
+            images={specialSaleImages} 
+          />
         </div>
       </section>
 
       {/* Bestsellers Section */}
       <section className="relative max-w-7xl mx-auto px-6 py-20 z-0">
-        
-        {/* Ambient Glow Effect */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] md:w-[1000px] h-[600px] md:h-[1000px] bg-white/[0.03] rounded-full blur-[120px] pointer-events-none -z-10"></div>
         
         <div className="flex items-end justify-between mb-12 relative z-10">
@@ -161,7 +230,6 @@ export default function HomePage() {
           </Button>
         </div>
       </section>
-
     </main>
   );
 }
