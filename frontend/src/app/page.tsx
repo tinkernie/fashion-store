@@ -60,41 +60,41 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Featured Categories - Updated for Women Only */}
+      {/* Featured Categories - Massive Banners */}
       <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link href="/women" className="group relative h-[400px] rounded-3xl overflow-hidden bg-[#111111]">
+        <div className="grid grid-cols-1 gap-8">
+          <Link href="/women" className="group relative h-[500px] md:h-[600px] rounded-3xl overflow-hidden bg-[#111111]">
             <img 
-              src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1920&auto=format&fit=crop" 
               alt="New Products" 
-              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
+              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-1000"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 right-0 p-8 flex items-end justify-between">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 right-0 p-10 md:p-16 flex items-end justify-between">
               <div>
-                <h3 className="text-3xl font-black text-white mb-2">جدیدترین محصولات</h3>
-                <p className="text-gray-300 font-medium">مشاهده کالکشن جدید</p>
+                <h3 className="text-4xl md:text-5xl font-black text-white mb-4">جدیدترین محصولات</h3>
+                <p className="text-gray-300 font-medium text-lg md:text-xl">مشاهده کالکشن جدید</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
-                <ArrowLeft className="w-5 h-5" />
+              <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
+                <ArrowLeft className="w-6 h-6" />
               </div>
             </div>
           </Link>
 
-          <Link href="/women" className="group relative h-[400px] rounded-3xl overflow-hidden bg-[#111111]">
+          <Link href="/women" className="group relative h-[500px] md:h-[600px] rounded-3xl overflow-hidden bg-[#111111]">
             <img 
-              src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=800&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1920&auto=format&fit=crop" 
               alt="Special Sale" 
-              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
+              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-1000"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 right-0 p-8 flex items-end justify-between">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 right-0 p-10 md:p-16 flex items-end justify-between">
               <div>
-                <h3 className="text-3xl font-black text-white mb-2">فروش ویژه</h3>
-                <p className="text-gray-300 font-medium">تخفیف‌های استثنایی</p>
+                <h3 className="text-4xl md:text-5xl font-black text-white mb-4">فروش ویژه</h3>
+                <p className="text-gray-300 font-medium text-lg md:text-xl">تخفیف‌های استثنایی</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
-                <ArrowLeft className="w-5 h-5" />
+              <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-black transition-all">
+                <ArrowLeft className="w-6 h-6" />
               </div>
             </div>
           </Link>
