@@ -1,0 +1,3 @@
+1- login ba shomare telephone va otp
+2- change email bayad be email ghabli befreste na email jaded
+3- url hay admin va user az directory users bayad Tanzim beshan 

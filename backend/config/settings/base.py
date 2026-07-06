@@ -23,10 +23,14 @@ INSTALLED_APPS = [
     "corsheaders",
     'rest_framework_simplejwt.token_blacklist',
     'celery',
+    'mptt'
     # Domain apps (to be added progressively)
     "common",
     "core",
     "authentication",
+    "users",
+    "categories",
+    "collections",
     # "authentication", ...
 ]
 
@@ -58,7 +62,7 @@ DATABASES = {
     }
 }
 
-AUTH_USER_MODEL = "common.User"   # custom user prepared for full RBAC
+AUTH_USER_MODEL = "common.User"  # custom user prepared for full RBAC
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
 # JWT
@@ -118,8 +122,6 @@ AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
 AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
 AWS_STORAGE_BUCKET_NAME = os.environ["AWS_STORAGE_BUCKET_NAME"]
 AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "us-east-1")
-
-
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@luxe.com")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")

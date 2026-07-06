@@ -32,3 +32,5 @@ mypy
 pre-commit
 
 uvicorn
+
+django-mptt
