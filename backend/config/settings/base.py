@@ -31,7 +31,12 @@ INSTALLED_APPS = [
     "users",
     "categories",
     "collections",
-    # "authentication", ...
+    "products",
+    "product_options",
+    "variants",
+    "inventory",
+    "cart",
+    # "ma baghi", ...
 ]
 
 MIDDLEWARE = [
