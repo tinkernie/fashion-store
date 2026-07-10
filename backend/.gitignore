@@ -1,0 +1,12 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+
+venv/
+.venv/
+
+
+.idea/
+
+.env
+.env.*
