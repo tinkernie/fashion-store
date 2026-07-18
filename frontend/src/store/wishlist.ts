@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { api } from "@/lib/api";
 
 export interface WishlistItem {
   id: string;
@@ -11,26 +11,55 @@ export interface WishlistItem {
 
 interface WishlistStore {
   items: WishlistItem[];
-  addItem: (item: WishlistItem) => void;
-  removeItem: (id: string) => void;
+  fetchWishlist: () => Promise<void>;
+  addItem: (item: WishlistItem) => Promise<void>;
+  removeItem: (id: string) => Promise<void>;
   isInWishlist: (id: string) => boolean;
 }
 
-export const useWishlist = create<WishlistStore>()(
-  persist(
-    (set, get) => ({
-      items: [],
-      addItem: (item) => {
-        if (!get().items.find((i) => i.id === item.id)) {
-          set({ items: [...get().items, item] });
-        }
-      },
-      removeItem: (id) =>
-        set({ items: get().items.filter((i) => i.id !== id) }),
-      isInWishlist: (id) => !!get().items.find((i) => i.id === id),
-    }),
-    {
-      name: "wishlist-storage",
+export const useWishlist = create<WishlistStore>((set, get) => ({
+  items: [],
+  
+  fetchWishlist: async () => {
+    try {
+      const response = await api.get('/api/wishlist/');
+      if (response.data && response.data.items) {
+        set({ items: response.data.items });
+      }
+    } catch (error) {
+      console.error("Failed to fetch backend wishlist:", error);
     }
-  )
-);
+  },
+
+  addItem: async (item) => {
+    if (!get().items.find((i) => i.id === item.id)) {
+      // Optimistic UI Update
+      set({ items: [...get().items, item] });
+      
+      // Backend Sync
+      try {
+        await api.post('/api/wishlist/add_item/', {
+          product_id: item.id
+        });
+      } catch (error) {
+        console.error("Failed to sync wishlist add:", error);
+      }
+    }
+  },
+
+  removeItem: async (id) => {
+    // Optimistic UI Update
+    set({ items: get().items.filter((i) => i.id !== id) });
+    
+    // Backend Sync
+    try {
+      await api.post('/api/wishlist/remove-item/', {
+        product_id: id
+      });
+    } catch (error) {
+      console.error("Failed to sync wishlist remove:", error);
+    }
+  },
+
+  isInWishlist: (id) => !!get().items.find((i) => i.id === id),
+}));

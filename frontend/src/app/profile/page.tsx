@@ -10,38 +10,94 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useWishlist } from "@/store/wishlist";
 import Link from "next/link";
-
-const MOCK_ORDERS = [
-  { id: "FS-847291", date: "۲۸ خرداد ۱۴۰۵", total: "۸,۹۰۰,۰۰۰", status: "در حال پردازش", statusColor: "text-amber-500 bg-amber-500/10", items: "کت چرم اورسایز مشکی، هودی کراپ" },
-  { id: "FS-392011", date: "۱۲ اردیبهشت ۱۴۰۵", total: "۱,۴۰۰,۰۰۰", status: "تحویل داده شده", statusColor: "text-emerald-500 bg-emerald-500/10", items: "تی‌شرت بیسیک پریمیوم" },
-];
+import { api } from "@/lib/api";
 
 const MOCK_ADDRESSES = [
   { id: 1, title: "خانه", address: "تهران، سعادت آباد، میدان کاج، خیابان سرو شرقی، پلاک ۱۲، واحد ۴", postalCode: "1998612345" },
 ];
 
+// Helper to extract user ID from the access token securely 
+const getUserIdFromToken = () => {
+  if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem('access_token');
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.user_id || payload.id;
+  } catch (e) {
+    return null;
+  }
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  const [orders, setOrders] = useState<any[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
+
   const { items: wishlistItems, removeItem: removeWishlistItem } = useWishlist();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      toast.error("لطفا وارد حساب کاربری شوید");
+      router.push("/auth");
+      return;
+    }
 
-  const handleLogout = () => {
+    const fetchData = async () => {
+      try {
+        const [ordersRes, profileRes] = await Promise.all([
+          api.get('/api/orders/'),
+          api.get(`/api/users/me/${userId}/`)
+        ]);
+        setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : ordersRes.data.results || []);
+        setUserProfile(profileRes.data);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      }
+    };
+    fetchData();
+  }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/api/auth/logout/');
+    } catch (e) {
+      console.error("Logout failed at backend", e);
+    }
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     toast.success("از حساب کاربری خارج شدید");
     router.push("/");
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    const userId = getUserIdFromToken();
+    if (!userId) return;
+
+    const formData = new FormData(e.currentTarget);
+    const fullName = formData.get("fullName") as string;
+    const [firstName, ...lastNames] = fullName.split(' ');
+
+    try {
+      await api.patch(`/api/users/me/${userId}/`, {
+        first_name: firstName || "",
+        last_name: lastNames.join(" ") || ""
+      });
       toast.success("اطلاعات حساب با موفقیت بروزرسانی شد");
-    }, 1000);
+    } catch (error) {
+      toast.error("بروزرسانی اطلاعات ناموفق بود");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!mounted) return null;
@@ -59,8 +115,12 @@ export default function ProfilePage() {
             <div className="w-20 h-20 md:w-24 md:h-24 bg-[#1a1a1a] rounded-full mx-auto mb-4 border border-white/10 flex items-center justify-center">
               <User className="w-8 h-8 md:w-10 md:h-10 text-gray-400" />
             </div>
-            <h2 className="text-lg md:text-xl font-bold text-white mb-1">علی رضایی</h2>
-            <p className="text-xs md:text-sm text-gray-500 mb-6" dir="ltr">ali.rezaei@example.com</p>
+            <h2 className="text-lg md:text-xl font-bold text-white mb-1">
+              {userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : "کاربر"}
+            </h2>
+            <p className="text-xs md:text-sm text-gray-500 mb-6" dir="ltr">
+              {userProfile?.email || ""}
+            </p>
             <Button onClick={handleLogout} variant="ghost" className="w-full text-red-500 hover:text-red-400 hover:bg-red-500/10 h-12 rounded-xl flex items-center justify-center gap-2">
               <LogOut className="w-4 h-4" />
               خروج از حساب
@@ -97,27 +157,30 @@ export default function ProfilePage() {
 
             <TabsContent value="orders" className="space-y-4 outline-none mt-0">
               <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6">تاریخچه سفارشات</h3>
-              {MOCK_ORDERS.map((order) => (
-                <div key={order.id} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 hover:border-white/10 transition-colors">
-                  <div className="space-y-2 md:space-y-3 flex-1">
-                    <div className="flex items-center gap-4">
-                      <span className="text-white font-bold font-sans tracking-widest text-sm md:text-base">{order.id}</span>
-                      <span className="text-gray-500 text-xs md:text-sm">{order.date}</span>
+              {orders.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">سفارشی ثبت نشده است</div>
+              ) : (
+                orders.map((order) => (
+                  <div key={order.id} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 hover:border-white/10 transition-colors">
+                    <div className="space-y-2 md:space-y-3 flex-1">
+                      <div className="flex items-center gap-4">
+                        <span className="text-white font-bold font-sans tracking-widest text-sm md:text-base">{order.id}</span>
+                        <span className="text-gray-500 text-xs md:text-sm">{order.created_at || order.date}</span>
+                      </div>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] md:text-xs font-bold text-amber-500 bg-amber-500/10`}>
+                        {order.status}
+                      </span>
                     </div>
-                    <p className="text-xs md:text-sm text-gray-400 line-clamp-1">{order.items}</p>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] md:text-xs font-bold ${order.statusColor}`}>
-                      {order.status}
-                    </span>
+                    <div className="flex items-center justify-between md:flex-col md:items-end gap-4 border-t border-white/10 md:border-0 pt-4 md:pt-0">
+                      <span className="text-base md:text-lg font-bold text-white">{order.total_amount || order.total} تومان</span>
+                      <Button variant="outline" className="h-10 rounded-xl border-white/20 text-white hover:bg-white hover:text-black text-xs md:text-sm px-3 md:px-4">
+                        مشاهده جزئیات
+                        <ChevronLeft className="w-3 h-3 md:w-4 md:h-4 ml-1" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between md:flex-col md:items-end gap-4 border-t border-white/10 md:border-0 pt-4 md:pt-0">
-                    <span className="text-base md:text-lg font-bold text-white">{order.total} تومان</span>
-                    <Button variant="outline" className="h-10 rounded-xl border-white/20 text-white hover:bg-white hover:text-black text-xs md:text-sm px-3 md:px-4">
-                      مشاهده جزئیات
-                      <ChevronLeft className="w-3 h-3 md:w-4 md:h-4 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </TabsContent>
 
             <TabsContent value="wishlist" className="space-y-4 outline-none mt-0">
@@ -137,7 +200,7 @@ export default function ProfilePage() {
                       <div className="flex-1 min-w-0">
                         <Link href={`/products/${item.id}`} className="text-xs md:text-sm font-bold text-white hover:underline line-clamp-1 mb-1">{item.name}</Link>
                         <p className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2">{item.category}</p>
-                        <p className="text-xs md:text-sm font-medium text-gray-300">{item.price.toLocaleString('fa-IR')} تومان</p>
+                        <p className="text-xs md:text-sm font-medium text-gray-300">{item.price?.toLocaleString('fa-IR')} تومان</p>
                       </div>
                       <button 
                         onClick={() => removeWishlistItem(item.id)}
@@ -178,16 +241,12 @@ export default function ProfilePage() {
               <form onSubmit={handleSaveSettings} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 space-y-4 md:space-y-6 max-w-xl">
                 <div className="space-y-2">
                   <label className="text-xs md:text-sm font-medium text-gray-300">نام و نام خانوادگی</label>
-                  <Input defaultValue="علی رضایی" className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" />
+                  <Input name="fullName" defaultValue={userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : ""} className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs md:text-sm font-medium text-gray-300">ایمیل</label>
-                  <Input defaultValue="ali.rezaei@example.com" className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30 font-sans" dir="ltr" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs md:text-sm font-medium text-gray-300">شماره موبایل</label>
-                  <Input defaultValue="09123456789" disabled className="bg-[#0a0a0a]/50 border-white/5 h-11 md:h-12 text-gray-500 text-sm font-sans cursor-not-allowed" dir="ltr" />
-                  <p className="text-[10px] md:text-xs text-gray-500 mt-1">شماره موبایل قابل تغییر نیست.</p>
+                  <Input disabled defaultValue={userProfile?.email || ""} className="bg-[#0a0a0a]/50 border-white/5 h-11 md:h-12 text-gray-500 text-sm font-sans cursor-not-allowed" dir="ltr" />
+                  <p className="text-[10px] md:text-xs text-gray-500 mt-1">تغییر ایمیل نیازمند تایید مجدد است.</p>
                 </div>
                 <Button disabled={isLoading} type="submit" className="w-full h-12 md:h-14 rounded-xl bg-white text-black hover:bg-gray-200 text-sm md:text-base font-bold transition-all mt-2 md:mt-4">
                   {isLoading ? "در حال ذخیره..." : "ثبت تغییرات"}

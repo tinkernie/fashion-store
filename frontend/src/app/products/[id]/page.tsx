@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ALL_PRODUCTS } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
@@ -19,7 +19,9 @@ const MOCK_REVIEWS = [
 
 export default function ProductDetailPage() {
   const params = useParams();
-  const product = ALL_PRODUCTS.find((p) => p.id === params.id);
+  const [product, setProduct] = useState<any>(null);
+  const [variants, setVariants] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
@@ -28,6 +30,27 @@ export default function ProductDetailPage() {
   
   // Wishlist Hooks
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
+
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      try {
+        const prodRes = await api.get(`/api/products/${params.id}/`);
+        setProduct(prodRes.data);
+        
+        const varRes = await api.get(`/api/products/${params.id}/variants/`);
+        setVariants(Array.isArray(varRes.data) ? varRes.data : varRes.data.results || []);
+      } catch (error) {
+        console.error("Error fetching product details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProductDetails();
+  }, [params.id]);
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-white">در حال بارگذاری...</div>;
+  }
   
   if (!product) {
     return (
