@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "@/lib/api";
 import * as z from "zod";
+import { useCart } from "@/store/cart";
 
 // --- Validation Schemas ---
 const phoneRegex = /^09\d{9}$/;
@@ -44,6 +45,7 @@ export default function AuthPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<"auth" | "forgotPassword">("auth");
+  const { fetchCart, mergeCart } = useCart();
 
   // Form Hooks
   const { register: registerLogin, handleSubmit: handleLoginSubmit, formState: { errors: loginErrors } } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
@@ -59,6 +61,16 @@ export default function AuthPage() {
       });
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
+      
+      // Sync backend cart on login
+      const localSession = localStorage.getItem('guest_session_key');
+      if (localSession) {
+        await mergeCart(localSession);
+        localStorage.removeItem('guest_session_key');
+      } else {
+        await fetchCart();
+      }
+
       toast.success("با موفقیت وارد شدید");
       router.push("/");
     } catch (error) {
@@ -86,14 +98,20 @@ export default function AuthPage() {
     }
   };
 
-  const onForgotPassword = (data: ForgotPasswordForm) => {
+  const onForgotPassword = async (data: ForgotPasswordForm) => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await api.post('/api/auth/password-reset/', {
+        email: data.identifier
+      });
       toast.success("لینک بازیابی ارسال شد", { description: "لطفاً ایمیل یا پیامک خود را بررسی کنید" });
       setView("auth");
       resetForgot();
-    }, 1500);
+    } catch (error) {
+      toast.error("خطایی رخ داد. اطمینان حاصل کنید ایمیل صحیح است.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleAuth = () => {

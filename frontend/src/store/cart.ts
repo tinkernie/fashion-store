@@ -16,6 +16,8 @@ interface CartStore {
   fetchCart: () => Promise<void>;
   addItem: (item: CartItem) => Promise<void>;
   removeItem: (id: string, size: string, variant_id?: string) => Promise<void>;
+  updateQuantity: (id: string, size: string, quantity: number, variant_id?: string) => Promise<void>;
+  mergeCart: (session_key: string) => Promise<void>;
   clearCart: () => Promise<void>;
   getTotal: () => number;
 }
@@ -78,6 +80,33 @@ export const useCart = create<CartStore>((set, get) => ({
       });
     } catch (error) {
       console.error("Failed to sync cart remove:", error);
+    }
+  },
+
+  updateQuantity: async (id, size, quantity, variant_id) => {
+    set((state) => ({
+      items: state.items.map((i) =>
+        i.id === id && i.size === size ? { ...i, quantity } : i
+      ),
+    }));
+    try {
+      await api.post('/api/cart/update-quantity/', {
+        variant_id: variant_id || id,
+        quantity: quantity
+      });
+    } catch (error) {
+      console.error("Failed to sync cart quantity:", error);
+    }
+  },
+
+  mergeCart: async (session_key) => {
+    try {
+      const response = await api.post('/api/cart/merge/', { session_key });
+      if (response.data && response.data.items) {
+        set({ items: response.data.items });
+      }
+    } catch (error) {
+      console.error("Failed to merge backend cart:", error);
     }
   },
   
