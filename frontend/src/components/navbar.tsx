@@ -28,12 +28,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCart } from "@/store/cart";
-import { ALL_PRODUCTS } from "@/lib/mock-data";
+import { useWishlist } from "@/store/wishlist";
 
 export default function Navbar() {
   const router = useRouter();
-  const { items, removeItem } = useCart();
+  const { items, removeItem, fetchCart } = useCart();
+  const { fetchWishlist } = useWishlist();
   
+  // Initialize Global Data from Backend
+  useEffect(() => {
+    const initData = async () => {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        await Promise.all([fetchCart(), fetchWishlist()]);
+      }
+    };
+    initData();
+  }, [fetchCart, fetchWishlist]);
+
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
