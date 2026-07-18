@@ -11,29 +11,35 @@ export default function WomenCategoryPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([{ id: "all", label: "همه محصولات" }]);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get('/api/products/');
-        const productsList = Array.isArray(response.data) ? response.data : response.data.results || [];
+        const [prodRes, catRes] = await Promise.all([
+          api.get('/api/products/'),
+          api.get('/api/categories/flat/')
+        ]);
         
-        // Filter strictly for women's products if the API returns mixed catalogs
-        const womenProducts = productsList.filter((p: any) => 
-          (p.category || "").includes("زنان") || (p.category || "").includes("بانوان")
-        );
-        
-        setProducts(womenProducts.length > 0 ? womenProducts : productsList);
+        const productsList = Array.isArray(prodRes.data) ? prodRes.data : prodRes.data.results || [];
+        setProducts(productsList);
+
+        const catList = Array.isArray(catRes.data) ? catRes.data : catRes.data.results || [];
+        const mappedCats = catList.map((c: any) => ({
+          id: c.slug || c.id,
+          label: c.name || c.title
+        }));
+        setCategories([{ id: "all", label: "همه محصولات" }, ...mappedCats]);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error fetching shop data:", error);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
 
   // Filter logic
   let filteredProducts = products.filter((p) => {
-    const catId = p.categoryId || p.category || "";
+    const catId = p.category_slug || p.category || "";
     return selectedCategory === "all" || catId.includes(selectedCategory);
   });
 
@@ -52,13 +58,13 @@ export default function WomenCategoryPage() {
     });
   }
 
-  const categories = [
-    { id: "all", label: "همه محصولات" },
-    { id: "manteau", label: "مانتو" },
-    { id: "tshirt", label: "تی‌شرت و کراپ" },
-    { id: "pants", label: "شلوار" },
-    { id: "scarf", label: "شال و روسری" },
-  ];
+  // const categories = [
+  //   { id: "all", label: "همه محصولات" },
+  //   { id: "manteau", label: "مانتو" },
+  //   { id: "tshirt", label: "تی‌شرت و کراپ" },
+  //   { id: "pants", label: "شلوار" },
+  //   { id: "scarf", label: "شال و روسری" },
+  // ];
 
   return (
     <main className="min-h-screen pt-24 md:pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto relative">

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
+import { api } from "@/lib/api";
 
 export default function Navbar() {
   const router = useRouter();
@@ -49,7 +50,9 @@ export default function Navbar() {
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
+  // Keyboard Shortcut for Search (Cmd+K / Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
@@ -61,14 +64,28 @@ export default function Navbar() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Live Backend Search Fetching
+  useEffect(() => {
+    const fetchSearch = async () => {
+      if (searchQuery.trim().length === 0) {
+        setSearchResults([]);
+        return;
+      }
+      try {
+        const res = await api.get(`/api/products/?search=${searchQuery}`);
+        setSearchResults(Array.isArray(res.data) ? res.data : res.data.results || []);
+      } catch (e) {
+        console.error("Search failed:", e);
+      }
+    };
+    
+    const delay = setTimeout(fetchSearch, 300); // 300ms debounce
+    return () => clearTimeout(delay);
+  }, [searchQuery]);
+
   // Cart Totals
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
-
-  // Filter logic
-  const filteredProducts = ALL_PRODUCTS.filter((product) => 
-    product.name.includes(searchQuery) || product.category.includes(searchQuery)
-  );
 
   const handleProductClick = (id: string) => {
     setIsSearchOpen(false);
@@ -144,11 +161,11 @@ export default function Navbar() {
 
               {/* Search Results */}
               <div className="max-h-[50vh] overflow-y-auto p-4 space-y-2">
-                {searchQuery.length > 0 && filteredProducts.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">محصولی یافت نشد.</p>
+                {searchQuery.length > 0 && searchResults.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">محصولی یافت نشد.</p>
                 ) : (
-                  filteredProducts.map((product) => (
-                    <div 
+                searchResults.map((product) => (
+                  <div
                       key={product.id}
                       onClick={() => handleProductClick(product.id)}
                       className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl cursor-pointer transition-colors"
