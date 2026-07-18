@@ -1,19 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ALL_PRODUCTS } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import { ArrowRight, SlidersHorizontal, Filter, X } from "lucide-react";
 
 export default function WomenCategoryPage() {
   const [sortBy, setSortBy] = useState("newest");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await api.get('/api/products/');
+        const productsList = Array.isArray(response.data) ? response.data : response.data.results || [];
+        
+        // Filter strictly for women's products if the API returns mixed catalogs
+        const womenProducts = productsList.filter((p: any) => 
+          (p.category || "").includes("زنان") || (p.category || "").includes("بانوان")
+        );
+        
+        setProducts(womenProducts.length > 0 ? womenProducts : productsList);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   // Filter logic
-  let filteredProducts = ALL_PRODUCTS.filter((p) => {
-    return selectedCategory === "all" || p.categoryId === selectedCategory;
+  let filteredProducts = products.filter((p) => {
+    const catId = p.categoryId || p.category || "";
+    return selectedCategory === "all" || catId.includes(selectedCategory);
   });
 
   // Sort logic
