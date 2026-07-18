@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ALL_PRODUCTS } from "@/lib/mock-data";
 import { ArrowLeft, ShoppingBag, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
 
 // --- Banner Slider Component ---
 const BannerSlider = ({ title, subtitle, href, images }: { title: string, subtitle: string, href: string, images: string[] }) => {
@@ -91,7 +91,20 @@ const BannerSlider = ({ title, subtitle, href, images }: { title: string, subtit
 };
 
 export default function HomePage() {
-  const bestsellers = ALL_PRODUCTS.slice(0, 4);
+  const [bestsellers, setBestsellers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await api.get('/api/products/');
+        const productsList = Array.isArray(response.data) ? response.data : response.data.results || [];
+        setBestsellers(productsList.slice(0, 4));
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const newProductsImages = [
     "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1920&auto=format&fit=crop",
@@ -210,7 +223,7 @@ export default function HomePage() {
               </Link>
               <div className="flex flex-col px-1">
                 <h3 className="text-sm md:text-lg font-bold text-white mb-0.5 md:mb-1 line-clamp-1">{product.name}</h3>
-                <span className="text-[10px] md:text-sm text-gray-500 mb-1 md:mb-2">{product.category.split('-')[1]?.trim() || product.category}</span>
+                <span className="text-[10px] md:text-sm text-gray-500 mb-1 md:mb-2">{(product.category || "").split('-')[1]?.trim() || product.category}</span>
                 <span className="text-white font-medium text-xs md:text-base">
                   {product.price} تومان
                 </span>

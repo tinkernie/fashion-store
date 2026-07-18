@@ -9,7 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { api } from "@/lib/api";
 import * as z from "zod";
+import { useCart } from "@/store/cart";
 
 // --- Validation Schemas ---
 const phoneRegex = /^09\d{9}$/;
@@ -43,38 +45,73 @@ export default function AuthPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<"auth" | "forgotPassword">("auth");
+  const { fetchCart, mergeCart } = useCart();
 
   // Form Hooks
   const { register: registerLogin, handleSubmit: handleLoginSubmit, formState: { errors: loginErrors } } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
   const { register: registerSignup, handleSubmit: handleRegisterSubmit, formState: { errors: registerErrors } } = useForm<RegisterForm>({ resolver: zodResolver(registerSchema) });
   const { register: registerForgot, handleSubmit: handleForgotSubmit, formState: { errors: forgotErrors }, reset: resetForgot } = useForm<ForgotPasswordForm>({ resolver: zodResolver(forgotPasswordSchema) });
 
-  const onLogin = (data: LoginForm) => {
+  const onLogin = async (data: LoginForm) => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const response = await api.post('/api/auth/login/', {
+        email: data.identifier,
+        password: data.password
+      });
+      localStorage.setItem('access_token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
+      
+      // Sync backend cart on login
+      const localSession = localStorage.getItem('guest_session_key');
+      if (localSession) {
+        await mergeCart(localSession);
+        localStorage.removeItem('guest_session_key');
+      } else {
+        await fetchCart();
+      }
+
       toast.success("با موفقیت وارد شدید");
       router.push("/");
-    }, 1500);
+    } catch (error) {
+      toast.error("ورود ناموفق بود. اطلاعات را بررسی کنید.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const onRegister = (data: RegisterForm) => {
+  const onRegister = async (data: RegisterForm) => {
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const [firstName, ...lastNames] = data.fullName.split(' ');
+      await api.post('/api/auth/register/', {
+        email: data.identifier,
+        password: data.password,
+        first_name: firstName || '',
+        last_name: lastNames.join(' ') || ''
+      });
+      toast.success("حساب کاربری با موفقیت ساخته شد. لطفا وارد شوید.");
+    } catch (error) {
+      toast.error("ثبت‌نام ناموفق بود. ایمیل ممکن است تکراری باشد.");
+    } finally {
       setIsLoading(false);
-      toast.success("حساب کاربری با موفقیت ساخته شد");
-      router.push("/");
-    }, 1500);
+    }
   };
 
-  const onForgotPassword = (data: ForgotPasswordForm) => {
+  const onForgotPassword = async (data: ForgotPasswordForm) => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await api.post('/api/auth/password-reset/', {
+        email: data.identifier
+      });
       toast.success("لینک بازیابی ارسال شد", { description: "لطفاً ایمیل یا پیامک خود را بررسی کنید" });
       setView("auth");
       resetForgot();
-    }, 1500);
+    } catch (error) {
+      toast.error("خطایی رخ داد. اطمینان حاصل کنید ایمیل صحیح است.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleAuth = () => {

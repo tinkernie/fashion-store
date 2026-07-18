@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { api } from "@/lib/api";
 
 // --- Validation Schema ---
 const checkoutSchema = z.object({
@@ -44,17 +45,37 @@ export default function CheckoutPage() {
   const shippingCost = cartTotal > 5000000 ? 0 : 45000;
   const finalTotal = cartTotal + shippingCost;
 
-  const onCheckout = (data: CheckoutForm) => {
+  const onCheckout = async (data: CheckoutForm) => {
     setIsLoading(true);
-
-    // Mock API Call
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("سفارش شما با موفقیت ثبت شد", {
-        description: "کد پیگیری به زودی پیامک می‌شود.",
+    try {
+      // Mapping structural data directly to the backend billing schema
+      await api.post('/api/orders/checkout/', {
+        shipping_address: {
+          full_name: data.fullName,
+          phone: data.phone,
+          province: data.province,
+          city: data.city,
+          address: data.address,
+          postal_code: data.postalCode
+        },
+        billing_address: {
+          full_name: data.fullName,
+          phone: data.phone,
+          province: data.province,
+          city: data.city,
+          address: data.address,
+          postal_code: data.postalCode
+        }
       });
+
+      toast.success("سفارش شما با موفقیت ثبت شد");
+      useCart.getState().clearCart();
       router.push("/");
-    }, 2000);
+    } catch (error) {
+      toast.error("ثبت سفارش ناموفق بود. مجدداً تلاش کنید.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!mounted) return null;
