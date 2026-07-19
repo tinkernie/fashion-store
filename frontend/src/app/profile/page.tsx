@@ -7,6 +7,7 @@ import { Package, MapPin, User, LogOut, ChevronLeft, Heart, Trash2 } from "lucid
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useWishlist } from "@/store/wishlist";
 import Link from "next/link";
@@ -36,6 +37,8 @@ export default function ProfilePage() {
   
   const [orders, setOrders] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
   const { items: wishlistItems, removeItem: removeWishlistItem } = useWishlist();
 
@@ -95,6 +98,54 @@ export default function ProfilePage() {
       toast.success("اطلاعات حساب با موفقیت بروزرسانی شد");
     } catch (error) {
       toast.error("بروزرسانی اطلاعات ناموفق بود");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchOrderDetails = async (id: string) => {
+    try {
+      const res = await api.get(`/api/orders/${id}/`);
+      setSelectedOrder(res.data);
+      setIsOrderModalOpen(true);
+    } catch (error) {
+      toast.error("دریافت جزئیات سفارش ناموفق بود");
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      await api.post('/api/auth/change-password/', {
+        old_password: formData.get('oldPassword'),
+        new_password: formData.get('newPassword')
+      });
+      toast.success("رمز عبور با موفقیت تغییر یافت");
+      (e.target as HTMLFormElement).reset();
+    } catch (error) {
+      toast.error("تغییر رمز عبور ناموفق بود. اطلاعات را بررسی کنید.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChangeEmail = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      await api.post('/api/users/me/change_email/', {
+        new_email: formData.get('newEmail'),
+        password: formData.get('currentPassword')
+      });
+      toast.success("ایمیل با موفقیت تغییر یافت. لطفا صندوق ورودی خود را بررسی کنید.");
+      (e.target as HTMLFormElement).reset();
+    } catch (error) {
+      toast.error("تغییر ایمیل ناموفق بود.");
     } finally {
       setIsLoading(false);
     }
@@ -173,7 +224,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex items-center justify-between md:flex-col md:items-end gap-4 border-t border-white/10 md:border-0 pt-4 md:pt-0">
                       <span className="text-base md:text-lg font-bold text-white">{order.total_amount || order.total} تومان</span>
-                      <Button variant="outline" className="h-10 rounded-xl border-white/20 text-white hover:bg-white hover:text-black text-xs md:text-sm px-3 md:px-4">
+                      <Button onClick={() => fetchOrderDetails(order.id)} variant="outline" className="h-10 rounded-xl border-white/20 text-white hover:bg-white hover:text-black text-xs md:text-sm px-3 md:px-4">
                         مشاهده جزئیات
                         <ChevronLeft className="w-3 h-3 md:w-4 md:h-4 ml-1" />
                       </Button>
@@ -236,26 +287,91 @@ export default function ProfilePage() {
               ))}
             </TabsContent>
 
-            <TabsContent value="settings" className="outline-none mt-0">
-              <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6">ویرایش اطلاعات</h3>
-              <form onSubmit={handleSaveSettings} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 space-y-4 md:space-y-6 max-w-xl">
-                <div className="space-y-2">
-                  <label className="text-xs md:text-sm font-medium text-gray-300">نام و نام خانوادگی</label>
-                  <Input name="fullName" defaultValue={userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : ""} className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs md:text-sm font-medium text-gray-300">ایمیل</label>
-                  <Input disabled defaultValue={userProfile?.email || ""} className="bg-[#0a0a0a]/50 border-white/5 h-11 md:h-12 text-gray-500 text-sm font-sans cursor-not-allowed" dir="ltr" />
-                  <p className="text-[10px] md:text-xs text-gray-500 mt-1">تغییر ایمیل نیازمند تایید مجدد است.</p>
-                </div>
-                <Button disabled={isLoading} type="submit" className="w-full h-12 md:h-14 rounded-xl bg-white text-black hover:bg-gray-200 text-sm md:text-base font-bold transition-all mt-2 md:mt-4">
-                  {isLoading ? "در حال ذخیره..." : "ثبت تغییرات"}
-                </Button>
-              </form>
+            <TabsContent value="settings" className="outline-none mt-0 space-y-8">
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6">ویرایش اطلاعات پایه</h3>
+                <form onSubmit={handleSaveSettings} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 space-y-4 md:space-y-6 max-w-xl">
+                  <div className="space-y-2">
+                    <label className="text-xs md:text-sm font-medium text-gray-300">نام و نام خانوادگی</label>
+                    <Input name="fullName" defaultValue={userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : ""} className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" />
+                  </div>
+                  <Button disabled={isLoading} type="submit" className="w-full h-12 md:h-14 rounded-xl bg-white text-black hover:bg-gray-200 text-sm md:text-base font-bold transition-all mt-2 md:mt-4">
+                    {isLoading ? "در حال ذخیره..." : "ثبت نام جدید"}
+                  </Button>
+                </form>
+              </div>
+
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6">تغییر ایمیل</h3>
+                <form onSubmit={handleChangeEmail} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 space-y-4 md:space-y-6 max-w-xl">
+                  <div className="space-y-2">
+                    <label className="text-xs md:text-sm font-medium text-gray-300">ایمیل فعلی: {userProfile?.email || ""}</label>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs md:text-sm font-medium text-gray-300">ایمیل جدید</label>
+                    <Input name="newEmail" type="email" required className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs md:text-sm font-medium text-gray-300">رمز عبور (برای تایید)</label>
+                    <Input name="currentPassword" type="password" required className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
+                  </div>
+                  <Button disabled={isLoading} type="submit" className="w-full h-12 md:h-14 rounded-xl bg-white text-black hover:bg-gray-200 text-sm md:text-base font-bold transition-all mt-2 md:mt-4">
+                    {isLoading ? "در حال ذخیره..." : "ثبت ایمیل جدید"}
+                  </Button>
+                </form>
+              </div>
+
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6">تغییر رمز عبور</h3>
+                <form onSubmit={handleChangePassword} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 space-y-4 md:space-y-6 max-w-xl">
+                  <div className="space-y-2">
+                    <label className="text-xs md:text-sm font-medium text-gray-300">رمز عبور فعلی</label>
+                    <Input name="oldPassword" type="password" required className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs md:text-sm font-medium text-gray-300">رمز عبور جدید</label>
+                    <Input name="newPassword" type="password" required className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
+                  </div>
+                  <Button disabled={isLoading} type="submit" className="w-full h-12 md:h-14 rounded-xl bg-white text-black hover:bg-gray-200 text-sm md:text-base font-bold transition-all mt-2 md:mt-4">
+                    {isLoading ? "در حال ذخیره..." : "تغییر رمز عبور"}
+                  </Button>
+                </form>
+              </div>
             </TabsContent>
 
           </Tabs>
         </motion.div>
+
+        {/* Order Details Modal */}
+        <Dialog open={isOrderModalOpen} onOpenChange={setIsOrderModalOpen}>
+          <DialogContent className="bg-[#0a0a0a] border border-white/10 text-white sm:max-w-md p-6" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black">جزئیات سفارش</DialogTitle>
+            </DialogHeader>
+            {selectedOrder ? (
+              <div className="space-y-4 mt-4">
+                <div className="flex justify-between border-b border-white/10 pb-4">
+                  <span className="text-gray-400 text-sm">شماره سفارش</span>
+                  <span className="font-bold">{selectedOrder.id}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/10 pb-4">
+                  <span className="text-gray-400 text-sm">تاریخ ثبت</span>
+                  <span className="font-bold">{selectedOrder.created_at || selectedOrder.date}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/10 pb-4">
+                  <span className="text-gray-400 text-sm">وضعیت</span>
+                  <span className="font-bold text-amber-500">{selectedOrder.status}</span>
+                </div>
+                <div className="flex justify-between pt-2">
+                  <span className="text-gray-400 text-sm">مبلغ کل</span>
+                  <span className="font-bold text-lg">{selectedOrder.total_amount || selectedOrder.total} تومان</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-8">در حال بارگذاری...</div>
+            )}
+          </DialogContent>
+        </Dialog>
 
       </div>
     </main>

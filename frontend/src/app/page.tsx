@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ShoppingBag, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { CollectionsSection } from "@/components/collections-section";
 
 // --- Banner Slider Component ---
 const BannerSlider = ({ title, subtitle, href, images }: { title: string, subtitle: string, href: string, images: string[] }) => {
@@ -180,6 +181,9 @@ export default function HomePage() {
           />
         </div>
       </section>
+
+      {/* Collections API Block */}
+      <CollectionsSection />
 
       <section className="relative max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 z-0 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] md:w-[1000px] h-[600px] md:h-[1000px] bg-white/[0.03] rounded-full blur-[120px] pointer-events-none -z-10"></div>
