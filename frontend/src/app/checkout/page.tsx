@@ -32,7 +32,6 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form Hook
   const { register, handleSubmit, formState: { errors } } = useForm<CheckoutForm>({
     resolver: zodResolver(checkoutSchema),
   });
@@ -48,7 +47,6 @@ export default function CheckoutPage() {
   const onCheckout = async (data: CheckoutForm) => {
     setIsLoading(true);
     try {
-      // Mapping structural data directly to the backend billing schema
       await api.post('/api/orders/checkout/', {
         shipping_address: {
           full_name: data.fullName,
