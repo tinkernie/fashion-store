@@ -1,6 +1,6 @@
 import factory
 from factory.django import DjangoModelFactory
-from collections.models import Collection
+from store_collections.models import Collection
 from django.utils import timezone
 
 

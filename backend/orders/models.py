@@ -58,13 +58,13 @@ class Order(BaseModel):
     shipping_address = models.JSONField(default=dict)
     billing_address = models.JSONField(default=dict, blank=True)
 
-    # coupon = models.ForeignKey(
-    #     "coupons.Coupon",
-    #     on_delete=models.SET_NULL,
-    #     null=True,
-    #     blank=True,
-    #     related_name="orders",
-    # )
+    coupon = models.ForeignKey(
+        "coupons.Coupon",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+    )
     payment = models.ForeignKey(
         "payments.Payment",
         on_delete=models.SET_NULL,

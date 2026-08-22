@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
 from common.exceptions import BusinessException
@@ -7,6 +9,8 @@ from .selectors import OrderSelector
 from cart.selectors import CartSelector
 from inventory.services import InventoryService
 from variants.selectors import VariantSelector
+from notifications.signals import order_status_changed
+from analytics.signals import order_placed
 
 STATUS_TRANSITIONS = {
     Order.Status.PENDING: [Order.Status.AWAITING_PAYMENT, Order.Status.CANCELLED],
@@ -26,9 +30,7 @@ class OrderService:
         self.inventory_service = InventoryService()
 
     @transaction.atomic
-    def create_order_from_cart(
-        self, user, shipping_address: dict, billing_address: dict = None
-    ) -> dict:
+    def create_order_from_cart(self, user, shipping_address: dict, billing_address: dict = None) -> dict:
         cart = CartSelector.get_cart_by_user(user)
         if not cart or not cart.items.exists():
             raise BusinessException("Cart is empty.")
@@ -48,10 +50,28 @@ class OrderService:
 
         # Compute totals
         subtotal = sum(
-            float(item.price_snapshot) * item.quantity for item in cart.items.all()
+            Decimal(str(item.price_snapshot)) * item.quantity for item in cart.items.all()
         )
-        discount_amount = 0  # coupon logic later
-        shipping_cost = 0  # shipping service later
+        coupon = cart.coupon
+        discount_amount = Decimal("0.00")
+        if coupon:
+            # Validate and recalc discount
+            from coupons.services import CouponService
+            coupon_service = CouponService()
+            items_data = []
+            for item in cart.items.all():
+                variant = item.variant
+                items_data.append({
+                    'variant_id': str(variant.id),
+                    'quantity': item.quantity,
+                    'price': item.price_snapshot,
+                    'category_id': str(variant.product.category_id) if variant.product.category_id else None,
+                    'product_id': str(variant.product_id),
+                })
+            result = coupon_service.validate_and_calculate(coupon.code, user, items_data)
+            discount_amount = Decimal(str(result['discount']))
+
+        shipping_cost = Decimal("0.00")
         total = subtotal - discount_amount + shipping_cost
 
         # Build order items snapshot
@@ -65,11 +85,15 @@ class OrderService:
                     "option", "option_value"
                 ).all()
             )
+
+            from media_libm.selectors import MediaSelector
+            product = variant.product
+            main_image = MediaSelector.get_main_image_for_product(product)
             product_snapshot = {
                 "title": variant.product.title,
                 "options": option_summary,
                 "sku": variant.sku,
-                "image": None,  # media not yet linked
+                "image": main_image,
             }
             items_data.append(
                 {
@@ -89,6 +113,7 @@ class OrderService:
             "order_number": order_number,
             "status": Order.Status.PENDING,
             "subtotal": subtotal,
+            "coupon": coupon,
             "discount_amount": discount_amount,
             "tax_amount": 0,  # tax service later
             "shipping_cost": shipping_cost,
@@ -114,6 +139,9 @@ class OrderService:
                         f"Stock reservation for {item.variant.sku} expired. Please refresh cart."
                     )
 
+        if coupon:
+            CouponService().increment_usage(coupon, user, order)  # We'll add this method to CouponService
+
         # Clear the cart
         cart.items.all().delete()
         # Optionally delete the cart itself
@@ -121,6 +149,13 @@ class OrderService:
 
         # Log initial status
         OrderRepository.update_status(order, Order.Status.PENDING)
+
+        order_placed.send(
+            sender=self.__class__,
+            user=user,
+            order=order,
+            items_data=items_data,  # the list of dicts with variant_id, quantity, etc.
+        )
 
         return self._serialize_order(order)
 
@@ -146,8 +181,11 @@ class OrderService:
         elif new_status == Order.Status.DELIVERED:
             order.delivered_at = timezone.now()
 
+        old_status = order.status
         OrderRepository.update_status(order, new_status, note=note)
         order.save()  # save timestamps changes
+        # after successful transition
+        order_status_changed.send(sender=self.__class__, order=order, old_status=old_status, new_status=new_status)
         return self._serialize_order(order)
 
     def get_user_orders(self, user) -> list[dict]:

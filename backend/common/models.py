@@ -49,7 +49,7 @@ class BaseModel(UUIDPrimaryKeyMixin, TimestampedModel, SoftDeleteModel):
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils import timezone
 
-# from .managers import UserManager
+from .managers import UserManager
 
 
 class User(BaseModel, AbstractBaseUser, PermissionsMixin):
@@ -60,7 +60,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
-    # objects = UserManager()
+    objects = UserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

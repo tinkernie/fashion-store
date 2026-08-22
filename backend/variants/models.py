@@ -40,6 +40,7 @@ class Variant(BaseModel):
     )
     metadata = models.JSONField(default=dict, blank=True)
     # Inventory will be linked later
+
     # inventory = models.ForeignKey(
     #     "inventory.Inventory",
     #     on_delete=models.SET_NULL,

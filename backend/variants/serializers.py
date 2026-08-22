@@ -46,11 +46,26 @@ class VariantDetailSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     product_id = serializers.UUIDField()
     sku = serializers.CharField()
-    barcode = serializers.CharField(allow_null=True)
+    barcode = serializers.CharField(allow_null=True, required=False)
     price = serializers.DecimalField(max_digits=10, decimal_places=2)
-    weight = serializers.IntegerField()
-    dimensions = serializers.JSONField()
+    weight = serializers.IntegerField(default=0)
+    dimensions = serializers.JSONField(default=dict)
     availability = serializers.CharField()
     status = serializers.CharField()
-    metadata = serializers.JSONField()
-    options = serializers.ListField(child=serializers.DictField())
+    metadata = serializers.JSONField(default=dict)
+    options = serializers.SerializerMethodField()
+
+    def get_options(self, obj):
+        if isinstance(obj, dict):
+            return obj.get("options", [])
+        if hasattr(obj, "variantoption_set"):
+            return [
+                {
+                    "option_id": str(vo.option_id),
+                    "option_name": vo.option.name if vo.option else None,
+                    "value_id": str(vo.option_value_id),
+                    "value": vo.option_value.value if vo.option_value else None,
+                }
+                for vo in obj.variantoption_set.all()
+            ]
+        return []

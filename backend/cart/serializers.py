@@ -2,8 +2,12 @@ from rest_framework import serializers
 
 
 class CartAddItemSerializer(serializers.Serializer):
-    variant_id = serializers.UUIDField()
+    variant_id = serializers.CharField()
     quantity = serializers.IntegerField(min_value=1, default=1)
+
+
+class CartRemoveItemSerializer(serializers.Serializer):
+    variant_id = serializers.CharField()
 
 
 class CartUpdateQuantitySerializer(serializers.Serializer):
@@ -12,3 +16,7 @@ class CartUpdateQuantitySerializer(serializers.Serializer):
 
 class CartMergeSerializer(serializers.Serializer):
     session_key = serializers.UUIDField()
+
+
+class ApplyCouponSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=50)

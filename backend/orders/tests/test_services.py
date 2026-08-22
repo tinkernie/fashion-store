@@ -38,6 +38,21 @@ class TestOrderCreation:
         )  # cart deleted? Actually we delete after clearing; cart.delete() removes it.
         mock_commit.assert_called_once_with("res-123")
 
+    @patch('inventory.services.InventoryService.commit_reservation')
+    def test_order_creation_applies_coupon(self, mock_commit):
+        from coupons.tests.factories import CouponFactory
+        coupon = CouponFactory(code='SAVE20', discount_type='percentage', discount_value=20, min_purchase=0)
+        user = UserFactory()
+        variant = VariantFactory(price=100, status='published')
+        cart = CartFactory(user=user, coupon=coupon)
+        CartItemFactory(cart=cart, variant=variant, quantity=1, price_snapshot='100.00', reservation_id='res')
+        service = OrderService()
+        order = service.create_order_from_cart(user, {'address': 'x'})
+        assert order['discount_amount'] == '20.00'  # 20% of 100
+        assert order['total'] == '80.00'
+        coupon.refresh_from_db()
+        assert coupon.used_count == 1
+
 
 class TestStatusTransitions:
     def test_valid_transition(self):

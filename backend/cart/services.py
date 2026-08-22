@@ -6,6 +6,7 @@ from .repositories import CartRepository, CartItemRepository
 from .selectors import CartSelector
 from inventory.services import InventoryService
 from variants.selectors import VariantSelector
+from analytics.signals import cart_changed
 
 
 class CartService:
@@ -29,8 +30,12 @@ class CartService:
     @transaction.atomic
     def add_item(self, user, session_key: str, variant_id: str, quantity: int) -> dict:
         variant = VariantSelector.get_variant_by_id(variant_id)
+        if not variant:
+            from variants.models import Variant
+            variant = Variant.objects.filter(product_id=variant_id, status="published", deleted_at__isnull=True).first()
         if not variant or variant.status != "published":
             raise BusinessException("Variant not available.")
+        variant_id = str(variant.id)
         cart = self._resolve_cart(user, session_key)
 
         # Reserve stock
@@ -50,6 +55,14 @@ class CartService:
             str(variant.price),
             reservation_id=reservation["reservation_id"],
         )
+        cart_changed.send(
+            sender=self.__class__,
+            user=user,
+            session_key=session_key,
+            action='add',
+            variant_id=variant_id,
+            quantity=quantity
+        )
         return self._serialize_cart(cart)
 
     @transaction.atomic
@@ -65,11 +78,21 @@ class CartService:
             except BusinessException:
                 pass  # reservation may already be expired
         CartRepository.remove_item(item)
+
+        cart_changed.send(
+            sender=self.__class__,
+            user=user,
+            session_key=session_key,
+            action='remove',
+            variant_id=variant_id,
+            quantity=item.quantity  # original quantity removed
+        )
+
         return self._serialize_cart(cart)
 
     @transaction.atomic
     def update_quantity(
-        self, user, session_key: str, variant_id: str, quantity: int
+            self, user, session_key: str, variant_id: str, quantity: int
     ) -> dict:
         if quantity <= 0:
             return self.remove_item(user, session_key, variant_id)
@@ -93,6 +116,16 @@ class CartService:
         CartRepository.update_item(
             item, quantity=quantity, reservation_id=reservation["reservation_id"]
         )
+
+        cart_changed.send(
+            sender=self.__class__,
+            user=user,
+            session_key=session_key,
+            action='update',
+            variant_id=variant_id,
+            quantity=item.quantity  # original quantity removed
+        )
+
         return self._serialize_cart(cart)
 
     @transaction.atomic
@@ -188,32 +221,56 @@ class CartService:
 
     def _serialize_cart(self, cart: Cart) -> dict:
         items = []
+        from media_libm.selectors import MediaSelector
         for item in cart.items.all():
+            main_img = MediaSelector.get_main_image_for_product(item.variant.product)
+            img_url = (main_img.get("url") if isinstance(main_img, dict) else None) or (item.variant.product.metadata.get("image") if isinstance(item.variant.product.metadata, dict) else None) or "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop"
+            opt_summary = self._get_option_summary(item.variant)
             items.append(
                 {
                     "id": str(item.id),
                     "variant_id": str(item.variant_id),
                     "sku": item.variant.sku,
+                    "name": item.variant.product.title,
                     "product_title": item.variant.product.title,
-                    "option_details": self._get_option_summary(item.variant),
+                    "imageUrl": img_url,
+                    "size": opt_summary or "Free",
+                    "option_details": opt_summary,
                     "quantity": item.quantity,
-                    "price": str(item.price_snapshot),
-                    "image": None,  # to be filled by media domain later
+                    "price": float(item.price_snapshot),
+                    "image": main_img,
                     "reservation_id": item.reservation_id,
                 }
             )
+
+        total = sum(float(item.price_snapshot) * item.quantity for item in cart.items.all())
+        discount_amount = 0
+        coupon_code = None
+        if cart.coupon:
+            coupon_code = cart.coupon.code
+            try:
+                from coupons.services import CouponService
+                coupon_service = CouponService()
+                items_data = items.copy()
+                result = coupon_service.validate_and_calculate(cart.coupon.code, cart.user or None, items_data)
+                discount_amount = float(result['discount'])
+            except BusinessException:
+                # If coupon became invalid, remove it
+                cart.coupon = None
+                cart.save()
+                coupon_code = None
+        total = total - discount_amount
+
+        # return serialized with discount/total
         return {
             "id": str(cart.id),
             "user_id": str(cart.user_id) if cart.user_id else None,
             "session_key": str(cart.session_key),
             "coupon_code": cart.coupon.code if cart.coupon else None,
+            "discount": discount_amount,
+            "discount_amount": discount_amount,
             "items": items,
-            "total": str(
-                sum(
-                    float(item.price_snapshot) * item.quantity
-                    for item in cart.items.all()
-                )
-            ),
+            "total": total,
         }
 
     def _get_option_summary(self, variant):
@@ -223,3 +280,31 @@ class CartService:
                 "option", "option_value"
             ).all()
         )
+
+    @transaction.atomic
+    def apply_coupon(self, user, session_key: str, code: str) -> dict:
+        cart = self._resolve_cart(user, session_key)
+        # Collect cart items for validation
+        items_data = []
+        for item in cart.items.all():
+            items_data.append({
+                'variant_id': str(item.variant_id),
+                'quantity': item.quantity,
+                'price': item.price_snapshot,
+                'category_id': str(item.variant.product.category_id) if item.variant.product.category_id else None,
+                'product_id': str(item.variant.product_id),
+            })
+        from coupons.services import CouponService
+        coupon_service = CouponService()
+        result = coupon_service.validate_and_calculate(code, user or cart.user, items_data)
+        # Store coupon FK on cart
+        cart.coupon_id = result['coupon_id']
+        cart.save(update_fields=['coupon', 'updated_at'])
+        # Return updated cart with discount
+        return self.get_cart(user, session_key)
+
+    def remove_coupon(self, user, session_key: str) -> dict:
+        cart = self._resolve_cart(user, session_key)
+        cart.coupon = None
+        cart.save(update_fields=['coupon', 'updated_at'])
+        return self.get_cart(user, session_key)

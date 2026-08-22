@@ -25,9 +25,17 @@ class CategoryTreeSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     name = serializers.CharField()
     slug = serializers.SlugField()
-    description = serializers.CharField()
-    image = serializers.ImageField(source="image.url", allow_null=True)
+    description = serializers.CharField(allow_blank=True, default="")
+    image = serializers.SerializerMethodField()
     children = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        if hasattr(obj, "image") and obj.image:
+            try:
+                return obj.image.url
+            except Exception:
+                return None
+        return None
 
     def get_children(self, obj):
         # Recursively serialize active children

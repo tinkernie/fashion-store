@@ -24,8 +24,17 @@ class StatusTransitionSerializer(serializers.Serializer):
 
 
 class OrderListSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
     order_number = serializers.CharField()
     status = serializers.CharField()
     total = serializers.DecimalField(max_digits=10, decimal_places=2)
     placed_at = serializers.DateTimeField()
-    items_count = serializers.IntegerField(source="items.count")
+    items_count = serializers.SerializerMethodField()
+    items = serializers.ListField(child=serializers.DictField(), required=False)
+
+    def get_items_count(self, obj):
+        if isinstance(obj, dict):
+            return len(obj.get("items", []))
+        if hasattr(obj, "items"):
+            return obj.items.count()
+        return 0

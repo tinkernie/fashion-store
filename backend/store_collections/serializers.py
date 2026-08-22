@@ -23,15 +23,25 @@ class CollectionDetailSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     name = serializers.CharField()
     slug = serializers.SlugField()
-    description = serializers.CharField()
-    hero_banner = serializers.ImageField(source="hero_banner.url", allow_null=True)
-    landing_page_content = serializers.CharField()
-    seo_metadata = serializers.JSONField()
-    priority = serializers.IntegerField()
-    is_active = serializers.BooleanField()
-    published_from = serializers.DateTimeField()
-    published_until = serializers.DateTimeField()
+    description = serializers.CharField(allow_blank=True, default="")
+    hero_banner = serializers.SerializerMethodField()
+    landing_page_content = serializers.CharField(allow_blank=True, default="")
+    seo_metadata = serializers.JSONField(default=dict)
+    priority = serializers.IntegerField(default=0)
+    is_active = serializers.BooleanField(default=True)
+    published_from = serializers.DateTimeField(allow_null=True, required=False)
+    published_until = serializers.DateTimeField(allow_null=True, required=False)
     products = serializers.SerializerMethodField()
+
+    def get_hero_banner(self, obj):
+        if isinstance(obj, dict):
+            return obj.get("hero_banner")
+        if hasattr(obj, "hero_banner") and obj.hero_banner:
+            try:
+                return obj.hero_banner.url
+            except Exception:
+                return None
+        return None
 
     def get_products(self, obj):
         # For now return a list of product IDs; will be enriched when Product API exists

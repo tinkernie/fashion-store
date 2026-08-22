@@ -16,13 +16,13 @@ class Cart(BaseModel):
     session_key = models.UUIDField(
         default=uuid.uuid4, unique=True, editable=False, db_index=True
     )
-    # coupon = models.ForeignKey(
-    #     "coupons.Coupon",
-    #     on_delete=models.SET_NULL,
-    #     null=True,
-    #     blank=True,
-    #     related_name="carts",
-    # )
+    coupon = models.ForeignKey(
+        "coupons.Coupon",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="carts",
+    )
 
     class Meta:
         db_table = "cart"
@@ -42,9 +42,7 @@ class CartItem(BaseModel):
         "variants.Variant", on_delete=models.CASCADE, related_name="cart_items"
     )
     quantity = models.PositiveIntegerField(default=1)
-    price_snapshot = models.DecimalField(
-        max_digits=10, decimal_places=2
-    )  # price at add time
+    price_snapshot = models.DecimalField(max_digits=10, decimal_places=2)  # price at add time
     reservation_id = models.CharField(
         max_length=100, null=True, blank=True
     )  # reference to inventory reservation

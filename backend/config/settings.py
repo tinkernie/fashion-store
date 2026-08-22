@@ -2,16 +2,19 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "12345"
 DEBUG = True  # overridden in dev/prod
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
+    "testserver",
+    "*",
 ]
 
-# ALLOWED_HOSTS = ["*"]
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -44,6 +47,12 @@ INSTALLED_APPS = [
     "wishlist",
     "orders",
     "payments",
+    "cms",
+    "notifications",
+    "analytics",
+    "search",
+    "coupons",
+    "media_libm",
     # "ma baghi", ...
 ]
 
@@ -117,10 +126,12 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Celery
-CELERY_BROKER_URL = "/"
-CELERY_RESULT_BACKEND = "/"
+CELERY_BROKER_URL = "memory://"
+CELERY_RESULT_BACKEND = "cache+memory://"
 CELERY_TIMEZONE = "UTC"
 CELERY_TASK_SERIALIZER = "json"
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
 
 # Security
 SECURE_BROWSER_XSS_FILTER = False
@@ -140,7 +151,7 @@ USE_TZ = True
 
 # Static / Media
 STATIC_URL = "static/"
-MEDIA_URL = "media/"
+MEDIA_URL = "media_libm/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # S3 / Object Storage

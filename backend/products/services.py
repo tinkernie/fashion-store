@@ -43,6 +43,8 @@ class ProductService:
         return {"message": f"Product '{product.title}' deleted."}
 
     def _serialize(self, product: Product) -> dict:
+        from media_libm.selectors import MediaSelector
+        image = MediaSelector.get_main_image_for_product(product)
         return {
             "id": str(product.id),
             "title": product.title,
@@ -53,6 +55,7 @@ class ProductService:
             "status": product.status,
             "seo_metadata": product.seo_metadata,
             "metadata": product.metadata,
+            'image': image,
             "collections": [
                 {"id": str(c.id), "slug": c.slug, "name": c.name}
                 for c in product.collections.all()

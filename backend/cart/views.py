@@ -6,8 +6,10 @@ from rest_framework.permissions import AllowAny
 from .services import CartService
 from .serializers import (
     CartAddItemSerializer,
+    CartRemoveItemSerializer,
     CartUpdateQuantitySerializer,
     CartMergeSerializer,
+    ApplyCouponSerializer,
 )
 
 
@@ -21,7 +23,7 @@ class CartViewSet(viewsets.GenericViewSet):
             request.session.save()
         cart_key = request.session.get("cart_session_key")
         if not cart_key:
-            cart_key = uuid.uuid4()
+            cart_key = str(uuid.uuid4())
             request.session["cart_session_key"] = cart_key
             request.session.save()
         return cart_key
@@ -47,7 +49,7 @@ class CartViewSet(viewsets.GenericViewSet):
         detail=False,
         methods=["post"],
         url_path="remove-item",
-        serializer_class=CartAddItemSerializer,
+        serializer_class=CartRemoveItemSerializer,
     )
     def remove_item(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -109,3 +111,19 @@ class CartViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         self.service.merge_carts(request.user, serializer.validated_data["session_key"])
         return Response({"message": "Cart merged."})
+
+    @action(detail=False, methods=['post'], serializer_class=ApplyCouponSerializer, url_path='apply-coupon')
+    def apply_coupon(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = request.user if request.user.is_authenticated else None
+        session_key = self._get_session_key(request) if not user else None
+        result = self.service.apply_coupon(user, session_key, serializer.validated_data['code'])
+        return Response(result)
+
+    @action(detail=False, methods=['post'], url_path='remove-coupon')
+    def remove_coupon(self, request):
+        user = request.user if request.user.is_authenticated else None
+        session_key = self._get_session_key(request) if not user else None
+        result = self.service.remove_coupon(user, session_key)
+        return Response(result)

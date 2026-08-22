@@ -30,6 +30,7 @@ class TestPublicAPI:
         assert resp.data["name"] == "Women"
 
 
+@pytest.mark.django_db
 class TestAdminAPI:
     def test_create_category_as_admin(self):
         admin = User.objects.create_superuser("admin@test.com", "pass")

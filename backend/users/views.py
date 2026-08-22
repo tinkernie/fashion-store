@@ -29,6 +29,10 @@ class UserProfileViewSet(
         # Always return the current authenticated user for 'me' actions
         return self.request.user
 
+    def list(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_object())
+        return Response(serializer.data)
+
     def retrieve(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_object())
         return Response(serializer.data)

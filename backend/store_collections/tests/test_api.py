@@ -24,6 +24,7 @@ class TestPublicAPI:
         assert resp.data["slug"] == "new-arrivals"
 
 
+@pytest.mark.django_db
 class TestAdminAPI:
     def test_create_collection(self):
         admin = User.objects.create_superuser("admin@test.com", "pass")

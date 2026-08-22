@@ -1,3 +1,4 @@
+from decimal import Decimal
 import pytest
 from unittest.mock import patch, MagicMock
 from cart.services import CartService
@@ -62,3 +63,17 @@ class TestCartService:
         service.clear_cart(user=None, session_key="clear-key")
         assert cart.items.count() == 0
         mock_release.assert_called_once_with("res-1")
+
+    @patch('coupons.services.CouponService.validate_and_calculate')
+    def test_apply_coupon(self, mock_validate):
+        from coupons.tests.factories import CouponFactory
+        coupon = CouponFactory(code='TEST')
+        mock_validate.return_value = {'coupon_id': str(coupon.id), 'code': 'TEST', 'discount': Decimal('5.00')}
+        user = UserFactory()
+        cart = CartFactory(user=user)
+        CartItemFactory(cart=cart, price_snapshot='20.00', quantity=1)
+        service = CartService()
+        result = service.apply_coupon(user, None, 'TEST')
+        assert 'coupon_code' in result
+        assert result['coupon_code'] == 'TEST'
+        assert result['discount'] == 5.0  # serialized

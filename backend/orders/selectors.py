@@ -13,11 +13,21 @@ class OrderSelector:
 
     @staticmethod
     def get_order_by_number(order_number: str) -> Order or None:
-        return (
+        order = (
             Order.objects.filter(order_number=order_number)
-            .prefetch_related(Prefetch("items", queryset=OrderItem.objects.all()))
+            .prefetch_related(Prefetch("items", queryset=OrderItem.objects.all()), "status_history")
             .first()
         )
+        if not order:
+            try:
+                order = (
+                    Order.objects.filter(id=order_number)
+                    .prefetch_related(Prefetch("items", queryset=OrderItem.objects.all()), "status_history")
+                    .first()
+                )
+            except Exception:
+                pass
+        return order
 
     @staticmethod
     def get_order_by_id(order_id: str) -> Order or None:
