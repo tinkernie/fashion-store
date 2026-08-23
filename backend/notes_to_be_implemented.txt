@@ -1,3 +1,22 @@
 1- login ba shomare telephone va otp
 2- change email bayad be email ghabli befreste na email jaded
-3- url hay admin va user az directory users bayad Tanzim beshan 
+3- url hay admin va user az directory users bayad Tanzim beshan / dar vaghe hamashoon bayad Tanzim beshan
+4- tasks va harchi marboot be celery hast
+5- database ba SQLite baray test
+6- admin jodaghane az django-admin
+7- swagger va ya harchi ke be ma document az api ha bede
+8- debug ro feelaan gozashtam ro True
+9- test api baraye coupon nadarim
+10- hame model ha soft delete hastand
+11- ehtemalan hameye permission ha bayad be deghat barrasi beshan
+12- adding price to the wishlist _serialize service
+
+۱۳- اما در وسط خروجی این را می‌بینی:
+
+[XPASS(strict)] Cart serialization passes string prices to coupon calculation.
+
+و:
+
+[XPASS(strict)] Checkout subtracts Decimal discount from a float subtotal.
+
+14- 

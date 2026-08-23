@@ -5,7 +5,7 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-DEBUG = False  # overridden in dev/prod
+DEBUG = True  # overridden in dev/prod
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
 
 INSTALLED_APPS = [
@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     "variants",
     "inventory",
     "cart",
+    "wishlist",
+    "orders",
     # "ma baghi", ...
 ]
 
@@ -55,17 +57,25 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ["POSTGRES_DB"],
-        "USER": os.environ["POSTGRES_USER"],
-        "PASSWORD": os.environ["POSTGRES_PASSWORD"],
-        "HOST": os.environ["POSTGRES_HOST"],
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-        "OPTIONS": {"options": "-c timezone=UTC"},
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": os.environ["POSTGRES_DB"],
+#         "USER": os.environ["POSTGRES_USER"],
+#         "PASSWORD": os.environ["POSTGRES_PASSWORD"],
+#         "HOST": os.environ["POSTGRES_HOST"],
+#         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+#         "OPTIONS": {"options": "-c timezone=UTC"},
+#     }
+# }
 
 AUTH_USER_MODEL = "common.User"  # custom user prepared for full RBAC
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
@@ -93,6 +103,12 @@ REST_FRAMEWORK = {
     ],
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'My COSLIKE-Shop API',
+    'DESCRIPTION': 'API Documentation',
+    'VERSION': '1.0.0',
 }
 
 # Celery
