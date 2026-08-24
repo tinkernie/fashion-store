@@ -254,7 +254,7 @@ export default function Navbar() {
                         </span>
                       </div>
                       <button 
-                        onClick={() => removeItem(item.id, item.size)}
+                        onClick={() => removeItem(item.id, item.size, item.variant_id)}
                         className="text-gray-500 hover:text-red-500 transition-colors shrink-0 outline-none"
                       >
                         <Trash2 className="w-5 h-5" />

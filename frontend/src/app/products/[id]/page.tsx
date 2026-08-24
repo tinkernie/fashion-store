@@ -73,6 +73,13 @@ export default function ProductDetailPage() {
 
   const isSaved = isInWishlist(product.id);
 
+  const availableSizes: string[] = 
+    product.metadata?.sizes && Array.isArray(product.metadata.sizes) && product.metadata.sizes.length > 0
+      ? product.metadata.sizes
+      : variants.length > 0
+        ? Array.from(new Set(variants.map((v: any) => v.metadata?.size || v.options?.find((o: any) => o.option_name === 'سایز')?.value))).filter(Boolean) as string[]
+        : ['S', 'M', 'L', 'XL'];
+
   const handleAddToCart = () => {
     if (!selectedSize) {
       toast.error("لطفاً سایز مورد نظر خود را انتخاب کنید.", {
@@ -82,17 +89,25 @@ export default function ProductDetailPage() {
       return;
     }
 
+    const matchingVariant = variants.find((v: any) => {
+      if (v.metadata?.size === selectedSize) return true;
+      if (v.options?.some((opt: any) => opt.value === selectedSize)) return true;
+      if (v.sku?.includes(`-${selectedSize}-`) || v.sku?.endsWith(`-${selectedSize}`)) return true;
+      return false;
+    }) || variants[0];
+
     addToCart({
       id: product.id,
-      name: product.name,
-      price: numericPrice,
+      name: product.name || product.title,
+      price: matchingVariant ? Number(matchingVariant.price) : numericPrice,
       size: selectedSize,
       quantity: quantity,
-      imageUrl: product.imageUrl,
+      imageUrl: product.imageUrl || product.image_url,
+      variant_id: matchingVariant?.id || product.id,
     });
 
     toast.success("به سبد خرید اضافه شد", {
-      description: `${product.name} - سایز ${selectedSize} (تعداد: ${quantity})`,
+      description: `${product.name || product.title} - سایز ${selectedSize} (تعداد: ${quantity})`,
     });
   };
 
@@ -171,7 +186,7 @@ export default function ProductDetailPage() {
           </p>
 
           <p className="text-gray-400 leading-relaxed mb-8 md:mb-10 text-sm md:text-base">
-            طراحی مینیمال و دوخت پریمیوم. این محصول با استفاده از بهترین متریال‌ها تولید شده تا راحتی و استایل را به صورت همزمان به شما ارائه دهد. مناسب برای استفاده روزمره و استایل‌های خیابانی.
+            {product.description || "طراحی مینیمال و دوخت پریمیوم. این محصول با استفاده از بهترین متریال‌ها تولید شده تا راحتی و استایل را به صورت همزمان به شما ارائه دهد. مناسب برای استفاده روزمره و استایل‌های خیابانی."}
           </p>
 
           <div className="flex flex-col gap-6 mb-8 md:mb-10">
@@ -182,11 +197,11 @@ export default function ProductDetailPage() {
                 <button className="text-xs text-gray-500 underline hover:text-white transition-colors">راهنمای سایز</button>
               </div>
               <div className="flex flex-wrap gap-3">
-                {['S', 'M', 'L', 'XL'].map((size) => (
+                {availableSizes.map((size) => (
                   <button
                     key={size}
                     onClick={() => setSelectedSize(size)}
-                    className={`w-12 h-12 md:w-14 md:h-14 rounded-xl font-bold font-sans transition-all flex items-center justify-center border ${
+                    className={`min-w-12 h-12 md:min-w-14 md:h-14 px-3 rounded-xl font-bold font-sans transition-all flex items-center justify-center border ${
                       selectedSize === size 
                         ? 'bg-white text-black border-white' 
                         : 'bg-transparent text-white border-white/20 hover:border-white/50'

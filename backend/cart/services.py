@@ -30,12 +30,18 @@ class CartService:
     @transaction.atomic
     def add_item(self, user, session_key: str, variant_id: str, quantity: int) -> dict:
         variant = VariantSelector.get_variant_by_id(variant_id)
+        if not variant:
+            # Fallback: if a product_id was passed instead of variant_id, pick the first published variant
+            from variants.models import Variant
+            variant = Variant.objects.filter(
+                product_id=variant_id, status="published", deleted_at__isnull=True
+            ).first()
         if not variant or variant.status != "published":
-            raise BusinessException("Variant not available.")  # should we ? chat gpt said
+            raise BusinessException("Variant not available.")
 
-
+        actual_variant_id = str(variant.id)
         cart = self._resolve_cart(user, session_key)
-        item = CartItemRepository.get_item(cart, variant_id)
+        item = CartItemRepository.get_item(cart, actual_variant_id)
         new_quantity = quantity + (item.quantity if item else 0)
 
         if item and item.reservation_id:
@@ -45,7 +51,7 @@ class CartService:
         user_id = str(user.id) if user and user.is_authenticated else None
         try:
             reservation = self.inventory_service.reserve_stock(
-                variant_id, quantity, user_id=user_id, expires_in_minutes=15  # default
+                actual_variant_id, quantity, user_id=user_id, expires_in_minutes=15  # default
             )
         except BusinessException as e:
             raise BusinessException(f"Cannot reserve stock: {e}")
@@ -57,7 +63,7 @@ class CartService:
             )
         else:
             CartRepository.add_item(
-                cart, variant_id, new_quantity, str(variant.price),
+                cart, actual_variant_id, new_quantity, str(variant.price),
                 reservation_id=reservation["reservation_id"],
             )
         cart_changed.send(
@@ -65,7 +71,7 @@ class CartService:
             user=user,
             session_key=session_key,
             action='add',
-            variant_id=variant_id,
+            variant_id=actual_variant_id,
             quantity=quantity
         )
         return self._serialize_cart(cart)
@@ -75,7 +81,11 @@ class CartService:
         cart = self._resolve_cart(user, session_key)
         item = CartItemRepository.get_item(cart, variant_id)
         if not item:
+            item = cart.items.filter(variant__product_id=variant_id).first()
+        if not item:
             raise BusinessException("Item not in cart.")
+        
+        actual_variant_id = str(item.variant_id)
         # Release reservation
         if item.reservation_id:
             try:
@@ -89,7 +99,7 @@ class CartService:
             user=user,
             session_key=session_key,
             action='remove',
-            variant_id=variant_id,
+            variant_id=actual_variant_id,
             quantity=item.quantity  # original quantity removed
         )
 
@@ -104,7 +114,11 @@ class CartService:
         cart = self._resolve_cart(user, session_key)
         item = CartItemRepository.get_item(cart, variant_id)
         if not item:
+            item = cart.items.filter(variant__product_id=variant_id).first()
+        if not item:
             raise BusinessException("Item not in cart.")
+        
+        actual_variant_id = str(item.variant_id)
         # Adjust reservation: release old, reserve new
         if item.reservation_id:
             try:
@@ -114,7 +128,7 @@ class CartService:
         user_id = str(user.id) if user and user.is_authenticated else None
         try:
             reservation = self.inventory_service.reserve_stock(
-                variant_id, quantity, user_id=user_id
+                actual_variant_id, quantity, user_id=user_id
             )
         except BusinessException as e:
             raise BusinessException(f"Cannot adjust reservation: {e}")
@@ -127,7 +141,7 @@ class CartService:
             user=user,
             session_key=session_key,
             action='update',
-            variant_id=variant_id,
+            variant_id=actual_variant_id,
             quantity=item.quantity  # original quantity removed
         )
 
@@ -227,7 +241,21 @@ class CartService:
     def _serialize_cart(self, cart: Cart) -> dict:
         items = []
         from media_libm.selectors import MediaSelector
-        for item in cart.items.all():
+        cart_items = list(CartItem.objects.filter(cart_id=cart.id).select_related("variant__product"))
+        for item in cart_items:
+            img = ""
+            if item.variant.product.metadata and "image_url" in item.variant.product.metadata:
+                img = item.variant.product.metadata["image_url"]
+            elif item.variant.product.metadata and "imageUrl" in item.variant.product.metadata:
+                img = item.variant.product.metadata["imageUrl"]
+            else:
+                try:
+                    main_img = MediaSelector.get_main_image_for_product(item.variant.product)
+                    if main_img and main_img.get("url"):
+                        img = main_img["url"]
+                except Exception:
+                    pass
+
             items.append(
                 {
                     "id": str(item.id),
@@ -237,12 +265,13 @@ class CartService:
                     "option_details": self._get_option_summary(item.variant),
                     "quantity": item.quantity,
                     "price": str(item.price_snapshot),
-                    "image": MediaSelector.get_main_image_for_product(item.variant.product),
+                    "image": img,
+                    "imageUrl": img,
                     "reservation_id": item.reservation_id,
                 }
             )
 
-        total = sum(float(item.price_snapshot) * item.quantity for item in cart.items.all())
+        total = sum(float(item.price_snapshot) * item.quantity for item in cart_items)
         discount_amount = 0
         coupon_code = None
         if cart.coupon:
@@ -250,32 +279,29 @@ class CartService:
             try:
                 from coupons.services import CouponService
                 coupon_service = CouponService()
-                # items_data = items.copy()
                 coupon_items = [
                     {
                         "variant_id": str(item.variant_id),
                         "quantity": item.quantity,
-                        "price": item.price_snapshot,  # Decimal, not serialized string
+                        "price": item.price_snapshot,
                         "category_id": str(item.variant.product.category_id),
                         "product_id": str(item.variant.product_id),
                     }
-                    for item in cart.items.select_related("variant__product")
+                    for item in cart_items
                 ]
                 result = coupon_service.validate_and_calculate(coupon_code, cart.user or None, coupon_items)
                 discount_amount = float(result['discount'])
             except BusinessException:
-                # If coupon became invalid, remove it
                 cart.coupon = None
                 cart.save()
                 coupon_code = None
         total = total - discount_amount
 
-        # return serialized with discount/total
         return {
             "id": str(cart.id),
             "user_id": str(cart.user_id) if cart.user_id else None,
             "session_key": str(cart.session_key),
-            "coupon_code": cart.coupon.code if cart.coupon else None,
+            "coupon_code": coupon_code,
             "items": items,
             "total": total,
         }

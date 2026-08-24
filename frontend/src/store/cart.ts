@@ -29,7 +29,16 @@ export const useCart = create<CartStore>((set, get) => ({
     try {
       const response = await api.get('/api/cart/');
       if (response.data && response.data.items) {
-        set({ items: response.data.items });
+        const mapped = response.data.items.map((it: any) => ({
+          id: it.id,
+          variant_id: it.variant_id,
+          name: it.product_title || it.name,
+          price: parseFloat(it.price) || 0,
+          imageUrl: it.image?.url || it.image || it.imageUrl || "",
+          size: it.option_details || it.size || "",
+          quantity: it.quantity,
+        }));
+        set({ items: mapped });
       }
     } catch (error) {
       console.error("Failed to fetch backend cart:", error);
