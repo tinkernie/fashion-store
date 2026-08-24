@@ -34,12 +34,43 @@ class CollectionDetailSerializer(serializers.Serializer):
     products = serializers.SerializerMethodField()
 
     def get_products(self, obj):
-        # For now return a list of product IDs; will be enriched when Product API exists
         if hasattr(obj, "product_links"):
-            return [
-                {"id": str(link.product_id), "position": link.position}
-                for link in obj.product_links.all()
-            ]
+            results = []
+            for link in obj.product_links.select_related("product").all():
+                p = link.product
+                price = "0"
+                if hasattr(p, "variants"):
+                    first_v = p.variants.filter(deleted_at__isnull=True).first()
+                    if first_v:
+                        price = str(first_v.price)
+                if price == "0" and p.metadata and "price" in p.metadata:
+                    price = str(p.metadata["price"])
+                
+                image_url = ""
+                if p.metadata and "image_url" in p.metadata:
+                    image_url = p.metadata["image_url"]
+                elif p.metadata and "imageUrl" in p.metadata:
+                    image_url = p.metadata["imageUrl"]
+                else:
+                    try:
+                        from media_libm.selectors import MediaSelector
+                        main_img = MediaSelector.get_main_image_for_product(p)
+                        if main_img and main_img.get("url"):
+                            image_url = main_img["url"]
+                    except Exception:
+                        pass
+
+                results.append({
+                    "id": str(p.id),
+                    "title": p.title,
+                    "name": p.title,
+                    "slug": p.slug,
+                    "price": price,
+                    "image_url": image_url,
+                    "imageUrl": image_url,
+                    "position": link.position,
+                })
+            return results
         return []
 
 

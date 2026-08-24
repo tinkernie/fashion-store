@@ -17,8 +17,17 @@ class PublicVariantViewSet(viewsets.GenericViewSet):
     lookup_field = "sku"
     lookup_url_kwarg = "sku"
 
-    def list(self, request, product_slug=None):
+    def _get_product(self, product_slug):
         product = ProductSelector.get_product_by_slug(product_slug)
+        if not product:
+            try:
+                product = ProductSelector.get_product_by_id(product_slug)
+            except Exception:
+                product = None
+        return product
+
+    def list(self, request, product_slug=None):
+        product = self._get_product(product_slug)
         if not product:
             return Response(
                 {"detail": "Product not found."}, status=status.HTTP_404_NOT_FOUND
@@ -28,8 +37,13 @@ class PublicVariantViewSet(viewsets.GenericViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, product_slug=None, sku=None):
+        product = self._get_product(product_slug)
+        if not product:
+            return Response(
+                {"detail": "Product not found."}, status=status.HTTP_404_NOT_FOUND
+            )
         variant = VariantSelector.get_variant_by_sku(sku)
-        if not variant or variant.product.slug != product_slug:
+        if not variant or variant.product_id != product.id:
             return Response(
                 {"detail": "Variant not found."}, status=status.HTTP_404_NOT_FOUND
             )

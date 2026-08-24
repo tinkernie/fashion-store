@@ -16,8 +16,7 @@ class UserOrderViewSet(viewsets.GenericViewSet):
 
     def list(self, request):
         orders = self.service.get_user_orders(request.user)
-        serializer = OrderListSerializer(orders, many=True)
-        return Response(serializer.data)
+        return Response(orders)
 
     def retrieve(self, request, pk=None):
         # pk is order_number

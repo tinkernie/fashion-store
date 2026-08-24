@@ -69,7 +69,10 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     try {
-      await api.post('/api/auth/logout/');
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (refreshToken) {
+        await api.post('/api/auth/logout/', { refresh: refreshToken });
+      }
     } catch (e) {
       console.error("Logout failed at backend", e);
     }
@@ -103,9 +106,9 @@ export default function ProfilePage() {
     }
   };
 
-  const fetchOrderDetails = async (id: string) => {
+  const fetchOrderDetails = async (orderIdentifier: string) => {
     try {
-      const res = await api.get(`/api/orders/${id}/`);
+      const res = await api.get(`/api/orders/${orderIdentifier}/`);
       setSelectedOrder(res.data);
       setIsOrderModalOpen(true);
     } catch (error) {
@@ -211,26 +214,31 @@ export default function ProfilePage() {
               {orders.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">سفارشی ثبت نشده است</div>
               ) : (
-                orders.map((order) => (
-                  <div key={order.id} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 hover:border-white/10 transition-colors">
-                    <div className="space-y-2 md:space-y-3 flex-1">
-                      <div className="flex items-center gap-4">
-                        <span className="text-white font-bold font-sans tracking-widest text-sm md:text-base">{order.id}</span>
-                        <span className="text-gray-500 text-xs md:text-sm">{order.created_at || order.date}</span>
+                orders.map((order) => {
+                  const orderId = order.order_number || order.id;
+                  const orderDate = order.placed_at || order.created_at || order.date;
+                  const orderTotal = order.total || order.total_amount;
+                  return (
+                    <div key={orderId} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 hover:border-white/10 transition-colors">
+                      <div className="space-y-2 md:space-y-3 flex-1">
+                        <div className="flex items-center gap-4">
+                          <span className="text-white font-bold font-sans tracking-widest text-sm md:text-base">{orderId}</span>
+                          <span className="text-gray-500 text-xs md:text-sm">{orderDate}</span>
+                        </div>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] md:text-xs font-bold text-amber-500 bg-amber-500/10`}>
+                          {order.status}
+                        </span>
                       </div>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] md:text-xs font-bold text-amber-500 bg-amber-500/10`}>
-                        {order.status}
-                      </span>
+                      <div className="flex items-center justify-between md:flex-col md:items-end gap-4 border-t border-white/10 md:border-0 pt-4 md:pt-0">
+                        <span className="text-base md:text-lg font-bold text-white">{orderTotal} تومان</span>
+                        <Button onClick={() => fetchOrderDetails(orderId)} variant="outline" className="h-10 rounded-xl border-white/20 text-white hover:bg-white hover:text-black text-xs md:text-sm px-3 md:px-4">
+                          مشاهده جزئیات
+                          <ChevronLeft className="w-3 h-3 md:w-4 md:h-4 ml-1" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between md:flex-col md:items-end gap-4 border-t border-white/10 md:border-0 pt-4 md:pt-0">
-                      <span className="text-base md:text-lg font-bold text-white">{order.total_amount || order.total} تومان</span>
-                      <Button onClick={() => fetchOrderDetails(order.id)} variant="outline" className="h-10 rounded-xl border-white/20 text-white hover:bg-white hover:text-black text-xs md:text-sm px-3 md:px-4">
-                        مشاهده جزئیات
-                        <ChevronLeft className="w-3 h-3 md:w-4 md:h-4 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </TabsContent>
 
@@ -352,11 +360,11 @@ export default function ProfilePage() {
               <div className="space-y-4 mt-4">
                 <div className="flex justify-between border-b border-white/10 pb-4">
                   <span className="text-gray-400 text-sm">شماره سفارش</span>
-                  <span className="font-bold">{selectedOrder.id}</span>
+                  <span className="font-bold">{selectedOrder.order_number || selectedOrder.id}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/10 pb-4">
                   <span className="text-gray-400 text-sm">تاریخ ثبت</span>
-                  <span className="font-bold">{selectedOrder.created_at || selectedOrder.date}</span>
+                  <span className="font-bold">{selectedOrder.placed_at || selectedOrder.created_at || selectedOrder.date}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/10 pb-4">
                   <span className="text-gray-400 text-sm">وضعیت</span>
@@ -364,7 +372,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex justify-between pt-2">
                   <span className="text-gray-400 text-sm">مبلغ کل</span>
-                  <span className="font-bold text-lg">{selectedOrder.total_amount || selectedOrder.total} تومان</span>
+                  <span className="font-bold text-lg">{selectedOrder.total || selectedOrder.total_amount} تومان</span>
                 </div>
               </div>
             ) : (

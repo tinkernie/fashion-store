@@ -12,25 +12,27 @@ function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const uid = searchParams.get("uid") || searchParams.get("uidb64");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!token) {
-      toast.error("توکن بازیابی نامعتبر است");
+    if (!token || !uid) {
+      toast.error("توکن یا شناسه کاربری بازیابی نامعتبر است");
       return;
     }
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
     try {
       await api.post('/api/auth/password-reset/confirm/', {
+        uidb64: uid,
         token: token,
         new_password: formData.get("password")
       });
       toast.success("رمز عبور با موفقیت تغییر یافت");
       router.push("/auth");
     } catch (error) {
-      toast.error("خطا در تغییر رمز عبور");
+      toast.error("خطا در تغییر رمز عبور. لینک ممکن است منقضی شده باشد.");
     } finally {
       setIsLoading(false);
     }
