@@ -24,7 +24,7 @@ class CollectionDetailSerializer(serializers.Serializer):
     name = serializers.CharField()
     slug = serializers.SlugField()
     description = serializers.CharField()
-    hero_banner = serializers.ImageField(source="hero_banner.url", allow_null=True)
+    hero_banner = serializers.SerializerMethodField()
     landing_page_content = serializers.CharField()
     seo_metadata = serializers.JSONField()
     priority = serializers.IntegerField()
@@ -32,6 +32,14 @@ class CollectionDetailSerializer(serializers.Serializer):
     published_from = serializers.DateTimeField()
     published_until = serializers.DateTimeField()
     products = serializers.SerializerMethodField()
+
+    def get_hero_banner(self, obj):
+        if obj.hero_banner:
+            try:
+                return obj.hero_banner.url
+            except ValueError:
+                return None
+        return None
 
     def get_products(self, obj):
         if hasattr(obj, "product_links"):

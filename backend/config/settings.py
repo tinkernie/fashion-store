@@ -9,6 +9,8 @@ DEBUG = True  # overridden in dev/prod
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
+    "testserver",
+    "*",
 ]
 
 # ALLOWED_HOSTS = ["*"]

@@ -10,9 +10,10 @@ class CollectionSelector:
         """Return active collections currently within their publication window."""
         now = timezone.now()
         return (
-            Collection.objects.filter(
-                is_active=True,
-                published_from__lte=now,
+            Collection.objects.filter(is_active=True)
+            .filter(
+                models.Q(published_from__isnull=True)
+                | models.Q(published_from__lte=now)
             )
             .filter(
                 models.Q(published_until__isnull=True)
@@ -29,7 +30,10 @@ class CollectionSelector:
             Collection.objects.filter(
                 slug=slug,
                 is_active=True,
-                published_from__lte=now,
+            )
+            .filter(
+                models.Q(published_from__isnull=True)
+                | models.Q(published_from__lte=now)
             )
             .filter(
                 models.Q(published_until__isnull=True)
