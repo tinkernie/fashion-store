@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Package, MapPin, User, LogOut, ChevronLeft, Heart, Trash2, Eye, EyeOff } from "lucide-react";
+import { Package, MapPin, User, LogOut, ChevronLeft, Heart, Trash2, Eye, EyeOff, Plus, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,10 +12,6 @@ import { toast } from "sonner";
 import { useWishlist } from "@/store/wishlist";
 import Link from "next/link";
 import { api } from "@/lib/api";
-
-const MOCK_ADDRESSES = [
-  { id: 1, title: "خانه", address: "تهران، سعادت آباد، میدان کاج، خیابان سرو شرقی، پلاک ۱۲، واحد ۴", postalCode: "1998612345" },
-];
 
 // Helper to extract user ID from the access token securely 
 const getUserIdFromToken = () => {
@@ -40,6 +36,9 @@ export default function ProfilePage() {
   
   const [orders, setOrders] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
@@ -55,20 +54,108 @@ export default function ProfilePage() {
       return;
     }
 
+    // Load addresses from localStorage
+    const saved = localStorage.getItem(`user_addresses_${userId}`);
+    if (saved) {
+      try {
+        setAddresses(JSON.parse(saved));
+      } catch (e) {
+        setAddresses([]);
+      }
+    }
+
     const fetchData = async () => {
       try {
         const [ordersRes, profileRes] = await Promise.all([
           api.get('/api/orders/'),
           api.get(`/api/users/me/${userId}/`)
         ]);
-        setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : ordersRes.data.results || []);
+        const fetchedOrders = Array.isArray(ordersRes.data) ? ordersRes.data : ordersRes.data.results || [];
+        setOrders(fetchedOrders);
         setUserProfile(profileRes.data);
+
+        // If no addresses in localStorage, populate from recent orders
+        if (!saved && fetchedOrders.length > 0) {
+          const extracted: any[] = [];
+          fetchedOrders.forEach((ord: any, idx: number) => {
+            const ship = ord.shipping_address;
+            if (ship && ship.address && !extracted.some(a => a.address === ship.address)) {
+              extracted.push({
+                id: `ord-addr-${idx}-${Date.now()}`,
+                title: ship.city ? `آدرس ${ship.city}` : `آدرس سفارش ${ord.order_number || idx + 1}`,
+                fullName: ship.full_name || "",
+                phone: ship.phone || "",
+                province: ship.province || "",
+                city: ship.city || "",
+                address: ship.address,
+                postalCode: ship.postal_code || ""
+              });
+            }
+          });
+          if (extracted.length > 0) {
+            setAddresses(extracted);
+            localStorage.setItem(`user_addresses_${userId}`, JSON.stringify(extracted));
+          }
+        }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       }
     };
     fetchData();
   }, [router]);
+
+  const handleOpenAddAddress = () => {
+    setEditingAddress(null);
+    setIsAddressModalOpen(true);
+  };
+
+  const handleOpenEditAddress = (addr: any) => {
+    setEditingAddress(addr);
+    setIsAddressModalOpen(true);
+  };
+
+  const handleDeleteAddress = (id: string | number) => {
+    const userId = getUserIdFromToken();
+    const updated = addresses.filter(a => a.id !== id);
+    setAddresses(updated);
+    if (userId) {
+      localStorage.setItem(`user_addresses_${userId}`, JSON.stringify(updated));
+    }
+    toast.success("آدرس با موفقیت حذف شد");
+  };
+
+  const handleSaveAddress = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const userId = getUserIdFromToken();
+    const formData = new FormData(e.currentTarget);
+    
+    const newAddr = {
+      id: editingAddress ? editingAddress.id : `addr-${Date.now()}`,
+      title: formData.get("title") as string || "آدرس من",
+      fullName: formData.get("fullName") as string || "",
+      phone: formData.get("phone") as string || "",
+      province: formData.get("province") as string || "",
+      city: formData.get("city") as string || "",
+      address: formData.get("address") as string,
+      postalCode: formData.get("postalCode") as string || "",
+    };
+
+    let updatedList;
+    if (editingAddress) {
+      updatedList = addresses.map(a => a.id === editingAddress.id ? newAddr : a);
+      toast.success("آدرس با موفقیت ویرایش شد");
+    } else {
+      updatedList = [...addresses, newAddr];
+      toast.success("آدرس جدید با موفقیت اضافه شد");
+    }
+
+    setAddresses(updatedList);
+    if (userId) {
+      localStorage.setItem(`user_addresses_${userId}`, JSON.stringify(updatedList));
+    }
+    setIsAddressModalOpen(false);
+    setEditingAddress(null);
+  };
 
   const handleLogout = async () => {
     try {
@@ -281,23 +368,54 @@ export default function ProfilePage() {
             <TabsContent value="addresses" className="space-y-4 outline-none mt-0">
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h3 className="text-lg md:text-xl font-bold text-white">آدرس‌های ثبت شده</h3>
-                <Button className="h-9 md:h-10 px-3 md:px-4 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs md:text-sm">
+                <Button onClick={handleOpenAddAddress} className="h-9 md:h-10 px-3 md:px-4 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs md:text-sm flex items-center gap-1.5">
+                  <Plus className="w-4 h-4" />
                   افزودن آدرس
                 </Button>
               </div>
-              {MOCK_ADDRESSES.map((addr) => (
-                <div key={addr.id} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 space-y-3 md:space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white font-bold flex items-center gap-2 text-sm md:text-base">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      {addr.title}
-                    </span>
-                    <button className="text-xs md:text-sm text-gray-500 hover:text-white transition-colors outline-none">ویرایش</button>
-                  </div>
-                  <p className="text-xs md:text-sm text-gray-400 leading-relaxed">{addr.address}</p>
-                  <p className="text-xs md:text-sm text-gray-500">کد پستی: <span className="font-sans" dir="ltr">{addr.postalCode}</span></p>
+
+              {addresses.length === 0 ? (
+                <div className="text-center py-12 bg-[#111111] border border-white/5 rounded-2xl p-6">
+                  <MapPin className="w-10 h-10 md:w-12 md:h-12 text-gray-600 mx-auto mb-4 opacity-50" />
+                  <p className="text-gray-400 text-sm md:text-base mb-4">هنوز هیچ آدرسی ثبت نکرده‌اید.</p>
+                  <Button onClick={handleOpenAddAddress} className="h-10 px-5 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs md:text-sm">
+                    ثبت اولین آدرس
+                  </Button>
                 </div>
-              ))}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {addresses.map((addr) => (
+                    <div key={addr.id} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 space-y-3 md:space-y-4 flex flex-col justify-between hover:border-white/10 transition-colors">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-bold flex items-center gap-2 text-sm md:text-base">
+                            <MapPin className="w-4 h-4 text-gray-400" />
+                            {addr.title || "آدرس"}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => handleOpenEditAddress(addr)} className="text-xs text-gray-400 hover:text-white p-1.5 transition-colors" title="ویرایش">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => handleDeleteAddress(addr.id)} className="text-xs text-gray-400 hover:text-red-400 p-1.5 transition-colors" title="حذف">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs md:text-sm text-gray-400 leading-relaxed">{addr.address}</p>
+                        {(addr.province || addr.city) && (
+                          <p className="text-xs text-gray-500">{addr.province} - {addr.city}</p>
+                        )}
+                        {addr.fullName && (
+                          <p className="text-xs text-gray-400">تحویل‌گیرنده: <span className="text-gray-300 font-medium">{addr.fullName}</span> {addr.phone ? `(${addr.phone})` : ""}</p>
+                        )}
+                      </div>
+                      {addr.postalCode && (
+                        <p className="text-[11px] md:text-xs text-gray-500 border-t border-white/5 pt-2">کد پستی: <span className="font-sans" dir="ltr">{addr.postalCode}</span></p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="settings" className="outline-none mt-0 space-y-8">
@@ -309,7 +427,7 @@ export default function ProfilePage() {
                     <Input name="fullName" defaultValue={userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : ""} className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" />
                   </div>
                   <Button disabled={isLoading} type="submit" className="w-full h-12 md:h-14 rounded-xl bg-white text-black hover:bg-gray-200 text-sm md:text-base font-bold transition-all mt-2 md:mt-4">
-                    {isLoading ? "در حال ذخیره..." : "ثبت نام جدید"}
+                    {isLoading ? "در حال ذخیره..." : "ذخیره تغییرات"}
                   </Button>
                 </form>
               </div>
@@ -443,6 +561,59 @@ export default function ProfilePage() {
             ) : (
               <div className="text-center text-gray-500 py-8">در حال بارگذاری...</div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Address Create / Edit Modal */}
+        <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
+          <DialogContent className="bg-[#0a0a0a] border border-white/10 text-white sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black">
+                {editingAddress ? "ویرایش آدرس" : "افزودن آدرس جدید"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveAddress} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300">عنوان آدرس (مثال: خانه، محل کار)</label>
+                <Input name="title" defaultValue={editingAddress?.title || ""} placeholder="خانه" required className="bg-[#111111] border-white/10 h-11 text-white text-sm" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-300">نام و نام خانوادگی تحویل‌گیرنده</label>
+                  <Input name="fullName" defaultValue={editingAddress?.fullName || (userProfile ? `${userProfile?.first_name || ''} ${userProfile?.last_name || ''}`.trim() : "")} placeholder="علی رضایی" className="bg-[#111111] border-white/10 h-11 text-white text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-300">شماره موبایل تحویل‌گیرنده</label>
+                  <Input name="phone" defaultValue={editingAddress?.phone || ""} placeholder="09123456789" className="bg-[#111111] border-white/10 h-11 text-white text-sm" dir="ltr" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-300">استان</label>
+                  <Input name="province" defaultValue={editingAddress?.province || ""} placeholder="تهران" className="bg-[#111111] border-white/10 h-11 text-white text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-300">شهر</label>
+                  <Input name="city" defaultValue={editingAddress?.city || ""} placeholder="تهران" className="bg-[#111111] border-white/10 h-11 text-white text-sm" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300">نشانی دقیق پستی</label>
+                <Input name="address" defaultValue={editingAddress?.address || ""} placeholder="خیابان، کوچه، پلاک، واحد" required className="bg-[#111111] border-white/10 h-11 text-white text-sm" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300">کد پستی (۱۰ رقمی)</label>
+                <Input name="postalCode" defaultValue={editingAddress?.postalCode || ""} placeholder="1234567890" className="bg-[#111111] border-white/10 h-11 text-white text-sm" dir="ltr" />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-sm">
+                  {editingAddress ? "ذخیره تغییرات" : "افزودن آدرس"}
+                </Button>
+                <Button type="button" onClick={() => setIsAddressModalOpen(false)} variant="ghost" className="h-12 rounded-xl text-gray-400 hover:text-white">
+                  انصراف
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
 

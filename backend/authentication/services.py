@@ -4,7 +4,11 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from rest_framework_simplejwt.tokens import RefreshToken, OutstandingToken
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 from common.exceptions import BusinessException
 from .repositories import UserRepository, TokenRepository
 from .selectors import UserSelector, TokenSelector
@@ -112,7 +116,7 @@ class AuthService:
         UserRepository.change_password(user, new_password)
         # Invalidate all existing refresh tokens for this user
         for token in OutstandingToken.objects.filter(user=user):
-            token.blacklist()
+            BlacklistedToken.objects.get_or_create(token=token)
         return {"message": "Password reset successful."}
 
     def change_password(self, user, old_password: str, new_password: str):
@@ -124,5 +128,5 @@ class AuthService:
         UserRepository.change_password(user, new_password)
         # Optional: blacklist all tokens to force re-login
         for token in OutstandingToken.objects.filter(user=user):
-            token.blacklist()
+            BlacklistedToken.objects.get_or_create(token=token)
         return {"message": "Password changed successfully."}
