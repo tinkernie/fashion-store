@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,15 +23,29 @@ const identifierValidator = z.string().refine(
   { message: "فرمت ایمیل یا شماره موبایل (مثال: 09123456789) نامعتبر است" }
 );
 
+const passwordRegisterSchema = z
+  .string()
+  .min(10, "رمز عبور باید حداقل ۱۰ کاراکتر باشد")
+  .max(128, "رمز عبور نباید بیشتر از ۱۲۸ کاراکتر باشد")
+  .regex(/[A-Z]/, "رمز عبور باید شامل حداقل یک حرف بزرگ انگلیسی (A-Z) باشد")
+  .regex(/[a-z]/, "رمز عبور باید شامل حداقل یک حرف کوچک انگلیسی (a-z) باشد")
+  .regex(/\d/, "رمز عبور باید شامل حداقل یک عدد (0-9) باشد")
+  .regex(
+    /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\/\\`~;]/,
+    "رمز عبور باید شامل حداقل یک نماد خاص (مانند !@#$%) باشد"
+  );
+
 const loginSchema = z.object({
   identifier: identifierValidator,
-  password: z.string().min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد"),
+  password: z.string().min(1, "رمز عبور را وارد کنید"),
 });
 
 const registerSchema = z.object({
-  fullName: z.string().min(3, "نام باید حداقل ۳ کاراکتر باشد"),
-  identifier: identifierValidator,
-  password: z.string().min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد"),
+  fullName: z.string().min(3, "نام و نام خانوادگی باید حداقل ۳ کاراکتر باشد"),
+  identifier: z
+    .string()
+    .email("لطفاً یک ایمیل معتبر وارد کنید (مثال: user@example.com)"),
+  password: passwordRegisterSchema,
 });
 
 const forgotPasswordSchema = z.object({
@@ -41,9 +56,31 @@ type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 
+const getApiErrorMessage = (error: any, defaultMsg: string): string => {
+  const data = error?.response?.data;
+  if (!data) return defaultMsg;
+  if (typeof data === "string") return data;
+  if (data.error?.message) return data.error.message;
+  if (data.detail) return data.detail;
+  if (data.message) return data.message;
+  if (data.error?.errors && typeof data.error.errors === "object") {
+    const firstKey = Object.keys(data.error.errors)[0];
+    const val = data.error.errors[firstKey];
+    return Array.isArray(val) ? val[0] : String(val);
+  }
+  if (typeof data === "object") {
+    const firstKey = Object.keys(data)[0];
+    const val = data[firstKey];
+    return Array.isArray(val) ? val[0] : String(val);
+  }
+  return defaultMsg;
+};
+
 export default function AuthPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [view, setView] = useState<"auth" | "forgotPassword">("auth");
   const { fetchCart, mergeCart } = useCart();
 
@@ -73,8 +110,8 @@ export default function AuthPage() {
 
       toast.success("با موفقیت وارد شدید");
       router.push("/");
-    } catch (error) {
-      toast.error("ورود ناموفق بود. اطلاعات را بررسی کنید.");
+    } catch (error: any) {
+      toast.error(getApiErrorMessage(error, "ورود ناموفق بود. اطلاعات را بررسی کنید."));
     } finally {
       setIsLoading(false);
     }
@@ -91,8 +128,8 @@ export default function AuthPage() {
         last_name: lastNames.join(' ') || ''
       });
       toast.success("حساب کاربری با موفقیت ساخته شد. لطفا وارد شوید.");
-    } catch (error) {
-      toast.error("ثبت‌نام ناموفق بود. ایمیل ممکن است تکراری باشد.");
+    } catch (error: any) {
+      toast.error(getApiErrorMessage(error, "ثبت‌نام ناموفق بود."));
     } finally {
       setIsLoading(false);
     }
@@ -107,8 +144,8 @@ export default function AuthPage() {
       toast.success("لینک بازیابی ارسال شد", { description: "لطفاً ایمیل یا پیامک خود را بررسی کنید" });
       setView("auth");
       resetForgot();
-    } catch (error) {
-      toast.error("خطایی رخ داد. اطمینان حاصل کنید ایمیل صحیح است.");
+    } catch (error: any) {
+      toast.error(getApiErrorMessage(error, "خطایی رخ داد. اطمینان حاصل کنید ایمیل صحیح است."));
     } finally {
       setIsLoading(false);
     }
@@ -186,7 +223,28 @@ export default function AuthPage() {
                         <label className="text-sm font-medium text-gray-300">رمز عبور</label>
                         <button type="button" onClick={() => setView("forgotPassword")} className="text-xs text-gray-500 hover:text-white transition-colors">فراموشی رمز؟</button>
                       </div>
-                      <Input {...registerLogin("password")} type="password" placeholder="••••••••" className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
+                      <div className="relative">
+                        <Input
+                          {...registerLogin("password")}
+                          type={showLoginPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30 pr-4 pl-11"
+                          dir="ltr"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowLoginPassword((prev) => !prev)}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none transition-colors p-1"
+                          tabIndex={-1}
+                          aria-label={showLoginPassword ? "پنهان کردن رمز" : "نمایش رمز"}
+                        >
+                          {showLoginPassword ? (
+                            <EyeOff className="w-5 h-5" />
+                          ) : (
+                            <Eye className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
                       {loginErrors.password && <p className="text-red-500 text-xs mt-1">{loginErrors.password.message}</p>}
                     </div>
                     <Button disabled={isLoading} type="submit" className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all mt-4">
@@ -205,13 +263,37 @@ export default function AuthPage() {
                       {registerErrors.fullName && <p className="text-red-500 text-xs mt-1">{registerErrors.fullName.message}</p>}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">ایمیل یا شماره موبایل</label>
+                      <label className="text-sm font-medium text-gray-300">ایمیل</label>
                       <Input {...registerSignup("identifier")} placeholder="example@email.com" className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
                       {registerErrors.identifier && <p className="text-red-500 text-xs mt-1">{registerErrors.identifier.message}</p>}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">رمز عبور</label>
-                      <Input {...registerSignup("password")} type="password" placeholder="••••••••" className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
+                      <div className="flex justify-between items-center">
+                        <label className="text-sm font-medium text-gray-300">رمز عبور</label>
+                        <span className="text-[11px] text-gray-500">حداقل ۱۰ کاراکتر + حروف بزرگ، عدد و نماد</span>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          {...registerSignup("password")}
+                          type={showRegisterPassword ? "text" : "password"}
+                          placeholder="••••••••••"
+                          className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30 pr-4 pl-11"
+                          dir="ltr"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRegisterPassword((prev) => !prev)}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none transition-colors p-1"
+                          tabIndex={-1}
+                          aria-label={showRegisterPassword ? "پنهان کردن رمز" : "نمایش رمز"}
+                        >
+                          {showRegisterPassword ? (
+                            <EyeOff className="w-5 h-5" />
+                          ) : (
+                            <Eye className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
                       {registerErrors.password && <p className="text-red-500 text-xs mt-1">{registerErrors.password.message}</p>}
                     </div>
                     <Button disabled={isLoading} type="submit" className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all mt-4">

@@ -31,7 +31,7 @@ class AuthService:
             password=password,
             first_name=first_name,
             last_name=last_name,
-            is_active=False,
+            is_active=True,
         )
         # Create verification token
         token = TokenRepository.create_verification_token(user)
@@ -40,7 +40,7 @@ class AuthService:
         return {
             "id": user.id,
             "email": user.email,
-            "message": "Verification email sent.",
+            "message": "User registered successfully.",
         }
 
     def verify_email(self, token_str: str) -> dict:
@@ -58,8 +58,8 @@ class AuthService:
         return {"message": "Email verified successfully."}
 
     def login_user(self, email: str, password: str) -> dict:
-        user = authenticate(email=email, password=password)
-        if not user:
+        user = UserSelector.get_user_by_email(email)
+        if not user or not user.check_password(password):
             raise BusinessException("Invalid credentials.", code="invalid_credentials")
         if not user.is_active:
             raise BusinessException(

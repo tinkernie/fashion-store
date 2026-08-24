@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ function ResetPasswordForm() {
   const token = searchParams.get("token");
   const uid = searchParams.get("uid") || searchParams.get("uidb64");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,8 +33,10 @@ function ResetPasswordForm() {
       });
       toast.success("رمز عبور با موفقیت تغییر یافت");
       router.push("/auth");
-    } catch (error) {
-      toast.error("خطا در تغییر رمز عبور. لینک ممکن است منقضی شده باشد.");
+    } catch (error: any) {
+      const data = error?.response?.data;
+      const msg = data?.error?.message || data?.detail || data?.message || "خطا در تغییر رمز عبور. لینک ممکن است منقضی شده باشد.";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +46,28 @@ function ResetPasswordForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-300">رمز عبور جدید</label>
-        <Input name="password" type="password" required className="bg-[#0a0a0a] border-white/10 h-12 text-white" dir="ltr" />
+        <div className="relative">
+          <Input 
+            name="password" 
+            type={showPassword ? "text" : "password"} 
+            required 
+            className="bg-[#0a0a0a] border-white/10 h-12 text-white pr-4 pl-11" 
+            dir="ltr" 
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none transition-colors p-1"
+            tabIndex={-1}
+            aria-label={showPassword ? "پنهان کردن رمز" : "نمایش رمز"}
+          >
+            {showPassword ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
+          </button>
+        </div>
       </div>
       <Button disabled={isLoading} type="submit" className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all">
         {isLoading ? "در حال پردازش..." : "ثبت رمز عبور جدید"}

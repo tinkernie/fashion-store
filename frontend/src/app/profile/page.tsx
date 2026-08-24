@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Package, MapPin, User, LogOut, ChevronLeft, Heart, Trash2 } from "lucide-react";
+import { Package, MapPin, User, LogOut, ChevronLeft, Heart, Trash2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,6 +34,9 @@ export default function ProfilePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   
   const [orders, setOrders] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -128,8 +131,10 @@ export default function ProfilePage() {
       });
       toast.success("رمز عبور با موفقیت تغییر یافت");
       (e.target as HTMLFormElement).reset();
-    } catch (error) {
-      toast.error("تغییر رمز عبور ناموفق بود. اطلاعات را بررسی کنید.");
+    } catch (error: any) {
+      const data = error?.response?.data;
+      const msg = data?.error?.message || data?.detail || data?.message || "تغییر رمز عبور ناموفق بود. اطلاعات را بررسی کنید.";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -321,7 +326,27 @@ export default function ProfilePage() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs md:text-sm font-medium text-gray-300">رمز عبور (برای تایید)</label>
-                    <Input name="currentPassword" type="password" required className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
+                    <div className="relative">
+                      <Input 
+                        name="currentPassword" 
+                        type={showCurrentPassword ? "text" : "password"} 
+                        required 
+                        className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30 pr-4 pl-11" 
+                        dir="ltr" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword((prev) => !prev)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none transition-colors p-1"
+                        tabIndex={-1}
+                      >
+                        {showCurrentPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <Button disabled={isLoading} type="submit" className="w-full h-12 md:h-14 rounded-xl bg-white text-black hover:bg-gray-200 text-sm md:text-base font-bold transition-all mt-2 md:mt-4">
                     {isLoading ? "در حال ذخیره..." : "ثبت ایمیل جدید"}
@@ -334,11 +359,51 @@ export default function ProfilePage() {
                 <form onSubmit={handleChangePassword} className="bg-[#111111] border border-white/5 rounded-2xl p-4 md:p-6 space-y-4 md:space-y-6 max-w-xl">
                   <div className="space-y-2">
                     <label className="text-xs md:text-sm font-medium text-gray-300">رمز عبور فعلی</label>
-                    <Input name="oldPassword" type="password" required className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
+                    <div className="relative">
+                      <Input 
+                        name="oldPassword" 
+                        type={showOldPassword ? "text" : "password"} 
+                        required 
+                        className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30 pr-4 pl-11" 
+                        dir="ltr" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOldPassword((prev) => !prev)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none transition-colors p-1"
+                        tabIndex={-1}
+                      >
+                        {showOldPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs md:text-sm font-medium text-gray-300">رمز عبور جدید</label>
-                    <Input name="newPassword" type="password" required className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30" dir="ltr" />
+                    <div className="relative">
+                      <Input 
+                        name="newPassword" 
+                        type={showNewPassword ? "text" : "password"} 
+                        required 
+                        className="bg-[#0a0a0a] border-white/10 h-11 md:h-12 text-white text-sm focus-visible:ring-1 focus-visible:ring-white/30 pr-4 pl-11" 
+                        dir="ltr" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword((prev) => !prev)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none transition-colors p-1"
+                        tabIndex={-1}
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <Button disabled={isLoading} type="submit" className="w-full h-12 md:h-14 rounded-xl bg-white text-black hover:bg-gray-200 text-sm md:text-base font-bold transition-all mt-2 md:mt-4">
                     {isLoading ? "در حال ذخیره..." : "تغییر رمز عبور"}
