@@ -30,13 +30,16 @@ class CartService:
     @transaction.atomic
     def add_item(self, user, session_key: str, variant_id: str, quantity: int) -> dict:
         variant = VariantSelector.get_variant_by_id(variant_id)
-        if not variant:
-            from variants.models import Variant
-            variant = Variant.objects.filter(product_id=variant_id, status="published", deleted_at__isnull=True).first()
         if not variant or variant.status != "published":
-            raise BusinessException("Variant not available.")
-        variant_id = str(variant.id)
+            raise BusinessException("Variant not available.")  # should we ? chat gpt said
+
+
         cart = self._resolve_cart(user, session_key)
+        item = CartItemRepository.get_item(cart, variant_id)
+        new_quantity = quantity + (item.quantity if item else 0)
+
+        if item and item.reservation_id:
+            self.inventory_service.release_reservation(item.reservation_id)
 
         # Reserve stock
         user_id = str(user.id) if user and user.is_authenticated else None
@@ -48,13 +51,15 @@ class CartService:
             raise BusinessException(f"Cannot reserve stock: {e}")
 
         # Add or update item
-        item = CartRepository.add_item(
-            cart,
-            variant_id,
-            quantity,
-            str(variant.price),
-            reservation_id=reservation["reservation_id"],
-        )
+        if item:
+            CartRepository.update_item(
+                item, quantity=new_quantity, reservation_id=reservation["reservation_id"]
+            )
+        else:
+            CartRepository.add_item(
+                cart, variant_id, new_quantity, str(variant.price),
+                reservation_id=reservation["reservation_id"],
+            )
         cart_changed.send(
             sender=self.__class__,
             user=user,
@@ -223,22 +228,16 @@ class CartService:
         items = []
         from media_libm.selectors import MediaSelector
         for item in cart.items.all():
-            main_img = MediaSelector.get_main_image_for_product(item.variant.product)
-            img_url = (main_img.get("url") if isinstance(main_img, dict) else None) or (item.variant.product.metadata.get("image") if isinstance(item.variant.product.metadata, dict) else None) or "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop"
-            opt_summary = self._get_option_summary(item.variant)
             items.append(
                 {
                     "id": str(item.id),
                     "variant_id": str(item.variant_id),
                     "sku": item.variant.sku,
-                    "name": item.variant.product.title,
                     "product_title": item.variant.product.title,
-                    "imageUrl": img_url,
-                    "size": opt_summary or "Free",
-                    "option_details": opt_summary,
+                    "option_details": self._get_option_summary(item.variant),
                     "quantity": item.quantity,
-                    "price": float(item.price_snapshot),
-                    "image": main_img,
+                    "price": str(item.price_snapshot),
+                    "image": MediaSelector.get_main_image_for_product(item.variant.product),
                     "reservation_id": item.reservation_id,
                 }
             )
@@ -251,8 +250,18 @@ class CartService:
             try:
                 from coupons.services import CouponService
                 coupon_service = CouponService()
-                items_data = items.copy()
-                result = coupon_service.validate_and_calculate(cart.coupon.code, cart.user or None, items_data)
+                # items_data = items.copy()
+                coupon_items = [
+                    {
+                        "variant_id": str(item.variant_id),
+                        "quantity": item.quantity,
+                        "price": item.price_snapshot,  # Decimal, not serialized string
+                        "category_id": str(item.variant.product.category_id),
+                        "product_id": str(item.variant.product_id),
+                    }
+                    for item in cart.items.select_related("variant__product")
+                ]
+                result = coupon_service.validate_and_calculate(coupon_code, cart.user or None, coupon_items)
                 discount_amount = float(result['discount'])
             except BusinessException:
                 # If coupon became invalid, remove it
@@ -267,8 +276,6 @@ class CartService:
             "user_id": str(cart.user_id) if cart.user_id else None,
             "session_key": str(cart.session_key),
             "coupon_code": cart.coupon.code if cart.coupon else None,
-            "discount": discount_amount,
-            "discount_amount": discount_amount,
             "items": items,
             "total": total,
         }

@@ -2,7 +2,7 @@ from .repositories import ProductRepository
 from .selectors import ProductSelector
 from .models import Product
 from common.exceptions import BusinessException
-
+from categories.selectors import CategorySelector
 
 class ProductService:
     def create_product(self, data: dict) -> dict:
@@ -23,6 +23,13 @@ class ProductService:
             existing = ProductSelector.get_product_by_slug(new_slug)
             if existing and existing.id != product.id:
                 raise BusinessException("A product with this slug already exists.")
+
+        if "category_id" in data:
+            category = CategorySelector.get_category_by_id(data.pop("category_id"))
+            if not category:
+                raise BusinessException("Category not found.")
+            data["category"] = category
+
         updated = ProductRepository.update_product(product, **data)
         return self._serialize(updated)
 

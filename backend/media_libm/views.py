@@ -7,24 +7,35 @@ from .services import MediaService
 from .selectors import MediaSelector
 from .serializers import MediaUploadSerializer, MediaUpdateSerializer, ReorderSerializer
 from product_options.selectors import ProductOptionSelector
+from products.selectors import ProductSelector
+
 
 class PublicMediaViewSet(viewsets.GenericViewSet):
     permission_classes = [AllowAny]
 
-    @action(detail=False, methods=['get'], url_path='products/(?P<product_slug>[-\w]+)/options/(?P<option_id>[^/.]+)/media_libm')
+    @action(detail=False, methods=['get'],url_path='products/(?P<product_slug>[-\w]+)/options/(?P<option_id>[^/.]+)/media_libm')
     def for_product_option(self, request, product_slug=None, option_id=None):
+        product = ProductSelector.get_product_by_slug(product_slug)
+        option = ProductOptionSelector.get_option_by_id(option_id)
+
+        if not product or not option or option.product_id != product.id:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        media = MediaSelector.get_media_for_object(option)
+        return Response(MediaUploadSerializer(media, many=True).data)
+
         # Validate product exists (optional)
-        media_list = MediaSelector.get_media_for_product_option(option_id)
-        data = [{
-            'id': str(m.id),
-            'url': m.file.url,
-            'media_type': m.media_type,
-            'alt_text': m.alt_text,
-            'thumbnail': m.metadata.get('thumbnail'),
-            'responsive': m.metadata.get('responsive'),
-            'position': m.position,
-        } for m in media_list]
-        return Response(data)
+        # media_list = MediaSelector.get_media_for_product_option(option_id)
+        # data = [{
+        #     'id': str(m.id),
+        #     'url': m.file.url,
+        #     'media_type': m.media_type,
+        #     'alt_text': m.alt_text,
+        #     'thumbnail': m.metadata.get('thumbnail'),
+        #     'responsive': m.metadata.get('responsive'),
+        #     'position': m.position,
+        # } for m in media_list]
+        # return Response(data)
 
 
 class AdminMediaViewSet(viewsets.GenericViewSet):

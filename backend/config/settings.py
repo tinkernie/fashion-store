@@ -9,12 +9,9 @@ DEBUG = True  # overridden in dev/prod
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
-    "testserver",
-    "*",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+# ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -119,6 +116,21 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+REST_FRAMEWORK.update({
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",
+        "user": "1000/hour",
+        "auth": "5/minute",
+        "analytics": "60/minute",
+    },
+})
+
+
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "My COSLIKE-Shop API",
     "DESCRIPTION": "API Documentation",
@@ -126,12 +138,10 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Celery
-CELERY_BROKER_URL = "memory://"
-CELERY_RESULT_BACKEND = "cache+memory://"
+CELERY_BROKER_URL = "/"
+CELERY_RESULT_BACKEND = "/"
 CELERY_TIMEZONE = "UTC"
 CELERY_TASK_SERIALIZER = "json"
-CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_EAGER_PROPAGATES = True
 
 # Security
 SECURE_BROWSER_XSS_FILTER = False

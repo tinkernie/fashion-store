@@ -50,14 +50,16 @@ class OrderService:
 
         # Compute totals
         subtotal = sum(
-            Decimal(str(item.price_snapshot)) * item.quantity for item in cart.items.all()
+            (item.price_snapshot * item.quantity for item in cart.items.all()), Decimal("0.00"),
         )
+        # discount_amount = 0  # coupon logic later
         coupon = cart.coupon
-        discount_amount = Decimal("0.00")
+        discount_amount = Decimal('0.00')
         if coupon:
             # Validate and recalc discount
             from coupons.services import CouponService
             coupon_service = CouponService()
+            # Build items_data similar to above, with category etc.
             items_data = []
             for item in cart.items.all():
                 variant = item.variant
@@ -69,10 +71,12 @@ class OrderService:
                     'product_id': str(variant.product_id),
                 })
             result = coupon_service.validate_and_calculate(coupon.code, user, items_data)
-            discount_amount = Decimal(str(result['discount']))
+            discount_amount = result['discount']
+        # ... later when building order_data, set discount_amount=discount_amount, and coupon=coupon
 
-        shipping_cost = Decimal("0.00")
-        total = subtotal - discount_amount + shipping_cost
+        shipping_cost = Decimal("0.00")  # shipping service later
+        tax_amount = Decimal("0.00")
+        total = subtotal - discount_amount + shipping_cost + tax_amount
 
         # Build order items snapshot
         items_data = []
@@ -102,7 +106,7 @@ class OrderService:
                     "product_snapshot": product_snapshot,
                     "quantity": item.quantity,
                     "price_snapshot": item.price_snapshot,
-                    "line_total": float(item.price_snapshot) * item.quantity,
+                    "line_total": item.price_snapshot * item.quantity,
                 }
             )
 
@@ -159,6 +163,7 @@ class OrderService:
 
         return self._serialize_order(order)
 
+    @transaction.atomic
     def transition_status(self, order_id: str, new_status: str, note: str = "") -> dict:
         order = OrderSelector.get_order_by_id(order_id)
         if not order:
@@ -184,8 +189,16 @@ class OrderService:
         old_status = order.status
         OrderRepository.update_status(order, new_status, note=note)
         order.save()  # save timestamps changes
+
         # after successful transition
-        order_status_changed.send(sender=self.__class__, order=order, old_status=old_status, new_status=new_status)
+        transaction.on_commit(
+            lambda: order_status_changed.send(
+                sender=self.__class__,
+                order=order,
+                old_status=old_status,
+                new_status=new_status,
+            )
+        )
         return self._serialize_order(order)
 
     def get_user_orders(self, user) -> list[dict]:

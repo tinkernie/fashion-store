@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Q, Min, Count, OuterRef, Subquery, Exists
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.utils import timezone
+from django.db import connection
 
 from products.models import Product
 from variants.models import Variant
@@ -16,14 +17,21 @@ class SearchSelector:
         qs = Product.objects.filter(status=Product.Status.PUBLISHED, deleted_at__isnull=True, category__is_active=True)
 
         # Apply text search
+
         if query:
-            vector = SearchVector('title', weight='A', config='english') + \
-                     SearchVector('description', weight='B', config='english')
-            search_query = SearchQuery(query, config='english')
-            qs = qs.annotate(
-                search=vector,
-                rank=SearchRank(vector, search_query)
-            ).filter(search=search_query).order_by('-rank')
+            if connection.vendor == "postgresql":
+                vector = (
+                        SearchVector("title", weight="A", config="english")
+                        + SearchVector("description", weight="B", config="english")
+                )
+                search_query = SearchQuery(query, config="english")
+                qs = qs.annotate(rank=SearchRank(vector, search_query)).filter(
+                    rank__gt=0
+                ).order_by("-rank")
+            else:
+                qs = qs.filter(
+                    Q(title__icontains=query) | Q(description__icontains=query)
+                )
 
         # Apply filters
         if filters:

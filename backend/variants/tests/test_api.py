@@ -38,7 +38,6 @@ class TestPublicAPI:
         assert resp.data["sku"] == "UNIQUE-SKU"
 
 
-@pytest.mark.django_db
 class TestAdminAPI:
     def test_create_variant(self):
         admin = User.objects.create_superuser("admin@test.com", "pass")

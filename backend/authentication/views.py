@@ -13,6 +13,8 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     ChangePasswordSerializer,
 )
+
+from rest_framework.throttling import ScopedRateThrottle
 from .permissions import IsTokenValid
 from .repositories import TokenRepository, UserRepository
 from .selectors import UserSelector
@@ -26,6 +28,8 @@ class RegisterView(generics.CreateAPIView):
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)

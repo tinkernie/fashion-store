@@ -82,18 +82,21 @@ class UserService:
         # Fields admin can update: first_name, last_name, email, is_active
         allowed = {"first_name", "last_name", "email", "is_active"}
         update_data = {k: v for k, v in data.items() if k in allowed}
-        if "email" in update_data:
-            UserValidator.validate_email_unique(
-                update_data["email"], exclude_user_id=user.id
+
+        if user == requested_by and update_data.get("is_active") is False:
+            raise BusinessException(
+                "You cannot deactivate your own account.",
+                code="self_deactivate",
             )
-        if (
-            "is_active" in update_data
-            and update_data["is_active"]
-            and user == requested_by
-        ):
+
+        if "email" in update_data:
+            UserValidator.validate_email_unique(update_data["email"], exclude_user_id=user.id)
+
+        if "is_active" in update_data and update_data["is_active"] and user == requested_by:
             raise BusinessException(
                 "Cannot deactivate yourself via admin update.", code="self_deactivate"
             )
+
         return UserRepository.update_user(user, **update_data)
 
     def assign_groups(self, user_id: str, group_ids: list, requested_by: User):

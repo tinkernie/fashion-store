@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .models import Order
 
 
 class CreateOrderSerializer(serializers.Serializer):
@@ -23,18 +24,9 @@ class StatusTransitionSerializer(serializers.Serializer):
     note = serializers.CharField(required=False, allow_blank=True)
 
 
-class OrderListSerializer(serializers.Serializer):
-    id = serializers.UUIDField(read_only=True)
-    order_number = serializers.CharField()
-    status = serializers.CharField()
-    total = serializers.DecimalField(max_digits=10, decimal_places=2)
-    placed_at = serializers.DateTimeField()
-    items_count = serializers.SerializerMethodField()
-    items = serializers.ListField(child=serializers.DictField(), required=False)
+class OrderListSerializer(serializers.ModelSerializer):
+    items_count = serializers.IntegerField(source="items.count", read_only=True)
 
-    def get_items_count(self, obj):
-        if isinstance(obj, dict):
-            return len(obj.get("items", []))
-        if hasattr(obj, "items"):
-            return obj.items.count()
-        return 0
+    class Meta:
+        model = Order
+        fields = ("order_number", "status", "total", "placed_at", "items_count")

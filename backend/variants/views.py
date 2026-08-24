@@ -20,8 +20,6 @@ class PublicVariantViewSet(viewsets.GenericViewSet):
     def list(self, request, product_slug=None):
         product = ProductSelector.get_product_by_slug(product_slug)
         if not product:
-            product = ProductSelector.get_product_by_id(product_slug)
-        if not product:
             return Response(
                 {"detail": "Product not found."}, status=status.HTTP_404_NOT_FOUND
             )

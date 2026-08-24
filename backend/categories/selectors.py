@@ -1,4 +1,3 @@
-from mptt.utils import get_cached_trees
 from .models import Category
 
 
@@ -6,7 +5,7 @@ class CategorySelector:
     @staticmethod
     def get_active_tree() -> list[Category]:
         """Return active root nodes with their active descendants as a tree."""
-        return get_cached_trees(Category.objects.filter(is_active=True))
+        return Category.objects.filter(is_active=True).get_cached_trees()
 
     @staticmethod
     def get_active_flat_list() -> list[Category]:

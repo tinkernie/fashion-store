@@ -41,9 +41,9 @@ class NotificationService:
             )
 
         # Dispatch email via Celery if allowed
-        if send_email and email_allowed and notification:
+        if send_email and email_allowed:  # and notification:
             send_notification_email.delay(
-                user.email, subject, body, notification.id
+                user.email, subject, body, str(notification.id) if notification else None
             )
 
         return {

@@ -39,8 +39,6 @@ class PublicProductViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, slug=None):
         product = ProductSelector.get_product_by_slug(slug)
         if not product:
-            product = ProductSelector.get_product_by_id(slug)
-        if not product:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = ProductDetailSerializer(product, context={"request": request})
         return Response(serializer.data)

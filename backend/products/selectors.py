@@ -13,7 +13,7 @@ class ProductSelector:
                 category__is_active=True,  # ensure category is visible
             )
             .select_related("category")
-            .prefetch_related("collections", "variants")
+            .prefetch_related("collections")
         )
 
         if filters:
@@ -38,26 +38,18 @@ class ProductSelector:
                 category__is_active=True,
             )
             .select_related("category")
-            .prefetch_related("collections", "variants")
+            .prefetch_related("collections")
             .first()
         )
 
     @staticmethod
     def get_product_by_id(product_id) -> Product or None:
-        try:
-            return (
-                Product.objects.filter(
-                    id=product_id,
-                    status=Product.Status.PUBLISHED,
-                    deleted_at__isnull=True,
-                    category__is_active=True,
-                )
-                .select_related("category")
-                .prefetch_related("collections", "variants")
-                .first()
-            )
-        except Exception:
-            return None
+        return (
+            Product.objects.filter(id=product_id, deleted_at__isnull=True)
+            .select_related("category")
+            .prefetch_related("collections")
+            .first()
+        )
 
     @staticmethod
     def get_all_products_admin(filters: dict = None) -> list[Product]:

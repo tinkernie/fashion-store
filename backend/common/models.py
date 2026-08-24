@@ -53,6 +53,9 @@ from .managers import UserManager
 
 
 class User(BaseModel, AbstractBaseUser, PermissionsMixin):
+
+    objects = UserManager()
+
     email = models.EmailField(unique=True, db_index=True)
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
@@ -60,7 +63,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
-    objects = UserManager()
+    # objects = UserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

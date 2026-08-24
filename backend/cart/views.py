@@ -6,7 +6,6 @@ from rest_framework.permissions import AllowAny
 from .services import CartService
 from .serializers import (
     CartAddItemSerializer,
-    CartRemoveItemSerializer,
     CartUpdateQuantitySerializer,
     CartMergeSerializer,
     ApplyCouponSerializer,
@@ -25,6 +24,7 @@ class CartViewSet(viewsets.GenericViewSet):
         if not cart_key:
             cart_key = str(uuid.uuid4())
             request.session["cart_session_key"] = cart_key
+            request.session.modified = True
             request.session.save()
         return cart_key
 
@@ -49,7 +49,7 @@ class CartViewSet(viewsets.GenericViewSet):
         detail=False,
         methods=["post"],
         url_path="remove-item",
-        serializer_class=CartRemoveItemSerializer,
+        serializer_class=CartAddItemSerializer,
     )
     def remove_item(self, request):
         serializer = self.get_serializer(data=request.data)

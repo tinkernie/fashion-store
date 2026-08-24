@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .models import Variant
 
 
 class OptionAssignmentSerializer(serializers.Serializer):
@@ -42,30 +43,38 @@ class VariantUpdateSerializer(serializers.Serializer):
     )
 
 
-class VariantDetailSerializer(serializers.Serializer):
-    id = serializers.UUIDField(read_only=True)
-    product_id = serializers.UUIDField()
-    sku = serializers.CharField()
-    barcode = serializers.CharField(allow_null=True, required=False)
-    price = serializers.DecimalField(max_digits=10, decimal_places=2)
-    weight = serializers.IntegerField(default=0)
-    dimensions = serializers.JSONField(default=dict)
-    availability = serializers.CharField()
-    status = serializers.CharField()
-    metadata = serializers.JSONField(default=dict)
+class VariantDetailSerializer(serializers.ModelSerializer):
     options = serializers.SerializerMethodField()
 
-    def get_options(self, obj):
-        if isinstance(obj, dict):
-            return obj.get("options", [])
-        if hasattr(obj, "variantoption_set"):
-            return [
-                {
-                    "option_id": str(vo.option_id),
-                    "option_name": vo.option.name if vo.option else None,
-                    "value_id": str(vo.option_value_id),
-                    "value": vo.option_value.value if vo.option_value else None,
-                }
-                for vo in obj.variantoption_set.all()
-            ]
-        return []
+    class Meta:
+        model = Variant
+        fields = (
+            "id", "product_id", "sku", "barcode", "price", "weight",
+            "dimensions", "availability", "status", "metadata", "options",
+        )
+
+    def get_options(self, variant):
+        return [
+            {
+                "option_id": str(item.option_id),
+                "option_name": item.option.name,
+                "value_id": str(item.option_value_id),
+                "value": item.option_value.value,
+            }
+            for item in variant.variantoption_set.select_related(
+                "option", "option_value"
+            )
+        ]
+
+# class VariantDetailSerializer(serializers.Serializer):
+#     id = serializers.UUIDField(read_only=True)
+#     product_id = serializers.UUIDField()
+#     sku = serializers.CharField()
+#     barcode = serializers.CharField(allow_null=True)
+#     price = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     weight = serializers.IntegerField()
+#     dimensions = serializers.JSONField()
+#     availability = serializers.CharField()
+#     status = serializers.CharField()
+#     metadata = serializers.JSONField()
+#     options = serializers.ListField(child=serializers.DictField())

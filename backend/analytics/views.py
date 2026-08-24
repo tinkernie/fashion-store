@@ -16,14 +16,13 @@ class PublicTrackingViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         user = request.user if request.user.is_authenticated else None
         # Use session_key from request or generate
-        session_key = serializer.validated_data.get('session_key')
+        session_key = serializer.validated_data.get("session_key")
         if not session_key:
-            if not request.session.session_key:
-                request.session.save()
-            session_key = request.session.get('cart_session_key')  # reuse cart session key? We'll generate if not.
+            session_key = request.session.get("tracking_session_key")
             if not session_key:
-                session_key = uuid.uuid4()
-                request.session['tracking_session_key'] = session_key
+                session_key = str(uuid.uuid4())
+                request.session["tracking_session_key"] = session_key
+                request.session.modified = True
                 request.session.save()
         service = AnalyticsService()
         result = service.record_event(

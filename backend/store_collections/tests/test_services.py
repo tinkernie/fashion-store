@@ -1,8 +1,8 @@
 import pytest
 from django.utils import timezone
 from common.exceptions import BusinessException
-from store_collections.services import CollectionService
-from store_collections.selectors import CollectionSelector
+from collections.services import CollectionService
+from collections.selectors import CollectionSelector
 from .factories import CollectionFactory
 
 
