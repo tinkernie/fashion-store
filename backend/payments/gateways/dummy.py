@@ -11,13 +11,13 @@ class DummyGateway(BasePaymentGateway):
             return {
                 'gateway_reference': ref,
                 'status': 'succeeded',
-                'raw_response': {'mock': True, 'status': 'succeeded'},
+                'raw_response': {'simulated': True, 'status': 'succeeded'},
             }
         else:
             return {
                 'gateway_reference': ref,
                 'status': 'failed',
-                'raw_response': {'mock': True, 'status': 'failed', 'error': 'Insufficient funds'},
+                'raw_response': {'simulated': True, 'status': 'failed', 'error': 'Insufficient funds'},
             }
 
     def verify_callback(self, request_data):

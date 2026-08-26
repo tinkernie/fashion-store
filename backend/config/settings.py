@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "celery",
     "mptt",
-    # Domain apps (to be added progressively)
+    # Domain apps
     "common",
     "core",
     "authentication",
@@ -52,7 +52,6 @@ INSTALLED_APPS = [
     "search",
     "coupons",
     "media_libm",
-    # "ma baghi", ...
 ]
 
 MIDDLEWARE = [

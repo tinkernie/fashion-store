@@ -24,24 +24,12 @@ export default function DynamicCMSPage() {
       try {
         const res = await api.get(`/api/pages/${slug}/`);
         setPage(res.data);
-      } catch (error) {
-        // Try fallback lookup from admin list if authenticated or mock standard defaults
+      } catch {
         try {
           const res = await api.get(`/api/admin/cms/pages/${slug}/`);
           setPage(res.data);
         } catch {
-          // Defaults for common pages if freshly launched
-          setPage({
-            title: slug === "about" ? "درباره فشن استور" : slug === "size-guide" ? "راهنمای جامع انتخاب سایز" : "برگه اطلاعات",
-            slug: slug,
-            updated_at: new Date().toISOString(),
-            content: [
-              {
-                heading: "درباره این صفحه",
-                body: "این برگه توسط مدیر فروشگاه در سیستم مدیریت محتوا (CMS) قابل ویرایش و تنظیم است. محتوای به‌روزشده به صورت زنده در این بخش نمایش داده می‌شود.",
-              },
-            ],
-          });
+          setPage(null);
         }
       } finally {
         setIsLoading(false);
@@ -65,6 +53,22 @@ export default function DynamicCMSPage() {
           <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
           <p className="text-gray-400 text-sm font-sans">در حال بارگذاری برگه...</p>
         </div>
+      </main>
+    );
+  }
+
+  if (!page) {
+    return (
+      <main className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center space-y-4">
+        <h1 className="text-2xl md:text-4xl font-black text-white">برگه مورد نظر یافت نشد</h1>
+        <p className="text-gray-400 text-xs md:text-sm max-w-md">برگه‌ای با این آدرس وجود ندارد یا توسط مدیر سایت منتشر نشده است.</p>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-black hover:bg-gray-200 font-bold text-sm transition-all"
+        >
+          <span>بازگشت به صفحه اصلی</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </main>
     );
   }

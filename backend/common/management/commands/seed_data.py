@@ -10,7 +10,7 @@ from inventory.models import Inventory
 
 
 class Command(BaseCommand):
-    help = "Seed mock categories, collections, products, options, variants, and inventories for testing."
+    help = "Seed catalog categories, collections, products, options, variants, and inventories."
 
     def handle(self, *args, **options):
         self.stdout.write("Starting database seeding...")

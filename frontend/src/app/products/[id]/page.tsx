@@ -11,12 +11,6 @@ import { ShoppingBag, Star, ShieldCheck, Truck, ArrowRight, Heart, MessageSquare
 import Link from "next/link";
 import { toast } from "sonner";
 
-// Mock Reviews
-const MOCK_REVIEWS = [
-  { id: 1, user: "امیرحسین م.", rating: 5, date: "۲۴ اردیبهشت ۱۴۰۵", text: "کیفیت دوخت و متریال واقعا عالیه. دقیقا همون چیزی بود که تو عکس دیدم." },
-  { id: 2, user: "سارا ت.", rating: 4, date: "۱۸ فروردین ۱۴۰۵", text: "طراحیش خیلی خاصه، فقط ارسالش یکم طول کشید." },
-];
-
 export default function ProductDetailPage() {
   const params = useParams();
   const [product, setProduct] = useState<any>(null);
@@ -25,6 +19,8 @@ export default function ProductDetailPage() {
   
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const { addItem: addToCart } = useCart();
   
@@ -129,11 +125,19 @@ export default function ProductDetailPage() {
 
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (reviewText.trim().length < 10) {
-      toast.error("متن نظر باید حداقل ۱۰ کاراکتر باشد.");
+    if (reviewText.trim().length < 5) {
+      toast.error("متن نظر باید حداقل ۵ کاراکتر باشد.");
       return;
     }
-    toast.success("نظر شما با موفقیت ثبت شد و پس از تایید نمایش داده می‌شود.");
+    const newReview = {
+      id: Date.now(),
+      user: "کاربر خریدار",
+      rating: rating,
+      date: new Date().toLocaleDateString("fa-IR"),
+      text: reviewText.trim(),
+    };
+    setReviews((prev) => [newReview, ...prev]);
+    toast.success("دیدگاه شما با موفقیت ثبت شد.");
     setReviewText("");
   };
 
@@ -282,29 +286,37 @@ export default function ProductDetailPage() {
           
           {/* Review List */}
           <div className="lg:col-span-7 space-y-4 md:space-y-6">
-            {MOCK_REVIEWS.map((review) => (
-              <div key={review.id} className="bg-[#111111] border border-white/5 rounded-2xl md:rounded-3xl p-5 md:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold">
-                      {review.user.charAt(0)}
-                    </div>
-                    <div>
-                      <h4 className="text-white font-bold text-sm">{review.user}</h4>
-                      <span className="text-gray-500 text-[10px] md:text-xs">{review.date}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-yellow-500">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`w-3 h-3 md:w-4 md:h-4 ${i < review.rating ? 'fill-current' : 'text-gray-700'}`} />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-gray-400 text-xs md:text-sm leading-relaxed">
-                  {review.text}
-                </p>
+            {reviews.length === 0 ? (
+              <div className="bg-[#111111] border border-white/5 rounded-2xl md:rounded-3xl p-8 text-center space-y-3">
+                <MessageSquare className="w-10 h-10 text-gray-600 mx-auto" />
+                <h4 className="text-white font-bold text-base">هنوز دیدگاهی برای این محصول ثبت نشده است</h4>
+                <p className="text-gray-400 text-xs md:text-sm">اولین نفری باشید که تجربه خرید خود را درباره این محصول به اشتراک می‌گذارد.</p>
               </div>
-            ))}
+            ) : (
+              reviews.map((review) => (
+                <div key={review.id} className="bg-[#111111] border border-white/5 rounded-2xl md:rounded-3xl p-5 md:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold">
+                        {review.user.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="text-white font-bold text-sm">{review.user}</h4>
+                        <span className="text-gray-500 text-[10px] md:text-xs">{review.date}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-yellow-500">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`w-3 h-3 md:w-4 md:h-4 ${i < review.rating ? 'fill-current' : 'text-gray-700'}`} />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-gray-400 text-xs md:text-sm leading-relaxed">
+                    {review.text}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Add Review Form */}
@@ -314,9 +326,15 @@ export default function ProductDetailPage() {
               <form onSubmit={handleReviewSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs md:text-sm font-medium text-gray-300">امتیاز شما</label>
-                  <div className="flex items-center gap-1 text-gray-600 cursor-pointer">
+                  <div className="flex items-center gap-1 cursor-pointer">
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="w-5 h-5 md:w-6 md:h-6 hover:text-yellow-500 transition-colors" />
+                      <Star 
+                        key={star} 
+                        onClick={() => setRating(star)}
+                        className={`w-5 h-5 md:w-6 md:h-6 transition-colors ${
+                          star <= rating ? 'text-yellow-500 fill-current' : 'text-gray-600 hover:text-yellow-500'
+                        }`} 
+                      />
                     ))}
                   </div>
                 </div>
