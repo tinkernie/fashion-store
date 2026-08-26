@@ -56,12 +56,14 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     price = serializers.SerializerMethodField()
     imageUrl = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
+    stock_quantity = serializers.SerializerMethodField()
+    inventory_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = (
             "id", "title", "name", "slug", "description", "category_id", "category_name", "category",
-            "price", "imageUrl", "image_url",
+            "price", "imageUrl", "image_url", "stock_quantity", "inventory_count",
             "status", "seo_metadata", "metadata", "collections",
         )
 
@@ -86,6 +88,19 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_image_url(self, product):
         return self._get_image(product)
 
+    def get_stock_quantity(self, product):
+        return self._get_total_stock(product)
+
+    def get_inventory_count(self, product):
+        return self._get_total_stock(product)
+
+    def _get_total_stock(self, product):
+        total = 0
+        for variant in product.variants.filter(deleted_at__isnull=True):
+            if hasattr(variant, "inventory") and variant.inventory:
+                total += variant.inventory.available_quantity
+        return total
+
     def _get_image(self, product):
         if product.metadata and "image_url" in product.metadata:
             return product.metadata["image_url"]
@@ -99,6 +114,53 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return ""
+
+
+from .models import Review
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    product_id = serializers.UUIDField(source="product.id", read_only=True)
+    product_title = serializers.CharField(source="product.title", read_only=True)
+    product_slug = serializers.CharField(source="product.slug", read_only=True)
+    product_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Review
+        fields = (
+            "id",
+            "product_id",
+            "product_title",
+            "product_slug",
+            "product_image",
+            "user_name",
+            "rating",
+            "text",
+            "status",
+            "created_at",
+            "updated_at",
+        )
+
+    def get_product_image(self, review):
+        product = review.product
+        if product.metadata and "image_url" in product.metadata:
+            return product.metadata["image_url"]
+        if product.metadata and "imageUrl" in product.metadata:
+            return product.metadata["imageUrl"]
+        return ""
+
+
+class ReviewCreateSerializer(serializers.Serializer):
+    user_name = serializers.CharField(max_length=150, required=False, default="کاربر خریدار")
+    rating = serializers.IntegerField(min_value=1, max_value=5, default=5)
+    text = serializers.CharField(min_length=3)
+
+
+class AdminReviewUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["pending", "approved", "rejected"], required=False)
+    user_name = serializers.CharField(max_length=150, required=False)
+    text = serializers.CharField(required=False)
+    rating = serializers.IntegerField(min_value=1, max_value=5, required=False)
 
 # class ProductDetailSerializer(serializers.Serializer):
 #     id = serializers.UUIDField(read_only=True)

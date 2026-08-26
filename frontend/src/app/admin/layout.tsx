@@ -12,6 +12,7 @@ import {
   Layers,
   Percent,
   Users,
+  MessageSquare,
   Store,
   LogOut,
   Menu,
@@ -45,6 +46,12 @@ const NAV_ITEMS = [
     href: "/admin/products",
     icon: ShoppingBag,
     badge: null,
+  },
+  {
+    title: "نظرات کاربران",
+    href: "/admin/reviews",
+    icon: MessageSquare,
+    badge: "نظرات",
   },
   {
     title: "سفارشات و ارسال",

@@ -42,20 +42,10 @@ export default function AdminInventoryPage() {
     setAdjustingId(variantOrProdId);
     try {
       await adminApi.adjustStock(variantOrProdId, delta);
-      toast.success(`موجودی کالا (${delta > 0 ? `+${delta}` : delta}) تغییر یافت`);
-      loadInventoryData();
-    } catch {
-      // If variant-specific endpoint isn't mapped, simulate visual feedback
-      setProducts((prev) =>
-        prev.map((p) => {
-          if (p.id === variantOrProdId) {
-            const current = p.stock_quantity || p.inventory_count || 10;
-            return { ...p, stock_quantity: Math.max(0, current + delta) };
-          }
-          return p;
-        })
-      );
-      toast.success(`موجودی کالا با موفقیت بروزرسانی شد`);
+      toast.success(`موجودی کالا (${delta > 0 ? `+${delta}` : delta}) با موفقیت ذخیره شد`);
+      await loadInventoryData();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || e?.message || "خطا در بروزرسانی موجودی انبار");
     } finally {
       setAdjustingId(null);
     }
@@ -125,7 +115,7 @@ export default function AdminInventoryPage() {
               ) : (
                 filteredProducts.map((p) => {
                   const prodName = p.name || p.title || "محصول";
-                  const stock = p.stock_quantity ?? p.inventory_count ?? 15;
+                  const stock = p.stock_quantity ?? p.inventory_count ?? 0;
                   const isLow = stock <= 5;
                   const isOut = stock === 0;
 

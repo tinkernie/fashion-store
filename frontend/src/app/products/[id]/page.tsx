@@ -35,6 +35,13 @@ export default function ProductDetailPage() {
         
         const varRes = await api.get(`/api/products/${params.id}/variants/`);
         setVariants(Array.isArray(varRes.data) ? varRes.data : varRes.data.results || []);
+
+        try {
+          const revRes = await api.get(`/api/products/${params.id}/reviews/`);
+          setReviews(Array.isArray(revRes.data) ? revRes.data : revRes.data.results || []);
+        } catch {
+          setReviews([]);
+        }
       } catch (error) {
         console.error("Error fetching product details:", error);
       } finally {
@@ -123,17 +130,25 @@ export default function ProductDetailPage() {
     }
   };
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (reviewText.trim().length < 5) {
       toast.error("متن نظر باید حداقل ۵ کاراکتر باشد.");
       return;
     }
-    toast.success("دیدگاه شما با موفقیت ثبت شد و پس از بررسی و تایید توسط پشتیبانی نمایش داده خواهد شد.", {
-      duration: 5000,
-    });
-    setReviewText("");
-    setRating(5);
+    try {
+      await api.post(`/api/products/${params.id}/reviews/`, {
+        rating,
+        text: reviewText.trim(),
+      });
+      toast.success("دیدگاه شما با موفقیت ثبت شد و پس از بررسی و تایید توسط پشتیبانی نمایش داده خواهد شد.", {
+        duration: 5000,
+      });
+      setReviewText("");
+      setRating(5);
+    } catch {
+      toast.error("خطا در ثبت دیدگاه. لطفاً دوباره تلاش کنید.");
+    }
   };
 
   return (
@@ -288,29 +303,35 @@ export default function ProductDetailPage() {
                 <p className="text-gray-400 text-xs md:text-sm">اولین نفری باشید که تجربه خرید خود را درباره این محصول به اشتراک می‌گذارد.</p>
               </div>
             ) : (
-              reviews.map((review) => (
-                <div key={review.id} className="bg-[#111111] border border-white/5 rounded-2xl md:rounded-3xl p-5 md:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold">
-                        {review.user.charAt(0)}
+              reviews.map((review) => {
+                const author = review.user_name || review.user || "کاربر خریدار";
+                const dateStr = review.created_at
+                  ? new Date(review.created_at).toLocaleDateString("fa-IR")
+                  : review.date || "";
+                return (
+                  <div key={review.id} className="bg-[#111111] border border-white/5 rounded-2xl md:rounded-3xl p-5 md:p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold">
+                          {author.charAt(0)}
+                        </div>
+                        <div>
+                          <h4 className="text-white font-bold text-sm">{author}</h4>
+                          <span className="text-gray-500 text-[10px] md:text-xs font-sans">{dateStr}</span>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-white font-bold text-sm">{review.user}</h4>
-                        <span className="text-gray-500 text-[10px] md:text-xs">{review.date}</span>
+                      <div className="flex items-center gap-1 text-yellow-500">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`w-3 h-3 md:w-4 md:h-4 ${i < review.rating ? 'fill-current' : 'text-gray-700'}`} />
+                        ))}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-yellow-500">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`w-3 h-3 md:w-4 md:h-4 ${i < review.rating ? 'fill-current' : 'text-gray-700'}`} />
-                      ))}
-                    </div>
+                    <p className="text-gray-400 text-xs md:text-sm leading-relaxed whitespace-pre-line">
+                      {review.text}
+                    </p>
                   </div>
-                  <p className="text-gray-400 text-xs md:text-sm leading-relaxed">
-                    {review.text}
-                  </p>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

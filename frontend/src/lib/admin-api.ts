@@ -230,4 +230,37 @@ export const adminApi = {
     const res = await api.post(`/api/admin/users/${userId}/${action}/`);
     return res.data;
   },
+
+  // Reviews
+  async getReviews(params?: { status?: string; product_id?: string; search?: string }): Promise<ProductReview[]> {
+    const query = new URLSearchParams(params as any).toString();
+    const res = await api.get(`/api/admin/reviews/${query ? `?${query}` : ''}`);
+    return Array.isArray(res.data) ? res.data : res.data.results || [];
+  },
+  async approveReview(id: string): Promise<ProductReview> {
+    const res = await api.post(`/api/admin/reviews/${id}/approve/`);
+    return res.data;
+  },
+  async rejectReview(id: string): Promise<ProductReview> {
+    const res = await api.post(`/api/admin/reviews/${id}/reject/`);
+    return res.data;
+  },
+  async deleteReview(id: string) {
+    const res = await api.delete(`/api/admin/reviews/${id}/`);
+    return res.data;
+  },
 };
+
+export interface ProductReview {
+  id: string;
+  product_id: string;
+  product_title: string;
+  product_slug: string;
+  product_image?: string;
+  user_name: string;
+  rating: number;
+  text: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  updated_at?: string;
+}
