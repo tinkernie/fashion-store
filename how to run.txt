@@ -1,0 +1,33 @@
+BACKEND :
+# 1. Go into the backend directory
+cd backend
+
+# 2. Create a virtual environment (only need to do this once)
+python -m venv venv
+
+# 3. Activate the virtual environment
+.\venv\Scripts\activate
+
+# 4. Install backend dependencies (only need to do this once)
+pip install -r requirements.txt
+
+# 5. Apply database migrations
+python manage.py migrate
+
+# 6. (Optional) Create an Admin / Manager user account
+python manage.py createsuperuser
+
+# 7. Start the Django backend server
+python manage.py runserver
+
+
+
+FRONTEND : 
+# 1. Go into the frontend directory
+cd frontend
+
+# 2. Install dependencies (if not already installed)
+npm install
+
+# 3. Start the Next.js development server
+npm run dev
