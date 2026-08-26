@@ -13,7 +13,7 @@ from products.selectors import ProductSelector
 class PublicMediaViewSet(viewsets.GenericViewSet):
     permission_classes = [AllowAny]
 
-    @action(detail=False, methods=['get'],url_path='products/(?P<product_slug>[-\w]+)/options/(?P<option_id>[^/.]+)/media_libm')
+    @action(detail=False, methods=['get'], url_path=r'products/(?P<product_slug>[-\w]+)/options/(?P<option_id>[^/.]+)/media_libm')
     def for_product_option(self, request, product_slug=None, option_id=None):
         product = ProductSelector.get_product_by_slug(product_slug)
         option = ProductOptionSelector.get_option_by_id(option_id)
@@ -45,12 +45,41 @@ class AdminMediaViewSet(viewsets.GenericViewSet):
     # We'll use actions with explicit URLs for flexibility: /admin/media_libm/upload/?content_type=productoption&object_id=...
     @action(detail=False, methods=['post'], serializer_class=MediaUploadSerializer)
     def upload(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        file = request.FILES.get('file')
+        if not file:
+            return Response({"detail": "File is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         content_type = request.data.get('content_type')
         object_id = request.data.get('object_id')
+
+        # If no object relation specified, perform direct media upload & return URL
         if not content_type or not object_id:
-            return Response({"detail": "content_type and object_id required."}, status=status.HTTP_400_BAD_REQUEST)
+            import os, uuid
+            from django.core.files.storage import default_storage
+            from django.core.files.base import ContentFile
+            from django.conf import settings
+
+            ext = os.path.splitext(file.name)[1]
+            filename = f"products/{uuid.uuid4().hex}{ext}"
+            saved_path = default_storage.save(filename, ContentFile(file.read()))
+            
+            # Format absolute and relative URLs
+            media_prefix = getattr(settings, 'MEDIA_URL', '/media_libm/')
+            if not media_prefix.startswith('/'):
+                media_prefix = '/' + media_prefix
+            if not media_prefix.endswith('/'):
+                media_prefix = media_prefix + '/'
+            
+            relative_url = f"{media_prefix}{saved_path}"
+            full_url = request.build_absolute_uri(relative_url)
+
+            return Response({
+                "url": full_url,
+                "image_url": full_url,
+                "relative_url": relative_url,
+                "filename": filename,
+            }, status=status.HTTP_201_CREATED)
+
         try:
             ct = ContentType.objects.get(model=content_type)
             model_class = ct.model_class()
@@ -60,7 +89,8 @@ class AdminMediaViewSet(viewsets.GenericViewSet):
         if not obj:
             return Response({"detail": "Object not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        file = serializer.validated_data['file']
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         media_type = serializer.validated_data.get('media_type', 'image')
         alt_text = serializer.validated_data.get('alt_text', '')
         caption = serializer.validated_data.get('caption', '')

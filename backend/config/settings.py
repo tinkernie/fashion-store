@@ -154,8 +154,12 @@ SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 SECURE_PROXY_SSL_HEADER = None
 CSRF_COOKIE_SECURE = False
-# X_FRAME_OPTIONS = "DENY"
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
 
 # Internationalization
 LANGUAGE_CODE = "en-us"
@@ -165,7 +169,8 @@ USE_TZ = True
 
 # Static / Media
 STATIC_URL = "static/"
-MEDIA_URL = "media_libm/"
+MEDIA_URL = "/media_libm/"
+MEDIA_ROOT = BASE_DIR / "media_libm"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # S3 / Object Storage

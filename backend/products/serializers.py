@@ -3,26 +3,49 @@ from .models import Product
 
 class ProductCreateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=300)
-    slug = serializers.SlugField()
+    slug = serializers.SlugField(allow_unicode=True, required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    category_id = serializers.UUIDField()
+    category_id = serializers.UUIDField(required=False, allow_null=True)
+    collection_id = serializers.UUIDField(required=False, allow_null=True)
+    price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    discount_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    image_url = serializers.CharField(required=False, allow_blank=True)
     status = serializers.ChoiceField(
-        choices=["draft", "published", "archived"], default="draft"
+        choices=["draft", "published", "archived", "active"], default="published"
     )
     seo_metadata = serializers.JSONField(required=False, default=dict)
     metadata = serializers.JSONField(required=False, default=dict)
 
+    def validate(self, attrs):
+        if attrs.get("status") == "active":
+            attrs["status"] = "published"
+        if not attrs.get("slug"):
+            import time
+            from django.utils.text import slugify
+            base = slugify(attrs.get("title", ""), allow_unicode=True) or "product"
+            attrs["slug"] = f"{base}-{int(time.time())}"
+        return attrs
+
 
 class ProductUpdateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=300, required=False)
-    slug = serializers.SlugField(required=False)
+    slug = serializers.SlugField(allow_unicode=True, required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    category_id = serializers.UUIDField(required=False)
+    category_id = serializers.UUIDField(required=False, allow_null=True)
+    collection_id = serializers.UUIDField(required=False, allow_null=True)
+    price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    discount_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    image_url = serializers.CharField(required=False, allow_blank=True)
     status = serializers.ChoiceField(
-        choices=["draft", "published", "archived"], required=False
+        choices=["draft", "published", "archived", "active"], required=False
     )
     seo_metadata = serializers.JSONField(required=False)
     metadata = serializers.JSONField(required=False)
+
+    def validate(self, attrs):
+        if attrs.get("status") == "active":
+            attrs["status"] = "published"
+        return attrs
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):

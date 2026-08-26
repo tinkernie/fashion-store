@@ -49,6 +49,8 @@ venv.bak/
 *.sqlite3-journal
 db.sqlite3
 **/media/
+**/media_libm/
+media_libm/
 **/staticfiles/
 local_settings.py
 

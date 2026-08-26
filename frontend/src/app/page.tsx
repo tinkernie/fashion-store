@@ -93,18 +93,48 @@ const BannerSlider = ({ title, subtitle, href, images }: { title: string, subtit
 
 export default function HomePage() {
   const [bestsellers, setBestsellers] = useState<any[]>([]);
+  const [heroContent, setHeroContent] = useState<any>({
+    badge: "کالکشن جدید ۲۰۲۶",
+    headline: "استایل لوکس و مینیمال برای زندگی مدرن",
+    subtitle: "جدیدترین طراحی‌های استایل خیابانی و مینیمال. تولید شده با بهترین متریال برای استفاده روزمره.",
+    cta_label: "مشاهده جدیدترین‌ها",
+    cta_link: "/women",
+    image_url: "https://images.unsplash.com/photo-1617137968427-85924c800a22?q=80&w=1920&auto=format&fit=crop",
+  });
+  const [announcement, setAnnouncement] = useState<any>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get('/api/products/');
-        const productsList = Array.isArray(response.data) ? response.data : response.data.results || [];
-        setBestsellers(productsList.slice(0, 4));
+        const [productsRes, heroRes, announceRes] = await Promise.allSettled([
+          api.get('/api/products/'),
+          api.get('/api/site-content/hero/'),
+          api.get('/api/site-content/announcement/'),
+        ]);
+
+        if (productsRes.status === 'fulfilled') {
+          const productsList = Array.isArray(productsRes.value.data) ? productsRes.value.data : productsRes.value.data.results || [];
+          setBestsellers(productsList.slice(0, 4));
+        }
+
+        if (heroRes.status === 'fulfilled' && heroRes.value.data) {
+          const heroData = heroRes.value.data.hero || heroRes.value.data;
+          if (heroData && heroData.headline) {
+            setHeroContent((prev: any) => ({ ...prev, ...heroData }));
+          }
+        }
+
+        if (announceRes.status === 'fulfilled' && announceRes.value.data) {
+          const annData = announceRes.value.data.announcement || announceRes.value.data;
+          if (annData && annData.enabled !== false && annData.text) {
+            setAnnouncement(annData);
+          }
+        }
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error fetching homepage data:", error);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
 
   const newProductsImages = [
@@ -121,12 +151,27 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen pb-24">
+      {/* Dynamic Announcement Banner */}
+      {announcement && (
+        <div className="pt-24 px-4 max-w-5xl mx-auto">
+          <Link href={announcement.link || "/women"}>
+            <div className="bg-gradient-to-r from-[#1c1c1c] via-[#242424] to-[#1c1c1c] border border-white/10 text-white rounded-2xl p-3 px-6 text-center text-xs flex items-center justify-center gap-3 shadow-xl hover:border-white/20 transition-all">
+              {announcement.badge && (
+                <span className="bg-amber-400 text-black text-[10px] font-black px-2.5 py-0.5 rounded-full">
+                  {announcement.badge}
+                </span>
+              )}
+              <span className="font-medium text-gray-200">{announcement.text}</span>
+            </div>
+          </Link>
+        </div>
+      )}
       
       {/* Hero Section */}
       <section className="relative w-full h-[85vh] min-h-[550px] md:min-h-[600px] flex items-center justify-center overflow-hidden px-4 md:px-6">
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://images.unsplash.com/photo-1617137968427-85924c800a22?q=80&w=1920&auto=format&fit=crop" 
+            src={heroContent.image_url || "https://images.unsplash.com/photo-1617137968427-85924c800a22?q=80&w=1920&auto=format&fit=crop"} 
             alt="Hero Background" 
             className="w-full h-full object-cover opacity-30"
           />
@@ -139,27 +184,26 @@ export default function HomePage() {
           transition={{ duration: 0.6 }}
           className="relative z-10 text-center max-w-4xl mx-auto space-y-6 md:space-y-8 mt-12 md:mt-16 w-full"
         >
-          <span className="inline-block bg-white/10 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase backdrop-blur-md border border-white/10">
-            کالکشن جدید تابستانه
-          </span>
+          {heroContent.badge && (
+            <span className="inline-block bg-white/10 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase backdrop-blur-md border border-white/10">
+              {heroContent.badge}
+            </span>
+          )}
           
           <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight md:leading-tight tracking-tight">
-            استایل خود را <br className="hidden sm:block" /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-600">بازتعریف کنید</span>
+            {heroContent.headline}
           </h1>
           
           <p className="text-gray-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed px-2">
-            جدیدترین طراحی‌های استایل خیابانی و مینیمال. تولید شده با بهترین متریال برای استفاده روزمره.
+            {heroContent.subtitle}
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 pt-2 md:pt-4 w-full max-w-xs sm:max-w-none mx-auto">
-            <Button asChild className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-base md:text-lg font-bold transition-all backdrop-blur-md">
-              <Link href="/women">فروش ویژه</Link>
+            <Button asChild className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl bg-white text-black hover:bg-gray-200 text-base md:text-lg font-bold transition-all shadow-xl">
+              <Link href={heroContent.cta_link || "/women"}>{heroContent.cta_label || "مشاهده محصولات"}</Link>
             </Button>
             <Button asChild className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-base md:text-lg font-bold transition-all backdrop-blur-md">
-              <Link href="/women">جدیدترین محصولات</Link>
-            </Button>
-            <Button asChild className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-base md:text-lg font-bold transition-all backdrop-blur-md">
-              <Link href="/women">پرفروش ترین محصولات</Link>
+              <Link href="/women">کالکشن جدید</Link>
             </Button>
           </div>
         </motion.div>

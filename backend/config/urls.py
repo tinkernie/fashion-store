@@ -1,3 +1,4 @@
+from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -6,6 +7,7 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
     # drf schema swagger -> api document
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
@@ -37,3 +39,10 @@ urlpatterns = [
     path('api/', include('coupons.urls')),
     path('api/', include('media_libm.urls')),
 ]
+
+from django.conf import settings
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

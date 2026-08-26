@@ -78,6 +78,9 @@ class AdminProductViewSet(viewsets.GenericViewSet):
         result = service.archive_product(pk)
         return Response(result)
 
+    def list(self, request):
+        return self.admin_list(request)
+
     @action(detail=False, methods=["get"], url_path="admin-list")
     def admin_list(self, request):
         filters = {}
