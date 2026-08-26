@@ -55,8 +55,15 @@ class ProductService:
                 product=product,
                 sku=f"{product.slug}-DEFAULT",
                 price=price if price is not None else 0,
+                weight=500,
+                status=Variant.Status.PUBLISHED,
+                availability=Variant.Availability.IN_STOCK,
             )
-            Inventory.objects.create(variant=variant, stock_quantity=25)
+            Inventory.objects.create(
+                variant=variant,
+                available_quantity=50,
+                status=Inventory.Status.IN_STOCK,
+            )
         except Exception:
             pass
 

@@ -25,7 +25,7 @@ class Variant(BaseModel):
     )
     price = models.DecimalField(max_digits=10, decimal_places=2)
     weight = models.PositiveIntegerField(
-        help_text="Weight in grams"
+        default=500, help_text="Weight in grams"
     )  # or Decimal, but grams as integer is safe
     dimensions = models.JSONField(
         default=dict,

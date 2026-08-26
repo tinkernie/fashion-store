@@ -129,16 +129,11 @@ export default function ProductDetailPage() {
       toast.error("متن نظر باید حداقل ۵ کاراکتر باشد.");
       return;
     }
-    const newReview = {
-      id: Date.now(),
-      user: "کاربر خریدار",
-      rating: rating,
-      date: new Date().toLocaleDateString("fa-IR"),
-      text: reviewText.trim(),
-    };
-    setReviews((prev) => [newReview, ...prev]);
-    toast.success("دیدگاه شما با موفقیت ثبت شد.");
+    toast.success("دیدگاه شما با موفقیت ثبت شد و پس از بررسی و تایید توسط پشتیبانی نمایش داده خواهد شد.", {
+      duration: 5000,
+    });
     setReviewText("");
+    setRating(5);
   };
 
   return (

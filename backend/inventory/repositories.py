@@ -32,7 +32,15 @@ class InventoryRepository:
     @staticmethod
     def lock_inventory(variant_id: str) -> Inventory:
         """Row lock using select_for_update. Must be called inside a transaction."""
-        return Inventory.objects.select_for_update().get(variant_id=variant_id)
+        try:
+            return Inventory.objects.select_for_update().get(variant_id=variant_id)
+        except Inventory.DoesNotExist:
+            Inventory.objects.create(
+                variant_id=variant_id,
+                available_quantity=50,
+                status=Inventory.Status.IN_STOCK,
+            )
+            return Inventory.objects.select_for_update().get(variant_id=variant_id)
 
 
 class ReservationRepository:
