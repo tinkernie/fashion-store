@@ -1,126 +1,128 @@
 # Graph Report - fashion-store  (2026-08-28)
 
 ## Corpus Check
-- 22 files · ~63,547 words
+- 14 files · ~69,803 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1887 nodes · 4011 edges · 206 communities (137 shown, 69 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 304 edges (avg confidence: 0.95)
+- 1913 nodes · 4066 edges · 208 communities (137 shown, 71 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 304 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- Inventory & Stock Reservation
-- Products & Reviews Domain
-- Products & Catalog Domain
-- Categories & Hierarchy
-- Coupons & Discounts
+- Admin Portal & Management
+- Admin Portal & Management
+- Admin Portal & Management
+- Admin Portal & Management
+- Admin Portal & Management
+- django_db / patch
+- Admin Portal & Management
+- Admin Portal & Management
 - Shopping Cart & Items
-- Admin Portal & Dashboard
-- Admin Portal & Dashboard
-- Product Variants & Options
-- Products & Catalog Domain
+- Admin Portal & Management
+- loading.tsx / Loading()
+- Admin Portal & Management
 - test_e2e_journeys.py / admin()
-- UI Components & Layout
-- Inventory & Stock Reservation
-- Storefront App & Routing
-- User Accounts & Authentication
+- Admin Portal & Management
+- Admin Portal & Management
 - tsconfig.json / compilerOptions
-- User Accounts & Authentication
-- Wishlist Management
-- User Accounts & Authentication
-- Content Management System (CMS)
-- Notifications & Email
-- User Accounts & Authentication
-- User Accounts & Authentication
+- Admin Portal & Management
+- notifications/signals.py / Meta
+- cms/tests/factories.py / Meta
+- Admin Portal & Management
+- auth/page.tsx / AuthPage()
+- cms/serializers.py / PageSerializer
+- Meta / OptionValueFactory
 - Orders & Checkout Processing
-- Content Management System (CMS)
-- Products & Catalog Domain
-- SearchSelector / .get_dynamic_filters()
-- User Accounts & Authentication
 - components.json / aliases
-- Notifications & Email
+- Admin Portal & Management
+- .get_options_for_product() / OptionValueSerializer
+- User Accounts & Authentication
 - Shopping Cart & Items
-- Shopping Cart & Items
+- django_db / TestGuestCartAPI
+- managers.py / UserManager
 - Products & Catalog Domain
+- User Accounts & Authentication
 - babel-plugin-react-compiler / eslint
+- User Accounts & Authentication
+- Admin Portal & Management
 - Payments & Gateways
-- axios / clsx
-- Content Management System (CMS)
-- User Accounts & Authentication
+- axios / class-variance-authority
+- Admin Portal & Management
+- collections/[slug]/page.tsx / CollectionPage()
 - Orders & Checkout Processing
 - Orders & Checkout Processing
+- Search & Catalog Discovery
 - User Accounts & Authentication
-- Notifications & Email
+- Admin Portal & Management
 - Payments & Gateways
+- notifications/serializers.py / MarkReadSerializer
 - User Accounts & Authentication
-- Payments & Gateways
-- User Accounts & Authentication
-- Content Management System (CMS)
-- Notifications & Email
-- Orders & Checkout Processing
-- Content Management System (CMS)
-- Wishlist Management
-- User Accounts & Authentication
-- Orders & Checkout Processing
-- Wishlist Management
-- User Accounts & Authentication
+- .mark_all_as_read() / NotificationSelector
+- Admin Portal & Management
+- .update_page() / .get_page_by_slug()
+- Meta / UserNotificationPreference
+- atomic / VariantRepository
+- Notification / .__str__()
 - package.json / name
 - Payments & Gateways
-- Storefront App & Routing
-- User Accounts & Authentication
-- User Accounts & Authentication
+- app/layout.tsx / metadata
+- .get_option_by_id() / ProductOptionService
+- Search & Catalog Discovery
+- SiteContentRepository / .delete_by_key()
+- notifications/apps.py / NotificationsConfig
+- seed_data.py / Command
 - middleware.py / AuditLogMiddleware
-- Notifications & Email
 - User Accounts & Authentication
 - Shopping Cart & Items
-- Categories & Hierarchy
-- Content Management System (CMS)
+- categories/apps.py / CategoriesConfig
+- cms/apps.py / CmsConfig
 - common/apps.py / CommonConfig
 - core/apps.py / CoreConfig
-- Storefront App & Routing
-- API Client & Network Utilities
-- Coupons & Discounts
+- pagination.py / StandardPagination
+- core/views.py / BaseAPIView
+- coupons/apps.py / CouponsConfig
 - Inventory & Stock Reservation
 - manage.py / main()
 - media_libm/apps.py / MediaConfig
 - Orders & Checkout Processing
 - Payments & Gateways
+- product_options/apps.py / ProductOptionsConfig
 - Products & Catalog Domain
-- Products & Catalog Domain
-- search/apps.py / AppConfig
-- Client State Management
+- Search & Catalog Discovery
+- store_collections/apps.py / AppConfig
 - User Accounts & Authentication
-- Product Variants & Options
-- Wishlist Management
-- Products & Catalog Domain
+- variants/apps.py / AppConfig
+- Admin Portal & Management
+- wishlist/apps.py / AppConfig
+- product-card.tsx / ProductCard()
 - Migration
 - Migration
 - User Accounts & Authentication
 - User Accounts & Authentication
 - Shopping Cart & Items
 - Shopping Cart & Items
-- Categories & Hierarchy
-- Content Management System (CMS)
+- Migration
+- Migration
 - Migration
 - asgi.py
 - wsgi.py
-- Coupons & Discounts
-- Coupons & Discounts
+- Migration
+- Migration
 - Inventory & Stock Reservation
 - Migration
-- Notifications & Email
+- Migration
 - Orders & Checkout Processing
 - Orders & Checkout Processing
 - Payments & Gateways
 - Migration
 - Products & Catalog Domain
 - Products & Catalog Domain
-- Client State Management
+- Migration
 - User Accounts & Authentication
-- Product Variants & Options
-- Wishlist Management
-- class-variance-authority / class-variance-authority
+- Migration
+- Migration
+- clsx / clsx
 - framer-motion / framer-motion
 - eslint.config.mjs / eslintConfig
 - next.config.ts / nextConfig
@@ -151,273 +153,273 @@
 10. `Variant` - 32 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `RegisterView` --uses--> `RegisterSerializer`  [INFERRED]
-  backend/authentication/views.py → backend/authentication/serializers.py
-- `AuthService` --uses--> `EmailVerificationToken`  [INFERRED]
-  backend/authentication/services.py → backend/authentication/models.py
-- `AuthService` --uses--> `TokenRepository`  [INFERRED]
-  backend/authentication/services.py → backend/authentication/repositories.py
-- `AuthService` --uses--> `UserRepository`  [INFERRED]
-  backend/authentication/services.py → backend/authentication/repositories.py
-- `AuthService` --uses--> `TokenSelector`  [INFERRED]
-  backend/authentication/services.py → backend/authentication/selectors.py
+- `InventoryService` --uses--> `Product`  [INFERRED]
+  backend/inventory/services.py → backend/products/models.py
+- `CartService` --uses--> `Product`  [INFERRED]
+  backend/cart/services.py → backend/products/models.py
+- `Command` --uses--> `Product`  [INFERRED]
+  backend/common/management/commands/seed_data.py → backend/products/models.py
+- `ProductService` --uses--> `CategorySelector`  [INFERRED]
+  backend/products/services.py → backend/categories/selectors.py
+- `TestProductService` --uses--> `ProductFactory`  [INFERRED]
+  backend/products/tests/test_services.py → backend/products/tests/factories.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (206 total, 69 thin omitted)
+## Communities (208 total, 71 thin omitted)
 
-### Community 0 - "Inventory & Stock Reservation"
+### Community 0 - "Admin Portal & Management"
+Cohesion: 0.05
+Nodes (45): APIView, EmailVerificationTokenAdmin, register, EmailVerificationToken, Meta, IsTokenValid, TokenRepository, UserRepository (+37 more)
+
+### Community 1 - "Admin Portal & Management"
 Cohesion: 0.05
 Nodes (36): InventoryAdmin, register, ReservationAdmin, Inventory, Meta, Reservation, Status, InventoryRepository (+28 more)
 
-### Community 1 - "Products & Reviews Domain"
+### Community 2 - "Admin Portal & Management"
 Cohesion: 0.05
 Nodes (25): action, ProductAdmin, register, Meta, Product, BaseModel, Review, Status (+17 more)
 
-### Community 2 - "Products & Catalog Domain"
+### Community 3 - "Admin Portal & Management"
 Cohesion: 0.06
 Nodes (29): CollectionAdmin, CollectionProductInline, register, Collection, CollectionProduct, Meta, CollectionRepository, atomic (+21 more)
 
-### Community 3 - "Categories & Hierarchy"
+### Community 4 - "Admin Portal & Management"
 Cohesion: 0.05
 Nodes (30): CategoryAdmin, register, Category, Meta, MPTTMeta, CategoryRepository, CategorySelector, Return active root nodes with their active descendants as a tree. (+22 more)
 
-### Community 4 - "Coupons & Discounts"
+### Community 5 - "django_db / patch"
 Cohesion: 0.07
 Nodes (27): django_db, patch, TestSignals, Meta, UserFactory, CouponAdmin, CouponUsageAdmin, register (+19 more)
 
-### Community 5 - "Shopping Cart & Items"
-Cohesion: 0.07
-Nodes (24): Cart, CartItem, Meta, CartItemRepository, CartRepository, CartSelector, CartService, atomic (+16 more)
-
-### Community 6 - "Admin Portal & Dashboard"
+### Community 6 - "Admin Portal & Management"
 Cohesion: 0.07
 Nodes (25): MediaAdmin, register, Media, MediaType, Meta, MediaRepository, MediaSelector, MediaUpdateSerializer (+17 more)
 
-### Community 7 - "Admin Portal & Dashboard"
+### Community 7 - "Admin Portal & Management"
 Cohesion: 0.07
 Nodes (24): register, TrackedEventAdmin, AnalyticsConfig, AppConfig, cart_changed_handler(), order_placed_handler(), Meta, TrackedEvent (+16 more)
 
-### Community 8 - "Product Variants & Options"
+### Community 8 - "Shopping Cart & Items"
 Cohesion: 0.08
-Nodes (24): Command, register, VariantAdmin, VariantOptionInline, Availability, Meta, BaseModel, Status (+16 more)
+Nodes (21): Cart, CartItem, Meta, CartItemRepository, CartRepository, CartSelector, CartService, atomic (+13 more)
 
-### Community 9 - "Products & Catalog Domain"
+### Community 9 - "Admin Portal & Management"
+Cohesion: 0.08
+Nodes (20): register, WishlistAdmin, WishlistItemInline, Meta, Wishlist, WishlistItem, WishlistRepository, WishlistSelector (+12 more)
+
+### Community 10 - "loading.tsx / Loading()"
 Cohesion: 0.09
-Nodes (18): OptionValueInline, ProductOptionAdmin, register, Meta, OptionValue, ProductOption, OptionValueRepository, ProductOptionRepository (+10 more)
+Nodes (29): metadata, FilterFacet, POPULAR_KEYWORDS, PRESET_COLORS, ProductItem, SearchPage(), SORT_OPTIONS, DropdownMenu() (+21 more)
 
-### Community 10 - "test_e2e_journeys.py / admin()"
+### Community 11 - "Admin Portal & Management"
+Cohesion: 0.11
+Nodes (18): register, VariantAdmin, VariantOptionInline, Availability, Meta, BaseModel, Status, Variant (+10 more)
+
+### Community 12 - "test_e2e_journeys.py / admin()"
 Cohesion: 0.08
 Nodes (19): admin(), authenticate(), catalog(), client(), create_order(), customer(), customer_b(), End-to-end API journeys for the Luxe shop. Run with:: pytest -q… (+11 more)
 
-### Community 11 - "UI Components & Layout"
-Cohesion: 0.12
-Nodes (22): DropdownMenu(), DropdownMenuCheckboxItem(), DropdownMenuContent(), DropdownMenuItem(), DropdownMenuLabel(), DropdownMenuRadioItem(), DropdownMenuSeparator(), DropdownMenuShortcut() (+14 more)
-
-### Community 12 - "Inventory & Stock Reservation"
-Cohesion: 0.13
-Nodes (7): NAV_ITEMS, Button(), buttonVariants, Input(), adminApi, ProductReview, SiteContentData
-
-### Community 13 - "Storefront App & Routing"
-Cohesion: 0.10
-Nodes (12): CheckoutForm, CheckoutPage(), checkoutSchema, CollectionsSection(), MobileNav(), api, CartItem, CartStore (+4 more)
-
-### Community 14 - "User Accounts & Authentication"
+### Community 13 - "Admin Portal & Management"
 Cohesion: 0.14
-Nodes (13): IsSelf, Object-level permission to only allow users to edit their own profile., AdminUserSerializer, AdminUserUpdateSerializer, AssignGroupsSerializer, ChangeEmailSerializer, ConfirmEmailSerializer, UpdateProfileSerializer (+5 more)
+Nodes (19): STATUS_TABS, getStepIndex(), getUserIdFromToken(), ORDER_STEPS, ProfilePage(), Dialog(), DialogContent(), DialogDescription() (+11 more)
+
+### Community 14 - "Admin Portal & Management"
+Cohesion: 0.10
+Nodes (5): Button(), buttonVariants, CMSPage, ProductReview, SiteContentData
 
 ### Community 15 - "tsconfig.json / compilerOptions"
 Cohesion: 0.07
 Nodes (28): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+20 more)
 
-### Community 16 - "User Accounts & Authentication"
-Cohesion: 0.12
-Nodes (16): APIView, IsTokenValid, LoginSerializer, PasswordResetConfirmSerializer, PasswordResetRequestSerializer, TokenRefreshSerializer, VerifyEmailSerializer, CustomTokenRefreshView (+8 more)
-
-### Community 17 - "Wishlist Management"
-Cohesion: 0.17
-Nodes (10): register, WishlistAdmin, WishlistItemInline, Meta, Wishlist, WishlistItem, WishlistRepository, WishlistSelector (+2 more)
-
-### Community 18 - "User Accounts & Authentication"
+### Community 16 - "Admin Portal & Management"
 Cohesion: 0.16
-Nodes (12): EmailVerificationTokenAdmin, register, EmailVerificationToken, Meta, TokenRepository, TokenSelector, UserSelector, ResendVerificationSerializer (+4 more)
+Nodes (10): OptionValueInline, ProductOptionAdmin, register, Meta, OptionValue, ProductOption, OptionValueRepository, ProductOptionRepository (+2 more)
 
-### Community 19 - "Content Management System (CMS)"
-Cohesion: 0.15
-Nodes (10): Meta, PageFactory, DjangoModelFactory, SiteContentFactory, django_db, TestAdminAPI, TestPublicAPI, django_db (+2 more)
-
-### Community 20 - "Notifications & Email"
+### Community 17 - "notifications/signals.py / Meta"
 Cohesion: 0.15
 Nodes (13): Meta, NotificationFactory, NotificationTemplateFactory, PreferenceFactory, DjangoModelFactory, django_db, TestUserEndpoints, django_db (+5 more)
 
-### Community 21 - "User Accounts & Authentication"
-Cohesion: 0.13
-Nodes (9): EmailChangeRequestAdmin, register, EmailChangeRequest, Meta, UserRepository, UserSelector, shared_task, send_email_change_verification() (+1 more)
+### Community 18 - "cms/tests/factories.py / Meta"
+Cohesion: 0.15
+Nodes (10): Meta, PageFactory, DjangoModelFactory, SiteContentFactory, django_db, TestAdminAPI, TestPublicAPI, django_db (+2 more)
 
-### Community 22 - "User Accounts & Authentication"
-Cohesion: 0.14
+### Community 19 - "Admin Portal & Management"
+Cohesion: 0.16
+Nodes (11): PageAdmin, register, SiteContentAdmin, Meta, Page, Key-value store for global site sections. Expected keys: 'homepage', 'header',…, SiteContent, Status (+3 more)
+
+### Community 20 - "auth/page.tsx / AuthPage()"
+Cohesion: 0.11
 Nodes (20): AuthPage(), ForgotPasswordForm, forgotPasswordSchema, getApiErrorMessage(), identifierValidator, LoginForm, loginSchema, passwordRegisterSchema (+12 more)
+
+### Community 21 - "cms/serializers.py / PageSerializer"
+Cohesion: 0.15
+Nodes (8): PageSerializer, PageUpdateSerializer, SiteContentSerializer, AdminPageViewSet, AdminSiteContentViewSet, PublicPageViewSet, PublicSiteContentViewSet, action
+
+### Community 22 - "Meta / OptionValueFactory"
+Cohesion: 0.18
+Nodes (10): Meta, OptionValueFactory, ProductOptionFactory, DjangoModelFactory, django_db, TestAdminAPI, TestPublicAPI, django_db (+2 more)
 
 ### Community 23 - "Orders & Checkout Processing"
 Cohesion: 0.17
 Nodes (7): Order, Status, atomic, OrderSelector, OrderService, atomic, Return stock for all items if order is cancelled before shipping.
 
-### Community 24 - "Content Management System (CMS)"
-Cohesion: 0.15
-Nodes (8): PageSerializer, PageUpdateSerializer, SiteContentSerializer, AdminPageViewSet, AdminSiteContentViewSet, PublicPageViewSet, PublicSiteContentViewSet, action
-
-### Community 25 - "Products & Catalog Domain"
-Cohesion: 0.17
-Nodes (10): Meta, OptionValueFactory, ProductOptionFactory, DjangoModelFactory, django_db, TestAdminAPI, TestPublicAPI, django_db (+2 more)
-
-### Community 26 - "SearchSelector / .get_dynamic_filters()"
-Cohesion: 0.15
-Nodes (8): Build available filters based on the current product queryset. Returns a dict…, SearchSelector, SearchSerializer, SearchService, django_db, TestSearchService, action, SearchViewSet
-
-### Community 27 - "User Accounts & Authentication"
-Cohesion: 0.15
-Nodes (8): AbstractBaseUser, APIException, InvalidTokenException, TokenExpiredException, BusinessException, User, UserValidator, PermissionsMixin
-
-### Community 28 - "components.json / aliases"
+### Community 24 - "components.json / aliases"
 Cohesion: 0.09
 Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+13 more)
 
-### Community 29 - "Notifications & Email"
-Cohesion: 0.18
-Nodes (9): Command, BaseCommand, Meta, Notification, NotificationTemplate, NotificationRepository, TemplateRepository, shared_task (+1 more)
+### Community 25 - "Admin Portal & Management"
+Cohesion: 0.19
+Nodes (7): PaymentAdmin, register, Meta, Payment, Status, PaymentRepository, PaymentSelector
 
-### Community 30 - "Shopping Cart & Items"
+### Community 26 - ".get_options_for_product() / OptionValueSerializer"
+Cohesion: 0.20
+Nodes (7): OptionValueSerializer, ProductOptionDetailSerializer, ProductOptionSerializer, OptionValueService, AdminProductOptionViewSet, PublicProductOptionViewSet, action
+
+### Community 27 - "User Accounts & Authentication"
+Cohesion: 0.11
+Nodes (4): AbstractBaseUser, User, PermissionsMixin, QuerySet
+
+### Community 28 - "Shopping Cart & Items"
 Cohesion: 0.22
 Nodes (8): ApplyCouponSerializer, CartAddItemSerializer, CartMergeSerializer, CartUpdateQuantitySerializer, CartViewSet, action, Merge guest cart into user cart (called after login). Must be authenticated., Ensure a session key exists for guest users.
 
-### Community 31 - "Shopping Cart & Items"
-Cohesion: 0.14
-Nodes (11): django_db, TestGuestCartAPI, Meta, DjangoModelFactory, post_generation, VariantFactory, django_db, TestAdminAPI (+3 more)
+### Community 29 - "django_db / TestGuestCartAPI"
+Cohesion: 0.13
+Nodes (10): django_db, TestGuestCartAPI, Meta, DjangoModelFactory, post_generation, VariantFactory, django_db, TestPublicAPI (+2 more)
 
-### Community 32 - "Products & Catalog Domain"
+### Community 30 - "managers.py / UserManager"
+Cohesion: 0.16
+Nodes (11): UserManager, BaseModel, Meta, Ultimate base for all domain entities., SoftDeleteManager, SoftDeleteModel, TimestampedModel, UUIDPrimaryKeyMixin (+3 more)
+
+### Community 31 - "Products & Catalog Domain"
 Cohesion: 0.14
 Nodes (9): Meta, ProductFactory, DjangoModelFactory, django_db, TestPublicAPI, django_db, TestSearchAPI, django_db (+1 more)
+
+### Community 32 - "User Accounts & Authentication"
+Cohesion: 0.19
+Nodes (10): IsSelf, Object-level permission to only allow users to edit their own profile., AdminUserSerializer, AdminUserUpdateSerializer, AssignGroupsSerializer, ChangeEmailSerializer, ConfirmEmailSerializer, UpdateProfileSerializer (+2 more)
 
 ### Community 33 - "babel-plugin-react-compiler / eslint"
 Cohesion: 0.11
 Nodes (19): babel-plugin-react-compiler, eslint, eslint-config-next, devDependencies, babel-plugin-react-compiler, eslint, eslint-config-next, tailwindcss (+11 more)
 
-### Community 34 - "Payments & Gateways"
-Cohesion: 0.20
-Nodes (7): PaymentAdmin, register, Meta, Payment, Status, PaymentRepository, PaymentSelector
+### Community 34 - "User Accounts & Authentication"
+Cohesion: 0.18
+Nodes (7): EmailChangeRequest, Meta, UserRepository, UserSelector, shared_task, send_email_change_verification(), UserValidator
 
-### Community 35 - "axios / clsx"
-Cohesion: 0.12
-Nodes (17): axios, clsx, dependencies, axios, clsx, lucide-react, next, next-themes (+9 more)
-
-### Community 36 - "Content Management System (CMS)"
-Cohesion: 0.25
-Nodes (5): Page, Status, PageRepository, PageSelector, SiteContentSelector
-
-### Community 37 - "User Accounts & Authentication"
-Cohesion: 0.20
-Nodes (9): UserManager, BaseModel, Meta, Ultimate base for all domain entities., SoftDeleteManager, SoftDeleteModel, TimestampedModel, UUIDPrimaryKeyMixin (+1 more)
-
-### Community 38 - "Orders & Checkout Processing"
-Cohesion: 0.23
+### Community 35 - "Admin Portal & Management"
+Cohesion: 0.22
 Nodes (10): OrderAdmin, OrderItemInline, register, StatusHistoryInline, Meta, OrderItem, OrderSequence, OrderStatusHistory (+2 more)
 
-### Community 39 - "Orders & Checkout Processing"
+### Community 36 - "Payments & Gateways"
+Cohesion: 0.18
+Nodes (9): CallbackSerializer, InitiatePaymentSerializer, PaymentService, django_db, patch, TestPaymentService, CallbackViewSet, PaymentViewSet (+1 more)
+
+### Community 37 - "axios / class-variance-authority"
+Cohesion: 0.12
+Nodes (17): axios, class-variance-authority, dependencies, axios, class-variance-authority, lucide-react, next, next-themes (+9 more)
+
+### Community 38 - "Admin Portal & Management"
+Cohesion: 0.17
+Nodes (6): NAV_ITEMS, OptionDef, VariantItem, MediaUploader(), MediaUploaderProps, Input()
+
+### Community 39 - "collections/[slug]/page.tsx / CollectionPage()"
+Cohesion: 0.18
+Nodes (5): CollectionsSection(), api, useWishlist, WishlistItem, WishlistStore
+
+### Community 40 - "Orders & Checkout Processing"
 Cohesion: 0.21
 Nodes (7): CreateOrderSerializer, Meta, OrderListSerializer, StatusTransitionSerializer, AdminOrderViewSet, action, UserOrderViewSet
 
-### Community 40 - "User Accounts & Authentication"
+### Community 41 - "Orders & Checkout Processing"
+Cohesion: 0.19
+Nodes (8): Meta, OrderFactory, OrderItemFactory, DjangoModelFactory, django_db, TestAdminEndpoints, TestUserEndpoints, TestStatusTransitions
+
+### Community 42 - "Search & Catalog Discovery"
+Cohesion: 0.21
+Nodes (5): Build available filters based on the current product queryset. Returns a dict…, SearchSelector, SearchService, django_db, TestSearchService
+
+### Community 43 - "User Accounts & Authentication"
 Cohesion: 0.23
 Nodes (7): GroupFactory, Meta, UserFactory, django_db, TestUserEndpoints, django_db, TestUserService
 
-### Community 41 - "Notifications & Email"
-Cohesion: 0.18
-Nodes (5): NotificationsConfig, AppConfig, order_status_changed_handler(), NotificationService, Create an in-app notification and conditionally send an email.
-
-### Community 42 - "Payments & Gateways"
-Cohesion: 0.23
-Nodes (6): CallbackSerializer, InitiatePaymentSerializer, PaymentService, CallbackViewSet, PaymentViewSet, action
-
-### Community 43 - "User Accounts & Authentication"
+### Community 44 - "Admin Portal & Management"
 Cohesion: 0.20
-Nodes (6): Meta, UserFactory, django_db, TestAuthEndpoints, django_db, TestAuthService
+Nodes (8): NotificationAdmin, NotificationTemplateAdmin, register, UserNotificationPreferenceAdmin, Command, BaseCommand, NotificationTemplate, TemplateRepository
 
-### Community 44 - "Payments & Gateways"
+### Community 45 - "Payments & Gateways"
 Cohesion: 0.16
 Nodes (6): ABC, BasePaymentGateway, Validate callback payload and return: - 'gateway_reference': str - 'status':…, Return a dict with at least: - 'gateway_reference': str - 'status': str…, DummyGateway, BasePaymentGateway
 
-### Community 45 - "User Accounts & Authentication"
-Cohesion: 0.18
-Nodes (4): ChangePasswordSerializer, AuthService, ChangePasswordView, LogoutView
-
-### Community 46 - "Content Management System (CMS)"
-Cohesion: 0.19
-Nodes (7): PageAdmin, register, SiteContentAdmin, Meta, Key-value store for global site sections. Expected keys: 'homepage', 'header',…, SiteContent, SiteContentRepository
-
-### Community 47 - "Notifications & Email"
+### Community 46 - "notifications/serializers.py / MarkReadSerializer"
 Cohesion: 0.23
 Nodes (6): MarkReadSerializer, NotificationListSerializer, PreferenceSerializer, AdminNotificationViewSet, action, UserNotificationViewSet
 
-### Community 48 - "Orders & Checkout Processing"
-Cohesion: 0.22
-Nodes (8): Meta, OrderFactory, OrderItemFactory, DjangoModelFactory, TestStatusTransitions, django_db, patch, TestPaymentService
+### Community 47 - "User Accounts & Authentication"
+Cohesion: 0.23
+Nodes (4): APIException, InvalidTokenException, TokenExpiredException, BusinessException
 
-### Community 50 - "Wishlist Management"
-Cohesion: 0.22
-Nodes (6): Meta, DjangoModelFactory, WishlistFactory, WishlistItemFactory, django_db, TestWishlistService
+### Community 48 - ".mark_all_as_read() / NotificationSelector"
+Cohesion: 0.24
+Nodes (3): NotificationSelector, NotificationService, Create an in-app notification and conditionally send an email.
 
-### Community 51 - "User Accounts & Authentication"
-Cohesion: 0.32
-Nodes (6): RegisterSerializer, PasswordValidator, test_missing_digit(), test_missing_uppercase(), test_short_password(), test_valid_password()
+### Community 49 - "Admin Portal & Management"
+Cohesion: 0.29
+Nodes (3): UserService, AdminUserViewSet, action
 
-### Community 52 - "Orders & Checkout Processing"
-Cohesion: 0.20
-Nodes (7): STATUS_TABS, DialogContent(), DialogDescription(), DialogFooter(), DialogOverlay(), DialogTitle(), DialogTrigger()
+### Community 51 - "Meta / UserNotificationPreference"
+Cohesion: 0.29
+Nodes (4): Meta, UserNotificationPreference, PreferenceRepository, PreferenceSelector
 
-### Community 53 - "Wishlist Management"
-Cohesion: 0.31
-Nodes (4): WishlistAddItemSerializer, WishlistRemoveItemSerializer, action, WishlistViewSet
+### Community 52 - "atomic / VariantRepository"
+Cohesion: 0.24
+Nodes (4): atomic, option_assignments: [{'option_id': ..., 'value_id': ...}, ...], VariantRepository, Ensure each assignment has a valid option_id and value_id, and the value…
 
-### Community 54 - "User Accounts & Authentication"
+### Community 53 - "Notification / .__str__()"
 Cohesion: 0.33
-Nodes (3): UserNotificationPreference, PreferenceRepository, PreferenceSelector
+Nodes (4): Notification, NotificationRepository, shared_task, send_notification_email()
 
-### Community 55 - "package.json / name"
+### Community 54 - "package.json / name"
 Cohesion: 0.22
 Nodes (8): name, private, scripts, build, dev, lint, start, version
 
-### Community 56 - "Payments & Gateways"
+### Community 55 - "Payments & Gateways"
 Cohesion: 0.25
 Nodes (5): Meta, PaymentFactory, DjangoModelFactory, django_db, TestPaymentAPI
 
-### Community 57 - "Storefront App & Routing"
-Cohesion: 0.29
-Nodes (5): metadata, vazirmatn, Footer(), Navbar(), Toaster()
+### Community 56 - "app/layout.tsx / metadata"
+Cohesion: 0.32
+Nodes (4): metadata, vazirmatn, Footer(), Toaster()
 
-### Community 58 - "User Accounts & Authentication"
-Cohesion: 0.60
-Nodes (4): NotificationAdmin, NotificationTemplateAdmin, register, UserNotificationPreferenceAdmin
+### Community 58 - "Search & Catalog Discovery"
+Cohesion: 0.43
+Nodes (3): SearchSerializer, action, SearchViewSet
+
+### Community 60 - "notifications/apps.py / NotificationsConfig"
+Cohesion: 0.40
+Nodes (3): NotificationsConfig, AppConfig, order_status_changed_handler()
 
 ## Knowledge Gaps
-- **154 isolated node(s):** `Meta`, `Meta`, `Migration`, `Migration`, `Migration` (+149 more)
+- **165 isolated node(s):** `Migration`, `Migration`, `Migration`, `Migration`, `Migration` (+160 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **69 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **71 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `BusinessException` connect `User Accounts & Authentication` to `Inventory & Stock Reservation`, `Products & Reviews Domain`, `Products & Catalog Domain`, `Categories & Hierarchy`, `Coupons & Discounts`, `Shopping Cart & Items`, `Admin Portal & Dashboard`, `Admin Portal & Dashboard`, `Product Variants & Options`, `Products & Catalog Domain`, `Wishlist Management`, `User Accounts & Authentication`, `Content Management System (CMS)`, `Notifications & Email`, `User Accounts & Authentication`, `Orders & Checkout Processing`, `Products & Catalog Domain`, `Notifications & Email`, `Payments & Gateways`, `Content Management System (CMS)`, `Orders & Checkout Processing`, `User Accounts & Authentication`, `Notifications & Email`, `Payments & Gateways`, `User Accounts & Authentication`, `User Accounts & Authentication`, `Orders & Checkout Processing`, `Content Management System (CMS)`, `Wishlist Management`, `User Accounts & Authentication`?**
-  _High betweenness centrality (0.175) - this node is a cross-community bridge._
-- **Why does `BaseModel` connect `User Accounts & Authentication` to `Inventory & Stock Reservation`, `Payments & Gateways`, `Categories & Hierarchy`, `Content Management System (CMS)`, `Shopping Cart & Items`, `Coupons & Discounts`, `Admin Portal & Dashboard`, `Admin Portal & Dashboard`, `Orders & Checkout Processing`, `Products & Catalog Domain`, `Products & Catalog Domain`, `Content Management System (CMS)`, `Wishlist Management`, `Orders & Checkout Processing`, `User Accounts & Authentication`, `Notifications & Email`?**
-  _High betweenness centrality (0.063) - this node is a cross-community bridge._
-- **Why does `InventoryService` connect `Inventory & Stock Reservation` to `Products & Reviews Domain`, `test_e2e_journeys.py / admin()`, `Shopping Cart & Items`, `Orders & Checkout Processing`?**
-  _High betweenness centrality (0.046) - this node is a cross-community bridge._
+- **Why does `BusinessException` connect `User Accounts & Authentication` to `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `django_db / patch`, `Admin Portal & Management`, `Admin Portal & Management`, `Shopping Cart & Items`, `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `notifications/signals.py / Meta`, `cms/tests/factories.py / Meta`, `Admin Portal & Management`, `Meta / OptionValueFactory`, `Orders & Checkout Processing`, `Admin Portal & Management`, `.get_options_for_product() / OptionValueSerializer`, `User Accounts & Authentication`, `User Accounts & Authentication`, `Admin Portal & Management`, `Payments & Gateways`, `Orders & Checkout Processing`, `User Accounts & Authentication`, `Admin Portal & Management`, `Admin Portal & Management`, `.update_page() / .get_page_by_slug()`, `atomic / VariantRepository`, `Notification / .__str__()`, `.get_option_by_id() / ProductOptionService`?**
+  _High betweenness centrality (0.151) - this node is a cross-community bridge._
+- **Why does `BaseModel` connect `managers.py / UserManager` to `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `django_db / patch`, `Admin Portal & Management`, `Admin Portal & Management`, `Shopping Cart & Items`, `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `Notification / .__str__()`, `Orders & Checkout Processing`, `Admin Portal & Management`, `User Accounts & Authentication`?**
+  _High betweenness centrality (0.049) - this node is a cross-community bridge._
+- **Why does `ProductFactory` connect `Products & Catalog Domain` to `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `Admin Portal & Management`, `Search & Catalog Discovery`, `Admin Portal & Management`, `Meta / OptionValueFactory`, `django_db / TestGuestCartAPI`?**
+  _High betweenness centrality (0.039) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `ProductFactory` (e.g. with `TestPublicAPI` and `TestProductService`) actually correct?**
   _`ProductFactory` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 3 inferred relationships involving `VariantFactory` (e.g. with `TestAdminAPI` and `TestPublicAPI`) actually correct?**
   _`VariantFactory` has 3 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Meta`, `Meta`, `Migration` to the rest of the system?**
-  _154 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Inventory & Stock Reservation` be split into smaller, more focused modules?**
-  _Cohesion score 0.05434173669467787 - nodes in this community are weakly interconnected._
+- **What connects `Migration`, `Migration`, `Migration` to the rest of the system?**
+  _165 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Admin Portal & Management` be split into smaller, more focused modules?**
+  _Cohesion score 0.050883898709985664 - nodes in this community are weakly interconnected._
