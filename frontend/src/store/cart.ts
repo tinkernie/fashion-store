@@ -11,37 +11,94 @@ export interface CartItem {
   variant_id?: string;
 }
 
+export interface AppliedCoupon {
+  code: string;
+  discount_type?: 'fixed' | 'percentage';
+  discount_value?: number;
+  discount_amount: number;
+}
+
 interface CartStore {
   items: CartItem[];
+  coupon: AppliedCoupon | null;
+  isLoading: boolean;
+  getGuestSessionKey: () => string;
   fetchCart: () => Promise<void>;
   addItem: (item: CartItem) => Promise<void>;
   removeItem: (id: string, size: string, variant_id?: string) => Promise<void>;
   updateQuantity: (id: string, size: string, quantity: number, variant_id?: string) => Promise<void>;
-  mergeCart: (session_key: string) => Promise<void>;
+  applyCoupon: (code: string) => Promise<boolean>;
+  removeCoupon: () => Promise<void>;
+  mergeCart: (session_key?: string) => Promise<void>;
   clearCart: () => Promise<void>;
   getTotal: () => number;
+  getDiscountAmount: () => number;
+  getFinalTotal: () => number;
 }
+
+const GUEST_KEY_STORAGE = 'guest_cart_session_key';
+
+const generateUUID = () => {
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 export const useCart = create<CartStore>((set, get) => ({
   items: [],
+  coupon: null,
+  isLoading: false,
+
+  getGuestSessionKey: () => {
+    if (typeof window === 'undefined') return '';
+    let key = localStorage.getItem(GUEST_KEY_STORAGE);
+    if (!key) {
+      key = generateUUID();
+      localStorage.setItem(GUEST_KEY_STORAGE, key);
+    }
+    return key;
+  },
 
   fetchCart: async () => {
     try {
-      const response = await api.get('/api/cart/');
+      set({ isLoading: true });
+      const guestKey = get().getGuestSessionKey();
+      const response = await api.get('/api/cart/', {
+        headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {},
+      });
+
       if (response.data && response.data.items) {
         const mapped = response.data.items.map((it: any) => ({
-          id: it.id,
-          variant_id: it.variant_id,
-          name: it.product_title || it.name,
+          id: String(it.id),
+          variant_id: it.variant_id ? String(it.variant_id) : undefined,
+          name: it.product_title || it.name || "محصول",
           price: parseFloat(it.price) || 0,
           imageUrl: it.image?.url || it.image || it.imageUrl || "",
           size: it.option_details || it.size || "",
-          quantity: it.quantity,
+          quantity: it.quantity || 1,
         }));
-        set({ items: mapped });
+
+        let couponData: AppliedCoupon | null = null;
+        if (response.data.coupon) {
+          couponData = {
+            code: response.data.coupon.code || response.data.coupon,
+            discount_amount: parseFloat(response.data.discount_amount) || 0,
+            discount_type: response.data.coupon.discount_type,
+            discount_value: response.data.coupon.discount_value,
+          };
+        }
+
+        set({ items: mapped, coupon: couponData });
       }
     } catch (error) {
       console.error("Failed to fetch backend cart:", error);
+    } finally {
+      set({ isLoading: false });
     }
   },
   
@@ -49,13 +106,13 @@ export const useCart = create<CartStore>((set, get) => ({
     // Optimistic UI Update
     set((state) => {
       const existingItem = state.items.find(
-        (i) => i.id === item.id && i.size === item.size
+        (i) => (i.variant_id && item.variant_id ? i.variant_id === item.variant_id : i.id === item.id && i.size === item.size)
       );
       
       if (existingItem) {
         return {
           items: state.items.map((i) =>
-            i.id === item.id && i.size === item.size
+            (i.variant_id && item.variant_id ? i.variant_id === item.variant_id : i.id === item.id && i.size === item.size)
               ? { ...i, quantity: i.quantity + (item.quantity || 1) }
               : i
           ),
@@ -67,10 +124,18 @@ export const useCart = create<CartStore>((set, get) => ({
 
     // Backend Sync
     try {
-      await api.post('/api/cart/add_item/', {
-        variant_id: item.variant_id || item.id,
-        quantity: item.quantity || 1
-      });
+      const guestKey = get().getGuestSessionKey();
+      await api.post(
+        '/api/cart/add_item/',
+        {
+          variant_id: item.variant_id || item.id,
+          quantity: item.quantity || 1,
+          session_key: guestKey,
+        },
+        {
+          headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {},
+        }
+      );
     } catch (error) {
       console.error("Failed to sync cart add:", error);
     }
@@ -84,9 +149,17 @@ export const useCart = create<CartStore>((set, get) => ({
 
     // Backend Sync
     try {
-      await api.post('/api/cart/remove-item/', {
-        variant_id: variant_id || id
-      });
+      const guestKey = get().getGuestSessionKey();
+      await api.post(
+        '/api/cart/remove-item/',
+        {
+          variant_id: variant_id || id,
+          session_key: guestKey,
+        },
+        {
+          headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {},
+        }
+      );
     } catch (error) {
       console.error("Failed to sync cart remove:", error);
     }
@@ -99,30 +172,91 @@ export const useCart = create<CartStore>((set, get) => ({
       ),
     }));
     try {
-      await api.post('/api/cart/update-quantity/', {
-        variant_id: variant_id || id,
-        quantity: quantity
-      });
+      const guestKey = get().getGuestSessionKey();
+      await api.post(
+        '/api/cart/update-quantity/',
+        {
+          variant_id: variant_id || id,
+          quantity: quantity,
+          session_key: guestKey,
+        },
+        {
+          headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {},
+        }
+      );
     } catch (error) {
       console.error("Failed to sync cart quantity:", error);
     }
   },
 
-  mergeCart: async (session_key) => {
+  applyCoupon: async (code: string) => {
     try {
-      const response = await api.post('/api/cart/merge/', { session_key });
-      if (response.data && response.data.items) {
-        set({ items: response.data.items });
+      const guestKey = get().getGuestSessionKey();
+      const res = await api.post(
+        '/api/cart/apply-coupon/',
+        { code, session_key: guestKey },
+        { headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {} }
+      );
+      if (res.data) {
+        set({
+          coupon: {
+            code,
+            discount_amount: parseFloat(res.data.discount_amount) || 0,
+            discount_type: res.data.discount_type,
+            discount_value: res.data.discount_value,
+          },
+        });
+        return true;
       }
+      return false;
+    } catch (e) {
+      console.error("Failed to apply coupon:", e);
+      throw e;
+    }
+  },
+
+  removeCoupon: async () => {
+    try {
+      const guestKey = get().getGuestSessionKey();
+      await api.post(
+        '/api/cart/remove-coupon/',
+        { session_key: guestKey },
+        { headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {} }
+      );
+      set({ coupon: null });
+    } catch (e) {
+      console.error("Failed to remove coupon:", e);
+    }
+  },
+
+  mergeCart: async (session_key?: string) => {
+    try {
+      const keyToMerge = session_key || (typeof window !== 'undefined' ? localStorage.getItem(GUEST_KEY_STORAGE) : null);
+      if (!keyToMerge) {
+        await get().fetchCart();
+        return;
+      }
+
+      await api.post('/api/cart/merge/', { session_key: keyToMerge });
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(GUEST_KEY_STORAGE);
+      }
+      await get().fetchCart();
     } catch (error) {
       console.error("Failed to merge backend cart:", error);
+      await get().fetchCart();
     }
   },
   
   clearCart: async () => {
-    set({ items: [] });
+    set({ items: [], coupon: null });
     try {
-      await api.post('/api/cart/clear/');
+      const guestKey = get().getGuestSessionKey();
+      await api.post(
+        '/api/cart/clear/',
+        { session_key: guestKey },
+        { headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {} }
+      );
     } catch (error) {
       console.error("Failed to clear backend cart:", error);
     }
@@ -130,5 +264,22 @@ export const useCart = create<CartStore>((set, get) => ({
   
   getTotal: () => {
     return get().items.reduce((total, item) => total + (item.price * item.quantity), 0);
+  },
+
+  getDiscountAmount: () => {
+    const coupon = get().coupon;
+    if (!coupon) return 0;
+    if (coupon.discount_amount) return coupon.discount_amount;
+    const total = get().getTotal();
+    if (coupon.discount_type === 'percentage' && coupon.discount_value) {
+      return (total * coupon.discount_value) / 100;
+    }
+    return coupon.discount_value || 0;
+  },
+
+  getFinalTotal: () => {
+    const total = get().getTotal();
+    const discount = get().getDiscountAmount();
+    return Math.max(0, total - discount);
   },
 }));

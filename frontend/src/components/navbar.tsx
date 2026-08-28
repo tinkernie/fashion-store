@@ -103,10 +103,10 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Categories */}
-        <div className="hidden md:flex items-center gap-12 text-base font-medium text-gray-300">
-          <Link href="/women" className="hover:text-white transition-colors">فروش ویژه</Link>
-          <Link href="/women" className="hover:text-white transition-colors">جدیدترین محصولات</Link>
-          <Link href="/women" className="hover:text-white transition-colors">پرفروش‌ترین‌ها</Link>
+        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
+          <Link href="/products" className="hover:text-white transition-colors">فروشگاه و کاتالوگ</Link>
+          <Link href="/search?sort=newest" className="hover:text-white transition-colors">جدیدترین‌ها</Link>
+          <Link href="/search?sort=popularity" className="hover:text-white transition-colors">پرفروش‌ترین‌ها</Link>
         </div>
 
         {/* Action Icons */}
@@ -125,9 +125,9 @@ export default function Navbar() {
                   <SheetTitle className="text-white text-2xl font-black font-sans">منو</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-6 py-6 text-lg font-medium">
-                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">فروش ویژه</Link></SheetClose>
-                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">جدیدترین محصولات</Link></SheetClose>
-                  <SheetClose asChild><Link href="/women" className="hover:text-gray-300 transition-colors">پرفروش‌ترین‌ها</Link></SheetClose>
+                  <SheetClose asChild><Link href="/products" className="hover:text-gray-300 transition-colors">فروشگاه و کاتالوگ</Link></SheetClose>
+                  <SheetClose asChild><Link href="/search?sort=newest" className="hover:text-gray-300 transition-colors">جدیدترین محصولات</Link></SheetClose>
+                  <SheetClose asChild><Link href="/search?sort=popularity" className="hover:text-gray-300 transition-colors">پرفروش‌ترین‌ها</Link></SheetClose>
                   <div className="border-t border-white/10 pt-6 flex flex-col gap-6">
                     <SheetClose asChild><Link href="/profile" className="hover:text-gray-300 transition-colors">پروفایل کاربری</Link></SheetClose>
                     <SheetClose asChild><Link href="/admin" className="text-amber-300 font-bold hover:text-amber-200 transition-colors">پنل مدیریت (Admin / CMS)</Link></SheetClose>
@@ -149,7 +149,16 @@ export default function Navbar() {
               </DialogHeader>
               
               {/* Search Input */}
-              <div className="flex items-center border-b border-white/10 px-6 py-4">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (searchQuery.trim()) {
+                    setIsSearchOpen(false);
+                    router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+                  }
+                }}
+                className="flex items-center border-b border-white/10 px-6 py-4"
+              >
                 <Search className="w-6 h-6 text-gray-500 ml-4 shrink-0" />
                 <input 
                   className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-600 font-sans text-xl"
@@ -158,36 +167,63 @@ export default function Navbar() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
                 />
-              </div>
+              </form>
 
               {/* Search Results */}
               <div className="max-h-[50vh] overflow-y-auto p-4 space-y-2">
                 {searchQuery.length > 0 && searchResults.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">محصولی یافت نشد.</p>
-                ) : (
-                searchResults.map((product) => (
-                  <div
-                      key={product.id}
-                      onClick={() => handleProductClick(product.id)}
-                      className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl cursor-pointer transition-colors"
+                  <div className="text-center py-8 space-y-3">
+                    <p className="text-gray-500 text-sm">محصولی در پیش‌نمایش سریع یافت نشد.</p>
+                    <Button
+                      onClick={() => {
+                        setIsSearchOpen(false);
+                        router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+                      }}
+                      variant="outline"
+                      className="text-xs border-white/10 text-white"
                     >
-                      <img 
-                        src={product.imageUrl} 
-                        alt={product.name} 
-                        className="w-14 h-16 object-cover rounded-xl border border-white/5"
-                      />
-                      <div className="flex flex-col">
-                        <h4 className="font-bold text-sm text-white">{product.name}</h4>
-                        <span className="text-xs text-gray-500 mt-1">{product.category}</span>
+                      جستجوی پیشرفته در کاتالوگ
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {searchResults.map((product) => (
+                      <div
+                        key={product.id}
+                        onClick={() => handleProductClick(product.id)}
+                        className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl cursor-pointer transition-colors"
+                      >
+                        <img 
+                          src={product.imageUrl || product.image || "/globe.svg"} 
+                          alt={product.name || product.title} 
+                          className="w-14 h-16 object-cover rounded-xl border border-white/5"
+                        />
+                        <div className="flex flex-col">
+                          <h4 className="font-bold text-sm text-white">{product.name || product.title}</h4>
+                          <span className="text-xs text-gray-500 mt-1">{product.category}</span>
+                        </div>
+                        <div className="mr-auto text-sm text-gray-300 font-medium">
+                          {product.price} تومان
+                        </div>
                       </div>
-                      <div className="mr-auto text-sm text-gray-300 font-medium">
-                        {product.price} تومان
+                    ))}
+                    {searchQuery.trim().length > 0 && (
+                      <div className="pt-2 border-t border-white/10 text-center">
+                        <button
+                          onClick={() => {
+                            setIsSearchOpen(false);
+                            router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+                          }}
+                          className="text-xs text-amber-400 hover:text-amber-300 font-bold py-2 px-4 transition-colors"
+                        >
+                          مشاهده تمام نتایج جستجو برای «{searchQuery}» ←
+                        </button>
                       </div>
-                    </div>
-                  ))
+                    )}
+                  </>
                 )}
                 {searchQuery.length === 0 && (
-                  <p className="text-center text-gray-600 py-8 text-sm">برای جستجو شروع به تایپ کنید...</p>
+                  <p className="text-center text-gray-600 py-8 text-sm">برای جستجو شروع به تایپ کنید یا Enter را بزنید...</p>
                 )}
               </div>
             </DialogContent>

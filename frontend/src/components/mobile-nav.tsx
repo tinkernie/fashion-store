@@ -23,8 +23,8 @@ export default function MobileNav() {
         </Link>
 
         <Link 
-          href="/women" 
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === "/women" ? "text-white" : "text-gray-500 hover:text-gray-300"}`}
+          href="/products" 
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === "/products" || pathname === "/search" ? "text-white" : "text-gray-500 hover:text-gray-300"}`}
         >
           <LayoutGrid className="w-5 h-5" />
           <span className="text-[10px] font-medium">فروشگاه</span>

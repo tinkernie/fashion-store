@@ -100,13 +100,7 @@ export default function AuthPage() {
       localStorage.setItem('refresh_token', response.data.refresh);
       
       // Sync backend cart on login
-      const localSession = localStorage.getItem('guest_session_key');
-      if (localSession) {
-        await mergeCart(localSession);
-        localStorage.removeItem('guest_session_key');
-      } else {
-        await fetchCart();
-      }
+      await mergeCart();
 
       toast.success("با موفقیت وارد شدید");
       router.push("/");
