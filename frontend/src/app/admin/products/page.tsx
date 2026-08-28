@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShoppingBag,
@@ -15,11 +15,12 @@ import {
   Layers,
   Filter,
   Image as ImageIcon,
-  UploadCloud,
   Loader2,
-  Link2,
-  FileImage,
+  Sparkles,
+  RefreshCw,
   X,
+  Sliders,
+  Boxes,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,20 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
+import MediaUploader from "@/components/admin/media-uploader";
+
+interface OptionDef {
+  name: string;
+  valuesInput: string;
+}
+
+interface VariantItem {
+  id?: string;
+  name: string;
+  sku: string;
+  price: string;
+  stock: number;
+}
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -54,9 +69,14 @@ export default function AdminProductsPage() {
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [status, setStatus] = useState<string>("active");
-  const [imageTab, setImageTab] = useState<"upload" | "url">("upload");
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Variant Builder State
+  const [options, setOptions] = useState<OptionDef[]>([
+    { name: "رنگ", valuesInput: "مشکی, سفید, کرم" },
+    { name: "سایز", valuesInput: "S, M, L, XL" },
+  ]);
+  const [variantsMatrix, setVariantsMatrix] = useState<VariantItem[]>([]);
+  const [showVariantGenerator, setShowVariantGenerator] = useState(false);
 
   useEffect(() => {
     loadCatalogData();
@@ -98,7 +118,8 @@ export default function AdminProductsPage() {
     setDescription("");
     setImageUrl("");
     setStatus("active");
-    setImageTab("upload");
+    setVariantsMatrix([]);
+    setShowVariantGenerator(false);
     setIsModalOpen(true);
   };
 
@@ -111,34 +132,71 @@ export default function AdminProductsPage() {
     setPrice(String(p.price || ""));
     setDiscountPrice(p.discount_price ? String(p.discount_price) : "");
     setDescription(p.description || "");
-    setImageUrl(p.imageUrl || p.image_url || p.images?.[0]?.url || "");
+    setImageUrl(p.imageUrl || p.image_url || p.image || p.images?.[0]?.url || "");
     setStatus(p.status || "active");
-    setImageTab(p.imageUrl || p.image_url ? "upload" : "upload");
+
+    // If product has variants, pre-populate
+    if (Array.isArray(p.variants) && p.variants.length > 0) {
+      setVariantsMatrix(
+        p.variants.map((v: any) => ({
+          id: v.id,
+          name: v.title || v.name || "تنوع",
+          sku: v.sku || "",
+          price: String(v.price || p.price || ""),
+          stock: v.inventory?.quantity || v.stock || 10,
+        }))
+      );
+      setShowVariantGenerator(true);
+    } else {
+      setVariantsMatrix([]);
+      setShowVariantGenerator(false);
+    }
     setIsModalOpen(true);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Generate Combinatorial Matrix
+  const handleGenerateMatrix = () => {
+    const parsedOptions = options
+      .map((opt) => ({
+        name: opt.name.trim(),
+        values: opt.valuesInput
+          .split(/[,،]/)
+          .map((v) => v.trim())
+          .filter(Boolean),
+      }))
+      .filter((opt) => opt.name && opt.values.length > 0);
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("لطفاً یک فایل معتبر تصویری (JPG, PNG, WEBP) انتخاب کنید");
+    if (parsedOptions.length === 0) {
+      toast.error("لطفاً حداقل یک ویژگی با مقادیر معتبر وارد کنید.");
       return;
     }
 
-    setIsUploadingImage(true);
-    try {
-      const res = await adminApi.uploadImage(file);
-      if (res?.url || res?.image_url) {
-        const uploadedUrl = res.url || res.image_url;
-        setImageUrl(uploadedUrl);
-        toast.success("تصویر با موفقیت بارگذاری شد");
-      }
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "خطا در بارگذاری تصویر از سیستم");
-    } finally {
-      setIsUploadingImage(false);
-    }
+    // Cartesian product
+    const cartesian = (arrays: string[][]): string[][] => {
+      return arrays.reduce<string[][]>(
+        (a, b) => a.flatMap((d) => b.map((e) => [...d, e])),
+        [[]]
+      );
+    };
+
+    const valueArrays = parsedOptions.map((o) => o.values);
+    const combinations = cartesian(valueArrays);
+
+    const baseSlug = (slug || title).trim().toLowerCase().replace(/\s+/g, "-") || "item";
+    const generated: VariantItem[] = combinations.map((combo, idx) => {
+      const comboName = combo.join(" / ");
+      const comboSku = `${baseSlug.toUpperCase().slice(0, 4)}-${combo.map((c) => c.slice(0, 2).toUpperCase()).join("")}-${idx + 1}`;
+      return {
+        name: comboName,
+        sku: comboSku,
+        price: price || "0",
+        stock: 10,
+      };
+    });
+
+    setVariantsMatrix(generated);
+    setShowVariantGenerator(true);
+    toast.success(`${generated.length} تنوع محصول با موفقیت ایجاد شد.`);
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -166,6 +224,12 @@ export default function AdminProductsPage() {
       description,
       image_url: imageUrl,
       status: status === "active" ? "published" : status,
+      variants: variantsMatrix.map((v) => ({
+        name: v.name,
+        sku: v.sku,
+        price: Number(v.price) || Number(price),
+        stock: Number(v.stock) || 0,
+      })),
     };
 
     try {
@@ -229,57 +293,78 @@ export default function AdminProductsPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-right" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-white flex items-center gap-3">
-            <ShoppingBag className="w-8 h-8 text-purple-400" />
+            <ShoppingBag className="w-8 h-8 text-amber-400" />
             کاتالوگ و مدیریت محصولات
           </h1>
           <p className="text-xs md:text-sm text-gray-400 mt-1">
-            مشاهده، افزودن، ویرایش قیمت‌ها، تصاویر و دسته‌بندی‌های لباس و پوشاک
+            مشاهده، افزودن، ویرایش قیمت‌ها، تصاویر مستقیم و مدیریت تنوع‌های کالا (رنگ، سایز و انبار)
           </p>
         </div>
 
-        <Button
-          onClick={handleOpenCreate}
-          className="h-11 px-5 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs flex items-center gap-2 shadow-lg shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          افزودن لباس جدید
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={loadCatalogData}
+            variant="outline"
+            className="h-11 px-4 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 font-bold text-xs flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            بروزرسانی
+          </Button>
+
+          <Button
+            onClick={handleOpenCreate}
+            className="h-11 px-5 rounded-xl bg-white text-black hover:bg-gray-200 font-black text-xs flex items-center gap-2 shadow-lg shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            افزودن لباس جدید
+          </Button>
+        </div>
       </div>
 
-      {/* Filter and Search Toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="sm:col-span-2 flex items-center gap-3 bg-[#111111] border border-white/10 rounded-2xl px-4 py-2">
+      {/* Control Bar: Search & Category Filter */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Search */}
+        <div className="flex items-center gap-3 bg-[#111111] border border-white/10 rounded-2xl px-4 py-2 w-full sm:max-w-md">
           <Search className="w-4 h-4 text-gray-500 shrink-0" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="جستجوی نام محصول، مدل یا کد..."
+            placeholder="جستجوی محصول بر اساس نام یا نامک..."
             className="flex-1 bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-600"
           />
         </div>
 
-        <div className="flex items-center gap-2 bg-[#111111] border border-white/10 rounded-2xl px-4 py-2">
-          <Filter className="w-4 h-4 text-gray-500 shrink-0" />
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="flex-1 bg-transparent border-none outline-none text-white text-xs cursor-pointer"
+        {/* Category Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full sm:w-auto pb-1">
+          <button
+            onClick={() => setSelectedCategory("all")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+              selectedCategory === "all"
+                ? "bg-white text-black font-black"
+                : "bg-white/5 text-gray-400 hover:text-white"
+            }`}
           >
-            <option value="all" className="bg-[#111111]">
-              تمام دسته‌بندی‌ها
-            </option>
-            {categories.map((c) => (
-              <option key={c.id || c.slug} value={c.slug || c.name} className="bg-[#111111]">
-                {c.name}
-              </option>
-            ))}
-          </select>
+            همه ({products.length})
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCategory(c.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                selectedCategory === c.id
+                  ? "bg-white text-black font-black"
+                  : "bg-white/5 text-gray-400 hover:text-white"
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -289,109 +374,108 @@ export default function AdminProductsPage() {
           <table className="w-full text-right text-xs">
             <thead className="bg-[#161616] text-gray-400 border-b border-white/10">
               <tr>
-                <th className="p-4 md:p-5 font-bold">محصول</th>
-                <th className="p-4 md:p-5 font-bold">دسته‌بندی</th>
-                <th className="p-4 md:p-5 font-bold">قیمت (تومان)</th>
-                <th className="p-4 md:p-5 font-bold">وضعیت</th>
-                <th className="p-4 md:p-5 font-bold text-left">عملیات</th>
+                <th className="py-4 px-6 font-bold">محصول</th>
+                <th className="py-4 px-4 font-bold">دسته‌بندی</th>
+                <th className="py-4 px-4 font-bold">قیمت (تومان)</th>
+                <th className="py-4 px-4 font-bold">تنوع‌ها / سایز</th>
+                <th className="py-4 px-4 font-bold">وضعیت</th>
+                <th className="py-4 px-6 font-bold text-left">عملیات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-gray-500">
-                    هیچ محصولی مطابق جستجو یافت نشد.
+                  <td colSpan={6} className="py-16 text-center text-gray-500">
+                    محصولی با مشخصات فوق یافت نشد.
                   </td>
                 </tr>
               ) : (
                 filteredProducts.map((p) => {
-                  const prodName = p.name || p.title || "محصول بدون نام";
-                  const prodPrice = Number(p.price) || 0;
-                  const prodDiscount = p.discount_price ? Number(p.discount_price) : null;
-                  const prodImg = p.imageUrl || p.image_url || p.images?.[0]?.url || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=400&auto=format&fit=crop";
-                  const catName = p.category?.name || p.category || "پوشاک";
+                  const img = p.imageUrl || p.image_url || p.image || "/globe.svg";
+                  const catName = p.category?.name || p.category || "نامشخص";
+                  const variantCount = p.variants?.length || 0;
 
                   return (
                     <tr key={p.id} className="hover:bg-white/5 transition-colors">
-                      <td className="p-4 md:p-5">
+                      {/* Product Name & Image */}
+                      <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-14 rounded-xl overflow-hidden bg-[#1a1a1a] border border-white/10 shrink-0">
-                            <img
-                              src={prodImg}
-                              alt={prodName}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-white text-xs md:text-sm line-clamp-1">
-                              {prodName}
-                            </h4>
-                            <span className="text-[10px] text-gray-500 font-mono" dir="ltr">
-                              /{p.slug || p.id}
+                          <img
+                            src={img}
+                            alt={p.name || p.title}
+                            className="w-12 h-14 object-cover rounded-xl border border-white/10 shrink-0"
+                          />
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-bold text-white text-xs block truncate max-w-xs">
+                              {p.name || p.title}
+                            </span>
+                            <span className="text-[10px] text-gray-500 font-mono block" dir="ltr">
+                              {p.slug}
                             </span>
                           </div>
                         </div>
                       </td>
 
-                      <td className="p-4 md:p-5">
-                        <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-full text-[11px] text-gray-300">
+                      {/* Category */}
+                      <td className="py-4 px-4">
+                        <span className="px-2.5 py-1 rounded-full bg-white/5 text-gray-300 border border-white/10 text-[11px]">
                           {catName}
                         </span>
                       </td>
 
-                      <td className="p-4 md:p-5">
-                        <div className="space-y-0.5">
-                          <span className="font-bold text-white text-xs md:text-sm block">
-                            {(prodDiscount || prodPrice).toLocaleString("fa-IR")} تومان
-                          </span>
-                          {prodDiscount && (
-                            <span className="text-[10px] text-gray-500 line-through block">
-                              {prodPrice.toLocaleString("fa-IR")} تومان
-                            </span>
-                          )}
-                        </div>
+                      {/* Price */}
+                      <td className="py-4 px-4 font-bold text-white">
+                        {p.price ? Number(p.price).toLocaleString("fa-IR") : "تماس بگیرید"}
                       </td>
 
-                      <td className="p-4 md:p-5">
+                      {/* Variants */}
+                      <td className="py-4 px-4">
+                        {variantCount > 0 ? (
+                          <span className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-bold text-[10px]">
+                            {variantCount} تنوع رنگ/سایز
+                          </span>
+                        ) : (
+                          <span className="text-gray-500 text-[11px]">تک محصول</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-4 px-4">
                         <span
-                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
-                            p.status === "active" || !p.status
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                            p.status === "published" || p.status === "active"
                               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                               : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                           }`}
                         >
-                          {p.status === "active" || !p.status ? "فعال در فروشگاه" : "بایگانی شده"}
+                          {p.status === "published" || p.status === "active" ? "منتشر شده" : "پیش‌نویس / غیرفعال"}
                         </span>
                       </td>
 
-                      <td className="p-4 md:p-5 text-left">
+                      {/* Actions */}
+                      <td className="py-4 px-6 text-left">
                         <div className="flex items-center justify-end gap-2">
                           <Link
                             href={`/products/${p.id}`}
                             target="_blank"
-                            className="p-2 rounded-lg bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                             title="مشاهده در فروشگاه"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </Link>
+
                           <button
                             onClick={() => handleOpenEdit(p)}
-                            className="p-2 rounded-lg bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                            title="ویرایش محصول"
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-amber-400 hover:bg-white/10 transition-colors"
+                            title="ویرایش"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
+
                           <button
-                            onClick={() => handleArchive(p.id)}
-                            className="p-2 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors"
-                            title="بایگانی محصول"
-                          >
-                            <Archive className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(p.id, prodName)}
-                            className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                            title="حذف کامل"
+                            onClick={() => handleDelete(p.id, p.name || p.title)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                            title="حذف"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -406,62 +490,50 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* --- Add / Edit Product Modal --- */}
+      {/* Product Create / Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent
-          className="bg-[#0e0e0e] border border-white/10 text-white sm:max-w-2xl p-6 max-h-[90vh] overflow-y-auto"
-          dir="rtl"
-        >
-          <DialogHeader className="border-b border-white/10 pb-4">
+        <DialogContent className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-purple-400" />
-              {editingProduct ? `ویرایش محصول "${title}"` : "افزودن لباس یا کالای جدید"}
+              <ShoppingBag className="w-5 h-5 text-amber-400" />
+              {editingProduct ? "ویرایش مشخصات محصول" : "افزودن لباس و محصول جدید"}
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSaveProduct} className="space-y-5 mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSaveProduct} className="space-y-6 mt-4">
+            {/* Basic Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">نام لباس / عنوان محصول</label>
+                <label className="text-xs font-bold text-gray-300">نام محصول / لباس</label>
                 <Input
                   value={title}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                    if (!editingProduct) {
-                      setSlug(
-                        e.target.value
-                          .trim()
-                          .toLowerCase()
-                          .replace(/[^\w\u0600-\u06FF\s-]/g, "")
-                          .replace(/\s+/g, "-")
-                      );
-                    }
-                  }}
-                  placeholder="مثال: پالتو فوتر پشمی لوکس"
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="مثال: کت چرم پاییزه اورسایز"
                   required
-                  className="bg-[#141414] border-white/10 h-11 text-white text-xs"
+                  className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">شناسه لینک (Slug)</label>
+                <label className="text-xs font-bold text-gray-300">نامک (Slug انگلیسی)</label>
                 <Input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  placeholder="wool-coat"
-                  className="bg-[#141414] border-white/10 h-11 text-white text-xs font-mono"
+                  placeholder="oversized-leather-jacket"
+                  className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
                   dir="ltr"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Category & Price */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">دسته‌بندی</label>
+                <label className="text-xs font-bold text-gray-300">دسته‌بندی</label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full bg-[#141414] border border-white/10 rounded-xl h-11 px-3 text-white text-xs outline-none"
+                  className="w-full bg-[#181818] border border-white/10 h-11 text-xs text-white rounded-xl px-3 outline-none"
                 >
                   <option value="">انتخاب دسته‌بندی...</option>
                   {categories.map((c) => (
@@ -473,207 +545,162 @@ export default function AdminProductsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">کالکشن (اختیاری)</label>
-                <select
-                  value={collectionId}
-                  onChange={(e) => setCollectionId(e.target.value)}
-                  className="w-full bg-[#141414] border border-white/10 rounded-xl h-11 px-3 text-white text-xs outline-none"
-                >
-                  <option value="">بدون کالکشن خاص</option>
-                  {collections.map((col) => (
-                    <option key={col.id} value={col.id}>
-                      {col.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">قیمت اصلی (تومان)</label>
+                <label className="text-xs font-bold text-gray-300">قیمت پایه (تومان)</label>
                 <Input
                   type="number"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  placeholder="مثال: 1250000"
+                  placeholder="1250000"
                   required
-                  className="bg-[#141414] border-white/10 h-11 text-white text-xs"
+                  className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
                   dir="ltr"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">قیمت با تخفیف ویژه (اختیاری)</label>
+                <label className="text-xs font-bold text-gray-300">قیمت با تخفیف (اختیاری)</label>
                 <Input
                   type="number"
                   value={discountPrice}
                   onChange={(e) => setDiscountPrice(e.target.value)}
-                  placeholder="مثال: 980000"
-                  className="bg-[#141414] border-white/10 h-11 text-white text-xs"
+                  placeholder="950000"
+                  className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
                   dir="ltr"
                 />
               </div>
             </div>
 
-            {/* Image Section (Upload & URL) */}
-            <div className="space-y-3 p-4 rounded-2xl bg-[#141414] border border-white/5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-gray-200 flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-gray-400" />
-                  تصویر اصلی محصول
-                </label>
+            {/* Media Uploader Component */}
+            <div className="p-4 bg-[#141414] border border-white/10 rounded-2xl">
+              <MediaUploader
+                value={imageUrl}
+                onChange={setImageUrl}
+                label="تصویر شاخص محصول (آپلود مستقیم یا لینک)"
+              />
+            </div>
 
-                {/* Tabs */}
-                <div className="flex items-center gap-1 bg-[#1c1c1c] p-1 rounded-xl border border-white/10 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setImageTab("upload")}
-                    className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                      imageTab === "upload"
-                        ? "bg-white text-black font-bold shadow"
-                        : "text-gray-400 hover:text-white"
-                    }`}
-                  >
-                    بارگذاری فایل
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setImageTab("url")}
-                    className={`px-3 py-1 rounded-lg font-medium transition-all ${
-                      imageTab === "url"
-                        ? "bg-white text-black font-bold shadow"
-                        : "text-gray-400 hover:text-white"
-                    }`}
-                  >
-                    لینک اینترنتی
-                  </button>
+            {/* Description */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-300">توضیحات و مشخصات لباس</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="جنس پارچه، راهنمای شستشو، جزئیات استایل و..."
+                rows={3}
+                className="w-full bg-[#181818] border border-white/10 text-xs text-white rounded-xl p-3 outline-none resize-none focus:border-amber-400/50"
+              />
+            </div>
+
+            {/* --- Variant Matrix Generator --- */}
+            <div className="p-5 bg-[#141414] border border-white/10 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-black text-white flex items-center gap-1.5">
+                    <Boxes className="w-4 h-4 text-purple-400" />
+                    ماتریس تنوع و مشخصات انبار (رنگ، سایز و...)
+                  </h4>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    تولید خودکار ترکیب‌های مختلف لباس با امکان تعیین موجودی و کد SKU مجزا
+                  </p>
                 </div>
+
+                <Button
+                  type="button"
+                  onClick={handleGenerateMatrix}
+                  variant="outline"
+                  className="h-8 px-3 text-xs border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 rounded-xl"
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1" />
+                  تولید ماتریس تنوع
+                </Button>
               </div>
 
-              {imageTab === "upload" ? (
-                <div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-
-                  {imageUrl ? (
-                    <div className="relative group rounded-2xl overflow-hidden border border-white/10 bg-[#1a1a1a] p-3 flex items-center gap-4">
-                      <img
-                        src={imageUrl}
-                        alt="Product Preview"
-                        className="w-20 h-24 rounded-xl object-cover border border-white/10 shrink-0"
+              {/* Option Definitions */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {options.map((opt, idx) => (
+                  <div key={idx} className="bg-[#181818] p-3 rounded-xl border border-white/5 space-y-2">
+                    <span className="text-[11px] font-bold text-gray-300">ویژگی {idx + 1}</span>
+                    <div className="flex gap-2">
+                      <Input
+                        value={opt.name}
+                        onChange={(e) => {
+                          const next = [...options];
+                          next[idx].name = e.target.value;
+                          setOptions(next);
+                        }}
+                        placeholder="نام ویژگی (مثال: رنگ)"
+                        className="h-9 text-xs bg-white/5 border-white/10 w-1/3 text-white"
                       />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-white mb-1 flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          تصویر با موفقیت انتخاب شد
-                        </p>
-                        <p className="text-[11px] text-gray-400 truncate mb-2 dir-ltr font-mono">
-                          {imageUrl}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploadingImage}
-                            className="h-7 text-xs rounded-lg bg-white/10 hover:bg-white/20 text-white border-0"
-                          >
-                            تغییر تصویر
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setImageUrl("")}
-                            className="h-7 text-xs rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-                          >
-                            حذف
-                          </Button>
+                      <Input
+                        value={opt.valuesInput}
+                        onChange={(e) => {
+                          const next = [...options];
+                          next[idx].valuesInput = e.target.value;
+                          setOptions(next);
+                        }}
+                        placeholder="مقادیر با ویرگول (مشکی, سفید)"
+                        className="h-9 text-xs bg-white/5 border-white/10 flex-1 text-white"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Generated Variants Table */}
+              {variantsMatrix.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  <span className="text-xs font-bold text-white block">
+                    تنوع‌های ایجاد شده ({variantsMatrix.length} مورد):
+                  </span>
+                  <div className="max-h-48 overflow-y-auto pr-1 space-y-2">
+                    {variantsMatrix.map((v, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-[#181818] p-2 rounded-xl border border-white/5 text-xs">
+                        <span className="font-bold text-white w-28 truncate">{v.name}</span>
+                        <Input
+                          value={v.sku}
+                          onChange={(e) => {
+                            const next = [...variantsMatrix];
+                            next[i].sku = e.target.value;
+                            setVariantsMatrix(next);
+                          }}
+                          placeholder="SKU"
+                          className="h-8 text-[11px] bg-white/5 border-white/10 flex-1 font-mono text-left"
+                          dir="ltr"
+                        />
+                        <div className="flex items-center gap-1 w-24">
+                          <span className="text-[10px] text-gray-500">موجودی:</span>
+                          <Input
+                            type="number"
+                            value={v.stock}
+                            onChange={(e) => {
+                              const next = [...variantsMatrix];
+                              next[i].stock = Number(e.target.value);
+                              setVariantsMatrix(next);
+                            }}
+                            className="h-8 text-[11px] bg-white/5 border-white/10 w-12 text-center text-white"
+                          />
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => !isUploadingImage && fileInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
-                        isUploadingImage
-                          ? "border-amber-500/50 bg-amber-500/5 cursor-wait"
-                          : "border-white/15 hover:border-white/40 bg-[#161616] hover:bg-[#1a1a1a]"
-                      }`}
-                    >
-                      {isUploadingImage ? (
-                        <div className="flex flex-col items-center justify-center gap-2 py-2">
-                          <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
-                          <span className="text-xs font-bold text-amber-300">در حال بارگذاری فایل...</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-300">
-                            <UploadCloud className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <span className="text-xs font-bold text-white">برای انتخاب فایل تصویر کلیک کنید</span>
-                            <p className="text-[11px] text-gray-500 mt-1">پشتیبانی از فرمت‌های JPG, PNG, WEBP</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Input
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="bg-[#181818] border-white/10 h-11 text-white text-xs"
-                    dir="ltr"
-                  />
-                  {imageUrl && (
-                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-[#181818] border border-white/5">
-                      <img
-                        src={imageUrl}
-                        alt="Preview"
-                        className="w-12 h-14 rounded-lg object-cover border border-white/10"
-                      />
-                      <span className="text-[11px] text-gray-400 truncate dir-ltr">{imageUrl}</span>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-300">توضیحات و ویژگی‌های لباس</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="جنس پارچه، راهنمای شستشو، جزئیات دوخت و..."
-                rows={3}
-                className="w-full bg-[#141414] border border-white/10 rounded-xl p-3 text-white text-xs placeholder:text-gray-600 outline-none focus:border-white/30 resize-none"
-              />
-            </div>
-
+            {/* Actions */}
             <div className="flex gap-3 pt-4 border-t border-white/10">
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-sm"
+                className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-black text-xs"
               >
-                {editingProduct ? "ذخیره تغییرات محصول" : "افزودن به فروشگاه"}
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : editingProduct ? "ذخیره تغییرات محصول" : "افزودن و انتشار محصول"}
               </Button>
               <Button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 variant="ghost"
-                className="h-12 rounded-xl text-gray-400 hover:text-white"
+                className="h-12 rounded-xl text-gray-400 hover:text-white text-xs"
               >
                 انصراف
               </Button>
