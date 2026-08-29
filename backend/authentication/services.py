@@ -76,9 +76,20 @@ class AuthService:
             )
 
         refresh = RefreshToken.for_user(user)
+        refresh["is_staff"] = user.is_staff
+        refresh["is_superuser"] = user.is_superuser
+        refresh["email"] = user.email
         return {
             "access": str(refresh.access_token),
             "refresh": str(refresh),
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_staff": user.is_staff,
+                "is_superuser": user.is_superuser,
+            },
         }
 
     def logout_user(self, refresh_token: str):

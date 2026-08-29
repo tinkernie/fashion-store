@@ -186,10 +186,10 @@
     "semantic_hash": "ca0c1c5f8384445488a7a4de665f200c"
   },
   "backend/authentication/services.py": {
-    "mtime": 1788007575.2648993,
-    "seen": 1788007785.5216935,
-    "ast_hash": "716203a09a20c027238dfdbe62e8915d",
-    "semantic_hash": "716203a09a20c027238dfdbe62e8915d"
+    "mtime": 1788032218.385062,
+    "seen": 1788032265.810645,
+    "ast_hash": "3bebf680a65617f4d85145a8c392757e",
+    "semantic_hash": "3bebf680a65617f4d85145a8c392757e"
   },
   "backend/authentication/signals.py": {
     "mtime": 1787396317.303004,
@@ -1716,10 +1716,10 @@
     "semantic_hash": "93066c7987d4d1f4ebbe62c9f1221f45"
   },
   "backend/users/serializers.py": {
-    "mtime": 1787396317.3878057,
-    "seen": 1787742106.6316905,
-    "ast_hash": "6550b2072ac39840648ca60b0f9e8e4a",
-    "semantic_hash": "6550b2072ac39840648ca60b0f9e8e4a"
+    "mtime": 1788032213.8531013,
+    "seen": 1788032265.8419628,
+    "ast_hash": "5d120675ef3a8f478f6f8775dd710248",
+    "semantic_hash": "5d120675ef3a8f478f6f8775dd710248"
   },
   "backend/users/services.py": {
     "mtime": 1788007575.3300028,
@@ -1962,10 +1962,10 @@
     "semantic_hash": "6c4307ffa009658f5c97f5629094c0c2"
   },
   "frontend/next-env.d.ts": {
-    "mtime": 1788031250.4672017,
-    "seen": 1788031697.6238716,
-    "ast_hash": "29f60a376e12bf72b67d4994fcc84214",
-    "semantic_hash": "29f60a376e12bf72b67d4994fcc84214"
+    "mtime": 1788032252.6945035,
+    "seen": 1788032265.8474789,
+    "ast_hash": "b698cdd97fe8e3bd16dcd74899ad7cef",
+    "semantic_hash": "b698cdd97fe8e3bd16dcd74899ad7cef"
   },
   "frontend/next.config.ts": {
     "mtime": 1788008880.3088312,
@@ -2268,10 +2268,10 @@
     "semantic_hash": "87e7a1bee3cf03ec3a0c83e7ee323df8"
   },
   "frontend/src/app/admin/layout.tsx": {
-    "mtime": 1788007880.7790387,
-    "seen": 1788008924.564016,
-    "ast_hash": "70d69c256138730e97237511a3b4a5a0",
-    "semantic_hash": "70d69c256138730e97237511a3b4a5a0"
+    "mtime": 1788032242.7174506,
+    "seen": 1788032265.8484778,
+    "ast_hash": "f3743d7bbbfcf626f92f809ccf341f2d",
+    "semantic_hash": "f3743d7bbbfcf626f92f809ccf341f2d"
   },
   "frontend/src/app/admin/orders/page.tsx": {
     "mtime": 1788030888.349839,

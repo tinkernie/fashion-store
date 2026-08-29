@@ -110,6 +110,7 @@ export default function AdminLayout({
     const token = localStorage.getItem("access_token");
     if (!token) {
       setIsAuthenticated(false);
+      setCurrentUser(null);
       return;
     }
 
@@ -118,18 +119,35 @@ export default function AdminLayout({
       const payload = JSON.parse(atob(token.split(".")[1]));
       const userId = payload.user_id || payload.id;
       
+      let profile = null;
       if (userId) {
         try {
-          const res = await api.get(`/api/users/me/${userId}/`);
-          setCurrentUser(res.data);
+          const res = await api.get(`/api/users/me/`);
+          profile = res.data;
         } catch {
-          // Token valid but profile fetch might fallback
-          setCurrentUser({ email: payload.email || "مدیر سیستم", is_staff: true });
+          profile = null;
         }
       }
+
+      const isStaffOrSuper = Boolean(
+        profile?.is_staff ||
+        profile?.is_superuser ||
+        payload?.is_staff ||
+        payload?.is_superuser
+      );
+
+      if (!isStaffOrSuper) {
+        // Logged in as regular customer - block access to admin panel
+        setIsAuthenticated(false);
+        setCurrentUser(profile || { email: payload.email, is_staff: false });
+        return;
+      }
+
+      setCurrentUser(profile || { email: payload.email || "مدیر سیستم", is_staff: true });
       setIsAuthenticated(true);
     } catch {
       setIsAuthenticated(false);
+      setCurrentUser(null);
     }
   };
 
@@ -141,6 +159,26 @@ export default function AdminLayout({
         email: loginEmail,
         password: loginPassword,
       });
+
+      const user = response.data?.user;
+      const token = response.data?.access;
+      let isStaff = Boolean(user?.is_staff || user?.is_superuser);
+
+      if (!isStaff && token) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          isStaff = Boolean(payload?.is_staff || payload?.is_superuser);
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!isStaff) {
+        toast.error("دسترسی غیرمجاز: این حساب کاربری دسترسی مدیریت ندارد.");
+        setIsLoggingIn(false);
+        return;
+      }
+
       localStorage.setItem("access_token", response.data.access);
       localStorage.setItem("refresh_token", response.data.refresh);
       toast.success("ورود به پنل مدیریت با موفقیت انجام شد");
@@ -205,6 +243,12 @@ export default function AdminLayout({
                 لطفاً برای دسترسی به تنظیمات CMS، محصولات و سفارشات وارد حساب مدیر شوید
               </p>
             </div>
+
+            {currentUser && currentUser.is_staff === false && (
+              <div className="mb-6 p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-xs text-amber-300 leading-relaxed text-center">
+                شما با حساب مشتری عادی (<span dir="ltr" className="font-mono text-amber-200">{currentUser.email}</span>) وارد شده‌اید. برای ورود به پنل مدیریت باید با ایمیل و رمزعبور مدیر سیستم وارد شوید.
+              </div>
+            )}
 
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <div className="space-y-2">

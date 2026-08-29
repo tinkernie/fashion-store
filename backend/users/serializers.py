@@ -10,6 +10,8 @@ class UserProfileSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     is_active = serializers.BooleanField(read_only=True)
+    is_staff = serializers.BooleanField(read_only=True)
+    is_superuser = serializers.BooleanField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
 
 
