@@ -29,6 +29,9 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
+import { getColorBackground } from "@/lib/color-utils";
+
+
 
 
 interface ProductOptionValue {
@@ -402,10 +405,9 @@ export default function ProductDetailPage() {
                       {opt.values?.map((valItem) => {
                         const val = valItem.value;
                         const isSelected = currentSelectedVal === val;
-                        const colorHex =
-                          valItem.extra_data?.hex || PRESET_COLORS[val] || (isColorOption ? "#4B5563" : null);
+                        const colorBg = valItem.extra_data?.hex || (isColorOption ? getColorBackground(val) : null);
 
-                        if (isColorOption && colorHex) {
+                        if (isColorOption && colorBg) {
                           return (
                             <button
                               key={valItem.id || val}
@@ -416,7 +418,7 @@ export default function ProductDetailPage() {
                                   ? "border-amber-400 ring-2 ring-amber-400/50 scale-110"
                                   : "border-white/20 hover:border-white/60"
                               }`}
-                              style={{ backgroundColor: colorHex }}
+                              style={{ background: colorBg }}
                             >
                               {isSelected && (
                                 <Check
@@ -428,6 +430,7 @@ export default function ProductDetailPage() {
                             </button>
                           );
                         }
+
 
                         return (
                           <button

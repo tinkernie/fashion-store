@@ -118,18 +118,25 @@ class SearchSelector:
         # Get all options used by the products in qs
         product_ids = list(qs.values_list('id', flat=True))
         if product_ids:
-            from variants.models import VariantOption
             values = OptionValue.objects.filter(
                 variants__product_id__in=product_ids,
                 variants__status='published',
                 variants__deleted_at__isnull=True,
                 deleted_at__isnull=True,
-            ).select_related('option').distinct().order_by('option__name', 'value')
-            # Group by option name
+            ).select_related('option').order_by('option__name', 'value')
+            # Group by option name and deduplicate values
             grouped = {}
             for val in values:
-                grouped.setdefault(val.option.name, []).append(val.value)
+                opt_name = (val.option.name or "").strip()
+                val_str = (val.value or "").strip()
+                if not opt_name or not val_str:
+                    continue
+                if opt_name not in grouped:
+                    grouped[opt_name] = []
+                if val_str not in grouped[opt_name]:
+                    grouped[opt_name].append(val_str)
             option_values = [{'name': k, 'values': v} for k, v in grouped.items()]
+
 
         return {
             'categories': list(categories),

@@ -39,6 +39,10 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useWishlist } from "@/store/wishlist";
+import { getColorBackground, isLightColor } from "@/lib/color-utils";
+
+
+
 
 interface ProductItem {
   id: string;
@@ -398,62 +402,78 @@ function SearchContent() {
       </div>
 
       {/* Dynamic Options Filters (Color / Size) */}
-      {facets.options?.map((opt) => (
-        <div key={opt.name} className="space-y-3 pt-4 border-t border-white/10">
-          <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">
-            {opt.name === "Color" || opt.name === "رنگ" ? "انتخاب رنگ" : opt.name}
-          </h4>
+      {facets.options?.map((opt) => {
+        const uniqueValues = Array.from(new Set(opt.values || []));
+        const isColor = opt.name.toLowerCase().includes("color") || opt.name.includes("رنگ");
 
-          {opt.name.toLowerCase().includes("color") || opt.name.includes("رنگ") ? (
-            <div className="flex flex-wrap gap-2">
-              {opt.values.map((val) => {
-                const isSelected = (selectedOptions[opt.name] || []).includes(val);
-                const colorHex = PRESET_COLORS[val] || "#4B5563";
-                return (
-                  <button
-                    key={val}
-                    onClick={() => handleOptionToggle(opt.name, val)}
-                    title={val}
-                    className={`relative w-8 h-8 rounded-full border transition-all flex items-center justify-center cursor-pointer ${
-                      isSelected
-                        ? "border-amber-400 ring-2 ring-amber-400/40 scale-110"
-                        : "border-white/20 hover:border-white/60"
-                    }`}
-                    style={{ backgroundColor: colorHex }}
-                  >
-                    {isSelected && (
-                      <Check
-                        className={`w-4 h-4 ${
-                          val === "سفید" || val === "کرم" ? "text-black" : "text-white"
-                        }`}
+        // Custom sort for clothing/shoe sizes
+        if (!isColor) {
+          const sizeOrder: Record<string, number> = {
+            "2XS": 1, "XS": 2, "S": 3, "M": 4, "L": 5, "XL": 6, "2XL": 7, "3XL": 8, "تک سایز": 9, "Free": 10
+          };
+          uniqueValues.sort((a, b) => {
+            const orderA = sizeOrder[a] || (isNaN(Number(a)) ? 99 : Number(a));
+            const orderB = sizeOrder[b] || (isNaN(Number(b)) ? 99 : Number(b));
+            return orderA - orderB;
+          });
+        }
+
+        return (
+          <div key={opt.name} className="space-y-3 pt-4 border-t border-white/10">
+            <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">
+              {isColor ? "انتخاب رنگ" : opt.name}
+            </h4>
+
+            {isColor ? (
+              <div className="flex flex-wrap gap-2">
+                {uniqueValues.map((val) => {
+                  const isSelected = (selectedOptions[opt.name] || []).includes(val);
+                  const bg = getColorBackground(val);
+
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => handleOptionToggle(opt.name, val)}
+                      title={val}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs transition-all cursor-pointer ${
+                        isSelected
+                          ? "border-amber-400 bg-amber-400/10 text-white font-bold ring-1 ring-amber-400/50"
+                          : "border-white/10 bg-white/5 text-gray-300 hover:border-white/30 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <span
+                        className="w-3.5 h-3.5 rounded-full border border-white/20 shrink-0 shadow-inner"
+                        style={{ background: bg }}
                       />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {opt.values.map((val) => {
-                const isSelected = (selectedOptions[opt.name] || []).includes(val);
-                return (
-                  <button
-                    key={val}
-                    onClick={() => handleOptionToggle(opt.name, val)}
-                    className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border ${
-                      isSelected
-                        ? "bg-white text-black border-white shadow-sm"
-                        : "bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white"
-                    }`}
-                  >
-                    {val}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      ))}
+                      <span>{val}</span>
+                      {isSelected && <Check className="w-3 h-3 text-amber-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {uniqueValues.map((val) => {
+                  const isSelected = (selectedOptions[opt.name] || []).includes(val);
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => handleOptionToggle(opt.name, val)}
+                      className={`h-8 px-3 rounded-lg text-xs font-bold transition-all border ${
+                        isSelected
+                          ? "bg-white text-black border-white shadow-sm font-black"
+                          : "bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white"
+                      }`}
+                    >
+                      {val}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 
