@@ -17,7 +17,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
 import { adminApi, ProductReview } from "@/lib/admin-api";
+import { getApiErrorMessage } from "@/lib/error-utils";
+import { formatShamsiDate } from "@/lib/jalali";
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<ProductReview[]>([]);
@@ -48,7 +51,7 @@ export default function AdminReviewsPage() {
       }
     } catch (e) {
       console.error("Error loading reviews data:", e);
-      toast.error("خطا در دریافت لیست نظرات");
+      toast.error(getApiErrorMessage(e, "خطا در دریافت لیست نظرات"));
     } finally {
       setIsLoading(false);
     }
@@ -58,12 +61,12 @@ export default function AdminReviewsPage() {
     setActionLoadingId(id);
     try {
       await adminApi.approveReview(id);
-      toast.success("نظر کاربر با موفقیت تایید و منتشر شد.");
+      toast.success("نظر کاربر با موفقیت تایید و در سایت منتشر شد.");
       setReviews((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: "approved" } : r))
       );
-    } catch {
-      toast.error("خطا در تایید نظر");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "خطا در تایید نظر"));
     } finally {
       setActionLoadingId(null);
     }
@@ -77,8 +80,8 @@ export default function AdminReviewsPage() {
       setReviews((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: "rejected" } : r))
       );
-    } catch {
-      toast.error("خطا در رد نظر");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "خطا در رد نظر"));
     } finally {
       setActionLoadingId(null);
     }
@@ -91,8 +94,8 @@ export default function AdminReviewsPage() {
       await adminApi.deleteReview(id);
       toast.success("دیدگاه مورد نظر حذف گردید.");
       setReviews((prev) => prev.filter((r) => r.id !== id));
-    } catch {
-      toast.error("خطا در حذف نظر");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "خطا در حذف نظر"));
     } finally {
       setActionLoadingId(null);
     }
@@ -340,8 +343,8 @@ export default function AdminReviewsPage() {
                           <ExternalLink className="w-3 h-3" />
                         </Link>
                         <span>•</span>
-                        <span className="text-gray-500 font-sans">
-                          {new Date(review.created_at).toLocaleDateString("fa-IR")}
+                        <span className="text-gray-400 font-sans">
+                          {formatShamsiDate(review.created_at, { mode: "full" })}
                         </span>
                       </div>
                     </div>

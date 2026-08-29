@@ -324,9 +324,10 @@ class CartService:
                 }
             )
 
-        total = sum(float(item.price_snapshot) * item.quantity for item in cart_items)
-        discount_amount = 0
+        subtotal = sum(float(item.price_snapshot) * item.quantity for item in cart_items)
+        discount_amount = 0.0
         coupon_code = None
+        coupon_data = None
         if cart.coupon:
             coupon_code = cart.coupon.code
             try:
@@ -337,25 +338,35 @@ class CartService:
                         "variant_id": str(item.variant_id),
                         "quantity": item.quantity,
                         "price": item.price_snapshot,
-                        "category_id": str(item.variant.product.category_id),
+                        "category_id": str(item.variant.product.category_id) if item.variant.product.category_id else None,
                         "product_id": str(item.variant.product_id),
                     }
                     for item in cart_items
                 ]
                 result = coupon_service.validate_and_calculate(coupon_code, cart.user or None, coupon_items)
                 discount_amount = float(result['discount'])
+                coupon_data = {
+                    "code": cart.coupon.code,
+                    "discount_type": cart.coupon.discount_type,
+                    "discount_value": float(cart.coupon.discount_value),
+                }
             except BusinessException:
                 cart.coupon = None
-                cart.save()
+                cart.save(update_fields=['coupon'])
                 coupon_code = None
-        total = total - discount_amount
+        total = max(0.0, subtotal - discount_amount)
 
         return {
             "id": str(cart.id),
             "user_id": str(cart.user_id) if cart.user_id else None,
             "session_key": str(cart.session_key),
             "coupon_code": coupon_code,
+            "coupon": coupon_data,
+            "discount_amount": discount_amount,
+            "discount_type": coupon_data["discount_type"] if coupon_data else None,
+            "discount_value": coupon_data["discount_value"] if coupon_data else 0.0,
             "items": items,
+            "subtotal": subtotal,
             "total": total,
         }
 

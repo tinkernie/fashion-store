@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/error-utils";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -34,13 +35,12 @@ function ResetPasswordForm() {
       toast.success("رمز عبور با موفقیت تغییر یافت");
       router.push("/auth");
     } catch (error: any) {
-      const data = error?.response?.data;
-      const msg = data?.error?.message || data?.detail || data?.message || "خطا در تغییر رمز عبور. لینک ممکن است منقضی شده باشد.";
-      toast.error(msg);
+      toast.error(getApiErrorMessage(error, "خطا در تغییر رمز عبور. لینک ممکن است منقضی شده باشد."));
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">

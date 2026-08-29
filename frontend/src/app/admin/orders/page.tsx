@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
+import { getApiErrorMessage } from "@/lib/error-utils";
+import { formatShamsiDate } from "@/lib/jalali";
 
 const STATUS_TABS = [
   { id: "all", label: "تمام سفارشات" },
@@ -60,6 +62,7 @@ export default function AdminOrdersPage() {
       setOrders(data);
     } catch (e) {
       console.error("Error fetching admin orders:", e);
+      toast.error(getApiErrorMessage(e, "خطا در دریافت لیست سفارشات"));
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +78,15 @@ export default function AdminOrdersPage() {
     setIsLoading(true);
     try {
       await adminApi.transitionOrderStatus(orderId, newStatus, transitionNote);
-      toast.success(`وضعیت سفارش به "${newStatus}" تغییر یافت`);
+      const statusLabels: Record<string, string> = {
+        processing: "در حال بسته‌بندی",
+        shipped: "ارسال شده به پست",
+        delivered: "تحویل مشتری",
+        paid: "پرداخت شده",
+        cancelled: "لغو شده",
+        pending: "در انتظار پرداخت",
+      };
+      toast.success(`وضعیت سفارش به «${statusLabels[newStatus] || newStatus}» تغییر یافت`);
       
       // Update local state
       setOrders((prev) =>
@@ -85,8 +96,7 @@ export default function AdminOrdersPage() {
         setSelectedOrder((prev: any) => ({ ...prev, status: newStatus }));
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || "خطا در تغییر وضعیت سفارش";
-      toast.error(msg);
+      toast.error(getApiErrorMessage(err, "خطا در تغییر وضعیت سفارش"));
     } finally {
       setIsLoading(false);
     }
@@ -223,8 +233,8 @@ export default function AdminOrdersPage() {
                           <span className="font-mono text-sm block" dir="ltr">
                             #{orderId}
                           </span>
-                          <span className="text-[10px] text-gray-500">
-                            {order.placed_at || order.created_at || "امروز"}
+                          <span className="text-[10px] text-gray-400 font-sans">
+                            {formatShamsiDate(order.placed_at || order.created_at, { mode: "full", withTime: true })}
                           </span>
                         </div>
                       </td>

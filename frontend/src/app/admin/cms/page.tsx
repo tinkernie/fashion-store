@@ -34,8 +34,11 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { adminApi, CMSPage } from "@/lib/admin-api";
+import { getApiErrorMessage } from "@/lib/error-utils";
+import { formatShamsiDate } from "@/lib/jalali";
 
 export default function AdminCMSPage() {
+
   const [activeTab, setActiveTab] = useState("site-content");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -639,9 +642,10 @@ export default function AdminCMSPage() {
                             {page.status === "published" ? "منتشر شده" : "پیش‌نویس"}
                           </button>
                         </td>
-                        <td className="p-4 md:p-5 text-gray-400">
-                          {page.updated_at ? new Date(page.updated_at).toLocaleDateString("fa-IR") : "—"}
+                        <td className="p-4 md:p-5 text-gray-300 font-sans">
+                          {page.updated_at ? formatShamsiDate(page.updated_at, { mode: "full" }) : "—"}
                         </td>
+
                         <td className="p-4 md:p-5 text-left">
                           <div className="flex items-center justify-end gap-2">
                             <Link

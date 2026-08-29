@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/error-utils";
 import { CheckCircle, XCircle } from "lucide-react";
 
 function VerifyEmailContent() {
@@ -26,9 +27,10 @@ function VerifyEmailContent() {
         toast.success("ایمیل شما با موفقیت تایید شد");
       } catch (error) {
         setStatus("error");
-        toast.error("لینک تایید نامعتبر است یا منقضی شده است");
+        toast.error(getApiErrorMessage(error, "لینک تایید نامعتبر است یا منقضی شده است"));
       }
     };
+
 
     verifyToken();
   }, [token]);

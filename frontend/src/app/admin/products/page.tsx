@@ -35,7 +35,9 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
+import { getApiErrorMessage } from "@/lib/error-utils";
 import MediaUploader from "@/components/admin/media-uploader";
+
 
 interface OptionDef {
   name: string;
@@ -376,18 +378,7 @@ export default function AdminProductsPage() {
       setIsModalOpen(false);
       loadCatalogData();
     } catch (err: any) {
-      const data = err?.response?.data;
-      let errorMsg = "خطا در ذخیره محصول";
-      if (data?.error?.errors && typeof data.error.errors === "object") {
-        const firstKey = Object.keys(data.error.errors)[0];
-        const val = data.error.errors[firstKey];
-        errorMsg = `${firstKey}: ${Array.isArray(val) ? val[0] : val}`;
-      } else if (data?.error?.message) {
-        errorMsg = data.error.message;
-      } else if (data?.detail) {
-        errorMsg = data.detail;
-      }
-      toast.error(errorMsg);
+      toast.error(getApiErrorMessage(err, "خطا در ذخیره مشخصات محصول"));
     } finally {
       setIsLoading(false);
     }
@@ -399,10 +390,11 @@ export default function AdminProductsPage() {
       await adminApi.deleteProduct(id);
       toast.success("محصول با موفقیت حذف شد");
       setProducts((prev) => prev.filter((p) => p.id !== id));
-    } catch {
-      toast.error("خطا در حذف محصول");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "خطا در حذف محصول"));
     }
   };
+
 
   const filteredProducts = products.filter((p) => {
     const name = (p.name || p.title || "").toLowerCase();

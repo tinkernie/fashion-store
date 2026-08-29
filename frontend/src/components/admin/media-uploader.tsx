@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
+import { getApiErrorMessage } from "@/lib/error-utils";
 
 interface MediaUploaderProps {
+
   value?: string;
   onChange: (url: string) => void;
   label?: string;
@@ -48,8 +50,9 @@ export default function MediaUploader({
       toast.success("تصویر با موفقیت در سرور ذخیره شد.");
     } catch (e: any) {
       console.error("Upload failed:", e);
-      toast.error(e?.response?.data?.detail || "خطا در بارگذاری تصویر روی سرور");
+      toast.error(getApiErrorMessage(e, "خطا در بارگذاری تصویر روی سرور"));
     } finally {
+
       setIsUploading(false);
     }
   };

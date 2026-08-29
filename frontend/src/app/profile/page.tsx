@@ -37,6 +37,7 @@ import { useWishlist } from "@/store/wishlist";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
+import { formatShamsiDate } from "@/lib/jalali";
 
 
 const getUserIdFromToken = () => {
@@ -586,7 +587,9 @@ export default function ProfilePage() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-3">
                               <span className="text-sm font-black text-white font-mono">{orderId}</span>
-                              <span className="text-xs text-gray-500">{orderDate}</span>
+                              <span className="text-xs text-gray-400 font-sans">
+                                {formatShamsiDate(order.placed_at || order.created_at, { mode: "full", withTime: true })}
+                              </span>
                             </div>
                             <span className="text-xs text-gray-400">
                               مبلغ کل: <strong className="text-white">{orderTotal.toLocaleString("fa-IR")} تومان</strong>
@@ -836,7 +839,9 @@ export default function ProfilePage() {
                           )}
                         </div>
                         <p className="text-xs text-gray-300 leading-relaxed">{notif.body || notif.message}</p>
-                        <span className="text-[10px] text-gray-500 block pt-1">{notif.created_at || "اخیراً"}</span>
+                        <span className="text-[10px] text-gray-400 font-sans block pt-1">
+                          {formatShamsiDate(notif.created_at, { mode: "full", withTime: true })}
+                        </span>
                       </div>
 
                       {!notif.is_read && (

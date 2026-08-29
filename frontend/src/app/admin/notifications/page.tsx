@@ -18,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { adminApi } from "@/lib/admin-api";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/error-utils";
+import { formatShamsiDate } from "@/lib/jalali";
 
 export default function AdminNotificationsPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -36,7 +38,7 @@ export default function AdminNotificationsPage() {
       setNotifications(data);
     } catch (e) {
       console.error("Error loading admin notifications:", e);
-      toast.error("خطا در بارگذاری لیست اعلان‌ها");
+      toast.error(getApiErrorMessage(e, "خطا در بارگذاری لیست اعلان‌ها"));
     } finally {
       setIsLoading(false);
     }
@@ -171,9 +173,10 @@ export default function AdminNotificationsPage() {
 
                     <td className="p-4 md:p-5 text-left text-gray-400 font-sans">
                       {notif.created_at
-                        ? new Date(notif.created_at).toLocaleString("fa-IR")
+                        ? formatShamsiDate(notif.created_at, { mode: "full", withTime: true })
                         : "اخیراً"}
                     </td>
+
                   </tr>
                 ))
               )}

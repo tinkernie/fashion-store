@@ -13,12 +13,16 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getApiErrorMessage } from "@/lib/error-utils";
 
 function FailedContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("order_id") || "ORD-UNKNOWN";
-  const errorMessage =
-    searchParams.get("error") || "تراکنش توسط کاربر لغو شد یا خطایی در ارتباط با درگاه بانکی رخ داد.";
+  const rawError = searchParams.get("error");
+  const errorMessage = rawError
+    ? getApiErrorMessage(rawError)
+    : "تراکنش توسط کاربر لغو شد یا خطایی در ارتباط با درگاه بانکی رخ داد.";
+
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pt-32 pb-24 px-4 sm:px-6 lg:px-8" dir="rtl">

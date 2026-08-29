@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
 import { adminApi } from "@/lib/admin-api";
+import { getApiErrorMessage } from "@/lib/error-utils";
+import { formatShamsiDate } from "@/lib/jalali";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -31,6 +34,7 @@ export default function AdminUsersPage() {
       setUsers(data);
     } catch (e) {
       console.error("Error loading users:", e);
+      toast.error(getApiErrorMessage(e, "خطا در دریافت لیست کاربران"));
     } finally {
       setIsLoading(false);
     }
@@ -43,8 +47,8 @@ export default function AdminUsersPage() {
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, is_active: !currentActive } : u))
       );
-    } catch {
-      toast.error("خطا در تغییر وضعیت حساب کاربری");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "خطا در تغییر وضعیت حساب کاربری"));
     }
   };
 
@@ -134,9 +138,10 @@ export default function AdminUsersPage() {
                         )}
                       </td>
 
-                      <td className="p-4 md:p-5 text-gray-400">
-                        {user.date_joined ? new Date(user.date_joined).toLocaleDateString("fa-IR") : "—"}
+                      <td className="p-4 md:p-5 text-gray-300 font-sans">
+                        {user.date_joined ? formatShamsiDate(user.date_joined, { mode: "full" }) : "—"}
                       </td>
+
 
                       <td className="p-4 md:p-5">
                         <span

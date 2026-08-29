@@ -21,6 +21,9 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
+import { getApiErrorMessage } from "@/lib/error-utils";
+import { formatShamsiDate } from "@/lib/jalali";
+import { ShamsiDatePicker } from "@/components/ui/shamsi-date-picker";
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -46,6 +49,7 @@ export default function AdminCouponsPage() {
       setCoupons(data);
     } catch (e) {
       console.error("Error loading coupons:", e);
+      toast.error(getApiErrorMessage(e, "خطا در دریافت لیست تخفیف‌ها"));
     } finally {
       setIsLoading(false);
     }
@@ -65,16 +69,16 @@ export default function AdminCouponsPage() {
         discount_type: discountType,
         discount_value: Number(discountValue),
         max_uses: maxUsage ? Number(maxUsage) : undefined,
-        min_order_amount: minOrder ? Number(minOrder) : undefined,
-        valid_until: validUntil || undefined,
+        min_purchase: minOrder ? Number(minOrder) : 0,
+        min_order_amount: minOrder ? Number(minOrder) : 0,
+        valid_until: validUntil ? `${validUntil}T23:59:59Z` : undefined,
         is_active: true,
       });
       toast.success("کد تخفیف جدید با موفقیت ایجاد شد");
       setIsModalOpen(false);
       loadCoupons();
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || "خطا در ایجاد کد تخفیف";
-      toast.error(msg);
+      toast.error(getApiErrorMessage(err, "خطا در ایجاد کد تخفیف"));
     } finally {
       setIsLoading(false);
     }
@@ -86,8 +90,8 @@ export default function AdminCouponsPage() {
       await adminApi.deleteCoupon(id);
       toast.success("کد تخفیف حذف شد");
       setCoupons((prev) => prev.filter((c) => c.id !== id));
-    } catch {
-      toast.error("خطا در حذف کد تخفیف");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "خطا در حذف کد تخفیف"));
     }
   };
 
@@ -97,7 +101,7 @@ export default function AdminCouponsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
@@ -106,7 +110,7 @@ export default function AdminCouponsPage() {
             تخفیف‌ها و کدهای تبلیغاتی
           </h1>
           <p className="text-xs md:text-sm text-gray-400 mt-1">
-            تعریف کدهای تخفیف درصدی و ریالی برای کمپین‌ها و جشنواره‌های فروش
+            تعریف کدهای تخفیف درصدی و ریالی برای کمپین‌ها و جشنواره‌های فروش با تقویم هجری شمسی
           </p>
         </div>
 
@@ -135,7 +139,7 @@ export default function AdminCouponsPage() {
                 <th className="p-4 md:p-5 font-bold">کد تخفیف</th>
                 <th className="p-4 md:p-5 font-bold">نوع و مقدار تخفیف</th>
                 <th className="p-4 md:p-5 font-bold">سقف استفاده</th>
-                <th className="p-4 md:p-5 font-bold">تاریخ انقضا</th>
+                <th className="p-4 md:p-5 font-bold">تاریخ انقضا (هجری شمسی)</th>
                 <th className="p-4 md:p-5 font-bold">وضعیت</th>
                 <th className="p-4 md:p-5 font-bold text-left">عملیات</th>
               </tr>
@@ -167,16 +171,16 @@ export default function AdminCouponsPage() {
 
                     <td className="p-4 md:p-5 font-bold text-white">
                       {c.discount_type === "percentage" || c.discount_percent
-                        ? `${c.discount_value || c.discount_percent}% تخفیف`
+                        ? `${(c.discount_value || c.discount_percent).toLocaleString("fa-IR")}% تخفیف`
                         : `${(c.discount_value || c.amount || 0).toLocaleString("fa-IR")} تومان`}
                     </td>
 
                     <td className="p-4 md:p-5 text-gray-300">
-                      {c.max_uses ? `${c.used_count || 0} از ${c.max_uses}` : "نامحدود"}
+                      {c.max_uses ? `${(c.used_count || 0).toLocaleString("fa-IR")} از ${c.max_uses.toLocaleString("fa-IR")}` : "نامحدود"}
                     </td>
 
-                    <td className="p-4 md:p-5 text-gray-400">
-                      {c.valid_until ? new Date(c.valid_until).toLocaleDateString("fa-IR") : "همیشگی"}
+                    <td className="p-4 md:p-5 text-gray-300 font-sans">
+                      {c.valid_until ? formatShamsiDate(c.valid_until, { mode: "full" }) : "همیشگی (بدون انقضا)"}
                     </td>
 
                     <td className="p-4 md:p-5">
@@ -202,7 +206,7 @@ export default function AdminCouponsPage() {
         </div>
       </div>
 
-      {/* --- Add Coupon Modal --- */}
+      {/* --- Add Coupon Modal with Shamsi Date Picker --- */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent
           className="bg-[#0e0e0e] border border-white/10 text-white sm:max-w-lg p-6"
@@ -221,7 +225,7 @@ export default function AdminCouponsPage() {
               <Input
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="مثال: LUXURY30"
+                placeholder="مثال: NOROOZ1405"
                 required
                 className="bg-[#141414] border-white/10 h-11 text-white text-xs font-mono tracking-widest uppercase"
                 dir="ltr"
@@ -243,7 +247,7 @@ export default function AdminCouponsPage() {
 
               <div className="space-y-2">
                 <label className="text-xs font-medium text-gray-300">
-                  {discountType === "percentage" ? "درصد تخفیف (مثال: 20)" : "مبلغ به تومان"}
+                  {discountType === "percentage" ? "درصد تخفیف (مثال: ۲۰)" : "مبلغ به تومان"}
                 </label>
                 <Input
                   type="number"
@@ -283,14 +287,13 @@ export default function AdminCouponsPage() {
               </div>
             </div>
 
+            {/* Hijri Shamsi Date Picker */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-300">تاریخ پایان اعتبار (اختیاری)</label>
-              <Input
-                type="date"
+              <label className="text-xs font-medium text-gray-300">تاریخ پایان اعتبار (تقویم هجری شمسی)</label>
+              <ShamsiDatePicker
                 value={validUntil}
-                onChange={(e) => setValidUntil(e.target.value)}
-                className="bg-[#141414] border-white/10 h-11 text-white text-xs"
-                dir="ltr"
+                onChange={setValidUntil}
+                placeholder="انتخاب تاریخ انقضا به هجری شمسی..."
               />
             </div>
 

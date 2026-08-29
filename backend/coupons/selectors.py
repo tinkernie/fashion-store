@@ -12,9 +12,10 @@ class CouponSelector:
             is_active=True,
             deleted_at__isnull=True,
         ).filter(
-            models.Q(valid_from__isnull=True) or models.Q(valid_from__lte=now),
-            models.Q(valid_until__isnull=True) or models.Q(valid_until__gte=now),
+            models.Q(valid_from__isnull=True) | models.Q(valid_from__lte=now),
+            models.Q(valid_until__isnull=True) | models.Q(valid_until__gte=now),
         ).first()
+
 
     @staticmethod
     def get_coupon_by_id(coupon_id) -> Coupon or None:

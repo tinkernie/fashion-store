@@ -84,12 +84,15 @@ export const useCart = create<CartStore>((set, get) => ({
         }));
 
         let couponData: AppliedCoupon | null = null;
-        if (response.data.coupon) {
+        if (response.data.coupon || response.data.coupon_code) {
+          const discAmt = parseFloat(response.data.discount_amount) || 0;
+          const discType = response.data.coupon?.discount_type || response.data.discount_type;
+          const discVal = parseFloat(response.data.coupon?.discount_value ?? response.data.discount_value) || 0;
           couponData = {
-            code: response.data.coupon.code || response.data.coupon,
-            discount_amount: parseFloat(response.data.discount_amount) || 0,
-            discount_type: response.data.coupon.discount_type,
-            discount_value: response.data.coupon.discount_value,
+            code: response.data.coupon?.code || response.data.coupon_code || (typeof response.data.coupon === "string" ? response.data.coupon : ""),
+            discount_amount: discAmt,
+            discount_type: discType,
+            discount_value: discVal,
           };
         }
 
@@ -199,14 +202,19 @@ export const useCart = create<CartStore>((set, get) => ({
         { headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {} }
       );
       if (res.data) {
+        const discAmt = parseFloat(res.data.discount_amount) || 0;
+        const discType = res.data.coupon?.discount_type || res.data.discount_type;
+        const discVal = parseFloat(res.data.coupon?.discount_value ?? res.data.discount_value) || 0;
+
         set({
           coupon: {
-            code,
-            discount_amount: parseFloat(res.data.discount_amount) || 0,
-            discount_type: res.data.discount_type,
-            discount_value: res.data.discount_value,
+            code: res.data.coupon?.code || res.data.coupon_code || code,
+            discount_amount: discAmt,
+            discount_type: discType,
+            discount_value: discVal,
           },
         });
+        await get().fetchCart();
         return true;
       }
       return false;
@@ -225,6 +233,7 @@ export const useCart = create<CartStore>((set, get) => ({
         { headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {} }
       );
       set({ coupon: null });
+      await get().fetchCart();
     } catch (e) {
       console.error("Failed to remove coupon:", e);
     }
@@ -270,12 +279,17 @@ export const useCart = create<CartStore>((set, get) => ({
   getDiscountAmount: () => {
     const coupon = get().coupon;
     if (!coupon) return 0;
-    if (coupon.discount_amount) return coupon.discount_amount;
+    if (coupon.discount_amount && coupon.discount_amount > 0) {
+      return coupon.discount_amount;
+    }
     const total = get().getTotal();
     if (coupon.discount_type === 'percentage' && coupon.discount_value) {
       return (total * coupon.discount_value) / 100;
     }
-    return coupon.discount_value || 0;
+    if (coupon.discount_type === 'fixed' && coupon.discount_value) {
+      return Math.min(coupon.discount_value, total);
+    }
+    return coupon.discount_amount || 0;
   },
 
   getFinalTotal: () => {

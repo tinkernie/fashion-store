@@ -27,6 +27,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/error-utils";
+import { formatShamsiDate } from "@/lib/jalali";
+
 
 interface ProductOptionValue {
   id: string;
@@ -293,12 +296,13 @@ export default function ProductDetailPage() {
       );
       setReviewText("");
       setRating(5);
-    } catch {
-      toast.error("خطا در ثبت دیدگاه. لطفاً دوباره تلاش کنید.");
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "خطا در ثبت دیدگاه. لطفاً دوباره تلاش کنید."));
     } finally {
       setIsSubmittingReview(false);
     }
   };
+
 
   return (
     <main className="min-h-screen pt-28 pb-36 px-4 md:px-6 max-w-7xl mx-auto text-white" dir="rtl">
