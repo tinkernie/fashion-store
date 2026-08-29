@@ -39,16 +39,37 @@ class SearchService:
         cheapest_variant = product.variants.filter(
             status='published', deleted_at__isnull=True
         ).order_by('price').first()
-        price = str(cheapest_variant.price) if cheapest_variant else None
-        image = None  # placeholder until media_libm
+        price = str(cheapest_variant.price) if cheapest_variant else (
+            str(product.metadata.get("price", "0")) if product.metadata else "0"
+        )
+        
+        img = None
+        if product.metadata and "image_url" in product.metadata:
+            img = product.metadata["image_url"]
+        elif product.metadata and "imageUrl" in product.metadata:
+            img = product.metadata["imageUrl"]
+        else:
+            try:
+                from media_libm.selectors import MediaSelector
+                main_img = MediaSelector.get_main_image_for_product(product)
+                if main_img and main_img.get("url"):
+                    img = main_img["url"]
+            except Exception:
+                pass
+
         return {
             'id': str(product.id),
             'title': product.title,
+            'name': product.title,
             'slug': product.slug,
-            'description': product.description[:200],
+            'description': (product.description or "")[:200],
             'category': product.category.name if product.category else None,
+            'category_name': product.category.name if product.category else None,
+            'category_slug': product.category.slug if product.category else None,
             'collections': [c.name for c in product.collections.all()],
             'price': price,
-            'image': image,
-            'is_new': (product.created_at - timezone.now()).days > -30,
+            'image': img,
+            'imageUrl': img,
+            'is_new': (timezone.now() - product.created_at).days < 30,
         }
+

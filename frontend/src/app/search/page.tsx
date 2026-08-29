@@ -148,6 +148,30 @@ function SearchContent() {
     );
   }, [searchParams]);
 
+  // Ensure category facets are always available
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await api.get('/api/categories/flat/');
+        const list = Array.isArray(res.data) ? res.data : res.data.results || [];
+        if (list.length > 0) {
+          setFacets((prev) => ({
+            ...prev,
+            categories: list.map((c: any) => ({
+              id: c.id,
+              name: c.name || c.title,
+              slug: c.slug || c.id,
+            })),
+          }));
+        }
+      } catch {
+        // ignore
+      }
+    };
+    loadCategories();
+  }, []);
+
+
   // Execute API Search
   const fetchSearchResults = useCallback(async () => {
     setIsLoading(true);

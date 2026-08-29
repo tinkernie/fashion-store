@@ -52,6 +52,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="title", read_only=True)
     category = serializers.CharField(source="category.name", read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
+    category_slug = serializers.CharField(source="category.slug", read_only=True)
     collections = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
     imageUrl = serializers.SerializerMethodField()
@@ -62,10 +63,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = (
-            "id", "title", "name", "slug", "description", "category_id", "category_name", "category",
+            "id", "title", "name", "slug", "description", "category_id", "category_name", "category_slug", "category",
             "price", "imageUrl", "image_url", "stock_quantity", "inventory_count",
             "status", "seo_metadata", "metadata", "collections",
         )
+
 
     def get_collections(self, product):
         return [
