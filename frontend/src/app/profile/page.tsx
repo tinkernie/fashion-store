@@ -264,17 +264,24 @@ export default function ProfilePage() {
     if (!userId) return;
 
     const formData = new FormData(e.currentTarget);
-    const fullName = formData.get("fullName") as string;
+    const fullName = ((formData.get("fullName") as string) || "").trim();
     const [firstName, ...lastNames] = fullName.split(" ");
 
     try {
-      await api.patch("/api/users/me/", {
+      const res = await api.patch("/api/users/me/", {
         first_name: firstName || "",
         last_name: lastNames.join(" ") || "",
       });
-      toast.success("اطلاعات کاربری بروزرسانی شد");
+      setUserProfile(
+        res.data || {
+          ...userProfile,
+          first_name: firstName || "",
+          last_name: lastNames.join(" ") || "",
+        }
+      );
+      toast.success("اطلاعات کاربری با موفقیت بروزرسانی شد");
     } catch (error) {
-      toast.error("خطا در بروزرسانی اطلاعات");
+      toast.error(getApiErrorMessage(error, "خطا در بروزرسانی اطلاعات"));
     } finally {
       setIsLoading(false);
     }
@@ -405,6 +412,13 @@ export default function ProfilePage() {
 
   const unreadNotifsCount = notifications.filter((n) => !n.is_read).length;
 
+  const profileFullName = userProfile
+    ? `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim()
+    : "";
+  const displayName =
+    profileFullName ||
+    (userProfile?.email ? userProfile.email.split("@")[0] : "کاربر گرامی");
+
   if (!mounted) return null;
 
   return (
@@ -425,7 +439,7 @@ export default function ProfilePage() {
             </div>
 
             <h2 className="text-xl font-black text-white mb-1">
-              {userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : "کاربر گرامی"}
+              {displayName}
             </h2>
             <p className="text-xs text-gray-400 font-sans mb-6" dir="ltr">
               {userProfile?.email || ""}
@@ -890,8 +904,10 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-300">نام و نام خانوادگی</label>
                     <Input
+                      key={userProfile?.id || userProfile?.email || "profile-name"}
                       name="fullName"
-                      defaultValue={userProfile ? `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim() : ""}
+                      defaultValue={profileFullName}
+                      placeholder="مثال: علی رضایی"
                       className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl"
                     />
                   </div>

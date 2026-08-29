@@ -1872,10 +1872,10 @@
     "semantic_hash": "c8fc9660a61c12c16dfee17bd5b51729"
   },
   "backend/users/views.py": {
-    "mtime": 1787677088.9076316,
-    "seen": 1787742106.6316905,
-    "ast_hash": "c8fb4f919a05299e411c9a22e9e6a472",
-    "semantic_hash": "c8fb4f919a05299e411c9a22e9e6a472"
+    "mtime": 1788010348.35736,
+    "seen": 1788010398.6608922,
+    "ast_hash": "c2e9b5c5713809cfab92ed9e12cfb759",
+    "semantic_hash": "c2e9b5c5713809cfab92ed9e12cfb759"
   },
   "backend/variants/__init__.py": {
     "mtime": 1787396317.3898027,
@@ -2082,10 +2082,10 @@
     "semantic_hash": "6c4307ffa009658f5c97f5629094c0c2"
   },
   "frontend/next-env.d.ts": {
-    "mtime": 1788009922.3586545,
-    "seen": 1788010054.7505488,
-    "ast_hash": "29f60a376e12bf72b67d4994fcc84214",
-    "semantic_hash": "29f60a376e12bf72b67d4994fcc84214"
+    "mtime": 1788010388.351562,
+    "seen": 1788010398.6639009,
+    "ast_hash": "b698cdd97fe8e3bd16dcd74899ad7cef",
+    "semantic_hash": "b698cdd97fe8e3bd16dcd74899ad7cef"
   },
   "frontend/next.config.ts": {
     "mtime": 1788008880.3088312,
@@ -2178,10 +2178,10 @@
     "semantic_hash": "5690061e4dee9d2f24672d38aced8c69"
   },
   "frontend/src/app/profile/page.tsx": {
-    "mtime": 1788009883.5244699,
-    "seen": 1788009906.279771,
-    "ast_hash": "74e603388d9a3f09bd649b044b4c1bf6",
-    "semantic_hash": "74e603388d9a3f09bd649b044b4c1bf6"
+    "mtime": 1788010377.0836613,
+    "seen": 1788010398.6670837,
+    "ast_hash": "bd9e58aa0702ca548652947da572470e",
+    "semantic_hash": "bd9e58aa0702ca548652947da572470e"
   },
   "frontend/src/app/template.tsx": {
     "mtime": 1782741998.9126122,

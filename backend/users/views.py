@@ -29,6 +29,10 @@ class UserProfileViewSet(
         # Always return the current authenticated user for 'me' actions
         return self.request.user
 
+    def list(self, request):
+        serializer = self.get_serializer(self.get_object())
+        return Response(serializer.data)
+
     def retrieve(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_object())
         return Response(serializer.data)
@@ -46,6 +50,11 @@ class UserProfileViewSet(
     def update(self, request, *args, **kwargs):
         # Same as partial_update for PUT
         return self.partial_update(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        # Allow POST /api/users/me/ to update profile
+        return self.partial_update(request, *args, **kwargs)
+
 
     @action(detail=False, methods=["post"], serializer_class=ChangeEmailSerializer)
     def change_email(self, request):
