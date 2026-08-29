@@ -22,7 +22,7 @@ urlpatterns = [
     ),
     # ina baraye khode site hast
     path("api/auth/", include("authentication.urls")),
-    path("api/users/", include("users.urls")),
+    path("api/", include("users.urls")),
     path("api/", include("categories.urls")),
     path("api/", include("store_collections.urls")),
     path("api/", include("products.urls")),

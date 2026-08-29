@@ -51,7 +51,7 @@ class AdminNotificationViewSet(viewsets.GenericViewSet):
         qs = Notification.objects.all().order_by('-created_at')[:100]
         data = [{
             'id': str(n.id),
-            'user_email': n.user.email,
+            'user_email': n.user.email if n.user else "کاربر عمومی",
             'type': n.type,
             'subject': n.subject,
             'is_read': n.is_read,

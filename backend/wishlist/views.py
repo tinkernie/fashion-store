@@ -1,16 +1,23 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from .services import WishlistService
 from .serializers import WishlistAddItemSerializer, WishlistRemoveItemSerializer
 
 
 class WishlistViewSet(viewsets.GenericViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     service = WishlistService()
 
+    def get_permissions(self):
+        if self.action == "list":
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
     def list(self, request):
+        if not request.user or not request.user.is_authenticated:
+            return Response({"items": []})
         result = self.service.get_wishlist(request.user)
         return Response(result)
 

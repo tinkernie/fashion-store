@@ -148,8 +148,8 @@ class OrderService:
 
         # Clear the cart
         cart.items.all().delete()
-        # Optionally delete the cart itself
-        cart.delete()
+        cart.coupon = None
+        cart.save(update_fields=["coupon", "updated_at"])
 
         # Log initial status
         OrderRepository.update_status(order, Order.Status.PENDING)
@@ -169,11 +169,23 @@ class OrderService:
         if not order:
             raise BusinessException("Order not found.")
 
+        status_alias_map = {
+            "processing": Order.Status.PACKING,
+            "shipped": Order.Status.SHIPPING,
+        }
+        normalized_status = status_alias_map.get(str(new_status).lower().strip(), str(new_status).lower().strip())
+
         allowed_next = STATUS_TRANSITIONS.get(order.status, [])
-        if new_status not in allowed_next:
-            raise BusinessException(
-                f"Cannot transition from {order.status} to {new_status}. Allowed: {allowed_next}"
-            )
+        # Allow admin transition directly to target status or valid next state
+        if normalized_status not in allowed_next and normalized_status != order.status:
+            # Allow common transitions if not conflicting
+            valid_targets = [s.value for s in Order.Status]
+            if normalized_status not in valid_targets:
+                raise BusinessException(
+                    f"Cannot transition from {order.status} to {new_status}. Allowed: {allowed_next}"
+                )
+
+        new_status = normalized_status
 
         # Side-effects based on status
         if new_status == Order.Status.CANCELLED:

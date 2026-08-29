@@ -60,7 +60,15 @@ class InventoryService:
         return self._serialize(updated)
 
     def set_safety_stock(self, variant_id: str, value: int) -> dict:
-        inventory = InventoryRepository.lock_inventory(variant_id)
+        from variants.models import Variant
+        actual_variant_id = variant_id
+        variant = Variant.objects.filter(id=variant_id, deleted_at__isnull=True).first()
+        if not variant:
+            variant = Variant.objects.filter(product_id=variant_id, deleted_at__isnull=True).first()
+            if variant:
+                actual_variant_id = str(variant.id)
+
+        inventory = InventoryRepository.lock_inventory(actual_variant_id)
         updated = InventoryRepository.update_fields(
             inventory, safety_stock=value, status=self._calculate_status(inventory)
         )

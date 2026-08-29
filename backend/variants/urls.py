@@ -5,7 +5,7 @@ from .views import PublicVariantViewSet, AdminVariantViewSet
 public_router = DefaultRouter()
 # Custom route: products/{slug}/variants/ and products/{slug}/variants/{sku}/
 public_router.register(
-    r"products/(?P<product_slug>[-\w]+)/variants",
+    r"products/(?P<product_slug>[^/.]+)/variants",
     PublicVariantViewSet,
     basename="public-variants",
 )

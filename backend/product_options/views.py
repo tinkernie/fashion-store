@@ -19,6 +19,11 @@ class PublicProductOptionViewSet(viewsets.GenericViewSet):
     def list(self, request, product_slug=None):
         product = ProductSelector.get_product_by_slug(product_slug)
         if not product:
+            try:
+                product = ProductSelector.get_product_by_id(product_slug)
+            except Exception:
+                product = None
+        if not product:
             return Response(
                 {"detail": "Product not found."}, status=status.HTTP_404_NOT_FOUND
             )
@@ -33,6 +38,19 @@ class AdminProductOptionViewSet(viewsets.GenericViewSet):
 
     def get_product_id(self):
         return self.kwargs.get("product_id")
+
+    def list(self, request, product_id=None):
+        pid = product_id or self.get_product_id()
+        options = ProductOptionSelector.get_options_for_product(pid)
+        serializer = ProductOptionDetailSerializer(options, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, product_id=None, pk=None):
+        option = ProductOptionSelector.get_option_by_id(pk)
+        if not option:
+            return Response({"detail": "Option not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ProductOptionDetailSerializer(option)
+        return Response(serializer.data)
 
     def create(self, request, product_id=None):
         serializer = ProductOptionSerializer(data=request.data)

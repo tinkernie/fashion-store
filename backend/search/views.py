@@ -8,6 +8,10 @@ from .serializers import SearchSerializer
 
 class SearchViewSet(viewsets.GenericViewSet):
     permission_classes = [AllowAny]
+    serializer_class = SearchSerializer
+
+    def list(self, request):
+        return self.products(request)
 
     @action(detail=False, methods=['get'], serializer_class=SearchSerializer)
     def products(self, request):

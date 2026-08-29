@@ -13,16 +13,49 @@ class OrderSelector:
 
     @staticmethod
     def get_order_by_number(order_number: str) -> Order or None:
-        return (
+        if not order_number:
+            return None
+        order = (
             Order.objects.filter(order_number=order_number)
-            .prefetch_related(Prefetch("items", queryset=OrderItem.objects.all()))
+            .prefetch_related(Prefetch("items", queryset=OrderItem.objects.all()), "status_history")
             .first()
         )
+        if not order:
+            import uuid
+            try:
+                uuid.UUID(str(order_number))
+                order = Order.objects.filter(id=order_number).prefetch_related(
+                    Prefetch("items", queryset=OrderItem.objects.all()), "status_history"
+                ).first()
+            except Exception:
+                pass
+        return order
 
     @staticmethod
     def get_order_by_id(order_id: str) -> Order or None:
+        if not order_id:
+            return None
+        import uuid
+        is_valid_uuid = False
+        try:
+            uuid.UUID(str(order_id))
+            is_valid_uuid = True
+        except Exception:
+            pass
+
+        if is_valid_uuid:
+            order = (
+                Order.objects.filter(id=order_id)
+                .prefetch_related(
+                    Prefetch("items", queryset=OrderItem.objects.all()), "status_history"
+                )
+                .first()
+            )
+            if order:
+                return order
+
         return (
-            Order.objects.filter(id=order_id)
+            Order.objects.filter(order_number=order_id)
             .prefetch_related(
                 Prefetch("items", queryset=OrderItem.objects.all()), "status_history"
             )

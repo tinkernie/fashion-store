@@ -9,8 +9,9 @@ from .models import Payment
 
 class PaymentService:
     def initiate_payment(self, user, order_id: str, gateway: str = 'dummy') -> dict:
-        order = Order.objects.filter(id=order_id, user=user).first()
-        if not order:
+        from orders.selectors import OrderSelector
+        order = OrderSelector.get_order_by_id(str(order_id))
+        if not order or (order.user_id != user.id and not user.is_staff):
             raise BusinessException("Order not found.")
         if order.status not in [Order.Status.AWAITING_PAYMENT, Order.Status.PENDING]:
             raise BusinessException("Order cannot be paid in its current status.")

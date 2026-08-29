@@ -12,7 +12,7 @@ public_router.register(r"", PublicProductViewSet, basename="public-product")
 
 public_review_router = DefaultRouter()
 public_review_router.register(
-    r"products/(?P<product_slug>[-\w]+)/reviews",
+    r"products/(?P<product_slug>[^/.]+)/reviews",
     PublicReviewViewSet,
     basename="public-reviews",
 )

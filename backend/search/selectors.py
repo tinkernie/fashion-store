@@ -14,20 +14,26 @@ from store_collections.models import Collection
 class SearchSelector:
     @staticmethod
     def search_products(query: str = None, filters: dict = None, sort: str = None):
-        qs = Product.objects.filter(status=Product.Status.PUBLISHED, deleted_at__isnull=True, category__is_active=True)
+        qs = Product.objects.filter(
+            status=Product.Status.PUBLISHED,
+            deleted_at__isnull=True,
+        ).filter(
+            Q(category__isnull=True) | Q(category__is_active=True)
+        )
 
+        has_rank = False
         # Apply text search
-
         if query:
             if connection.vendor == "postgresql":
                 vector = (
-                        SearchVector("title", weight="A", config="english")
-                        + SearchVector("description", weight="B", config="english")
+                    SearchVector("title", weight="A", config="english")
+                    + SearchVector("description", weight="B", config="english")
                 )
                 search_query = SearchQuery(query, config="english")
                 qs = qs.annotate(rank=SearchRank(vector, search_query)).filter(
                     rank__gt=0
-                ).order_by("-rank")
+                )
+                has_rank = True
             else:
                 qs = qs.filter(
                     Q(title__icontains=query) | Q(description__icontains=query)
@@ -35,32 +41,31 @@ class SearchSelector:
 
         # Apply filters
         if filters:
-            if 'category_slug' in filters:
+            if 'category_slug' in filters and filters['category_slug']:
                 qs = qs.filter(category__slug=filters['category_slug'])
-            if 'collection_slug' in filters:
+            if 'collection_slug' in filters and filters['collection_slug']:
                 qs = qs.filter(collections__slug=filters['collection_slug'])
             if 'min_price' in filters or 'max_price' in filters:
                 # Filter products that have at least one variant in the price range
                 variant_price_filter = Q()
-                if 'min_price' in filters:
+                if 'min_price' in filters and filters['min_price']:
                     variant_price_filter &= Q(variants__price__gte=filters['min_price'])
-                if 'max_price' in filters:
+                if 'max_price' in filters and filters['max_price']:
                     variant_price_filter &= Q(variants__price__lte=filters['max_price'])
                 qs = qs.filter(variant_price_filter).distinct()
-            # Option filters (color, size, etc.) are more complex:
-            # We'll expect filters like 'options': {'Color': ['Red', 'Blue'], 'Size': ['M']}
-            if 'options' in filters:
-                option_filters = filters['options']  # dict: option_name -> list of values
+            # Option filters (color, size, etc.)
+            if 'options' in filters and isinstance(filters['options'], dict):
+                option_filters = filters['options']
                 for option_name, values in option_filters.items():
-                    # Subquery: product must have a variant with option value matching one of the given values
-                    matching_variants = Variant.objects.filter(
-                        product=OuterRef('pk'),
-                        variantoption__option__name=option_name,
-                        variantoption__option_value__value__in=values,
-                        status=Variant.Status.PUBLISHED,
-                        deleted_at__isnull=True,
-                    )
-                    qs = qs.filter(Q(Exists(matching_variants)))
+                    if values:
+                        matching_variants = Variant.objects.filter(
+                            product=OuterRef('pk'),
+                            variantoption__option__name=option_name,
+                            variantoption__option_value__value__in=values,
+                            status=Variant.Status.PUBLISHED,
+                            deleted_at__isnull=True,
+                        )
+                        qs = qs.filter(Q(Exists(matching_variants)))
 
         # Annotate for price ordering and price range display
         qs = qs.annotate(
@@ -78,8 +83,8 @@ class SearchSelector:
         elif sort == 'name':
             qs = qs.order_by('title')
         else:
-            # Default: relevance if query, else newest
-            if query:
+            # Default: relevance if query and postgres, else newest
+            if has_rank:
                 qs = qs.order_by('-rank')
             else:
                 qs = qs.order_by('-created_at')

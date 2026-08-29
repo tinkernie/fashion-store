@@ -6,12 +6,23 @@ from common.exceptions import BusinessException
 class CartRepository:
     @staticmethod
     def get_or_create_cart_by_session(session_key: str) -> Cart:
-        return Cart.objects.get_or_create(session_key=session_key)[0]
+        cart = Cart.all_objects.filter(session_key=session_key).first()
+        if cart:
+            if cart.deleted_at:
+                cart.deleted_at = None
+                cart.save(update_fields=["deleted_at", "updated_at"])
+            return cart
+        return Cart.objects.create(session_key=session_key)
 
     @staticmethod
     def get_or_create_cart_for_user(user) -> Cart:
-        cart, _ = Cart.objects.get_or_create(user=user)
-        return cart
+        cart = Cart.all_objects.filter(user=user).first()
+        if cart:
+            if cart.deleted_at:
+                cart.deleted_at = None
+                cart.save(update_fields=["deleted_at", "updated_at"])
+            return cart
+        return Cart.objects.create(user=user)
 
     @staticmethod
     def add_item(

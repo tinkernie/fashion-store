@@ -59,14 +59,24 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     stock_quantity = serializers.SerializerMethodField()
     inventory_count = serializers.SerializerMethodField()
+    variants = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = (
             "id", "title", "name", "slug", "description", "category_id", "category_name", "category_slug", "category",
             "price", "imageUrl", "image_url", "stock_quantity", "inventory_count",
-            "status", "seo_metadata", "metadata", "collections",
+            "status", "seo_metadata", "metadata", "collections", "variants",
         )
+
+    def get_variants(self, product):
+        if hasattr(product, "variants"):
+            from variants.serializers import VariantDetailSerializer
+            return VariantDetailSerializer(
+                product.variants.filter(deleted_at__isnull=True),
+                many=True
+            ).data
+        return []
 
 
     def get_collections(self, product):

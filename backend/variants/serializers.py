@@ -45,12 +45,15 @@ class VariantUpdateSerializer(serializers.Serializer):
 
 class VariantDetailSerializer(serializers.ModelSerializer):
     options = serializers.SerializerMethodField()
+    inventory = serializers.SerializerMethodField()
+    stock = serializers.SerializerMethodField()
 
     class Meta:
         model = Variant
         fields = (
             "id", "product_id", "sku", "barcode", "price", "weight",
             "dimensions", "availability", "status", "metadata", "options",
+            "inventory", "stock",
         )
 
     def get_options(self, variant):
@@ -65,6 +68,20 @@ class VariantDetailSerializer(serializers.ModelSerializer):
                 "option", "option_value"
             )
         ]
+
+    def get_inventory(self, variant):
+        if hasattr(variant, "inventory") and variant.inventory:
+            return {
+                "available_quantity": variant.inventory.available_quantity,
+                "safety_stock": variant.inventory.safety_stock,
+                "status": variant.inventory.status,
+            }
+        return None
+
+    def get_stock(self, variant):
+        if hasattr(variant, "inventory") and variant.inventory:
+            return variant.inventory.available_quantity
+        return 0
 
 # class VariantDetailSerializer(serializers.Serializer):
 #     id = serializers.UUIDField(read_only=True)

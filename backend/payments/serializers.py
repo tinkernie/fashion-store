@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 class InitiatePaymentSerializer(serializers.Serializer):
-    order_id = serializers.UUIDField()
+    order_id = serializers.CharField()
     gateway = serializers.CharField(default='dummy')
 
 class CallbackSerializer(serializers.Serializer):

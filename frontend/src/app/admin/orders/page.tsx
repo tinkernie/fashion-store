@@ -34,8 +34,8 @@ const STATUS_TABS = [
   { id: "all", label: "تمام سفارشات" },
   { id: "pending", label: "در انتظار پرداخت" },
   { id: "paid", label: "پرداخت شده" },
-  { id: "processing", label: "در حال پردازش" },
-  { id: "shipped", label: "ارسال شده به پست" },
+  { id: "packing", label: "در حال بسته‌بندی" },
+  { id: "shipping", label: "ارسال شده به پست" },
   { id: "delivered", label: "تحویل مشتری" },
   { id: "cancelled", label: "لغو شده" },
 ];
@@ -79,7 +79,9 @@ export default function AdminOrdersPage() {
     try {
       await adminApi.transitionOrderStatus(orderId, newStatus, transitionNote);
       const statusLabels: Record<string, string> = {
+        packing: "در حال بسته‌بندی",
         processing: "در حال بسته‌بندی",
+        shipping: "ارسال شده به پست",
         shipped: "ارسال شده به پست",
         delivered: "تحویل مشتری",
         paid: "پرداخت شده",
@@ -103,19 +105,22 @@ export default function AdminOrdersPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    const s = (status || "").toLowerCase();
+    switch (s) {
       case "delivered":
         return {
           bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
           label: "تحویل داده شده",
           icon: CheckCircle2,
         };
+      case "shipping":
       case "shipped":
         return {
           bg: "bg-blue-500/10 text-blue-400 border-blue-500/20",
           label: "ارسال شده",
           icon: Truck,
         };
+      case "packing":
       case "processing":
         return {
           bg: "bg-purple-500/10 text-purple-400 border-purple-500/20",
@@ -147,7 +152,17 @@ export default function AdminOrdersPage() {
     const orderNum = (o.order_number || o.id || "").toLowerCase();
     const customer = (o.shipping_address?.full_name || "").toLowerCase();
     const matchesSearch = orderNum.includes(searchQuery.toLowerCase()) || customer.includes(searchQuery.toLowerCase());
-    const matchesTab = activeStatusTab === "all" || o.status === activeStatusTab;
+    
+    let matchesTab = activeStatusTab === "all";
+    if (!matchesTab) {
+      if (activeStatusTab === "packing" || activeStatusTab === "processing") {
+        matchesTab = o.status === "packing" || o.status === "processing";
+      } else if (activeStatusTab === "shipping" || activeStatusTab === "shipped") {
+        matchesTab = o.status === "shipping" || o.status === "shipped";
+      } else {
+        matchesTab = o.status === activeStatusTab;
+      }
+    }
     return matchesSearch && matchesTab;
   });
 

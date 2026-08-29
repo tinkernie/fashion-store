@@ -18,6 +18,14 @@ class CartViewSet(viewsets.GenericViewSet):
 
     def _get_session_key(self, request):
         """Ensure a session key exists for guest users."""
+        client_key = (
+            request.headers.get("X-Cart-Session-Key")
+            or request.query_params.get("session_key")
+            or (request.data.get("session_key") if hasattr(request, "data") and isinstance(request.data, dict) else None)
+        )
+        if client_key:
+            return str(client_key)
+
         if not request.session.session_key:
             request.session.save()
         cart_key = request.session.get("cart_session_key")
