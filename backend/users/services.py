@@ -1,4 +1,5 @@
 from datetime import timedelta
+from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from common.exceptions import BusinessException
@@ -30,7 +31,11 @@ class UserService:
 
         EmailChangeRequest.objects.filter(user=user, is_used=False).update(is_used=True)
         token = UserRepository.create_email_change_request(user, new_email)
-        send_email_change_verification.delay(str(token.id), new_email, str(token.token))
+        transaction.on_commit(
+            lambda: send_email_change_verification.delay(
+                str(token.id), new_email, str(token.token)
+            )
+        )
         return {"message": "Verification email sent to new address."}
 
     def confirm_email_change(self, token_str: str) -> dict:

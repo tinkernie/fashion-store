@@ -168,51 +168,81 @@ class InventoryService:
         would stay locked forever, making the item appear out-of-stock.
         This task guarantees eventual consistency without blocking HTTP.
         Uses SELECT FOR UPDATE to prevent race with concurrent reserve/commit.
+        Includes distributed lock (ISSUE-13) and skip_locked (ISSUE-12).
         """
+        import logging
         from collections import defaultdict
 
-        now = timezone.now()
-        expired_qs = Reservation.objects.filter(
-            status=Reservation.Status.ACTIVE, expires_at__lt=now
-        ).select_related("inventory")
+        from django.core.cache import cache
 
-        if not expired_qs.exists():
-            return {"expired_count": 0, "inventories_updated": 0}
+        logger = logging.getLogger(__name__)
 
-        # Group expired quantity per inventory (avoid N+1 aggregation bug)
-        expired_by_inventory: dict = defaultdict(int)
-        expired_ids: list = []
-        for r in expired_qs:
-            expired_by_inventory[r.inventory_id] += r.quantity
-            expired_ids.append(r.id)
+        # Distributed singleton lock to prevent double execution if two beat workers overlap
+        lock_key = "celery:expire_reservations:lock"
+        # timeout slightly less than beat interval (5min=300s)
+        if not cache.add(lock_key, "1", timeout=270):
+            logger.info("expire_reservations already running, skipping duplicate execution")
+            return {"expired_count": 0, "inventories_updated": 0, "skipped": True}
+        try:
+            now = timezone.now()
+            # Lock expired rows to prevent race with concurrent commit/reserve
+            # skip_locked allows concurrent workers to skip already-locked rows (Postgres)
+            try:
+                expired_qs = (
+                    Reservation.objects.select_for_update(skip_locked=True)
+                    .filter(status=Reservation.Status.ACTIVE, expires_at__lt=now)
+                    .select_related("inventory")
+                )
+                # Force evaluation while lock held; list() avoids extra exists() query + race
+                expired_list = list(expired_qs)
+            except Exception:
+                # Fallback for SQLite (does not support skip_locked)
+                expired_list = list(
+                    Reservation.objects.select_for_update()
+                    .filter(status=Reservation.Status.ACTIVE, expires_at__lt=now)
+                    .select_related("inventory")
+                )
 
-        inventories_updated = 0
-        for inventory_id, expired_qty in expired_by_inventory.items():
-            # Lock row to prevent concurrent reserve_stock/commit races
-            inventory = Inventory.objects.select_for_update().get(id=inventory_id)
-            new_reserved = max(0, inventory.reserved_quantity - expired_qty)
-            # Compute status from the *new* sellable quantity, not stale object
-            sellable = inventory.available_quantity - new_reserved
-            if sellable <= 0:
-                new_status = Inventory.Status.OUT_OF_STOCK
-            elif sellable <= inventory.safety_stock:
-                new_status = Inventory.Status.LOW_STOCK
-            else:
-                new_status = Inventory.Status.IN_STOCK
+            if not expired_list:
+                return {"expired_count": 0, "inventories_updated": 0}
 
-            InventoryRepository.update_fields(
-                inventory,
-                reserved_quantity=new_reserved,
-                status=new_status,
-            )
-            inventories_updated += 1
+            # Group expired quantity per inventory (avoid N+1 aggregation bug)
+            expired_by_inventory: dict = defaultdict(int)
+            expired_ids: list = []
+            for r in expired_list:
+                expired_by_inventory[r.inventory_id] += r.quantity
+                expired_ids.append(r.id)
 
-        # Mark all expired reservations as EXPIRED in bulk (single query)
-        ReservationRepository.bulk_update_status(
-            expired_ids, Reservation.Status.EXPIRED
-        )
+            inventories_updated = 0
+            for inventory_id, expired_qty in expired_by_inventory.items():
+                # Lock row to prevent concurrent reserve_stock/commit races
+                inventory = Inventory.objects.select_for_update().get(id=inventory_id)
+                new_reserved = max(0, inventory.reserved_quantity - expired_qty)
+                # Compute status from the *new* sellable quantity, not stale object
+                sellable = inventory.available_quantity - new_reserved
+                if sellable <= 0:
+                    new_status = Inventory.Status.OUT_OF_STOCK
+                elif sellable <= inventory.safety_stock:
+                    new_status = Inventory.Status.LOW_STOCK
+                else:
+                    new_status = Inventory.Status.IN_STOCK
 
-        return {"expired_count": len(expired_ids), "inventories_updated": inventories_updated}
+                InventoryRepository.update_fields(
+                    inventory,
+                    reserved_quantity=new_reserved,
+                    status=new_status,
+                )
+                inventories_updated += 1
+
+            # Mark all expired reservations as EXPIRED in bulk (single query)
+            # Filter by status=ACTIVE to avoid overwriting concurrently committed ones (ISSUE-12)
+            Reservation.objects.filter(
+                id__in=expired_ids, status=Reservation.Status.ACTIVE
+            ).update(status=Reservation.Status.EXPIRED)
+
+            return {"expired_count": len(expired_ids), "inventories_updated": inventories_updated}
+        finally:
+            cache.delete(lock_key)
 
     def _serialize(self, inventory: Inventory) -> dict:
         return {

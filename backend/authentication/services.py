@@ -9,6 +9,8 @@ from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
     OutstandingToken,
 )
+from django.db import transaction
+
 from common.exceptions import BusinessException
 from .repositories import UserRepository, TokenRepository
 from .selectors import UserSelector, TokenSelector
@@ -39,8 +41,10 @@ class AuthService:
         )
         # Create verification token
         token = TokenRepository.create_verification_token(user)
-        # Send verification email (async)
-        send_verification_email.delay(str(user.id), str(token.token))
+        # Send verification email (async) — after commit to avoid race
+        transaction.on_commit(
+            lambda: send_verification_email.delay(str(user.id), str(token.token))
+        )
         return {
             "id": user.id,
             "email": user.email,
@@ -96,8 +100,10 @@ class AuthService:
         # Generate token using Django's default token generator
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        # Send email
-        send_password_reset_email.delay(user.email, uidb64, token)
+        # Send email — after commit (even though no DB write, keeps pattern consistent)
+        transaction.on_commit(
+            lambda: send_password_reset_email.delay(user.email, uidb64, token)
+        )
         return {"message": "If the email is registered, a reset link has been sent."}
 
     def reset_password(self, uidb64: str, token: str, new_password: str) -> dict:

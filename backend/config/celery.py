@@ -14,6 +14,11 @@ app.autodiscover_tasks()
 # Beat Schedule — two required periodic tasks (spec):
 # 1) expire_reservations_task / release_expired_reservations — every 5 min
 # 2) cleanup_expired_tokens — every 24h (deletes tokens >48h old)
+# NOTE (ISSUE-02): When CELERY_BEAT_SCHEDULER=DatabaseScheduler, this dict is the
+# bootstrap/fallback. At runtime the DB table django_celery_beat_periodictask is
+# source of truth. After first migrate, create PeriodicTask rows via admin or data
+# migration, or run beat with --scheduler django_celery_beat.schedulers:DatabaseScheduler
+# to sync. Keeping the dict ensures eager/CI and non-DB scheduler still work.
 app.conf.beat_schedule = {
     "expire-reservations-every-5-minutes": {
         "task": "inventory.tasks.expire_reservations_task",

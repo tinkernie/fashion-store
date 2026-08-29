@@ -14,6 +14,8 @@ from .serializers import (
     ChangePasswordSerializer,
 )
 
+from django.db import transaction
+
 from rest_framework.throttling import ScopedRateThrottle
 from .permissions import IsTokenValid
 from .repositories import TokenRepository, UserRepository
@@ -100,7 +102,9 @@ class ResendVerificationView(APIView):
         user = user_selector.get_user_by_email(serializer.validated_data["email"])
         if user and not user.is_active:
             token = TokenRepository.create_verification_token(user)
-            send_verification_email.delay(str(user.id), str(token.token))
+            transaction.on_commit(
+                lambda: send_verification_email.delay(str(user.id), str(token.token))
+            )
         return Response(
             {
                 "message": "If the account exists and is not active, a verification email has been sent."

@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
     "django_celery_beat",
-    "celery",
     "mptt",
     # Domain apps
     "common",
@@ -150,10 +149,37 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_ENABLE_UTC = True
-CELERY_TASK_ALWAYS_EAGER = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "False") == "True"
-CELERY_TASK_EAGER_PROPAGATES = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "False") == "True"
-# Beat persistence (django-celery-beat uses DB scheduler; optional file fallback)
+_CELERY_EAGER = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+CELERY_TASK_ALWAYS_EAGER = _CELERY_EAGER
+CELERY_TASK_EAGER_PROPAGATES = _CELERY_EAGER
+# Beat persistence: DatabaseScheduler reads from django_celery_beat_periodictask table.
+# app.conf.beat_schedule in config/celery.py is the bootstrap definition — on first
+# migrate it should be synced to DB (via migration or admin). DB is source of truth
+# at runtime; keep beat_schedule in code as fallback/bootstrap.
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# --- Hardening (ISSUE-04) ---
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_TIME_LIMIT = 300
+CELERY_TASK_SOFT_TIME_LIMIT = 240
+CELERY_RESULT_EXPIRES = 3600
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+
+# --- Queue routing (ISSUE-16) ---
+CELERY_TASK_ROUTES = {
+    "authentication.tasks.*": {"queue": "emails"},
+    "users.tasks.*": {"queue": "emails"},
+    "notifications.tasks.*": {"queue": "emails"},
+    "inventory.tasks.*": {"queue": "inventory"},
+}
+CELERY_TASK_DEFAULT_QUEUE = "default"
 
 
 # Security

@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.template import Template, Context
 from django.conf import settings
 from .repositories import (
@@ -40,10 +41,11 @@ class NotificationService:
                 context=context,
             )
 
-        # Dispatch email via Celery if allowed
-        if send_email and email_allowed:  # and notification:
-            send_notification_email.delay(
-                user.email, subject, body, str(notification.id) if notification else None
+        # Dispatch email via Celery if allowed — after commit to ensure Notification exists
+        if send_email and email_allowed:
+            nid = str(notification.id) if notification else None
+            transaction.on_commit(
+                lambda: send_notification_email.delay(user.email, subject, body, nid)
             )
 
         return {
