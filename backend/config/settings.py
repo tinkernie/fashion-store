@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
     "django_celery_beat",
+    "celery",
     "mptt",
     # Domain apps
     "common",
