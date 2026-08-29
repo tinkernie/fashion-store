@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Ensure you add NEXT_PUBLIC_API_URL=http://localhost:8000 to your .env.local file
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Connects directly to backend at http://127.0.0.1:8000 or via Next.js proxy
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -34,17 +34,21 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
           const res = await axios.post(`${API_URL}/api/auth/token/refresh/`, {
-            refresh: refreshToken
+            refresh: refreshToken,
           });
           
-          localStorage.setItem('access_token', res.data.access);
-          originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
-          return api(originalRequest);
+          if (res.data?.access) {
+            localStorage.setItem('access_token', res.data.access);
+            originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
+            return api(originalRequest);
+          }
         }
       } catch (refreshError) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        if (typeof window !== 'undefined') window.location.href = '/auth';
+        // Expired or invalid refresh token: clear stale credentials
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+        }
       }
     }
     return Promise.reject(error);
@@ -52,7 +56,6 @@ api.interceptors.response.use(
 );
 
 export async function trackAnalyticsEvent(type: string, payload?: any) {
-
   try {
     let sessionKey = typeof window !== 'undefined' ? localStorage.getItem('tracking_session_key') : null;
     if (!sessionKey && typeof window !== 'undefined') {
@@ -67,4 +70,4 @@ export async function trackAnalyticsEvent(type: string, payload?: any) {
   } catch {
     // Non-blocking analytics
   }
-}
+}

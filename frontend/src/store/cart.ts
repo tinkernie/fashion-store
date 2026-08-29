@@ -68,7 +68,7 @@ export const useCart = create<CartStore>((set, get) => ({
     try {
       set({ isLoading: true });
       const guestKey = get().getGuestSessionKey();
-      const response = await api.get('/api/cart/', {
+      const response = await api.get(`/api/cart/${guestKey ? `?session_key=${guestKey}` : ''}`, {
         headers: guestKey ? { 'X-Cart-Session-Key': guestKey } : {},
       });
 
@@ -95,12 +95,13 @@ export const useCart = create<CartStore>((set, get) => ({
 
         set({ items: mapped, coupon: couponData });
       }
-    } catch (error) {
-      console.error("Failed to fetch backend cart:", error);
+    } catch {
+      // Backend starting or offline: maintain local state
     } finally {
       set({ isLoading: false });
     }
   },
+
   
   addItem: async (item) => {
     // Optimistic UI Update

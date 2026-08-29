@@ -54,13 +54,19 @@ export default function Navbar() {
   // Initialize Global Data from Backend
   useEffect(() => {
     const initData = async () => {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        await Promise.all([fetchCart(), fetchWishlist()]);
+      try {
+        await fetchCart();
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        if (token) {
+          await fetchWishlist();
+        }
+      } catch {
+        // Graceful silent fallback
       }
     };
     initData();
   }, [fetchCart, fetchWishlist]);
+
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -145,7 +151,6 @@ export default function Navbar() {
                   <SheetClose asChild><Link href="/search?sort=popularity" className="hover:text-gray-300 transition-colors">پرفروش‌ترین‌ها</Link></SheetClose>
                   <div className="border-t border-white/10 pt-6 flex flex-col gap-6">
                     <SheetClose asChild><Link href="/profile" className="hover:text-gray-300 transition-colors">پروفایل کاربری</Link></SheetClose>
-                    <SheetClose asChild><Link href="/admin" className="text-amber-300 font-bold hover:text-amber-200 transition-colors">پنل مدیریت (Admin / CMS)</Link></SheetClose>
                     <SheetClose asChild><Link href="/auth" className="hover:text-gray-300 transition-colors">ورود / ثبت‌نام</Link></SheetClose>
                   </div>
                 </div>
@@ -256,9 +261,6 @@ export default function Navbar() {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1">
                   <Link href="/profile" className="flex items-center w-full">سفارشات من</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl mb-1 text-amber-300 font-bold">
-                  <Link href="/admin" className="flex items-center w-full">پنل مدیریت (Admin / CMS)</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/10 my-1" />
                 <DropdownMenuItem asChild className="hover:bg-white/10 focus:bg-white/10 cursor-pointer rounded-xl text-gray-400 focus:text-white">

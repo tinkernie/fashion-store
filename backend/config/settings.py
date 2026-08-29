@@ -188,13 +188,20 @@ SECURE_CONTENT_TYPE_NOSNIFF = False
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 SECURE_PROXY_SSL_HEADER = None
-CSRF_COOKIE_SECURE = False
+from corsheaders.defaults import default_headers
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
 ]
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "x-cart-session-key",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # Internationalization
 LANGUAGE_CODE = "en-us"

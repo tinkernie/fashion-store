@@ -21,15 +21,20 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
   items: [],
   
   fetchWishlist: async () => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
     try {
       const response = await api.get('/api/wishlist/');
       if (response.data && response.data.items) {
         set({ items: response.data.items });
       }
-    } catch (error) {
-      console.error("Failed to fetch backend wishlist:", error);
+    } catch {
+      // Unauthenticated or expired: ignore silently
     }
   },
+
 
   addItem: async (item) => {
     if (!get().items.find((i) => i.id === item.id)) {
