@@ -149,7 +149,9 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_ENABLE_UTC = True
-_CELERY_EAGER = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "False").lower() in (
+_CELERY_EAGER = os.environ.get(
+    "CELERY_TASK_ALWAYS_EAGER", "True" if DEBUG else "False"
+).lower() in (
     "true",
     "1",
     "yes",

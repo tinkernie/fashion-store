@@ -36,6 +36,8 @@ import { toast } from "sonner";
 import { useWishlist } from "@/store/wishlist";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/error-utils";
+
 
 const getUserIdFromToken = () => {
   if (typeof window === "undefined") return null;
@@ -342,8 +344,7 @@ export default function ProfilePage() {
       toast.success("لینک و کد تایید به ایمیل جدید ارسال شد. لطفاً کد را در کادر زیر وارد کنید.");
       setIsEmailChangeStepTwo(true);
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || err?.response?.data?.message || "خطا در ثبت درخواست تغییر ایمیل";
-      toast.error(msg);
+      toast.error(getApiErrorMessage(err, "خطا در ثبت درخواست تغییر ایمیل"));
     } finally {
       setIsSubmittingEmailChange(false);
     }
@@ -367,8 +368,7 @@ export default function ProfilePage() {
       setEmailChangePassword("");
       setEmailChangeToken("");
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || "کد تایید اشتباه یا منقضی شده است";
-      toast.error(msg);
+      toast.error(getApiErrorMessage(err, "کد تایید اشتباه یا منقضی شده است"));
     } finally {
       setIsSubmittingEmailChange(false);
     }
@@ -389,13 +389,7 @@ export default function ProfilePage() {
       toast.success("رمز عبور با موفقیت تغییر یافت");
       (e.target as HTMLFormElement).reset();
     } catch (error: any) {
-      const data = error?.response?.data;
-      const msg =
-        data?.error?.message ||
-        data?.detail ||
-        data?.message ||
-        "تغییر رمز عبور ناموفق بود. لطفاً رمز عبور فعلی را بررسی کنید.";
-      toast.error(msg);
+      toast.error(getApiErrorMessage(error, "تغییر رمز عبور ناموفق بود. لطفاً رمز عبور فعلی را بررسی کنید."));
     } finally {
       setIsLoading(false);
     }

@@ -32,6 +32,7 @@ import {
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/error-utils";
 
 export default function Navbar() {
   const router = useRouter();
@@ -356,7 +357,7 @@ export default function Navbar() {
                             toast.success("کد تخفیف با موفقیت اعمال شد");
                             setCouponInput("");
                           } catch (err: any) {
-                            toast.error(err?.response?.data?.message || "کد تخفیف نامعتبر یا منقضی شده است");
+                            toast.error(getApiErrorMessage(err, "کد تخفیف نامعتبر یا منقضی شده است"));
                           } finally {
                             setIsApplyingCoupon(false);
                           }

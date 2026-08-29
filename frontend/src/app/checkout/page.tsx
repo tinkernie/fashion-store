@@ -22,12 +22,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/store/cart";
+import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/error-utils";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { api } from "@/lib/api";
 
 const checkoutSchema = z.object({
   fullName: z.string().min(3, "نام و نام خانوادگی باید حداقل ۳ کاراکتر باشد"),
@@ -118,7 +119,7 @@ export default function CheckoutPage() {
       toast.success("کد تخفیف با موفقیت اعمال شد");
       setCouponCodeInput("");
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || "کد تخفیف نامعتبر یا منقضی شده است");
+      toast.error(getApiErrorMessage(e, "کد تخفیف نامعتبر یا منقضی شده است"));
     } finally {
       setIsApplyingCoupon(false);
     }
@@ -176,10 +177,9 @@ export default function CheckoutPage() {
       );
     } catch (error: any) {
       console.error("Checkout failed:", error);
-      const errMsg = error?.response?.data?.detail || error?.response?.data?.message || "ثبت سفارش ناموفق بود";
-      toast.error(errMsg);
-      // Optional fallback to failed page if order creation specifically failed
+      toast.error(getApiErrorMessage(error, "ثبت سفارش ناموفق بود. لطفاً اطلاعات را بررسی کنید."));
     } finally {
+
       setIsLoading(false);
     }
   };
