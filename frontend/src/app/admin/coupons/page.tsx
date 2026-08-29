@@ -69,6 +69,7 @@ export default function AdminCouponsPage() {
         discount_type: discountType,
         discount_value: Number(discountValue),
         max_uses: maxUsage ? Number(maxUsage) : undefined,
+        max_per_user: 1,
         min_purchase: minOrder ? Number(minOrder) : 0,
         min_order_amount: minOrder ? Number(minOrder) : 0,
         valid_until: validUntil ? `${validUntil}T23:59:59Z` : undefined,

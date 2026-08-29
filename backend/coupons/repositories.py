@@ -38,4 +38,14 @@ class CouponRepository:
 
     @staticmethod
     def get_coupon_usage_count(coupon: Coupon, user) -> int:
-        return CouponUsage.objects.filter(coupon=coupon, user=user).count()
+        if not user or not getattr(user, "is_authenticated", False):
+            return 0
+        from .models import CouponUsage
+        from orders.models import Order
+        usage_by_table = CouponUsage.objects.filter(coupon=coupon, user=user).count()
+        usage_by_order = (
+            Order.objects.filter(coupon=coupon, user=user)
+            .exclude(status=Order.Status.CANCELLED)
+            .count()
+        )
+        return max(usage_by_table, usage_by_order)

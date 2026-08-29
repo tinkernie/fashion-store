@@ -15,10 +15,11 @@ class CouponService:
         if not coupon:
             raise BusinessException("Invalid or expired coupon code.")
 
-        # Check per-user limit
-        if coupon.max_per_user is not None:
+        # Check per-user limit (defaults to 1 per user)
+        if user and getattr(user, "is_authenticated", False):
+            max_allowed = coupon.max_per_user if (coupon.max_per_user is not None and coupon.max_per_user > 0) else 1
             usage_count = CouponRepository.get_coupon_usage_count(coupon, user)
-            if usage_count >= coupon.max_per_user:
+            if usage_count >= max_allowed:
                 raise BusinessException("You have reached the usage limit for this coupon.")
 
         # Check total uses
