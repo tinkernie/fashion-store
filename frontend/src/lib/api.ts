@@ -50,3 +50,21 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export async function trackAnalyticsEvent(type: string, payload?: any) {
+
+  try {
+    let sessionKey = typeof window !== 'undefined' ? localStorage.getItem('tracking_session_key') : null;
+    if (!sessionKey && typeof window !== 'undefined') {
+      sessionKey = 'sess-' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('tracking_session_key', sessionKey);
+    }
+    await api.post('/api/analytics/track/', {
+      type,
+      payload: payload || {},
+      session_key: sessionKey || undefined,
+    });
+  } catch {
+    // Non-blocking analytics
+  }
+}

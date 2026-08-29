@@ -79,6 +79,22 @@ export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [addresses, setAddresses] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [preferences, setPreferences] = useState<any>({
+    email_order_updates: true,
+    email_promotions: true,
+    email_account: true,
+    in_app_order_updates: true,
+    in_app_account: true,
+  });
+  const [isUpdatingPrefs, setIsUpdatingPrefs] = useState(false);
+
+  // Email Change State
+  const [newEmailInput, setNewEmailInput] = useState("");
+  const [emailChangePassword, setEmailChangePassword] = useState("");
+  const [emailChangeToken, setEmailChangeToken] = useState("");
+  const [isEmailChangeStepTwo, setIsEmailChangeStepTwo] = useState(false);
+  const [isSubmittingEmailChange, setIsSubmittingEmailChange] = useState(false);
+
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -109,10 +125,11 @@ export default function ProfilePage() {
 
     const fetchData = async () => {
       try {
-        const [ordersRes, profileRes, notifsRes] = await Promise.allSettled([
+        const [ordersRes, profileRes, notifsRes, prefsRes] = await Promise.allSettled([
           api.get("/api/orders/"),
           api.get("/api/users/me/"),
           api.get("/api/notifications/"),
+          api.get("/api/notifications/preferences/"),
         ]);
 
         if (ordersRes.status === "fulfilled") {
@@ -151,10 +168,15 @@ export default function ProfilePage() {
         }
 
         if (notifsRes.status === "fulfilled") {
-          const notifList = Array.isArray(notifsRes.value.data)
-            ? notifsRes.value.data
-            : notifsRes.value.data.results || [];
+          const data = notifsRes.value.data;
+          const notifList = Array.isArray(data)
+            ? data
+            : data.notifications || data.results || [];
           setNotifications(notifList);
+        }
+
+        if (prefsRes.status === "fulfilled" && prefsRes.value.data) {
+          setPreferences(prefsRes.value.data);
         }
       } catch (error) {
         console.error("Error loading profile data:", error);
@@ -162,6 +184,7 @@ export default function ProfilePage() {
     };
     fetchData();
   }, [router]);
+
 
   const handleOpenAddAddress = () => {
     setEditingAddress(null);
@@ -288,6 +311,69 @@ export default function ProfilePage() {
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     }
   };
+
+
+  const handleTogglePreference = async (key: string, value: boolean) => {
+    setIsUpdatingPrefs(true);
+    try {
+      const updated = { ...preferences, [key]: value };
+      setPreferences(updated);
+      await api.patch("/api/notifications/preferences/", { [key]: value });
+      toast.success("تنظیمات اعلان بروزرسانی شد");
+    } catch {
+      toast.error("خطا در بروزرسانی تنظیمات اعلان");
+    } finally {
+      setIsUpdatingPrefs(false);
+    }
+  };
+
+  const handleChangeEmailRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmailInput || !emailChangePassword) {
+      toast.error("لطفاً ایمیل جدید و رمز عبور را وارد کنید");
+      return;
+    }
+    setIsSubmittingEmailChange(true);
+    try {
+      await api.post("/api/users/me/change_email/", {
+        new_email: newEmailInput,
+        password: emailChangePassword,
+      });
+      toast.success("لینک و کد تایید به ایمیل جدید ارسال شد. لطفاً کد را در کادر زیر وارد کنید.");
+      setIsEmailChangeStepTwo(true);
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || "خطا در ثبت درخواست تغییر ایمیل";
+      toast.error(msg);
+    } finally {
+      setIsSubmittingEmailChange(false);
+    }
+  };
+
+  const handleConfirmEmailChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailChangeToken) {
+      toast.error("کد یا توکن تایید را وارد کنید");
+      return;
+    }
+    setIsSubmittingEmailChange(true);
+    try {
+      await api.post("/api/users/me/confirm_email/", {
+        token: emailChangeToken,
+      });
+      toast.success("ایمیل شما با موفقیت تغییر یافت. لطفاً مجدداً وارد شوید.");
+      setUserProfile((prev: any) => ({ ...prev, email: newEmailInput }));
+      setIsEmailChangeStepTwo(false);
+      setNewEmailInput("");
+      setEmailChangePassword("");
+      setEmailChangeToken("");
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || "کد تایید اشتباه یا منقضی شده است";
+      toast.error(msg);
+    } finally {
+      setIsSubmittingEmailChange(false);
+    }
+  };
+
 
 
   const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -758,12 +844,54 @@ export default function ProfilePage() {
                   ))}
                 </div>
               )}
+
+              {/* Notification Preferences Sub-Panel */}
+              <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 space-y-4 shadow-xl">
+                <h4 className="text-sm font-black text-white flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-amber-400" />
+                  تنظیمات دریافت اعلان‌ها و پیامک‌ها
+                </h4>
+                <p className="text-xs text-gray-400">کانال‌های اطلاع‌رسانی دلخواه خود را فعال یا غیرفعال کنید</p>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
+                    <span className="text-xs font-bold text-white">ایمیل‌های تغییر وضعیت سفارش</span>
+                    <input
+                      type="checkbox"
+                      checked={!!preferences.email_order_updates}
+                      onChange={(e) => handleTogglePreference("email_order_updates", e.target.checked)}
+                      className="w-4 h-4 accent-amber-400 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
+                    <span className="text-xs font-bold text-white">ایمیل‌های تخفیف‌ها و پیشنهادات شگفت‌انگیز</span>
+                    <input
+                      type="checkbox"
+                      checked={!!preferences.email_promotions}
+                      onChange={(e) => handleTogglePreference("email_promotions", e.target.checked)}
+                      className="w-4 h-4 accent-amber-400 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
+                    <span className="text-xs font-bold text-white">اعلان‌های درون‌برنامه‌ای سفارش‌ها</span>
+                    <input
+                      type="checkbox"
+                      checked={!!preferences.in_app_order_updates}
+                      onChange={(e) => handleTogglePreference("in_app_order_updates", e.target.checked)}
+                      className="w-4 h-4 accent-amber-400 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
             </TabsContent>
 
             {/* --- 5. Security & Settings Tab --- */}
             <TabsContent value="settings" className="space-y-8 outline-none mt-0">
+              {/* Basic Profile Name */}
               <div>
-                <h3 className="text-lg font-black text-white mb-4">ویرایش اطلاعات پایه حساب</h3>
+                <h3 className="text-lg font-black text-white mb-4">ویرایش مشخصات حساب</h3>
                 <form onSubmit={handleSaveSettings} className="bg-[#111111] border border-white/10 rounded-3xl p-6 space-y-4 max-w-xl shadow-xl">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-300">نام و نام خانوادگی</label>
@@ -779,6 +907,86 @@ export default function ProfilePage() {
                 </form>
               </div>
 
+              {/* Change Email */}
+              <div>
+                <h3 className="text-lg font-black text-white mb-4">تغییر آدرس ایمیل</h3>
+                <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 max-w-xl shadow-xl space-y-4">
+                  {!isEmailChangeStepTwo ? (
+                    <form onSubmit={handleChangeEmailRequest} className="space-y-4">
+                      <p className="text-xs text-gray-400">
+                        ایمیل فعلی شما: <strong className="text-white font-mono" dir="ltr">{userProfile?.email || ""}</strong>
+                      </p>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-300">ایمیل جدید</label>
+                        <Input
+                          type="email"
+                          required
+                          value={newEmailInput}
+                          onChange={(e) => setNewEmailInput(e.target.value)}
+                          placeholder="new-email@example.com"
+                          className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-300">رمز عبور فعلی برای تایید هویت</label>
+                        <Input
+                          type="password"
+                          required
+                          value={emailChangePassword}
+                          onChange={(e) => setEmailChangePassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl"
+                          dir="ltr"
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={isSubmittingEmailChange}
+                        className="w-full h-12 rounded-xl bg-white text-black font-bold text-xs hover:bg-gray-200"
+                      >
+                        {isSubmittingEmailChange ? "در حال ارسال کد..." : "ارسال کد تایید به ایمیل جدید"}
+                      </Button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleConfirmEmailChange} className="space-y-4">
+                      <p className="text-xs text-amber-400">
+                        کد تایید ارسال شده به ایمیل جدید «{newEmailInput}» را وارد کنید:
+                      </p>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-300">کد / توکن تایید</label>
+                        <Input
+                          required
+                          value={emailChangeToken}
+                          onChange={(e) => setEmailChangeToken(e.target.value)}
+                          placeholder="کد تایید را وارد کنید"
+                          className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl font-mono text-center"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="submit"
+                          disabled={isSubmittingEmailChange}
+                          className="flex-1 h-12 rounded-xl bg-white text-black font-bold text-xs hover:bg-gray-200"
+                        >
+                          {isSubmittingEmailChange ? "در حال تایید..." : "تایید نهایی ایمیل جدید"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => setIsEmailChangeStepTwo(false)}
+                          className="h-12 text-xs text-gray-400 hover:text-white"
+                        >
+                          انصراف
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+
+              {/* Change Password */}
               <div>
                 <h3 className="text-lg font-black text-white mb-4">تغییر کلمه عبور</h3>
                 <form onSubmit={handleChangePassword} className="bg-[#111111] border border-white/10 rounded-3xl p-6 space-y-4 max-w-xl shadow-xl">
@@ -828,6 +1036,7 @@ export default function ProfilePage() {
                 </form>
               </div>
             </TabsContent>
+
           </Tabs>
         </motion.div>
       </div>
