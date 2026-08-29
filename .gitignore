@@ -108,7 +108,8 @@ yarn-error.log*
 lerna-debug.log*
 
 # ------------------------------------------
-# Graphify
+# Graphify & Local AI Agents
 # ------------------------------------------
-#graphify-out/
-
+graphify-out/
+.agents/
+.gemini/
