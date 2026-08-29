@@ -158,32 +158,61 @@ class InventoryService:
         )
 
     @transaction.atomic
-    def expire_reservations(self):
-        """Called by Celery beat. Cancel all expired active reservations and update inventory."""
-        expired = InventorySelector.get_expired_active_reservations()
-        if not expired:
-            return
-        # Group by inventory to update reserved counts
-        inventory_ids = set(r.inventory_id for r in expired)
-        for inventory in Inventory.objects.filter(
-            id__in=inventory_ids
-        ).select_for_update():
-            active_reservations = Reservation.objects.filter(
-                inventory=inventory, status=Reservation.Status.ACTIVE
-            )
-            total_reserved = (
-                active_reservations.aggregate(sum=models.Sum("quantity"))["sum"] or 0
-            )
-            # Update reserved_quantity to reflect only still active
+    def expire_reservations(self) -> dict:
+        """
+        Called by Celery Beat every 5 minutes (crontab minute=*/5).
+        Finds all ACTIVE reservations where expires_at < now(), marks them
+        EXPIRED, and restores reserved stock on the parent Inventory.
+
+        Why periodic: if a user abandons cart/checkout the reserved stock
+        would stay locked forever, making the item appear out-of-stock.
+        This task guarantees eventual consistency without blocking HTTP.
+        Uses SELECT FOR UPDATE to prevent race with concurrent reserve/commit.
+        """
+        from collections import defaultdict
+
+        now = timezone.now()
+        expired_qs = Reservation.objects.filter(
+            status=Reservation.Status.ACTIVE, expires_at__lt=now
+        ).select_related("inventory")
+
+        if not expired_qs.exists():
+            return {"expired_count": 0, "inventories_updated": 0}
+
+        # Group expired quantity per inventory (avoid N+1 aggregation bug)
+        expired_by_inventory: dict = defaultdict(int)
+        expired_ids: list = []
+        for r in expired_qs:
+            expired_by_inventory[r.inventory_id] += r.quantity
+            expired_ids.append(r.id)
+
+        inventories_updated = 0
+        for inventory_id, expired_qty in expired_by_inventory.items():
+            # Lock row to prevent concurrent reserve_stock/commit races
+            inventory = Inventory.objects.select_for_update().get(id=inventory_id)
+            new_reserved = max(0, inventory.reserved_quantity - expired_qty)
+            # Compute status from the *new* sellable quantity, not stale object
+            sellable = inventory.available_quantity - new_reserved
+            if sellable <= 0:
+                new_status = Inventory.Status.OUT_OF_STOCK
+            elif sellable <= inventory.safety_stock:
+                new_status = Inventory.Status.LOW_STOCK
+            else:
+                new_status = Inventory.Status.IN_STOCK
+
             InventoryRepository.update_fields(
                 inventory,
-                reserved_quantity=total_reserved,
-                status=self._calculate_status(inventory),
+                reserved_quantity=new_reserved,
+                status=new_status,
             )
-        # Mark all expired as EXPIRED
+            inventories_updated += 1
+
+        # Mark all expired reservations as EXPIRED in bulk (single query)
         ReservationRepository.bulk_update_status(
-            [r.id for r in expired], Reservation.Status.EXPIRED
+            expired_ids, Reservation.Status.EXPIRED
         )
+
+        return {"expired_count": len(expired_ids), "inventories_updated": inventories_updated}
 
     def _serialize(self, inventory: Inventory) -> dict:
         return {

@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
-    "celery",
+    "django_celery_beat",
     "mptt",
     # Domain apps
     "common",
@@ -138,12 +138,21 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
-# Celery
+# Celery — Redis as broker, env-driven for 12-factor config
+# CELERY_BROKER_URL / CELERY_RESULT_BACKEND default to local Redis; override via .env in production.
+# CELERY_TASK_ALWAYS_EAGER=True runs tasks synchronously (no worker needed) — useful for tests/CI.
+# Set CELERY_TASK_ALWAYS_EAGER=False (or unset) when running real workers.
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/0")
-CELERY_TIMEZONE = "UTC"
+CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
-CELERY_TASK_ALWAYS_EAGER = True  # Run tasks synchronously in local development without requiring a separate Redis/worker service
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+CELERY_ENABLE_UTC = True
+CELERY_TASK_ALWAYS_EAGER = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "False") == "True"
+CELERY_TASK_EAGER_PROPAGATES = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "False") == "True"
+# Beat persistence (django-celery-beat uses DB scheduler; optional file fallback)
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 
 # Security
