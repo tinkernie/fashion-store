@@ -1,0 +1,36 @@
+{% extends "email/base.html" %}
+{% block content %}
+<h1 style="margin:0 0 16px 0; font-size:20px; font-weight:bold; color:#111111;">Order {{ order_number }} - Status update</h1>
+<p style="margin:0 0 16px 0;">Hi {{ user_name|default:"there" }},</p>
+<p style="margin:0 0 16px 0;">Your order <strong>{{ order_number }}</strong> status has changed:</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f8f8; border:1px solid #eeeeee; border-radius:8px; padding: 16px; margin: 16px 0;">
+  <tr>
+    <td style="padding:16px; text-align:center;">
+      <span style="color:#888888; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Previous</span><br>
+      <strong style="font-size:16px; color:#666666;">{{ old_status|upper }}</strong>
+    </td>
+    <td style="padding:16px; text-align:center; color:#111111; font-size:20px;">&rarr;</td>
+    <td style="padding:16px; text-align:center;">
+      <span style="color:#888888; font-size:12px; text-transform:uppercase; letter-spacing:1px;">Current</span><br>
+      <strong style="font-size:16px; color:#111111;">{{ new_status|upper }}</strong>
+    </td>
+  </tr>
+</table>
+
+{% if new_status == "shipping" or new_status == "shipped" %}
+<p style="margin:0 0 16px 0;">Your order is on its way! {{ tracking_number|default:"" }}</p>
+{% elif new_status == "delivered" %}
+<p style="margin:0 0 16px 0;">Great news - your order has been delivered. Enjoy your new styles!</p>
+{% elif new_status == "cancelled" %}
+<p style="margin:0 0 16px 0;">Your order was cancelled. If you were charged, a refund will be processed within 3-5 business days.</p>
+{% endif %}
+
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+  <tr>
+    <td align="center" style="background-color:#111111; border-radius:4px;">
+      <a href="{{ frontend_url }}/orders/{{ order_number }}" style="display:inline-block; padding: 12px 28px; color:#ffffff; text-decoration:none; font-weight:bold; font-size:14px;">View Order</a>
+    </td>
+  </tr>
+</table>
+{% endblock %}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ subject|default:"Luxe Fashion" }}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family: Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; max-width:600px; width:100%; border-radius:8px; overflow:hidden;">
+          <!-- Header / Branding -->
+          <tr>
+            <td align="center" style="background-color:#111111; padding: 24px 20px;">
+              <a href="{{ frontend_url|default:'http://localhost:3000' }}" style="text-decoration:none; color:#ffffff; font-size:24px; font-weight:bold; letter-spacing:2px;">LUXE</a>
+              <p style="margin:8px 0 0 0; color:#cccccc; font-size:12px; letter-spacing:1px;">FASHION STORE</p>
+            </td>
+          </tr>
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px 24px; color:#333333; font-size:14px; line-height:22px;">
+              {% block content %}{% endblock %}
+            </td>
+          </tr>
+          <!-- CTA Footer -->
+          <tr>
+            <td style="padding: 0 24px 24px 24px; color:#666666; font-size:12px; line-height:18px; border-top:1px solid #eeeeee;">
+              <p style="margin:16px 0 8px 0;">Need help? Contact us at <a href="mailto:support@luxe.com" style="color:#111111; text-decoration:underline;">support@luxe.com</a></p>
+              <p style="margin:0; color:#999999; font-size:11px;">This email was sent to {{ email|default:"you" }}. If you did not request this, please ignore.</p>
+              {% if unsubscribe_url %}
+              <p style="margin:8px 0 0 0;"><a href="{{ unsubscribe_url }}" style="color:#999999; text-decoration:underline; font-size:11px;">Unsubscribe</a></p>
+              {% endif %}
+            </td>
+          </tr>
+          <!-- Legal Footer -->
+          <tr>
+            <td align="center" style="background-color:#fafafa; padding:16px 24px; color:#aaaaaa; font-size:11px; border-top:1px solid #eeeeee;">
+              &copy; {% now "Y" %} Luxe Fashion Store. All rights reserved.<br>
+              <a href="{{ frontend_url|default:'http://localhost:3000' }}" style="color:#aaaaaa; text-decoration:underline;">Visit our store</a>
+            </td>
+          </tr>
+        </table>
+        <!-- Preheader hidden -->
+        <div style="display:none; max-height:0; overflow:hidden; opacity:0;">{{ preheader|default:"" }}</div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

@@ -3,11 +3,17 @@ import smtplib
 import socket
 
 from celery import shared_task
-from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.db.utils import OperationalError
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_subject(subject: str) -> str:
+    return subject.replace("\n", " ").replace("\r", " ").strip()[:300]
 
 
 @shared_task(
@@ -24,11 +30,25 @@ logger = logging.getLogger(__name__)
 def send_email_change_verification(self, token_id: str, new_email: str, token: str):
     """
     Async email-change confirmation — offloaded via transaction.on_commit in UserService.
-    SMTP latency (500-3000ms) must not block the HTTP PATCH /users/me/ response.
-    Includes retry/backoff only for transient SMTP/network failures.
+    Includes retry/backoff only for transient SMTP/network failures. HTML with text fallback.
     """
-    subject = "Confirm your new email address"
-    message = f"Your confirmation code is: {token}"
-    # In production this would be a FRONTEND_URL link: /auth/confirm-email?token=...
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [new_email])
+    subject = _sanitize_subject("Confirm your new email address — Luxe")
+    confirmation_url = f"{settings.FRONTEND_URL}/auth/confirm-email?token={token}"
+    context = {
+        "new_email": new_email,
+        "token": token,
+        "confirmation_url": confirmation_url,
+        "frontend_url": settings.FRONTEND_URL,
+        "preheader": "Confirm your new email for Luxe",
+    }
+    html_content = render_to_string("email/email_change.html", context)
+    text_content = strip_tags(html_content)
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=text_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[new_email],
+    )
+    msg.attach_alternative(html_content, "text/html")
+    msg.send(fail_silently=False)
     logger.info("send_email_change_verification sent to %s token_id=%s", new_email, token_id)

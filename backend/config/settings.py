@@ -178,6 +178,8 @@ CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_TASK_ROUTES = {
     "authentication.tasks.*": {"queue": "emails"},
     "users.tasks.*": {"queue": "emails"},
+    "notifications.tasks.send_notification_email": {"queue": "emails"},
+    "notifications.tasks.send_sms": {"queue": "sms"},
     "notifications.tasks.*": {"queue": "emails"},
     "inventory.tasks.*": {"queue": "inventory"},
 }
@@ -226,14 +228,44 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@luxe.com")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-EMAIL_BACKEND = (
-    "django.core.mail.backends.console.EmailBackend"  # dev only; override in prod
-)
+
+# --- Email (env-switched) ---
+# DEBUG=True -> console backend (dev/tests). Production must set EMAIL_BACKEND via env.
+# Supported: console | smtp | sendgrid | ses
+_EMAIL_BACKEND_CHOICE = os.environ.get("EMAIL_BACKEND", "")
+if _EMAIL_BACKEND_CHOICE:
+    EMAIL_BACKEND = _EMAIL_BACKEND_CHOICE
+else:
+    EMAIL_BACKEND = (
+        "django.core.mail.backends.console.EmailBackend"
+        if DEBUG
+        else "django.core.mail.backends.smtp.EmailBackend"
+    )
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.sendgrid.net")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False").lower() in ("true", "1", "yes")
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
+# SendGrid / SES API keys (optional, for API-based backends)
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
+AWS_SES_REGION = os.environ.get("AWS_SES_REGION", "us-east-1")
+
+# --- SMS (Kavenegar) ---
+KAVENEGAR_API_KEY = os.environ.get("KAVENEGAR_API_KEY", "")
+SMS_SENDER = os.environ.get("SMS_SENDER", "10008642")
+SMS_ENABLED = bool(KAVENEGAR_API_KEY)  # auto-disable if no key (dev logs only)
+# Frontend should be https in production
+if not DEBUG and FRONTEND_URL.startswith("http://"):
+    import warnings
+
+    warnings.warn("FRONTEND_URL should use https:// in production", RuntimeWarning)
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

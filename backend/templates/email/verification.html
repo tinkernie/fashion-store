@@ -1,0 +1,27 @@
+{% extends "email/base.html" %}
+{% block content %}
+<h1 style="margin:0 0 16px 0; font-size:22px; font-weight:bold; color:#111111;">Verify your email</h1>
+<p style="margin:0 0 16px 0;">Hi {{ user_name|default:"there" }},</p>
+<p style="margin:0 0 16px 0;">Thank you for creating an account at <strong>Luxe</strong>. Please use the verification code below to confirm your email address.</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+  <tr>
+    <td align="center" style="background-color:#f8f8f8; border:1px solid #eeeeee; border-radius:8px; padding: 20px;">
+      <p style="margin:0 0 8px 0; font-size:12px; color:#888888; letter-spacing:1px; text-transform:uppercase;">Verification Code</p>
+      <p style="margin:0; font-size:32px; font-weight:bold; letter-spacing:6px; color:#111111;">{{ token }}</p>
+      <p style="margin:8px 0 0 0; font-size:12px; color:#888888;">Expires in 24 hours</p>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0 0 16px 0;">Or click the button below to verify automatically:</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin: 16px 0;">
+  <tr>
+    <td align="center" style="background-color:#111111; border-radius:4px;">
+      <a href="{{ verification_url|default:frontend_url }}" style="display:inline-block; padding: 12px 24px; color:#ffffff; text-decoration:none; font-weight:bold; font-size:14px;">Verify Email</a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:16px 0 0 0; font-size:12px; color:#888888;">If you did not create an account, you can safely ignore this email.</p>
+{% endblock %}

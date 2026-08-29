@@ -21,10 +21,28 @@ class NotificationService:
         prefs = PreferenceRepository.get_or_create_preferences(user)
         email_allowed = self._is_email_allowed(type, prefs)
         if send_email and email_allowed:
-            # Render template for email
-            template = TemplateRepository.get_template(type)
-            subject = self._render_template_string(template.subject_template, context)
-            body = self._render_template_string(template.body_template, context)
+            try:
+                template = TemplateRepository.get_template(type)
+                subject = self._render_template_string(template.subject_template, context)
+                body = self._render_template_string(template.body_template, context)
+            except BusinessException:
+                # Fallback if template not seeded (e.g., fresh DB without init_notification_templates)
+                fallback_subjects = {
+                    "order_confirmation": "Order {{ order_number }} confirmed",
+                    "order_status_change": "Order {{ order_number }} status updated",
+                    "shipping_update": "Your order {{ order_number }} has shipped",
+                    "welcome": "Welcome to Luxe!",
+                    "generic": "Notification from Luxe",
+                }
+                fallback_bodies = {
+                    "order_confirmation": "Hi {{ user_name }}, your order {{ order_number }} (total {{ total }}) has been placed. View invoice: {{ invoice_url }}",
+                    "order_status_change": "Hi {{ user_name }}, order {{ order_number }} is now {{ new_status }} (was {{ old_status }}).",
+                    "shipping_update": "Hi {{ user_name }}, order {{ order_number }} shipped. Tracking: {{ tracking_number }}",
+                    "welcome": "Hi {{ user_name }}, welcome to Luxe!",
+                    "generic": "Hello {{ user_name }}, you have a new notification.",
+                }
+                subject = self._render_template_string(fallback_subjects.get(type, "Notification"), context)
+                body = self._render_template_string(fallback_bodies.get(type, "You have a new notification."), context)
         else:
             subject = ""
             body = ""
