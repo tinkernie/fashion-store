@@ -16,8 +16,15 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
+import { ShieldCheck, ShieldAlert } from "lucide-react";
 
 export default function AdminInventoryPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -25,6 +32,12 @@ export default function AdminInventoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [adjustingId, setAdjustingId] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  // Safety Stock Modal
+  const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
+  const [safetyItem, setSafetyItem] = useState<any | null>(null);
+  const [safetyStockVal, setSafetyStockVal] = useState("5");
+  const [isSavingSafety, setIsSavingSafety] = useState(false);
 
   useEffect(() => {
     loadInventoryData();
@@ -41,6 +54,29 @@ export default function AdminInventoryPage() {
       setIsLoading(false);
     }
   };
+
+  const handleOpenSafetyStock = (item: any) => {
+    setSafetyItem(item);
+    setSafetyStockVal(String(item.safety_stock || item.inventory?.safety_stock || 5));
+    setIsSafetyModalOpen(true);
+  };
+
+  const handleSaveSafetyStock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!safetyItem) return;
+    setIsSavingSafety(true);
+    try {
+      await adminApi.setSafetyStock(safetyItem.id, Number(safetyStockVal));
+      toast.success("حداقل موجودی هشدار (Safety Stock) تنظیم شد.");
+      setIsSafetyModalOpen(false);
+      await loadInventoryData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "خطا در تنظیم حداقل موجودی");
+    } finally {
+      setIsSavingSafety(false);
+    }
+  };
+
 
   const handleAdjustStock = async (variantOrProdId: string, delta: number) => {
     setAdjustingId(variantOrProdId);
@@ -189,6 +225,13 @@ export default function AdminInventoryPage() {
                         <td className="p-4 md:p-5 text-left">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
+                              onClick={() => handleOpenSafetyStock(p)}
+                              className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-amber-400 hover:bg-white/10 transition-colors"
+                              title="تنظیم حد هشدار موجودی (Safety Stock)"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                            </button>
+                            <button
                               onClick={() => handleAdjustStock(p.id, -1)}
                               disabled={adjustingId === p.id || stock <= 0}
                               className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors"
@@ -233,6 +276,13 @@ export default function AdminInventoryPage() {
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs font-black text-amber-400">{v.inventory?.quantity ?? v.stock ?? 10} عدد</span>
                                     <button
+                                      onClick={() => handleOpenSafetyStock(v)}
+                                      className="p-1.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-amber-400 rounded-lg text-[10px]"
+                                      title="حداقل موجودی هشدار"
+                                    >
+                                      <ShieldCheck className="w-3 h-3" />
+                                    </button>
+                                    <button
                                       onClick={() => handleAdjustStock(v.id, 5)}
                                       disabled={adjustingId === v.id}
                                       className="px-2 py-1 bg-white/10 hover:bg-white hover:text-black rounded-lg text-[10px] font-bold transition-all"
@@ -254,6 +304,57 @@ export default function AdminInventoryPage() {
           </table>
         </div>
       </div>
+
+      {/* Safety Stock Config Modal */}
+      <Dialog open={isSafetyModalOpen} onOpenChange={setIsSafetyModalOpen}>
+        <DialogContent className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-md p-6" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-400" />
+              تنظیم حداقل موجودی هشدار (Safety Stock)
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveSafetyStock} className="space-y-4 mt-4">
+            <p className="text-xs text-gray-400 leading-relaxed">
+              کالا: <strong className="text-white">{safetyItem?.name || safetyItem?.title || safetyItem?.sku || "محصول انتخابی"}</strong>
+              <br />
+              هنگامی که موجودی انبار به کمتر از این مقدار برسد، اعلان هشدار کمبود موجودی در سیستم ثبت می‌گردد.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-300">حداقل موجودی هشدار (تعداد عدد)</label>
+              <Input
+                type="number"
+                value={safetyStockVal}
+                onChange={(e) => setSafetyStockVal(e.target.value)}
+                required
+                min={0}
+                className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="submit"
+                disabled={isSavingSafety}
+                className="flex-1 h-11 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs"
+              >
+                {isSavingSafety ? "در حال ثبت..." : "ذخیره حد هشدار"}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setIsSafetyModalOpen(false)}
+                variant="ghost"
+                className="h-11 rounded-xl text-gray-400 hover:text-white text-xs"
+              >
+                انصراف
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

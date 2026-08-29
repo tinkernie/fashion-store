@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, User, Search, Trash2, Menu } from "lucide-react";
+import { ShoppingBag, User, Search, Trash2, Menu, Tag, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -33,8 +35,21 @@ import { api } from "@/lib/api";
 
 export default function Navbar() {
   const router = useRouter();
-  const { items, removeItem, fetchCart } = useCart();
+  const {
+    items,
+    removeItem,
+    fetchCart,
+    coupon,
+    applyCoupon,
+    removeCoupon,
+    getTotal,
+    getDiscountAmount,
+    getFinalTotal,
+  } = useCart();
   const { fetchWishlist } = useWishlist();
+
+  const [couponInput, setCouponInput] = useState("");
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   
   // Initialize Global Data from Backend
   useEffect(() => {
@@ -304,20 +319,94 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Checkout Summary */}
+              {/* Checkout Summary & Coupon Box */}
               {items.length > 0 && (
-                <div className="pt-6 border-t border-white/10 space-y-6">
-                  <div className="flex justify-between text-lg font-bold text-white">
-                    <span>جمع کل:</span>
-                    <span>{cartTotal.toLocaleString('fa-IR')} تومان</span>
+                <div className="pt-4 border-t border-white/10 space-y-4">
+                  {/* Coupon Code Input */}
+                  <div>
+                    {coupon ? (
+                      <div className="flex items-center justify-between p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400">
+                        <div className="flex items-center gap-2 text-xs font-bold">
+                          <Tag className="w-3.5 h-3.5" />
+                          <span>کد «{coupon.code}» اعمال شد</span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            await removeCoupon();
+                            toast.info("کد تخفیف حذف شد");
+                          }}
+                          className="text-xs text-rose-400 hover:text-rose-300 p-1 cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!couponInput.trim()) {
+                            toast.error("کد تخفیف را وارد کنید");
+                            return;
+                          }
+                          setIsApplyingCoupon(true);
+                          try {
+                            await applyCoupon(couponInput.trim());
+                            toast.success("کد تخفیف با موفقیت اعمال شد");
+                            setCouponInput("");
+                          } catch (err: any) {
+                            toast.error(err?.response?.data?.message || "کد تخفیف نامعتبر یا منقضی شده است");
+                          } finally {
+                            setIsApplyingCoupon(false);
+                          }
+                        }}
+                        className="flex gap-2"
+                      >
+                        <Input
+                          placeholder="کد تخفیف..."
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value)}
+                          className="bg-[#181818] border-white/10 h-9 text-xs rounded-xl text-white placeholder:text-gray-500"
+                        />
+                        <Button
+                          type="submit"
+                          disabled={isApplyingCoupon}
+                          variant="outline"
+                          className="h-9 px-3 text-xs font-bold border-white/10 bg-white/5 hover:bg-white/10 text-white rounded-xl shrink-0 cursor-pointer"
+                        >
+                          {isApplyingCoupon ? <Loader2 className="w-3 h-3 animate-spin" /> : "اعمال"}
+                        </Button>
+                      </form>
+                    )}
                   </div>
+
+                  {/* Pricing Breakdown */}
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between text-gray-400">
+                      <span>مجموع اقلام:</span>
+                      <span>{getTotal().toLocaleString('fa-IR')} تومان</span>
+                    </div>
+
+                    {getDiscountAmount() > 0 && (
+                      <div className="flex justify-between text-emerald-400 font-bold">
+                        <span>تخفیف کوپن:</span>
+                        <span>- {getDiscountAmount().toLocaleString('fa-IR')} تومان</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between text-base font-black text-white pt-2 border-t border-white/5">
+                      <span>مبلغ قابل پرداخت:</span>
+                      <span className="text-amber-400">{getFinalTotal().toLocaleString('fa-IR')} تومان</span>
+                    </div>
+                  </div>
+
                   <SheetClose asChild>
-                    <Button asChild className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                      <Link href="/checkout">ثبت سفارش</Link>
+                    <Button asChild className="w-full h-12 rounded-xl bg-white text-black hover:bg-gray-200 text-sm font-black transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                      <Link href="/checkout">ثبت سفارش و تسویه</Link>
                     </Button>
                   </SheetClose>
                 </div>
               )}
+
             </SheetContent>
           </Sheet>
         </div>

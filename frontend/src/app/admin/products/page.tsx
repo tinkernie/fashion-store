@@ -21,6 +21,9 @@ import {
   X,
   Sliders,
   Boxes,
+  Tag,
+  Check,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +58,7 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  // Modal State
+  // Product Create/Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
 
@@ -70,13 +73,28 @@ export default function AdminProductsPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [status, setStatus] = useState<string>("active");
 
-  // Variant Builder State
+  // Variant Builder State for in-form generator
   const [options, setOptions] = useState<OptionDef[]>([
     { name: "رنگ", valuesInput: "مشکی, سفید, کرم" },
     { name: "سایز", valuesInput: "S, M, L, XL" },
   ]);
   const [variantsMatrix, setVariantsMatrix] = useState<VariantItem[]>([]);
   const [showVariantGenerator, setShowVariantGenerator] = useState(false);
+
+  // Dedicated Options & Variants Manager Modal State
+  const [selectedProductForVariants, setSelectedProductForVariants] = useState<any | null>(null);
+  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
+  const [productOptions, setProductOptions] = useState<any[]>([]);
+  const [productVariants, setProductVariants] = useState<any[]>([]);
+  const [isLoadingVariants, setIsLoadingVariants] = useState(false);
+  const [newOptionName, setNewOptionName] = useState("");
+  const [newValueInputs, setNewValueInputs] = useState<Record<string, string>>({});
+  
+  // Single Variant Add Form inside Variant Modal
+  const [newVariantSku, setNewVariantSku] = useState("");
+  const [newVariantPrice, setNewVariantPrice] = useState("");
+  const [newVariantStock, setNewVariantStock] = useState("10");
+  const [selectedOptionValueIds, setSelectedOptionValueIds] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadCatalogData();
@@ -135,7 +153,6 @@ export default function AdminProductsPage() {
     setImageUrl(p.imageUrl || p.image_url || p.image || p.images?.[0]?.url || "");
     setStatus(p.status || "active");
 
-    // If product has variants, pre-populate
     if (Array.isArray(p.variants) && p.variants.length > 0) {
       setVariantsMatrix(
         p.variants.map((v: any) => ({
@@ -154,7 +171,130 @@ export default function AdminProductsPage() {
     setIsModalOpen(true);
   };
 
-  // Generate Combinatorial Matrix
+  // Open Dedicated Options & Variants Manager
+  const handleOpenVariantManager = async (product: any) => {
+    setSelectedProductForVariants(product);
+    setIsVariantModalOpen(true);
+    setIsLoadingVariants(true);
+    try {
+      const [opts, vars] = await Promise.all([
+        adminApi.getProductOptions(product.id),
+        adminApi.getVariants(product.id),
+      ]);
+      setProductOptions(opts);
+      setProductVariants(vars);
+      setNewVariantPrice(String(product.price || ""));
+      setNewVariantSku(`${(product.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`);
+    } catch (e) {
+      console.error("Error loading product options & variants:", e);
+      toast.error("خطا در بارگذاری مشخصات و تنوع‌ها");
+    } finally {
+      setIsLoadingVariants(false);
+    }
+  };
+
+  const handleAddProductOption = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOptionName.trim() || !selectedProductForVariants) return;
+    try {
+      await adminApi.createProductOption(selectedProductForVariants.id, {
+        name: newOptionName.trim(),
+      });
+      toast.success(`ویژگی "${newOptionName}" اضافه شد`);
+      setNewOptionName("");
+      const opts = await adminApi.getProductOptions(selectedProductForVariants.id);
+      setProductOptions(opts);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "خطا در ثبت ویژگی");
+    }
+  };
+
+  const handleDeleteProductOption = async (optionId: string) => {
+    if (!confirm("آیا از حذف این ویژگی و مقادیر آن مطمئن هستید؟")) return;
+    try {
+      await adminApi.deleteProductOption(selectedProductForVariants.id, optionId);
+      toast.success("ویژگی حذف شد");
+      const opts = await adminApi.getProductOptions(selectedProductForVariants.id);
+      setProductOptions(opts);
+    } catch {
+      toast.error("خطا در حذف ویژگی");
+    }
+  };
+
+  const handleAddOptionValue = async (optionId: string) => {
+    const val = newValueInputs[optionId]?.trim();
+    if (!val || !selectedProductForVariants) return;
+    try {
+      await adminApi.createOptionValue(selectedProductForVariants.id, optionId, {
+        value: val,
+      });
+      toast.success(`مقدار "${val}" ثبت شد`);
+      setNewValueInputs((prev) => ({ ...prev, [optionId]: "" }));
+      const opts = await adminApi.getProductOptions(selectedProductForVariants.id);
+      setProductOptions(opts);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "خطا در ثبت مقدار");
+    }
+  };
+
+  const handleDeleteOptionValue = async (optionId: string, valueId: string) => {
+    try {
+      await adminApi.deleteOptionValue(selectedProductForVariants.id, optionId, valueId);
+      toast.success("مقدار حذف شد");
+      const opts = await adminApi.getProductOptions(selectedProductForVariants.id);
+      setProductOptions(opts);
+    } catch {
+      toast.error("خطا در حذف مقدار");
+    }
+  };
+
+  const handleCreateRealVariant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVariantSku.trim() || !newVariantPrice || !selectedProductForVariants) {
+      toast.error("کد SKU و قیمت تنوع الزامی است");
+      return;
+    }
+
+    const optionValuesPayload = Object.entries(selectedOptionValueIds).map(
+      ([option_id, value_id]) => ({ option_id, value_id })
+    );
+
+    try {
+      const createdVar = await adminApi.createVariant({
+        product_id: selectedProductForVariants.id,
+        sku: newVariantSku.trim().toUpperCase(),
+        price: Number(newVariantPrice),
+        availability: "in_stock",
+        status: "published",
+        option_values: optionValuesPayload,
+      });
+
+      if (Number(newVariantStock) > 0 && createdVar.id) {
+        await adminApi.adjustStock(createdVar.id, Number(newVariantStock));
+      }
+
+      toast.success("تنوع جدید با موفقیت ایجاد شد");
+      const vars = await adminApi.getVariants(selectedProductForVariants.id);
+      setProductVariants(vars);
+      setNewVariantSku(`${(selectedProductForVariants.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "خطا در ایجاد تنوع");
+    }
+  };
+
+  const handleDeleteVariant = async (variantId: string) => {
+    if (!confirm("آیا از حذف این تنوع کالا مطمئن هستید؟")) return;
+    try {
+      await adminApi.deleteVariant(variantId);
+      toast.success("تنوع حذف شد");
+      const vars = await adminApi.getVariants(selectedProductForVariants.id);
+      setProductVariants(vars);
+    } catch {
+      toast.error("خطا در حذف تنوع");
+    }
+  };
+
+  // Generate Combinatorial Matrix for in-product form
   const handleGenerateMatrix = () => {
     const parsedOptions = options
       .map((opt) => ({
@@ -171,7 +311,6 @@ export default function AdminProductsPage() {
       return;
     }
 
-    // Cartesian product
     const cartesian = (arrays: string[][]): string[][] => {
       return arrays.reduce<string[][]>(
         (a, b) => a.flatMap((d) => b.map((e) => [...d, e])),
@@ -224,12 +363,6 @@ export default function AdminProductsPage() {
       description,
       image_url: imageUrl,
       status: status === "active" ? "published" : status,
-      variants: variantsMatrix.map((v) => ({
-        name: v.name,
-        sku: v.sku,
-        price: Number(v.price) || Number(price),
-        stock: Number(v.stock) || 0,
-      })),
     };
 
     try {
@@ -260,16 +393,6 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleArchive = async (id: string) => {
-    try {
-      await adminApi.archiveProduct(id);
-      toast.success("محصول بایگانی شد");
-      loadCatalogData();
-    } catch {
-      toast.error("خطا در بایگانی محصول");
-    }
-  };
-
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`آیا از حذف محصول "${name}" مطمئن هستید؟`)) return;
     try {
@@ -283,7 +406,9 @@ export default function AdminProductsPage() {
 
   const filteredProducts = products.filter((p) => {
     const name = (p.name || p.title || "").toLowerCase();
-    const matchesQuery = name.includes(searchQuery.toLowerCase()) || (p.slug || "").includes(searchQuery.toLowerCase());
+    const matchesQuery =
+      name.includes(searchQuery.toLowerCase()) ||
+      (p.slug || "").includes(searchQuery.toLowerCase());
     const matchesCategory =
       selectedCategory === "all" ||
       p.category === selectedCategory ||
@@ -376,8 +501,8 @@ export default function AdminProductsPage() {
               <tr>
                 <th className="py-4 px-6 font-bold">محصول</th>
                 <th className="py-4 px-4 font-bold">دسته‌بندی</th>
-                <th className="py-4 px-4 font-bold">قیمت (تومان)</th>
-                <th className="py-4 px-4 font-bold">تنوع‌ها / سایز</th>
+                <th className="py-4 px-4 font-bold">قیمت پایه (تومان)</th>
+                <th className="py-4 px-4 font-bold">مدیریت تنوع و ویژگی‌ها</th>
                 <th className="py-4 px-4 font-bold">وضعیت</th>
                 <th className="py-4 px-6 font-bold text-left">عملیات</th>
               </tr>
@@ -393,7 +518,6 @@ export default function AdminProductsPage() {
                 filteredProducts.map((p) => {
                   const img = p.imageUrl || p.image_url || p.image || "/globe.svg";
                   const catName = p.category?.name || p.category || "نامشخص";
-                  const variantCount = p.variants?.length || 0;
 
                   return (
                     <tr key={p.id} className="hover:bg-white/5 transition-colors">
@@ -428,15 +552,16 @@ export default function AdminProductsPage() {
                         {p.price ? Number(p.price).toLocaleString("fa-IR") : "تماس بگیرید"}
                       </td>
 
-                      {/* Variants */}
+                      {/* Variants & Options Button */}
                       <td className="py-4 px-4">
-                        {variantCount > 0 ? (
-                          <span className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-bold text-[10px]">
-                            {variantCount} تنوع رنگ/سایز
-                          </span>
-                        ) : (
-                          <span className="text-gray-500 text-[11px]">تک محصول</span>
-                        )}
+                        <Button
+                          onClick={() => handleOpenVariantManager(p)}
+                          variant="outline"
+                          className="h-8 px-3 rounded-xl border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 font-bold text-[11px] flex items-center gap-1.5"
+                        >
+                          <Boxes className="w-3.5 h-3.5" />
+                          ویژگی‌ها و تنوع‌ها
+                        </Button>
                       </td>
 
                       {/* Status */}
@@ -448,7 +573,9 @@ export default function AdminProductsPage() {
                               : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                           }`}
                         >
-                          {p.status === "published" || p.status === "active" ? "منتشر شده" : "پیش‌نویس / غیرفعال"}
+                          {p.status === "published" || p.status === "active"
+                            ? "منتشر شده"
+                            : "پیش‌نویس / غیرفعال"}
                         </span>
                       </td>
 
@@ -467,7 +594,7 @@ export default function AdminProductsPage() {
                           <button
                             onClick={() => handleOpenEdit(p)}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-amber-400 hover:bg-white/10 transition-colors"
-                            title="ویرایش"
+                            title="ویرایش محصول"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
@@ -490,9 +617,286 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
+      {/* --- Options & Variants Manager Modal --- */}
+      <Dialog open={isVariantModalOpen} onOpenChange={setIsVariantModalOpen}>
+        <DialogContent
+          className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-3xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
+          dir="rtl"
+        >
+          <DialogHeader className="border-b border-white/10 pb-4">
+            <DialogTitle className="text-xl font-black flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Boxes className="w-6 h-6 text-purple-400" />
+                مدیریت ویژگی‌ها و تنوع‌های کالای «{selectedProductForVariants?.name || selectedProductForVariants?.title}»
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {isLoadingVariants ? (
+            <div className="py-16 text-center text-gray-400 flex flex-col items-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+              <span>در حال دریافت ویژگی‌ها و تنوع‌های کالا...</span>
+            </div>
+          ) : (
+            <div className="space-y-8 mt-6">
+              {/* Section 1: Define Options (e.g. Color, Size) */}
+              <div className="bg-[#141414] border border-white/10 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-black text-white flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-amber-400" />
+                      ۱. ویژگی‌های محصول (رنگ، سایز، جنس و...)
+                    </h3>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      ویژگی‌ها و مقادیر قابل انتخاب توسط خریدار را تعریف کنید
+                    </p>
+                  </div>
+                </div>
+
+                {/* Add New Option Input */}
+                <form onSubmit={handleAddProductOption} className="flex gap-2">
+                  <Input
+                    value={newOptionName}
+                    onChange={(e) => setNewOptionName(e.target.value)}
+                    placeholder="نام ویژگی جدید (مثال: رنگ، سایز، متریال)..."
+                    className="bg-[#1a1a1a] border-white/10 h-10 text-xs text-white rounded-xl"
+                  />
+                  <Button
+                    type="submit"
+                    className="h-10 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shrink-0"
+                  >
+                    افزودن ویژگی
+                  </Button>
+                </form>
+
+                {/* Current Options List & Values */}
+                <div className="space-y-4 pt-2">
+                  {productOptions.length === 0 ? (
+                    <p className="text-xs text-gray-500 py-3 text-center">
+                      هنوز ویژگی‌ای برای این محصول تعریف نشده است.
+                    </p>
+                  ) : (
+                    productOptions.map((opt) => (
+                      <div
+                        key={opt.id}
+                        className="bg-[#1a1a1a] border border-white/5 rounded-xl p-4 space-y-3"
+                      >
+                        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                          <span className="text-xs font-bold text-white flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-purple-400" />
+                            {opt.name}
+                          </span>
+                          <button
+                            onClick={() => handleDeleteProductOption(opt.id)}
+                            className="text-gray-500 hover:text-rose-400 text-xs"
+                            title="حذف ویژگی"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Values Pills */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {opt.values?.map((v: any) => (
+                            <span
+                              key={v.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 border border-white/10 rounded-lg text-xs font-medium text-white"
+                            >
+                              <span>{v.value}</span>
+                              <button
+                                onClick={() => handleDeleteOptionValue(opt.id, v.id)}
+                                className="text-gray-400 hover:text-rose-400"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+
+                          {/* Add Value Inline Input */}
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={newValueInputs[opt.id] || ""}
+                              onChange={(e) =>
+                                setNewValueInputs((prev) => ({
+                                  ...prev,
+                                  [opt.id]: e.target.value,
+                                }))
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleAddOptionValue(opt.id);
+                                }
+                              }}
+                              placeholder="+ مقدار جدید (مثال: قرمز)..."
+                              className="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white placeholder:text-gray-600 outline-none w-36"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAddOptionValue(opt.id)}
+                              className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Section 2: Create & Manage Variants */}
+              <div className="bg-[#141414] border border-white/10 rounded-2xl p-5 space-y-4">
+                <div>
+                  <h3 className="text-sm font-black text-white flex items-center gap-2">
+                    <Boxes className="w-4 h-4 text-emerald-400" />
+                    ۲. تنوع‌ها و انبار کالاهای محصول ({productVariants.length} مورد)
+                  </h3>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    تنوع‌های ترکیبی با کد انبار (SKU)، قیمت اختصاصی و موجودی را ثبت کنید
+                  </p>
+                </div>
+
+                {/* Add Variant Form */}
+                <form
+                  onSubmit={handleCreateRealVariant}
+                  className="bg-[#1a1a1a] border border-white/5 rounded-xl p-4 space-y-4"
+                >
+                  <span className="text-xs font-bold text-gray-300 block">ثبت تنوع جدید:</span>
+
+                  {/* Options selection dropdowns */}
+                  {productOptions.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {productOptions.map((opt) => (
+                        <div key={opt.id} className="space-y-1">
+                          <label className="text-[10px] text-gray-400 font-bold">{opt.name}</label>
+                          <select
+                            value={selectedOptionValueIds[opt.id] || ""}
+                            onChange={(e) =>
+                              setSelectedOptionValueIds((prev) => ({
+                                ...prev,
+                                [opt.id]: e.target.value,
+                              }))
+                            }
+                            required
+                            className="w-full bg-black/60 border border-white/10 rounded-lg h-9 px-2 text-xs text-white outline-none"
+                          >
+                            <option value="">انتخاب {opt.name}...</option>
+                            {opt.values?.map((v: any) => (
+                              <option key={v.id} value={v.id}>
+                                {v.value}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 font-bold">کد انبار (SKU)</label>
+                      <Input
+                        value={newVariantSku}
+                        onChange={(e) => setNewVariantSku(e.target.value)}
+                        placeholder="SKU-101"
+                        required
+                        className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg font-mono text-left"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 font-bold">قیمت تنوع (تومان)</label>
+                      <Input
+                        type="number"
+                        value={newVariantPrice}
+                        onChange={(e) => setNewVariantPrice(e.target.value)}
+                        placeholder="1200000"
+                        required
+                        className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 font-bold">موجودی اولیه انبار</label>
+                      <Input
+                        type="number"
+                        value={newVariantStock}
+                        onChange={(e) => setNewVariantStock(e.target.value)}
+                        placeholder="10"
+                        className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    افزودن تنوع به انبار
+                  </Button>
+                </form>
+
+                {/* Existing Variants Table */}
+                <div className="space-y-2 pt-2">
+                  {productVariants.length === 0 ? (
+                    <p className="text-xs text-gray-500 py-4 text-center">
+                      هیچ تنوع فعالی برای این محصول ثبت نشده است.
+                    </p>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      {productVariants.map((v) => {
+                        const optSummary =
+                          v.options?.map((o: any) => `${o.option_name}: ${o.value}`).join(" | ") ||
+                          "تنوع عمومی";
+                        return (
+                          <div
+                            key={v.id}
+                            className="flex items-center justify-between p-3 bg-[#1a1a1a] border border-white/5 rounded-xl text-xs"
+                          >
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-white block">{optSummary}</span>
+                              <span className="text-[10px] text-gray-500 font-mono" dir="ltr">
+                                SKU: {v.sku}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <span className="font-black text-amber-400">
+                                {Number(v.price).toLocaleString("fa-IR")} تومان
+                              </span>
+                              <button
+                                onClick={() => handleDeleteVariant(v.id)}
+                                className="p-1.5 text-gray-500 hover:text-rose-400 transition-colors"
+                                title="حذف تنوع"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Product Create / Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent
+          className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
+          dir="rtl"
+        >
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-2">
               <ShoppingBag className="w-5 h-5 text-amber-400" />
@@ -591,102 +995,6 @@ export default function AdminProductsPage() {
               />
             </div>
 
-            {/* --- Variant Matrix Generator --- */}
-            <div className="p-5 bg-[#141414] border border-white/10 rounded-2xl space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-black text-white flex items-center gap-1.5">
-                    <Boxes className="w-4 h-4 text-purple-400" />
-                    ماتریس تنوع و مشخصات انبار (رنگ، سایز و...)
-                  </h4>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    تولید خودکار ترکیب‌های مختلف لباس با امکان تعیین موجودی و کد SKU مجزا
-                  </p>
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={handleGenerateMatrix}
-                  variant="outline"
-                  className="h-8 px-3 text-xs border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 rounded-xl"
-                >
-                  <Sparkles className="w-3.5 h-3.5 mr-1" />
-                  تولید ماتریس تنوع
-                </Button>
-              </div>
-
-              {/* Option Definitions */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {options.map((opt, idx) => (
-                  <div key={idx} className="bg-[#181818] p-3 rounded-xl border border-white/5 space-y-2">
-                    <span className="text-[11px] font-bold text-gray-300">ویژگی {idx + 1}</span>
-                    <div className="flex gap-2">
-                      <Input
-                        value={opt.name}
-                        onChange={(e) => {
-                          const next = [...options];
-                          next[idx].name = e.target.value;
-                          setOptions(next);
-                        }}
-                        placeholder="نام ویژگی (مثال: رنگ)"
-                        className="h-9 text-xs bg-white/5 border-white/10 w-1/3 text-white"
-                      />
-                      <Input
-                        value={opt.valuesInput}
-                        onChange={(e) => {
-                          const next = [...options];
-                          next[idx].valuesInput = e.target.value;
-                          setOptions(next);
-                        }}
-                        placeholder="مقادیر با ویرگول (مشکی, سفید)"
-                        className="h-9 text-xs bg-white/5 border-white/10 flex-1 text-white"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Generated Variants Table */}
-              {variantsMatrix.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-white/10">
-                  <span className="text-xs font-bold text-white block">
-                    تنوع‌های ایجاد شده ({variantsMatrix.length} مورد):
-                  </span>
-                  <div className="max-h-48 overflow-y-auto pr-1 space-y-2">
-                    {variantsMatrix.map((v, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-[#181818] p-2 rounded-xl border border-white/5 text-xs">
-                        <span className="font-bold text-white w-28 truncate">{v.name}</span>
-                        <Input
-                          value={v.sku}
-                          onChange={(e) => {
-                            const next = [...variantsMatrix];
-                            next[i].sku = e.target.value;
-                            setVariantsMatrix(next);
-                          }}
-                          placeholder="SKU"
-                          className="h-8 text-[11px] bg-white/5 border-white/10 flex-1 font-mono text-left"
-                          dir="ltr"
-                        />
-                        <div className="flex items-center gap-1 w-24">
-                          <span className="text-[10px] text-gray-500">موجودی:</span>
-                          <Input
-                            type="number"
-                            value={v.stock}
-                            onChange={(e) => {
-                              const next = [...variantsMatrix];
-                              next[i].stock = Number(e.target.value);
-                              setVariantsMatrix(next);
-                            }}
-                            className="h-8 text-[11px] bg-white/5 border-white/10 w-12 text-center text-white"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Actions */}
             <div className="flex gap-3 pt-4 border-t border-white/10">
               <Button
@@ -694,7 +1002,13 @@ export default function AdminProductsPage() {
                 disabled={isLoading}
                 className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-black text-xs"
               >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : editingProduct ? "ذخیره تغییرات محصول" : "افزودن و انتشار محصول"}
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                ) : editingProduct ? (
+                  "ذخیره تغییرات محصول"
+                ) : (
+                  "افزودن و انتشار محصول"
+                )}
               </Button>
               <Button
                 type="button"

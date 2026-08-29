@@ -249,6 +249,85 @@ export const adminApi = {
     const res = await api.delete(`/api/admin/reviews/${id}/`);
     return res.data;
   },
+
+  // Product Options & Values
+  async getProductOptions(productId: string): Promise<any[]> {
+    const res = await api.get(`/api/admin/products/${productId}/options/`);
+    return Array.isArray(res.data) ? res.data : res.data.results || [];
+  },
+  async createProductOption(productId: string, data: { name: string; position?: number }): Promise<any> {
+    const res = await api.post(`/api/admin/products/${productId}/options/`, data);
+    return res.data;
+  },
+  async updateProductOption(productId: string, optionId: string, data: { name: string }): Promise<any> {
+    const res = await api.patch(`/api/admin/products/${productId}/options/${optionId}/`, data);
+    return res.data;
+  },
+  async deleteProductOption(productId: string, optionId: string): Promise<any> {
+    const res = await api.delete(`/api/admin/products/${productId}/options/${optionId}/`);
+    return res.data;
+  },
+  async createOptionValue(productId: string, optionId: string, data: { value: string; extra_data?: any }): Promise<any> {
+    const res = await api.post(`/api/admin/products/${productId}/options/${optionId}/values/`, data);
+    return res.data;
+  },
+  async updateOptionValue(productId: string, optionId: string, valueId: string, data: { value?: string; extra_data?: any }): Promise<any> {
+    const res = await api.patch(`/api/admin/products/${productId}/options/${optionId}/values/${valueId}/`, data);
+    return res.data;
+  },
+  async deleteOptionValue(productId: string, optionId: string, valueId: string): Promise<any> {
+    const res = await api.delete(`/api/admin/products/${productId}/options/${optionId}/values/${valueId}/`);
+    return res.data;
+  },
+
+  // Product Variants
+  async getVariants(productId?: string, status?: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (productId) params.set('product_id', productId);
+    if (status) params.set('status', status);
+    const query = params.toString();
+    const res = await api.get(`/api/admin/variants/${query ? `?${query}` : ''}`);
+    return Array.isArray(res.data) ? res.data : res.data.results || [];
+  },
+  async getVariant(id: string): Promise<any> {
+    const res = await api.get(`/api/admin/variants/${id}/`);
+    return res.data;
+  },
+  async createVariant(data: {
+    product_id: string;
+    sku: string;
+    price: number | string;
+    weight?: number;
+    availability?: 'in_stock' | 'out_of_stock' | 'pre_order';
+    status?: 'draft' | 'published' | 'discontinued';
+    option_values: Array<{ option_id: string; value_id: string }>;
+    metadata?: any;
+  }): Promise<any> {
+    const res = await api.post('/api/admin/variants/', data);
+    return res.data;
+  },
+  async updateVariant(id: string, data: Partial<{
+    sku: string;
+    price: number | string;
+    weight: number;
+    availability: string;
+    status: string;
+    option_values: Array<{ option_id: string; value_id: string }>;
+    metadata: any;
+  }>): Promise<any> {
+    const res = await api.patch(`/api/admin/variants/${id}/`, data);
+    return res.data;
+  },
+  async deleteVariant(id: string): Promise<any> {
+    const res = await api.delete(`/api/admin/variants/${id}/`);
+    return res.data;
+  },
+
+  // Admin Notifications
+  async getAdminNotifications(): Promise<any[]> {
+    const res = await api.get('/api/admin/notifications/');
+    return Array.isArray(res.data) ? res.data : res.data.results || [];
+  },
 };
 
 export interface ProductReview {
@@ -264,3 +343,4 @@ export interface ProductReview {
   created_at: string;
   updated_at?: string;
 }
+

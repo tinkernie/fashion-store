@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   ChevronLeft,
   Sparkles,
+  Bell,
   Lock,
   ArrowRight
 } from "lucide-react";
@@ -72,12 +73,19 @@ const NAV_ITEMS = [
     badge: null,
   },
   {
+    title: "اعلان‌ها و پیام‌ها",
+    href: "/admin/notifications",
+    icon: Bell,
+    badge: null,
+  },
+  {
     title: "مشتریان و کاربران",
     href: "/admin/users",
     icon: Users,
     badge: null,
   },
 ];
+
 
 export default function AdminLayout({
   children,

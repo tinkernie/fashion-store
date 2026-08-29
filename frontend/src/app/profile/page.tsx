@@ -111,7 +111,7 @@ export default function ProfilePage() {
       try {
         const [ordersRes, profileRes, notifsRes] = await Promise.allSettled([
           api.get("/api/orders/"),
-          api.get(`/api/users/me/${userId}/`),
+          api.get("/api/users/me/"),
           api.get("/api/notifications/"),
         ]);
 
@@ -243,7 +243,7 @@ export default function ProfilePage() {
     const [firstName, ...lastNames] = fullName.split(" ");
 
     try {
-      await api.patch(`/api/users/me/${userId}/`, {
+      await api.patch("/api/users/me/", {
         first_name: firstName || "",
         last_name: lastNames.join(" ") || "",
       });
@@ -267,18 +267,28 @@ export default function ProfilePage() {
 
   const handleMarkNotificationRead = async (notifId: string) => {
     try {
-      await api.post(`/api/notifications/${notifId}/mark-read/`);
+      await api.post("/api/notifications/mark-read/", { notification_id: notifId });
       setNotifications((prev) =>
         prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
       );
       toast.success("اعلان خوانده شد");
     } catch {
-      // optimistic
       setNotifications((prev) =>
         prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
       );
     }
   };
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await api.post("/api/notifications/mark-all-read/");
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      toast.success("تمام اعلان‌ها به عنوان خوانده شده علامت‌گذاری شدند");
+    } catch {
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    }
+  };
+
 
   const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -696,7 +706,17 @@ export default function ProfilePage() {
                   <h3 className="text-lg font-black text-white">اعلان‌ها و رویدادهای حساب</h3>
                   <p className="text-xs text-gray-400 mt-0.5">پیام‌های سفارش‌ها، تخفیف‌های ویژه و هشدارهای امنیتی</p>
                 </div>
+                {unreadNotifsCount > 0 && (
+                  <Button
+                    onClick={handleMarkAllNotificationsRead}
+                    variant="outline"
+                    className="h-9 px-3.5 rounded-xl border-white/10 bg-white/5 text-xs text-amber-400 hover:text-white font-bold"
+                  >
+                    خوانده شدن همه ({unreadNotifsCount.toLocaleString("fa-IR")})
+                  </Button>
+                )}
               </div>
+
 
               {notifications.length === 0 ? (
                 <div className="text-center py-16 bg-[#111111] border border-white/10 rounded-3xl space-y-4">
