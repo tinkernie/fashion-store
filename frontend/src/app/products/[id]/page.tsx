@@ -86,6 +86,38 @@ const PRESET_COLORS: Record<string, string> = {
   قهوه‌ای: "#78350F",
 };
 
+const getNormalizedOptions = (options: any): Array<{ option_name: string; value: string }> => {
+  if (!options) return [];
+  if (Array.isArray(options)) {
+    return options
+      .map((o: any) => {
+        if (typeof o === "object" && o !== null) {
+          return {
+            option_name: String(o.option_name || o.name || o.key || ""),
+            value: String(o.value || o.val || ""),
+          };
+        }
+        return { option_name: "", value: String(o) };
+      })
+      .filter((o) => o.option_name);
+  }
+  if (typeof options === "object" && options !== null) {
+    return Object.entries(options).map(([k, v]) => ({
+      option_name: k,
+      value: String(v),
+    }));
+  }
+  if (typeof options === "string") {
+    try {
+      const parsed = JSON.parse(options);
+      return getNormalizedOptions(parsed);
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 export default function ProductDetailPage() {
   const params = useParams();
   const [product, setProduct] = useState<any>(null);
@@ -151,9 +183,12 @@ export default function ProductDetailPage() {
               initialSelected[opt.name] = opt.values[0].value;
             }
           });
-        } else if (loadedVariants.length > 0 && loadedVariants[0].options?.length > 0) {
-          loadedVariants[0].options.forEach((o) => {
-            initialSelected[o.option_name] = o.value;
+        } else if (loadedVariants.length > 0) {
+          const firstVariantOpts = getNormalizedOptions(loadedVariants[0].options);
+          firstVariantOpts.forEach((o: any) => {
+            if (o.option_name) {
+              initialSelected[o.option_name] = o.value;
+            }
           });
         }
         setSelectedOptions(initialSelected);
@@ -172,16 +207,19 @@ export default function ProductDetailPage() {
     if (!variants || variants.length === 0) return null;
 
     // Filter variants that match all selected option values
-    return variants.find((v) => {
-      if (!v.options || v.options.length === 0) return false;
-      return Object.entries(selectedOptions).every(([optName, optVal]) => {
-        return v.options.some(
-          (o) =>
-            o.option_name.toLowerCase() === optName.toLowerCase() &&
-            o.value.toLowerCase() === optVal.toLowerCase()
-        );
-      });
-    }) || variants[0];
+    return (
+      variants.find((v) => {
+        const vOpts = getNormalizedOptions(v.options);
+        if (vOpts.length === 0) return false;
+        return Object.entries(selectedOptions).every(([optName, optVal]) => {
+          return vOpts.some(
+            (o: any) =>
+              o.option_name.toLowerCase() === optName.toLowerCase() &&
+              o.value.toLowerCase() === String(optVal).toLowerCase()
+          );
+        });
+      }) || variants[0]
+    );
   }, [variants, selectedOptions]);
 
   if (isLoading) {

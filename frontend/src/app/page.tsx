@@ -28,6 +28,36 @@ export default function Home() {
     link: "/women",
     enabled: true,
   });
+  const [newArrivalsSlides, setNewArrivalsSlides] = useState<CoverflowSlide[]>([]);
+  const [specialSaleSlides, setSpecialSaleSlides] = useState<CoverflowSlide[]>([]);
+
+  const mapProductsToSlides = (productsList: any[], defaultBadge: string): CoverflowSlide[] => {
+    if (!productsList || productsList.length === 0) return [];
+    return productsList.map((p) => {
+      const rawPrice = typeof p.price === "number" ? p.price : Number(String(p.price || 0).replace(/\D/g, ""));
+      const rawDiscount = p.discount_price
+        ? typeof p.discount_price === "number"
+          ? p.discount_price
+          : Number(String(p.discount_price).replace(/\D/g, ""))
+        : undefined;
+
+      return {
+        src: p.imageUrl || p.image_url || p.image || "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?q=80&w=900&auto=format&fit=crop",
+        alt: p.title || p.name || "محصول فشن استور",
+        title: p.title || p.name || "محصول لوکس",
+        subtitle: p.description?.substring(0, 75) || "طراحی ویژه با بهترین متریال و بالاترین کیفیت دوخت",
+        price: rawPrice || 3500000,
+        compareAtPrice: rawDiscount,
+        badge: p.badge || defaultBadge,
+        href: `/products/${p.slug || p.id}`,
+        meta: [
+          { label: "دسته‌بندی", value: p.category_name || p.category || "کالکشن اختصاصی" },
+          { label: "موجودی انبار", value: p.stock_quantity !== undefined ? `${p.stock_quantity} عدد` : "موجود در انبار" },
+          { label: "ضمانت", value: "اصالت و سلامت فیزیکی" },
+        ],
+      };
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,8 +69,28 @@ export default function Home() {
         ]);
 
         if (productsRes.status === 'fulfilled') {
-          const productsList = Array.isArray(productsRes.value.data) ? productsRes.value.data : productsRes.value.data.results || [];
-          setBestsellers(productsList.slice(0, 4));
+          const productsList = Array.isArray(productsRes.value.data)
+            ? productsRes.value.data
+            : productsRes.value.data.results || [];
+          
+          if (productsList.length > 0) {
+            setBestsellers(productsList.slice(0, 8));
+            const dynamicNew = mapProductsToSlides(productsList.slice(0, 8), "جدیدترین ۲۰۲۶");
+            if (dynamicNew.length > 0) setNewArrivalsSlides(dynamicNew);
+
+            const discounted = productsList.filter((p: any) => p.discount_price || p.price);
+            const dynamicSale = mapProductsToSlides(
+              discounted.length >= 2 ? discounted.slice(0, 8) : productsList.slice(0, 8),
+              "حراج ویژه"
+            );
+            if (dynamicSale.length > 0) setSpecialSaleSlides(dynamicSale);
+          } else {
+            setNewArrivalsSlides(DEFAULT_NEW_ARRIVALS);
+            setSpecialSaleSlides(DEFAULT_SPECIAL_SALES);
+          }
+        } else {
+          setNewArrivalsSlides(DEFAULT_NEW_ARRIVALS);
+          setSpecialSaleSlides(DEFAULT_SPECIAL_SALES);
         }
 
         if (heroRes.status === 'fulfilled' && heroRes.value.data) {
@@ -58,192 +108,194 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Error fetching homepage data:", error);
+        setNewArrivalsSlides(DEFAULT_NEW_ARRIVALS);
+        setSpecialSaleSlides(DEFAULT_SPECIAL_SALES);
       }
     };
     fetchData();
   }, []);
 
-  // 1. جدیدترین محصولات (New Arrivals Slides)
-  const newArrivalsSlides: CoverflowSlide[] = [
-    {
-      src: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?q=80&w=900&auto=format&fit=crop",
-      alt: "پالتو پشمی کشمیر Luxe Noir",
-      title: "پالتو پشمی کشمیر دست‌دوز Luxe Noir",
-      subtitle: "دوخت سفارشی با پشم کشمیر صددرصد طبیعی و آستر ابریشم",
-      price: 8450000,
-      badge: "جدیدترین ۲۰۲۶",
-      href: "/products/prod-1",
-      meta: [
-        { label: "جنس پارچه", value: "۱۰۰٪ پشم کشمیر ایتالیایی" },
-        { label: "کالکشن", value: "پاییز و زمستان ۲۰۲۶" },
-        { label: "وضعیت موجودی", value: "موجود در انبار تهران" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=900&auto=format&fit=crop",
-      alt: "پیراهن ماکسی ساتن ابریشم Emerald Gala",
-      title: "پیراهن ماکسی ساتن ابریشم خالص Emerald Gala",
-      subtitle: "طراحی دراماتیک با یقه دراپه و پشت باز اشرافی",
-      price: 6900000,
-      badge: "کالکشن گالا",
-      href: "/products/prod-2",
-      meta: [
-        { label: "جنس پارچه", value: "ساتن ابریشم توت طبیعی" },
-        { label: "رنگ", value: "سبز زمردی اشرافی" },
-        { label: "سایزبندی", value: "XS, S, M, L" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=900&auto=format&fit=crop",
-      alt: "کت بلیزر ساختاری Milan Tailored",
-      title: "کت بلیزر چهار دکمه ساختاری Milan Tailored",
-      subtitle: "برش دقیق شانه و فرم آزاد مدرن برای موقعیت‌های رسمی",
-      price: 5200000,
-      badge: "مینیمال لوکس",
-      href: "/products/prod-3",
-      meta: [
-        { label: "برش و دوخت", value: "تیلور میلان ساختاری" },
-        { label: "رنگ", value: "کرم استخوانی مات" },
-        { label: "مناسبت", value: "بیزنس و کژوال اشرافی" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=900&auto=format&fit=crop",
-      alt: "کیف دستی چرم طبیعی کالفسکین Florence",
-      title: "کیف دستی چرم طبیعی کالفسکین Florence Tote",
-      subtitle: "دست‌ساز در فلورانس با یراق‌آلات آبکاری طلای ۲۴ عیار",
-      price: 4950000,
-      badge: "دست‌ساز",
-      href: "/products/prod-4",
-      meta: [
-        { label: "چرم", value: "کالفسکین فول گرین ایتالیا" },
-        { label: "یراق‌آلات", value: "آبکاری طلا ضدخش" },
-        { label: "گنجایش", value: "لپ‌تاپ تا ۱۳ اینچ" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=900&auto=format&fit=crop",
-      alt: "بوت چرم پاشنه‌دار نوک‌تیز Verona",
-      title: "بوت چرم پاشنه‌دار نوک‌تیز Verona Heeled Boot",
-      subtitle: "پاشنه ۷ سانتی معماری با کفی فوق‌العاده راحت ارگونومیک",
-      price: 4600000,
-      badge: "پرفروش",
-      href: "/products/prod-5",
-      meta: [
-        { label: "ارتفاع پاشنه", value: "۷ سانتی‌متر ژئومتریک" },
-        { label: "کفی", value: "مموری فوم ضدخستگی" },
-        { label: "زیپ", value: "YKK ژاپن مخفی" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?q=80&w=900&auto=format&fit=crop",
-      alt: "شال ابریشم تویل طرح Renaissance",
-      title: "شال ابریشم تویل طرح اختصاصی Renaissance Silk",
-      subtitle: "چاپ دیجیتال ارگانیک روی ابریشم ۱۰۰٪ طبیعی با دوردوزی دست‌دوز",
-      price: 1850000,
-      badge: "اکسسوری لوکس",
-      href: "/products/prod-6",
-      meta: [
-        { label: "ابعاد", value: "۹۰×۹۰ سانتی‌متر" },
-        { label: "لبه‌دوزی", value: "لول دست‌دوز هنرمندان" },
-        { label: "بسته‌بندی", value: "جعبه کادویی هاردباکس" },
-      ],
-    },
-  ];
+// 1. Fallback جدیدترین محصولات
+const DEFAULT_NEW_ARRIVALS: CoverflowSlide[] = [
+  {
+    src: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?q=80&w=900&auto=format&fit=crop",
+    alt: "پالتو پشمی کشمیر Luxe Noir",
+    title: "پالتو پشمی کشمیر دست‌دوز Luxe Noir",
+    subtitle: "دوخت سفارشی با پشم کشمیر صددرصد طبیعی و آستر ابریشم",
+    price: 8450000,
+    badge: "جدیدترین ۲۰۲۶",
+    href: "/products/prod-1",
+    meta: [
+      { label: "جنس پارچه", value: "۱۰۰٪ پشم کشمیر ایتالیایی" },
+      { label: "کالکشن", value: "پاییز و زمستان ۲۰۲۶" },
+      { label: "وضعیت موجودی", value: "موجود در انبار تهران" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=900&auto=format&fit=crop",
+    alt: "پیراهن ماکسی ساتن ابریشم Emerald Gala",
+    title: "پیراهن ماکسی ساتن ابریشم خالص Emerald Gala",
+    subtitle: "طراحی دراماتیک با یقه دراپه و پشت باز اشرافی",
+    price: 6900000,
+    badge: "کالکشن گالا",
+    href: "/products/prod-2",
+    meta: [
+      { label: "جنس پارچه", value: "ساتن ابریشم توت طبیعی" },
+      { label: "رنگ", value: "سبز زمردی اشرافی" },
+      { label: "سایزبندی", value: "XS, S, M, L" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=900&auto=format&fit=crop",
+    alt: "کت بلیزر ساختاری Milan Tailored",
+    title: "کت بلیزر چهار دکمه ساختاری Milan Tailored",
+    subtitle: "برش دقیق شانه و فرم آزاد مدرن برای موقعیت‌های رسمی",
+    price: 5200000,
+    badge: "مینیمال لوکس",
+    href: "/products/prod-3",
+    meta: [
+      { label: "برش و دوخت", value: "تیلور میلان ساختاری" },
+      { label: "رنگ", value: "کرم استخوانی مات" },
+      { label: "مناسبت", value: "بیزنس و کژوال اشرافی" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=900&auto=format&fit=crop",
+    alt: "کیف دستی چرم طبیعی کالفسکین Florence",
+    title: "کیف دستی چرم طبیعی کالفسکین Florence Tote",
+    subtitle: "دست‌ساز در فلورانس با یراق‌آلات آبکاری طلای ۲۴ عیار",
+    price: 4950000,
+    badge: "دست‌ساز",
+    href: "/products/prod-4",
+    meta: [
+      { label: "چرم", value: "کالفسکین فول گرین ایتالیا" },
+      { label: "یراق‌آلات", value: "آبکاری طلا ضدخش" },
+      { label: "گنجایش", value: "لپ‌تاپ تا ۱۳ اینچ" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=900&auto=format&fit=crop",
+    alt: "بوت چرم پاشنه‌دار نوک‌تیز Verona",
+    title: "بوت چرم پاشنه‌دار نوک‌تیز Verona Heeled Boot",
+    subtitle: "پاشنه ۷ سانتی معماری با کفی فوق‌العاده راحت ارگونومیک",
+    price: 4600000,
+    badge: "پرفروش",
+    href: "/products/prod-5",
+    meta: [
+      { label: "ارتفاع پاشنه", value: "۷ سانتی‌متر ژئومتریک" },
+      { label: "کفی", value: "مموری فوم ضدخستگی" },
+      { label: "زیپ", value: "YKK ژاپن مخفی" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?q=80&w=900&auto=format&fit=crop",
+    alt: "شال ابریشم تویل طرح Renaissance",
+    title: "شال ابریشم تویل طرح اختصاصی Renaissance Silk",
+    subtitle: "چاپ دیجیتال ارگانیک روی ابریشم ۱۰۰٪ طبیعی با دوردوزی دست‌دوز",
+    price: 1850000,
+    badge: "اکسسوری لوکس",
+    href: "/products/prod-6",
+    meta: [
+      { label: "ابعاد", value: "۹۰×۹۰ سانتی‌متر" },
+      { label: "لبه‌دوزی", value: "لول دست‌دوز هنرمندان" },
+      { label: "بسته‌بندی", value: "جعبه کادویی هاردباکس" },
+    ],
+  },
+];
 
-  // 2. فروش ویژه (Special Sale Slides)
-  const specialSaleSlides: CoverflowSlide[] = [
-    {
-      src: "https://images.unsplash.com/photo-1544441893-675973e31985?q=80&w=900&auto=format&fit=crop",
-      alt: "پالتو فوتر ایتالیایی Camel Classic",
-      title: "پالتو فوتر ایتالیایی رنگ شتری Camel Classic",
-      subtitle: "کاهش قیمت ویژه به مدت محدود در حراج فصل",
-      price: 5760000,
-      compareAtPrice: 7200000,
-      badge: "۲۰٪ تخفیف",
-      href: "/products/prod-1",
-      meta: [
-        { label: "کد تخفیف ویژه", value: "LUXE20" },
-        { label: "میزان تخفیف", value: "۱,۴۴۰,۰۰۰ تومان" },
-        { label: "ارسال", value: "رایگان با پست پیشتاز" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=900&auto=format&fit=crop",
-      alt: "پیراهن شب ساتن کرپ Ruby Red",
-      title: "پیراهن شب ساتن کرپ فرانسوی Ruby Red",
-      subtitle: "پرفروش‌ترین پیراهن مجلسی فصل با تخفیف طلایی",
-      price: 5200000,
-      compareAtPrice: 6500000,
-      badge: "۲۰٪ تخفیف",
-      href: "/products/prod-2",
-      meta: [
-        { label: "کد تخفیف", value: "LUXE20" },
-        { label: "تخفیف اعمالی", value: "۱,۳۰۰,۰۰۰ تومان" },
-        { label: "موجودی باقیمانده", value: "فقط ۵ عدد" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=900&auto=format&fit=crop",
-      alt: "ست کت و شلوار فرمال Charcoal",
-      title: "ست کت و شلوار دوتکه Charcoal Minimal",
-      subtitle: "شامل کت بلیزر و شلوار راسته پارچه کرپ ترک",
-      price: 4640000,
-      compareAtPrice: 5800000,
-      badge: "۲۰٪ تخفیف",
-      href: "/products/prod-3",
-      meta: [
-        { label: "تخفیف حراج", value: "۱,۱۶۰,۰۰۰ تومان" },
-        { label: "اقلام همراه", value: "کت + شلوار راسته" },
-        { label: "ضمانت", value: "۷ روز تعویض سایز رایگان" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=900&auto=format&fit=crop",
-      alt: "کیف دوشی چرم کروکودیل Sienna Bag",
-      title: "کیف دوشی چرم طبیعی طرح کروکودیل Sienna",
-      subtitle: "طراحی اشرافی با چرم طبیعی برجسته و قفل مغناطیسی",
-      price: 3360000,
-      compareAtPrice: 4200000,
-      badge: "تخفیف ویژه",
-      href: "/products/prod-4",
-      meta: [
-        { label: "سود شما از خرید", value: "۸۴۰,۰۰۰ تومان" },
-        { label: "متریال", value: "چرم طبیعی امبوسد کروکودیل" },
-        { label: "کد تخفیف", value: "LUXE20" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=900&auto=format&fit=crop",
-      alt: "بارانی و ترنچ کت ضدآب British Classic",
-      title: "ترنچ کت دبل برست ضدآب British Classic",
-      subtitle: "پارچه گاباردین ضدآب با کمربند سگک‌دار کلاسیک",
-      price: 3990000,
-      compareAtPrice: 4990000,
-      badge: "۲۰٪ تخفیف",
-      href: "/products/prod-1",
-      meta: [
-        { label: "پارچه", value: "گاباردین کتان صددرصد ضدآب" },
-        { label: "تخفیف", value: "۱,۰۰۰,۰۰۰ تومان" },
-        { label: "رنگ‌بندی", value: "کرم، سرمه‌ای، مشکی" },
-      ],
-    },
-    {
-      src: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=900&auto=format&fit=crop",
-      alt: "پیراهن لینن اورسایز Riviera Summer",
-      title: "پیراهن ساحلی لینن ارگانیک Riviera Summer",
-      subtitle: "خنک و سبک، بافته شده از لینن طبیعی خالص اروپایی",
-      price: 1980000,
-      compareAtPrice: 2600000,
-      badge: "۲۴٪ تخفیف",
-      href: "/products/prod-2",
-      meta: [
-        { label: "تخفیف استثنایی", value: "۶۲۰,۰۰۰ تومان" },
-        { label: "جنس الیاف", value: "۱۰۰٪ لینن خالص فرانسه" },
-        { label: "تن‌خور", value: "آزاد و تنفس‌پذیر" },
-      ],
-    },
-  ];
+// 2. Fallback فروش ویژه
+const DEFAULT_SPECIAL_SALES: CoverflowSlide[] = [
+  {
+    src: "https://images.unsplash.com/photo-1544441893-675973e31985?q=80&w=900&auto=format&fit=crop",
+    alt: "پالتو فوتر ایتالیایی Camel Classic",
+    title: "پالتو فوتر ایتالیایی رنگ شتری Camel Classic",
+    subtitle: "کاهش قیمت ویژه به مدت محدود در حراج فصل",
+    price: 5760000,
+    compareAtPrice: 7200000,
+    badge: "۲۰٪ تخفیف",
+    href: "/products/prod-1",
+    meta: [
+      { label: "کد تخفیف ویژه", value: "LUXE20" },
+      { label: "میزان تخفیف", value: "۱,۴۴۰,۰۰۰ تومان" },
+      { label: "ارسال", value: "رایگان با پست پیشتاز" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=900&auto=format&fit=crop",
+    alt: "پیراهن شب ساتن کرپ Ruby Red",
+    title: "پیراهن شب ساتن کرپ فرانسوی Ruby Red",
+    subtitle: "پرفروش‌ترین پیراهن مجلسی فصل با تخفیف طلایی",
+    price: 5200000,
+    compareAtPrice: 6500000,
+    badge: "۲۰٪ تخفیف",
+    href: "/products/prod-2",
+    meta: [
+      { label: "کد تخفیف", value: "LUXE20" },
+      { label: "تخفیف اعمالی", value: "۱,۳۰۰,۰۰۰ تومان" },
+      { label: "موجودی باقیمانده", value: "فقط ۵ عدد" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=900&auto=format&fit=crop",
+    alt: "ست کت و شلوار فرمال Charcoal",
+    title: "ست کت و شلوار دوتکه Charcoal Minimal",
+    subtitle: "شامل کت بلیزر و شلوار راسته پارچه کرپ ترک",
+    price: 4640000,
+    compareAtPrice: 5800000,
+    badge: "۲۰٪ تخفیف",
+    href: "/products/prod-3",
+    meta: [
+      { label: "تخفیف حراج", value: "۱,۱۶۰,۰۰۰ تومان" },
+      { label: "اقلام همراه", value: "کت + شلوار راسته" },
+      { label: "ضمانت", value: "۷ روز تعویض سایز رایگان" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=900&auto=format&fit=crop",
+    alt: "کیف دوشی چرم کروکودیل Sienna Bag",
+    title: "کیف دوشی چرم طبیعی طرح کروکودیل Sienna",
+    subtitle: "طراحی اشرافی با چرم طبیعی برجسته و قفل مغناطیسی",
+    price: 3360000,
+    compareAtPrice: 4200000,
+    badge: "تخفیف ویژه",
+    href: "/products/prod-4",
+    meta: [
+      { label: "سود شما از خرید", value: "۸۴۰,۰۰۰ تومان" },
+      { label: "متریال", value: "چرم طبیعی امبوسد کروکودیل" },
+      { label: "کد تخفیف", value: "LUXE20" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=900&auto=format&fit=crop",
+    alt: "بارانی و ترنچ کت ضدآب British Classic",
+    title: "ترنچ کت دبل برست ضدآب British Classic",
+    subtitle: "پارچه گاباردین ضدآب با کمربند سگک‌دار کلاسیک",
+    price: 3990000,
+    compareAtPrice: 4990000,
+    badge: "۲۰٪ تخفیف",
+    href: "/products/prod-1",
+    meta: [
+      { label: "پارچه", value: "گاباردین کتان صددرصد ضدآب" },
+      { label: "تخفیف", value: "۱,۰۰۰,۰۰۰ تومان" },
+      { label: "رنگ‌بندی", value: "کرم، سرمه‌ای، مشکی" },
+    ],
+  },
+  {
+    src: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=900&w=900&auto=format&fit=crop",
+    alt: "پیراهن لینن اورسایز Riviera Summer",
+    title: "پیراهن ساحلی لینن ارگانیک Riviera Summer",
+    subtitle: "خنک و سبک، بافته شده از لینن طبیعی خالص اروپایی",
+    price: 1980000,
+    compareAtPrice: 2600000,
+    badge: "۲۴٪ تخفیف",
+    href: "/products/prod-2",
+    meta: [
+      { label: "تخفیف استثنایی", value: "۶۲۰,۰۰۰ تومان" },
+      { label: "جنس الیاف", value: "۱۰۰٪ لینن خالص فرانسه" },
+      { label: "تن‌خور", value: "آزاد و تنفس‌پذیر" },
+    ],
+  },
+];
 
   return (
     <main className="min-h-screen pb-24">
