@@ -19,6 +19,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -117,7 +118,7 @@ export default function AdminOrdersPage() {
       case "shipped":
         return {
           bg: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-          label: "ارسال شده",
+          label: "تحویل به پست",
           icon: Truck,
         };
       case "packing":
@@ -138,6 +139,12 @@ export default function AdminOrdersPage() {
           bg: "bg-red-500/10 text-red-400 border-red-500/20",
           label: "لغو شده",
           icon: XCircle,
+        };
+      case "returned":
+        return {
+          bg: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+          label: "مرجوع شده",
+          icon: RotateCcw,
         };
       default:
         return {
@@ -328,46 +335,82 @@ export default function AdminOrdersPage() {
             <div className="space-y-6 mt-4">
               {/* Quick Status Workflow Changer */}
               <div className="p-4 rounded-2xl bg-[#141414] border border-white/10 space-y-3">
-                <h4 className="text-xs font-bold text-gray-300">تغییر وضعیت مرسوله</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-gray-300">تغییر وضعیت مرسوله</h4>
+                  <span className="text-[11px] text-gray-400">
+                    وضعیت فعلی: <strong className="text-white">{getStatusBadge(selectedOrder.status).label}</strong>
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <button
                     type="button"
-                    onClick={() => handleStatusTransition(selectedOrder.id, "processing")}
-                    className="p-2.5 rounded-xl bg-[#1c1c1c] border border-white/10 hover:bg-purple-500/20 hover:border-purple-500/40 text-purple-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    onClick={() => handleStatusTransition(selectedOrder.id, "paid")}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      selectedOrder.status === "paid"
+                        ? "bg-indigo-500/30 border-indigo-500 text-white shadow-lg"
+                        : "bg-[#1c1c1c] border-white/10 hover:bg-indigo-500/20 hover:border-indigo-500/40 text-indigo-300"
+                    }`}
                   >
-                    <Package className="w-3.5 h-3.5" />
-                    آماده‌سازی
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    تایید پرداخت (Paid)
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleStatusTransition(selectedOrder.id, "shipped")}
-                    className="p-2.5 rounded-xl bg-[#1c1c1c] border border-white/10 hover:bg-blue-500/20 hover:border-blue-500/40 text-blue-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    onClick={() => handleStatusTransition(selectedOrder.id, "packing")}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      selectedOrder.status === "packing" || selectedOrder.status === "processing"
+                        ? "bg-purple-500/30 border-purple-500 text-white shadow-lg"
+                        : "bg-[#1c1c1c] border-white/10 hover:bg-purple-500/20 hover:border-purple-500/40 text-purple-300"
+                    }`}
+                  >
+                    <Package className="w-3.5 h-3.5" />
+                    بسته‌بندی (Packing)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStatusTransition(selectedOrder.id, "shipping")}
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      selectedOrder.status === "shipping" || selectedOrder.status === "shipped"
+                        ? "bg-blue-500/30 border-blue-500 text-white shadow-lg"
+                        : "bg-[#1c1c1c] border-white/10 hover:bg-blue-500/20 hover:border-blue-500/40 text-blue-300"
+                    }`}
                   >
                     <Truck className="w-3.5 h-3.5" />
-                    ارسال شد به پست
+                    تحویل به پست (Shipping)
                   </button>
                   <button
                     type="button"
                     onClick={() => handleStatusTransition(selectedOrder.id, "delivered")}
-                    className="p-2.5 rounded-xl bg-[#1c1c1c] border border-white/10 hover:bg-emerald-500/20 hover:border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      selectedOrder.status === "delivered"
+                        ? "bg-emerald-500/30 border-emerald-500 text-white shadow-lg"
+                        : "bg-[#1c1c1c] border-white/10 hover:bg-emerald-500/20 hover:border-emerald-500/40 text-emerald-300"
+                    }`}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    تحویل شد
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusTransition(selectedOrder.id, "paid")}
-                    className="p-2.5 rounded-xl bg-[#1c1c1c] border border-white/10 hover:bg-indigo-500/20 hover:border-indigo-500/40 text-indigo-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                  >
-                    تایید پرداخت
+                    تحویل مشتری (Delivered)
                   </button>
                   <button
                     type="button"
                     onClick={() => handleStatusTransition(selectedOrder.id, "cancelled")}
-                    className="p-2.5 rounded-xl bg-[#1c1c1c] border border-white/10 hover:bg-red-500/20 hover:border-red-500/40 text-red-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      selectedOrder.status === "cancelled"
+                        ? "bg-red-500/30 border-red-500 text-white shadow-lg"
+                        : "bg-[#1c1c1c] border-white/10 hover:bg-red-500/20 hover:border-red-500/40 text-red-300"
+                    }`}
                   >
-                    لغو سفارش
+                    <XCircle className="w-3.5 h-3.5" />
+                    لغو سفارش (Cancelled)
                   </button>
+                </div>
+
+                <div className="pt-2">
+                  <Input
+                    placeholder="یادداشت تغییر وضعیت (اختیاری)..."
+                    value={transitionNote}
+                    onChange={(e) => setTransitionNote(e.target.value)}
+                    className="bg-[#181818] border-white/10 text-white rounded-xl text-xs h-9"
+                  />
                 </div>
               </div>
 

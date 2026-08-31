@@ -54,6 +54,62 @@ export default function Navbar() {
 
   const [couponInput, setCouponInput] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
+
+  const checkAuth = () => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("access_token");
+    setIsLoggedIn(!!token);
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        setUserDisplayName(
+          [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "کاربر گرامی"
+        );
+      } else if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setUserDisplayName(payload.email || "کاربر گرامی");
+      } else {
+        setUserDisplayName(null);
+      }
+    } catch {
+      setUserDisplayName(null);
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+    const handleAuthEvent = () => checkAuth();
+    window.addEventListener("auth-change", handleAuthEvent);
+    window.addEventListener("storage", handleAuthEvent);
+    return () => {
+      window.removeEventListener("auth-change", handleAuthEvent);
+      window.removeEventListener("storage", handleAuthEvent);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    const refresh = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
+    if (refresh) {
+      try {
+        await api.post("/api/auth/logout/", { refresh });
+      } catch {
+        // Graceful silent fallback
+      }
+    }
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
+      window.dispatchEvent(new Event("auth-change"));
+    }
+    setIsLoggedIn(false);
+    setUserDisplayName(null);
+    toast.success("با موفقیت از حساب کاربری خارج شدید");
+    router.push("/");
+  };
   
   // Initialize Global Data from Backend
   useEffect(() => {
@@ -260,24 +316,48 @@ export default function Navbar() {
           <div className="hidden md:block">
             <DropdownMenu dir="rtl">
               <DropdownMenuTrigger asChild>
-                <button className="p-2 hover:text-white hover:bg-white/10 rounded-full transition-colors outline-none cursor-pointer flex items-center">
+                <button 
+                  className={cn(
+                    "p-2 hover:text-white rounded-full transition-colors outline-none cursor-pointer flex items-center relative",
+                    isLoggedIn ? "bg-white/10 text-white ring-1 ring-white/20" : "hover:bg-white/10"
+                  )}
+                  aria-label="User Account"
+                >
                   <User className="w-5 h-5" />
+                  {isLoggedIn && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 absolute top-1.5 right-1.5 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                  )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-[#111111] border border-white/10 text-white w-48 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
-                <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
-                  <Link href="/profile">پروفایل کاربری</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
-                  <Link href="/profile">سفارش‌های من</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
-                  <Link href="/profile">لیست علاقه‌مندی‌ها</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-white/10" />
-                <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
-                  <Link href="/auth">ورود / ثبت‌نام</Link>
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="bg-[#111111] border border-white/10 text-white w-52 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
+                {isLoggedIn ? (
+                  <>
+                    <div className="px-3 py-2 border-b border-white/10 mb-1">
+                      <p className="text-[11px] text-gray-400">حساب کاربری</p>
+                      <p className="text-xs font-bold text-white truncate">{userDisplayName}</p>
+                    </div>
+                    <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
+                      <Link href="/profile">پروفایل کاربری</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
+                      <Link href="/profile">سفارش‌های من</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
+                      <Link href="/profile">لیست علاقه‌مندی‌ها</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="focus:bg-rose-500/20 text-rose-400 hover:text-rose-300 cursor-pointer rounded-xl text-right font-bold text-xs"
+                    >
+                      خروج از حساب کاربری
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
+                    <Link href="/auth">ورود / ثبت‌نام</Link>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -317,10 +397,10 @@ export default function Navbar() {
                           </div>
                         )}
                         <div className="text-xs text-gray-300 font-medium">
-                          {item.price.toLocaleString("fa-IR")} تومان × {item.quantity}
+                          {Number(item.price).toLocaleString("fa-IR")} تومان × {item.quantity}
                         </div>
                       </div>
-                      <button onClick={() => removeItem(item.id, item.size, item.variant_id)} className="text-gray-500 hover:text-rose-400 transition-colors p-2">
+                      <button onClick={() => removeItem(item.id, item.size, item.variant_id)} className="text-gray-500 hover:text-rose-400 transition-colors p-2 cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -344,7 +424,7 @@ export default function Navbar() {
                         onClick={() => removeCoupon()}
                         variant="destructive"
                         size="sm"
-                        className="rounded-xl text-xs shrink-0"
+                        className="rounded-xl text-xs shrink-0 cursor-pointer"
                       >
                         حذف کد
                       </Button>
@@ -355,25 +435,26 @@ export default function Navbar() {
                           setIsApplyingCoupon(true);
                           try {
                             await applyCoupon(couponInput.trim());
-                            toast.success("کد تخفیف با موفقیت اعمال شد");
-                          } catch (err: any) {
+                            toast.success("کد تخفیف اعمال شد");
+                            setCouponInput("");
+                          } catch (err) {
                             toast.error(getApiErrorMessage(err, "کد تخفیف نامعتبر است"));
                           } finally {
                             setIsApplyingCoupon(false);
                           }
                         }}
                         disabled={isApplyingCoupon || !couponInput.trim()}
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
-                        className="border-white/20 text-white hover:bg-white hover:text-black rounded-xl text-xs shrink-0"
+                        className="rounded-xl text-xs shrink-0 cursor-pointer"
                       >
-                        {isApplyingCoupon ? <Loader2 className="w-3 h-3 animate-spin" /> : "اعمال"}
+                        {isApplyingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "اعمال"}
                       </Button>
                     )}
                   </div>
 
                   {/* Summary Details */}
-                  <div className="space-y-1 text-xs text-gray-400">
+                  <div className="space-y-1.5 text-xs text-gray-400">
                     <div className="flex justify-between">
                       <span>جمع اقلام:</span>
                       <span>{getTotal().toLocaleString("fa-IR")} تومان</span>
@@ -391,7 +472,7 @@ export default function Navbar() {
                   </div>
 
                   <SheetClose asChild>
-                    <Button asChild className="w-full bg-white text-black hover:bg-gray-200 font-bold rounded-2xl h-12">
+                    <Button asChild className="w-full bg-white text-black hover:bg-gray-200 font-bold rounded-2xl h-12 cursor-pointer">
                       <Link href="/checkout">ثبت سفارش و پرداخت</Link>
                     </Button>
                   </SheetClose>
@@ -412,13 +493,31 @@ export default function Navbar() {
                 <SheetHeader className="text-right pb-6 border-b border-white/10">
                   <SheetTitle className="text-white text-2xl font-black font-sans">منو</SheetTitle>
                 </SheetHeader>
-                <div className="flex flex-col gap-6 py-6 text-lg font-medium">
+                <div className="flex flex-col gap-5 py-6 text-base font-medium">
                   <SheetClose asChild><Link href="/products" className="hover:text-gray-300 transition-colors">فروشگاه و کاتالوگ</Link></SheetClose>
                   <SheetClose asChild><Link href="/search?sort=newest" className="hover:text-gray-300 transition-colors">جدیدترین محصولات</Link></SheetClose>
                   <SheetClose asChild><Link href="/search?sort=popularity" className="hover:text-gray-300 transition-colors">پرفروش‌ترین‌ها</Link></SheetClose>
-                  <div className="border-t border-white/10 pt-6 flex flex-col gap-6">
-                    <SheetClose asChild><Link href="/profile" className="hover:text-gray-300 transition-colors">پروفایل کاربری</Link></SheetClose>
-                    <SheetClose asChild><Link href="/auth" className="hover:text-gray-300 transition-colors">ورود / ثبت‌نام</Link></SheetClose>
+                  
+                  <div className="border-t border-white/10 pt-5 flex flex-col gap-4">
+                    {isLoggedIn ? (
+                      <>
+                        <div className="pb-1">
+                          <p className="text-[11px] text-gray-400">کاربر وارد شده:</p>
+                          <p className="text-xs font-bold text-emerald-400 truncate">{userDisplayName}</p>
+                        </div>
+                        <SheetClose asChild><Link href="/profile" className="hover:text-gray-300 transition-colors">پروفایل کاربری</Link></SheetClose>
+                        <SheetClose asChild>
+                          <button
+                            onClick={handleLogout}
+                            className="text-right text-rose-400 hover:text-rose-300 transition-colors font-bold text-sm cursor-pointer"
+                          >
+                            خروج از حساب کاربری
+                          </button>
+                        </SheetClose>
+                      </>
+                    ) : (
+                      <SheetClose asChild><Link href="/auth" className="hover:text-gray-300 transition-colors">ورود / ثبت‌نام</Link></SheetClose>
+                    )}
                   </div>
                 </div>
               </SheetContent>

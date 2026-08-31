@@ -286,23 +286,28 @@ export const useCart = create<CartStore>((set, get) => ({
   },
   
   getTotal: () => {
-    return get().items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return get().items.reduce((total, item) => total + (Number(item.price) * item.quantity), 0);
   },
 
   getDiscountAmount: () => {
     const coupon = get().coupon;
     if (!coupon) return 0;
-    if (coupon.discount_amount && coupon.discount_amount > 0) {
-      return coupon.discount_amount;
+    
+    const discAmount = Number(coupon.discount_amount) || 0;
+    if (discAmount > 0) {
+      return discAmount;
     }
+    
     const total = get().getTotal();
-    if (coupon.discount_type === 'percentage' && coupon.discount_value) {
-      return (total * coupon.discount_value) / 100;
+    const discVal = Number(coupon.discount_value) || 0;
+    
+    if (coupon.discount_type === 'percentage' && discVal > 0) {
+      return Math.round((total * discVal) / 100);
     }
-    if (coupon.discount_type === 'fixed' && coupon.discount_value) {
-      return Math.min(coupon.discount_value, total);
+    if (coupon.discount_type === 'fixed' && discVal > 0) {
+      return Math.min(discVal, total);
     }
-    return coupon.discount_amount || 0;
+    return discAmount;
   },
 
   getFinalTotal: () => {

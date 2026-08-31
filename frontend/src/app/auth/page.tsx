@@ -13,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "@/lib/api";
 import * as z from "zod";
 import { useCart } from "@/store/cart";
+import { useWishlist } from "@/store/wishlist";
 import { getApiErrorMessage } from "@/lib/error-utils";
 
 // --- Validation Schemas ---
@@ -117,14 +118,28 @@ export default function AuthPage() {
         email: data.identifier,
         password: data.password,
       });
-      localStorage.setItem("access_token", response.data.access);
-      localStorage.setItem("refresh_token", response.data.refresh);
 
-      // Sync backend cart on login
-      await mergeCart();
+      if (typeof window !== "undefined") {
+        localStorage.setItem("access_token", response.data.access);
+        localStorage.setItem("refresh_token", response.data.refresh);
+        if (response.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
+        window.dispatchEvent(new Event("auth-change"));
+      }
+
+      // Sync backend cart & wishlist on login
+      try {
+        await mergeCart();
+        await useWishlist.getState().fetchWishlist();
+      } catch {
+        // Silent sync failure
+      }
 
       toast.success("با موفقیت وارد حساب خود شدید");
-      router.push("/");
+      const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const redirectPath = searchParams?.get("redirect") || "/profile";
+      router.push(redirectPath);
     } catch (error: any) {
       const errCode = error?.response?.data?.code || error?.response?.data?.error?.code;
       const errMsg = error?.response?.data?.error || error?.response?.data?.detail || "";

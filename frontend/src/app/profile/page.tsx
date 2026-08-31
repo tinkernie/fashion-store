@@ -64,10 +64,32 @@ const ORDER_STEPS = [
 const getStepIndex = (status: string) => {
   const s = status?.toLowerCase() || "";
   if (s === "delivered") return 4;
-  if (s === "shipping") return 3;
-  if (s === "packing") return 2;
-  if (s === "paid" || s === "processing") return 1;
+  if (s === "shipping" || s === "shipped") return 3;
+  if (s === "packing" || s === "processing") return 2;
+  if (s === "paid") return 1;
   return 0;
+};
+
+const getProfileStatusBadge = (status: string) => {
+  const s = (status || "").toLowerCase();
+  switch (s) {
+    case "delivered":
+      return { label: "تحویل داده شده", bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" };
+    case "shipping":
+    case "shipped":
+      return { label: "تحویل به پست", bg: "bg-blue-500/10 text-blue-400 border-blue-500/20" };
+    case "packing":
+    case "processing":
+      return { label: "در حال بسته‌بندی", bg: "bg-purple-500/10 text-purple-400 border-purple-500/20" };
+    case "paid":
+      return { label: "پرداخت شده", bg: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" };
+    case "cancelled":
+      return { label: "لغو شده", bg: "bg-rose-500/10 text-rose-400 border-rose-500/20" };
+    case "returned":
+      return { label: "مرجوع شده", bg: "bg-orange-500/10 text-orange-400 border-orange-500/20" };
+    default:
+      return { label: "در انتظار پرداخت", bg: "bg-amber-400/10 text-amber-400 border-amber-400/20" };
+  }
 };
 
 export default function ProfilePage() {
@@ -598,14 +620,10 @@ export default function ProfilePage() {
                           <div className="flex items-center gap-3">
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-black border ${
-                                isCancelled
-                                  ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                                  : currentStep === 4
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                  : "bg-amber-400/10 text-amber-400 border-amber-400/20"
+                                getProfileStatusBadge(order.status).bg
                               }`}
                             >
-                              {order.status}
+                              {getProfileStatusBadge(order.status).label}
                             </span>
                             <Button
                               onClick={() => fetchOrderDetails(orderId)}

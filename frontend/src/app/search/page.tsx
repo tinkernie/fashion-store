@@ -183,14 +183,30 @@ function SearchContent() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (keyword) params.set("q", keyword);
-      if (selectedCategory) params.set("category", selectedCategory);
-      if (collectionParam) params.set("collection", collectionParam);
+      if (keyword) {
+        params.set("q", keyword);
+        params.set("search", keyword);
+      }
+      if (selectedCategory && selectedCategory !== "all") {
+        params.set("category", selectedCategory);
+      }
+      if (collectionParam && collectionParam !== "all") {
+        params.set("collection", collectionParam);
+      }
       if (minPrice) params.set("min_price", minPrice);
       if (maxPrice) params.set("max_price", maxPrice);
       if (selectedSort) params.set("sort", selectedSort);
+      if (inStockOnly) params.set("in_stock", "true");
+
       if (Object.keys(selectedOptions).length > 0) {
         params.set("options", JSON.stringify(selectedOptions));
+        // Flatten size and color for direct query matching
+        if (selectedOptions["سایز"] && selectedOptions["سایز"].length > 0) {
+          params.set("size", selectedOptions["سایز"].join(","));
+        }
+        if (selectedOptions["رنگ"] && selectedOptions["رنگ"].length > 0) {
+          params.set("color", selectedOptions["رنگ"].join(","));
+        }
       }
       params.set("page", String(currentPage));
 
