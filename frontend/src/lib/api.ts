@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { setupMockServer } from './mock-server';
 
 // Connects directly to backend at http://127.0.0.1:8000 or via Next.js proxy
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -10,13 +9,6 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
-// STANDALONE MOCK SERVER:
-// Enables full frontend operation with rich mock data without requiring a backend.
-// To disable/delete later:
-// 1. Delete `src/lib/mock-server.ts` and `src/lib/mock-data.ts`.
-// 2. Remove the `setupMockServer(api)` line below or set NEXT_PUBLIC_ENABLE_MOCKS=false in .env.
-setupMockServer(api);
 
 // Interceptor: Attach JWT Access Token to every request
 api.interceptors.request.use((config) => {

@@ -90,6 +90,12 @@ class AuthService:
         refresh["is_staff"] = user.is_staff
         refresh["is_superuser"] = user.is_superuser
         refresh["email"] = user.email
+
+        # Also inject claims into access token
+        refresh.access_token["is_staff"] = user.is_staff
+        refresh.access_token["is_superuser"] = user.is_superuser
+        refresh.access_token["email"] = user.email
+
         return {
             "access": str(refresh.access_token),
             "refresh": str(refresh),

@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/error-utils";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 
 const NAV_ITEMS = [
@@ -116,35 +117,35 @@ export default function AdminLayout({
     }
 
     try {
-      // Decode JWT
+      // Fast check with JWT payload
       const payload = JSON.parse(atob(token.split(".")[1]));
-      const userId = payload.user_id || payload.id;
       
+      // Verify with backend user profile
       let profile = null;
-      if (userId) {
-        try {
-          const res = await api.get(`/api/users/me/`);
-          profile = res.data;
-        } catch {
-          profile = null;
-        }
+      try {
+        const res = await api.get(`/api/users/me/`);
+        profile = res.data;
+      } catch {
+        profile = null;
       }
 
-      const isStaffOrSuper = Boolean(
-        profile?.is_staff ||
-        profile?.is_superuser ||
-        payload?.is_staff ||
-        payload?.is_superuser
-      );
+      const isSuperUser = Boolean(profile?.is_superuser || payload?.is_superuser);
+      const isStaffUser = Boolean(profile?.is_staff || payload?.is_staff);
 
-      if (!isStaffOrSuper) {
+      if (!isSuperUser && !isStaffUser) {
         // Logged in as regular customer - block access to admin panel
         setIsAuthenticated(false);
-        setCurrentUser(profile || { email: payload.email, is_staff: false });
+        setCurrentUser(profile || { email: payload.email, is_staff: false, is_superuser: false });
         return;
       }
 
-      setCurrentUser(profile || { email: payload.email || "مدیر سیستم", is_staff: true });
+      setCurrentUser(
+        profile || {
+          email: payload.email || "مدیر ارشد سیستم",
+          is_staff: isStaffUser,
+          is_superuser: isSuperUser,
+        }
+      );
       setIsAuthenticated(true);
     } catch {
       setIsAuthenticated(false);
@@ -157,39 +158,51 @@ export default function AdminLayout({
     setIsLoggingIn(true);
     try {
       const response = await api.post("/api/auth/login/", {
-        email: loginEmail,
+        email: loginEmail.trim(),
         password: loginPassword,
       });
 
       const user = response.data?.user;
       const token = response.data?.access;
-      let isStaff = Boolean(user?.is_staff || user?.is_superuser);
+      const refresh = response.data?.refresh;
 
-      if (!isStaff && token) {
+      let isSuperUser = Boolean(user?.is_superuser);
+      let isStaff = Boolean(user?.is_staff);
+
+      if (!isSuperUser && !isStaff && token) {
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
-          isStaff = Boolean(payload?.is_staff || payload?.is_superuser);
+          isSuperUser = Boolean(payload?.is_superuser);
+          isStaff = Boolean(payload?.is_staff);
         } catch {
           // ignore
         }
       }
 
-      if (!isStaff) {
-        toast.error("دسترسی غیرمجاز: این حساب کاربری دسترسی مدیریت ندارد.");
+      if (!isSuperUser && !isStaff) {
+        toast.error("دسترسی غیرمجاز: این حساب کاربری دسترسی مدیریت (Superuser / Staff) ندارد.");
         setIsLoggingIn(false);
         return;
       }
 
-      localStorage.setItem("access_token", response.data.access);
-      localStorage.setItem("refresh_token", response.data.refresh);
+      localStorage.setItem("access_token", token);
+      localStorage.setItem("refresh_token", refresh);
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+      window.dispatchEvent(new Event("auth-change"));
+
+      setCurrentUser(
+        user || {
+          email: loginEmail.trim(),
+          is_staff: isStaff,
+          is_superuser: isSuperUser,
+        }
+      );
+      setIsAuthenticated(true);
       toast.success("ورود به پنل مدیریت با موفقیت انجام شد");
-      await checkAdminAuth();
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.detail ||
-        err?.response?.data?.error?.message ||
-        "اطلاعات ورود اشتباه است یا دسترسی مدیریت ندارید.";
-      toast.error(msg);
+      toast.error(getApiErrorMessage(err, "اطلاعات ورود اشتباه است یا دسترسی مدیریت ندارید."));
     } finally {
       setIsLoggingIn(false);
     }
