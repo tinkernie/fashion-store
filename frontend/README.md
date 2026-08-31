@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LUXE Fashion Store - Frontend
 
-## Getting Started
+A luxury Iranian fashion e-commerce storefront built with Next.js (App Router), Tailwind CSS, Framer Motion, and Zustand.
 
-First, run the development server:
+---
 
+## 🚀 Running the Project Standalone (No Backend Required)
+
+The frontend is configured with an isolated **Standalone Mock API Layer** so you can develop and test 100% of the features (browsing, filtering, cart operations, coupons, checkout, auth, profile, and admin backoffice) without running Django or Redis.
+
+### 1. Install dependencies & run dev server
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ⚙️ Switching Between Mock & Real Backend
 
-## Learn More
+In `.env.local`:
+```env
+# Set to 'false' when connecting to a real running Django backend
+NEXT_PUBLIC_ENABLE_MOCKS=true
 
-To learn more about Next.js, take a look at the following resources:
+# Live Django Backend URL
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🗑️ How to Completely Delete the Mock Layer Later
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+When your backend is ready and you want to clean up mock files:
+1. **Delete 2 files**:
+   - `frontend/src/lib/mock-data.ts`
+   - `frontend/src/lib/mock-server.ts`
+2. **Remove the import line** in [`frontend/src/lib/api.ts`](./src/lib/api.ts):
+   ```typescript
+   // Remove this line:
+   setupMockServer(api);
+   ```
+3. Done!
