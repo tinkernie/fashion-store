@@ -49,12 +49,13 @@ class BaseModel(UUIDPrimaryKeyMixin, TimestampedModel, SoftDeleteModel):
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils import timezone
 
-from .managers import UserManager
+from .managers import UserAllObjectsManager, UserManager
 
 
 class User(BaseModel, AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
+    all_objects = UserAllObjectsManager()  # M4: includes soft-deleted
 
     email = models.EmailField(unique=True, db_index=True)
     first_name = models.CharField(max_length=150, blank=True)

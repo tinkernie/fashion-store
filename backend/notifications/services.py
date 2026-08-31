@@ -17,6 +17,14 @@ class NotificationService:
         """
         Create an in-app notification and conditionally send an email.
         """
+        # M1: validate type against allowlist to prevent arbitrary type spam
+        from .models import NotificationTemplate
+        allowed_types = [c[0] for c in NotificationTemplate.TYPE_CHOICES]
+        if type not in allowed_types:
+            raise BusinessException(f"Invalid notification type: {type}")
+        # M1/L1: limit context size to prevent JSONField DoS / PII bloat
+        if context and len(str(context)) > 5000:
+            raise BusinessException("Notification context too large.")
         # Check user preferences for email
         prefs = PreferenceRepository.get_or_create_preferences(user)
         email_allowed = self._is_email_allowed(type, prefs)

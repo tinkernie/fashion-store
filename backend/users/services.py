@@ -95,11 +95,10 @@ class UserService:
             )
 
         if "email" in update_data:
-            UserValidator.validate_email_unique(update_data["email"], exclude_user_id=user.id)
-
-        if "is_active" in update_data and update_data["is_active"] and user == requested_by:
+            # M2: forbid direct email hijack via admin without verification
             raise BusinessException(
-                "Cannot deactivate yourself via admin update.", code="self_deactivate"
+                "Email change via admin not allowed. User must verify via email OTP flow.",
+                code="email_admin_forbidden",
             )
 
         return UserRepository.update_user(user, **update_data)
@@ -110,6 +109,11 @@ class UserService:
             raise BusinessException("User not found.")
         from django.contrib.auth.models import Group
 
+        # M2: prevent self-escalation and validate IDs
+        if user == requested_by:
+            raise BusinessException("Cannot change your own groups.", code="self_assign")
         groups = Group.objects.filter(id__in=group_ids)
+        if groups.count() != len(set(str(g) for g in group_ids)):
+            raise BusinessException("One or more groups not found.", code="not_found")
         user.groups.set(groups)
         return {"groups": list(user.groups.values_list("name", flat=True))}

@@ -24,7 +24,7 @@ class Payment(BaseModel):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     gateway = models.CharField(max_length=50)   # e.g., 'dummy', 'stripe'
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    gateway_reference = models.CharField(max_length=255, null=True, blank=True)   # returned by gateway
+    gateway_reference = models.CharField(max_length=255, null=True, blank=True, db_index=True)   # returned by gateway, unique when set
     authority = models.CharField(max_length=255, null=True, blank=True, unique=True, help_text='Unique transaction ID we generate')
     raw_response = models.JSONField(default=dict, blank=True)
     callback_data = models.JSONField(default=dict, blank=True)

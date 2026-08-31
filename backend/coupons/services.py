@@ -11,44 +11,55 @@ class CouponService:
         Validate coupon and return discount amount.
         cart_items: list of dicts with 'variant_id', 'quantity', 'price', and optionally product metadata.
         """
-        coupon = CouponSelector.get_active_coupon_by_code(code)
-        if not coupon:
-            raise BusinessException("Invalid or expired coupon code.")
+        from django.db import transaction as db_transaction
+        # H9: lock coupon row to prevent race between validate and increment
+        with db_transaction.atomic():
+            # Re-fetch with lock if exists
+            coupon = Coupon.objects.select_for_update().filter(code=code, is_active=True).first()
+            if not coupon:
+                # Fallback to selector (check expiry)
+                coupon = CouponSelector.get_active_coupon_by_code(code)
+            if not coupon:
+                raise BusinessException("Invalid or expired coupon code.")
 
-        # Check per-user limit (defaults to 1 per user)
-        if user and getattr(user, "is_authenticated", False):
-            max_allowed = coupon.max_per_user if (coupon.max_per_user is not None and coupon.max_per_user > 0) else 1
-            usage_count = CouponRepository.get_coupon_usage_count(coupon, user)
-            if usage_count >= max_allowed:
-                raise BusinessException("You have reached the usage limit for this coupon.")
+            # H9: per-user limit - if max_per_user is None, unlimited; only check if set
+            if user and getattr(user, "is_authenticated", False):
+                if coupon.max_per_user is not None:
+                    max_allowed = coupon.max_per_user
+                    # 0 means unlimited
+                    if max_allowed > 0:
+                        usage_count = CouponRepository.get_coupon_usage_count(coupon, user)
+                        if usage_count >= max_allowed:
+                            raise BusinessException("You have reached the usage limit for this coupon.")
+                # else: unlimited per user, don't check
 
-        # Check total uses
-        if coupon.max_uses is not None and coupon.used_count >= coupon.max_uses:
-            raise BusinessException("Coupon usage limit reached.")
+            # Check total uses
+            if coupon.max_uses is not None and coupon.used_count >= coupon.max_uses:
+                raise BusinessException("Coupon usage limit reached.")
 
-        # Check conditions (if any)
-        self._check_conditions(coupon, cart_items)
+            # Check conditions (if any)
+            self._check_conditions(coupon, cart_items)
 
-        # Calculate subtotal
-        subtotal = sum(item['price'] * item['quantity'] for item in cart_items)
-        if subtotal < coupon.min_purchase:
-            raise BusinessException(f"Minimum purchase of {coupon.min_purchase} not met.")
+            # Calculate subtotal
+            subtotal = sum(Decimal(str(item['price'])) * item['quantity'] for item in cart_items)
+            if subtotal < coupon.min_purchase:
+                raise BusinessException(f"Minimum purchase of {coupon.min_purchase} not met.")
 
-        # Compute discount
-        if coupon.discount_type == Coupon.DiscountType.PERCENTAGE:
-            if not (0 <= coupon.discount_value <= 100):
-                raise BusinessException("Invalid discount percentage.")
-            discount = (subtotal * coupon.discount_value / 100).quantize(Decimal('0.01'))
-        else:
-            discount = min(coupon.discount_value, subtotal)
+            # Compute discount
+            if coupon.discount_type == Coupon.DiscountType.PERCENTAGE:
+                if not (0 <= coupon.discount_value <= 100):
+                    raise BusinessException("Invalid discount percentage.")
+                discount = (subtotal * coupon.discount_value / 100).quantize(Decimal('0.01'))
+            else:
+                discount = min(coupon.discount_value, subtotal)
 
-        return {
-            'coupon_id': str(coupon.id),
-            'code': coupon.code,
-            'discount': discount,
-            'discount_type': coupon.discount_type,
-            'discount_value': str(coupon.discount_value),
-        }
+            return {
+                'coupon_id': str(coupon.id),
+                'code': coupon.code,
+                'discount': discount,
+                'discount_type': coupon.discount_type,
+                'discount_value': str(coupon.discount_value),
+            }
 
     def _check_conditions(self, coupon, cart_items):
         conditions = coupon.conditions

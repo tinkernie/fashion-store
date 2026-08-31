@@ -44,11 +44,30 @@ class UserNotificationViewSet(viewsets.GenericViewSet):
 
 class AdminNotificationViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAdminUser]
+    pagination_class = None  # will use manual pagination via paginator
 
-    # Admin can view all notifications (maybe filter by user)
+    # Admin can view all notifications (maybe filter by user) - M2: paginated, filtered
     def list(self, request):
         from .models import Notification
-        qs = Notification.objects.all().order_by('-created_at')[:100]
+        from core.pagination import StandardPagination
+        qs = Notification.objects.all().order_by('-created_at')
+        # M2: allow filtering by user_id to avoid leaking all PII, require explicit filter
+        user_id = request.query_params.get('user_id')
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(qs, request, view=self)
+        if page is not None:
+            data = [{
+                'id': str(n.id),
+                'user_email': n.user.email if n.user else "کاربر عمومی",
+                'type': n.type,
+                'subject': n.subject,
+                'is_read': n.is_read,
+                'created_at': n.created_at.isoformat(),
+            } for n in page]
+            return paginator.get_paginated_response(data)
+        # Fallback if pagination disabled
         data = [{
             'id': str(n.id),
             'user_email': n.user.email if n.user else "کاربر عمومی",
@@ -56,5 +75,5 @@ class AdminNotificationViewSet(viewsets.GenericViewSet):
             'subject': n.subject,
             'is_read': n.is_read,
             'created_at': n.created_at.isoformat(),
-        } for n in qs]
+        } for n in qs[:100]]
         return Response(data)

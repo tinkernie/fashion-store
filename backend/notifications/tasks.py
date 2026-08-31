@@ -1,3 +1,4 @@
+import html
 import logging
 import smtplib
 import socket
@@ -5,6 +6,8 @@ import socket
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.utils import OperationalError
 from django.template.loader import render_to_string
@@ -28,13 +31,22 @@ def _sanitize_subject(subject: str) -> str:
     max_retries=3,
 )
 def send_notification_email(self, email, subject, body, notification_id):
-    # Early exit for missing email - not retryable
+    # Early exit for missing email - not retryable + validate RFC 5322
     if not email:
         logger.warning("send_notification_email: missing email, skipping")
         return
+    try:
+        validate_email(email)
+    except ValidationError:
+        logger.warning("send_notification_email: invalid email %s, skipping", email)
+        return
 
-    # Sanitize subject to prevent header injection
+    # Sanitize subject to prevent header injection + size limit (Celery broker DoS)
     subject = _sanitize_subject(subject or "")
+    if len(subject) > 300:
+        subject = subject[:300]
+    if body and len(body) > 10000:
+        body = body[:10000]
 
     # Idempotency check before sending: avoid duplicate email if already marked sent
     if notification_id:
@@ -83,10 +95,11 @@ def send_notification_email(self, email, subject, body, notification_id):
     except Exception:
         pass
 
-    # Fallback HTML: simple branded wrapper with body line-breaks
+    # Fallback HTML: simple branded wrapper with body line-breaks - M1: html.escape
     if not html_body:
-        # Escape body and wrap
-        escaped_body = body.replace("\n", "<br>") if body else subject
+        # M1: escape user-controlled body to prevent stored XSS
+        safe_body = html.escape(body) if body else html.escape(subject)
+        escaped_body = safe_body.replace("\n", "<br>")
         html_body = f"""<!DOCTYPE html><html><body style="font-family:Arial,sans-serif; color:#333; line-height:22px; max-width:600px; margin:0 auto; padding:24px; border:1px solid #eeeeee;"><div style="background:#111;color:#fff;padding:16px;text-align:center;font-weight:bold;letter-spacing:2px;">LUXE</div><div style="padding:24px;">{escaped_body}</div><div style="font-size:11px;color:#888;text-align:center;padding:16px;border-top:1px solid #eee;">&copy; Luxe Fashion Store</div></body></html>"""
 
     text_body = body or strip_tags(html_body)

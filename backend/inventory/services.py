@@ -52,10 +52,18 @@ class InventoryService:
 
         inventory = InventoryRepository.lock_inventory(actual_variant_id)
         new_qty = max(0, inventory.available_quantity + delta)
+        # H6: compute status from new sellable, not stale inventory object
+        new_sellable = new_qty - inventory.reserved_quantity
+        if new_sellable <= 0:
+            new_status = Inventory.Status.OUT_OF_STOCK
+        elif new_sellable <= inventory.safety_stock:
+            new_status = Inventory.Status.LOW_STOCK
+        else:
+            new_status = Inventory.Status.IN_STOCK
         updated = InventoryRepository.update_fields(
             inventory,
             available_quantity=new_qty,
-            status=self._calculate_status(inventory),
+            status=new_status,
         )
         return self._serialize(updated)
 
@@ -69,8 +77,16 @@ class InventoryService:
                 actual_variant_id = str(variant.id)
 
         inventory = InventoryRepository.lock_inventory(actual_variant_id)
+        # H6: safety stock change may affect status
+        new_sellable = inventory.available_quantity - inventory.reserved_quantity
+        if new_sellable <= 0:
+            new_status = Inventory.Status.OUT_OF_STOCK
+        elif new_sellable <= value:
+            new_status = Inventory.Status.LOW_STOCK
+        else:
+            new_status = Inventory.Status.IN_STOCK
         updated = InventoryRepository.update_fields(
-            inventory, safety_stock=value, status=self._calculate_status(inventory)
+            inventory, safety_stock=value, status=new_status
         )
         return self._serialize(updated)
 
@@ -106,12 +122,19 @@ class InventoryService:
             inventory, user_id, quantity, expires_at
         )
 
-        # Update reserved quantity
+        # Update reserved quantity - H6: compute status from new sellable
         new_reserved = inventory.reserved_quantity + quantity
+        new_sellable = inventory.available_quantity - new_reserved
+        if new_sellable <= 0:
+            new_status = Inventory.Status.OUT_OF_STOCK
+        elif new_sellable <= inventory.safety_stock:
+            new_status = Inventory.Status.LOW_STOCK
+        else:
+            new_status = Inventory.Status.IN_STOCK
         updated = InventoryRepository.update_fields(
             inventory,
             reserved_quantity=new_reserved,
-            status=self._calculate_status(inventory),
+            status=new_status,
         )
 
         return {
@@ -133,15 +156,22 @@ class InventoryService:
             raise BusinessException("Reservation has expired.")
 
         inventory = InventoryRepository.lock_inventory(reservation.inventory.variant_id)
-        # Deduct from available and reduce reserved
+        # Deduct from available and reduce reserved - H6: compute status from new values
         new_available = inventory.available_quantity - reservation.quantity
         new_reserved = inventory.reserved_quantity - reservation.quantity
+        new_sellable = new_available - new_reserved
+        if new_sellable <= 0:
+            new_status = Inventory.Status.OUT_OF_STOCK
+        elif new_sellable <= inventory.safety_stock:
+            new_status = Inventory.Status.LOW_STOCK
+        else:
+            new_status = Inventory.Status.IN_STOCK
         ReservationRepository.update_status(reservation, Reservation.Status.USED)
         updated = InventoryRepository.update_fields(
             inventory,
             available_quantity=new_available,
             reserved_quantity=new_reserved,
-            status=self._calculate_status(inventory),
+            status=new_status,
         )
         return {"message": "Reservation committed."}
 
@@ -157,12 +187,20 @@ class InventoryService:
 
     def _release_reservation(self, reservation: Reservation):
         inventory = InventoryRepository.lock_inventory(reservation.inventory.variant_id)
-        new_reserved = inventory.reserved_quantity - reservation.quantity
+        new_reserved = max(0, inventory.reserved_quantity - reservation.quantity)
+        # H6: compute status from new sellable
+        new_sellable = inventory.available_quantity - new_reserved
+        if new_sellable <= 0:
+            new_status = Inventory.Status.OUT_OF_STOCK
+        elif new_sellable <= inventory.safety_stock:
+            new_status = Inventory.Status.LOW_STOCK
+        else:
+            new_status = Inventory.Status.IN_STOCK
         ReservationRepository.update_status(reservation, Reservation.Status.CANCELLED)
         InventoryRepository.update_fields(
             inventory,
             reserved_quantity=new_reserved,
-            status=self._calculate_status(inventory),
+            status=new_status,
         )
 
     @transaction.atomic

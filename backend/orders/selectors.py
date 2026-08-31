@@ -13,23 +13,14 @@ class OrderSelector:
 
     @staticmethod
     def get_order_by_number(order_number: str) -> Order or None:
+        # M2: strict match only on order_number, no UUID fallback to prevent BOLA confusion
         if not order_number:
             return None
-        order = (
+        return (
             Order.objects.filter(order_number=order_number)
             .prefetch_related(Prefetch("items", queryset=OrderItem.objects.all()), "status_history")
             .first()
         )
-        if not order:
-            import uuid
-            try:
-                uuid.UUID(str(order_number))
-                order = Order.objects.filter(id=order_number).prefetch_related(
-                    Prefetch("items", queryset=OrderItem.objects.all()), "status_history"
-                ).first()
-            except Exception:
-                pass
-        return order
 
     @staticmethod
     def get_order_by_id(order_id: str) -> Order or None:

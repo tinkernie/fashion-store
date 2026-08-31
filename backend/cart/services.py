@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 from common.exceptions import BusinessException
@@ -29,82 +30,51 @@ class CartService:
 
     @transaction.atomic
     def add_item(self, user, session_key: str, variant_id: str, quantity: int) -> dict:
-        from variants.models import Variant
-        from products.models import Product
         from inventory.models import Inventory
-        import uuid
+
+        if quantity <= 0:
+            raise BusinessException("Quantity must be positive.")
 
         variant = VariantSelector.get_variant_by_id(variant_id)
         if not variant:
-            # Fallback 1: lookup by product_id
-            variant = Variant.objects.filter(
-                product_id=variant_id, deleted_at__isnull=True
-            ).first()
-            # Fallback 2: lookup by product slug
-            if not variant:
-                prod = Product.objects.filter(slug=variant_id, deleted_at__isnull=True).first()
-                if prod:
-                    variant = Variant.objects.filter(product=prod, deleted_at__isnull=True).first()
-            # Fallback 3: if product exists without variant, create default variant
-            if not variant:
-                prod = Product.objects.filter(id=variant_id, deleted_at__isnull=True).first() or \
-                       Product.objects.filter(slug=variant_id, deleted_at__isnull=True).first()
-                if prod:
-                    price_val = 100000
-                    if isinstance(prod.metadata, dict) and prod.metadata.get("price"):
-                        try:
-                            price_val = float(str(prod.metadata["price"]).replace(",", ""))
-                        except Exception:
-                            price_val = 100000
-                    variant = Variant.objects.create(
-                        product=prod,
-                        sku=f"{prod.slug or 'PROD'}-{uuid.uuid4().hex[:6].upper()}",
-                        price=price_val,
-                        weight=500,
-                        status=Variant.Status.PUBLISHED,
-                        availability=Variant.Availability.IN_STOCK,
-                    )
-                    Inventory.objects.create(
-                        variant=variant,
-                        available_quantity=50,
-                        status=Inventory.Status.IN_STOCK,
-                    )
-
-        if not variant:
             raise BusinessException("Variant not available.")
 
-        # Ensure status is published so user can purchase
-        if variant.status != Variant.Status.PUBLISHED:
-            variant.status = Variant.Status.PUBLISHED
-            variant.save(update_fields=["status"])
+        # H4: do not auto-publish draft variants - enforce published check
+        if variant.status != variant.Status.PUBLISHED:
+            raise BusinessException("Variant not available.")
 
         actual_variant_id = str(variant.id)
 
-        # Ensure inventory exists for this variant
-        inv, _ = Inventory.objects.get_or_create(
-            variant=variant,
-            defaults={
-                "available_quantity": 50,
-                "status": Inventory.Status.IN_STOCK,
-            }
-        )
-        if inv.available_quantity < quantity:
-            inv.available_quantity = max(50, quantity + 10)
-            inv.status = Inventory.Status.IN_STOCK
-            inv.save(update_fields=["available_quantity", "status"])
+        # H4: do not auto-create inventory with 50 nor inflate - require real stock
+        try:
+            inv = Inventory.objects.select_for_update().get(variant_id=actual_variant_id)
+        except Inventory.DoesNotExist:
+            raise BusinessException("Out of stock.")
 
-        cart = self._resolve_cart(user, session_key)
-        item = CartItemRepository.get_item(cart, actual_variant_id)
+        # Validate stock before any reservation - no auto-inflate
+        sellable = inv.available_quantity - inv.reserved_quantity
+        if sellable < quantity:
+            raise BusinessException(f"Only {max(0, sellable)} units available.")
+
+        # H5: lock cart row
+        cart = self._resolve_cart_locked(user, session_key)
+        # H5: lock item if exists
+        item = CartItem.objects.select_for_update().filter(cart=cart, variant_id=actual_variant_id).first()
         new_quantity = quantity + (item.quantity if item else 0)
 
         if item and item.reservation_id:
-            self.inventory_service.release_reservation(item.reservation_id)
+            try:
+                self.inventory_service.release_reservation(item.reservation_id)
+            except BusinessException:
+                pass
 
-        # Reserve stock
+        # H4: reserve the total new_quantity, not just delta, after releasing old
+        # If item exists, we released old, so we need to reserve new_quantity
+        reserve_qty = new_quantity if item else quantity
         user_id = str(user.id) if user and user.is_authenticated else None
         try:
             reservation = self.inventory_service.reserve_stock(
-                actual_variant_id, quantity, user_id=user_id, expires_in_minutes=15
+                actual_variant_id, reserve_qty, user_id=user_id, expires_in_minutes=15
             )
         except BusinessException as e:
             raise BusinessException(f"Cannot reserve stock: {e}")
@@ -119,22 +89,23 @@ class CartService:
                 cart, actual_variant_id, new_quantity, str(variant.price),
                 reservation_id=reservation["reservation_id"],
             )
-        cart_changed.send(
+        # H5/H8: dispatch signal after commit
+        transaction.on_commit(lambda: cart_changed.send(
             sender=self.__class__,
             user=user,
             session_key=session_key,
             action='add',
             variant_id=actual_variant_id,
             quantity=quantity
-        )
+        ))
         return self._serialize_cart(cart)
 
     @transaction.atomic
     def remove_item(self, user, session_key: str, variant_id: str) -> dict:
-        cart = self._resolve_cart(user, session_key)
-        item = CartItemRepository.get_item(cart, variant_id)
+        cart = self._resolve_cart_locked(user, session_key)
+        item = CartItem.objects.select_for_update().filter(cart=cart, variant_id=variant_id).first()
         if not item:
-            item = cart.items.filter(variant__product_id=variant_id).first()
+            item = CartItem.objects.select_for_update().filter(cart=cart, variant__product_id=variant_id).first()
         if not item:
             raise BusinessException("Item not in cart.")
         
@@ -147,14 +118,14 @@ class CartService:
                 pass  # reservation may already be expired
         CartRepository.remove_item(item)
 
-        cart_changed.send(
+        transaction.on_commit(lambda: cart_changed.send(
             sender=self.__class__,
             user=user,
             session_key=session_key,
             action='remove',
             variant_id=actual_variant_id,
-            quantity=item.quantity  # original quantity removed
-        )
+            quantity=item.quantity
+        ))
 
         return self._serialize_cart(cart)
 
@@ -164,10 +135,10 @@ class CartService:
     ) -> dict:
         if quantity <= 0:
             return self.remove_item(user, session_key, variant_id)
-        cart = self._resolve_cart(user, session_key)
-        item = CartItemRepository.get_item(cart, variant_id)
+        cart = self._resolve_cart_locked(user, session_key)
+        item = CartItem.objects.select_for_update().filter(cart=cart, variant_id=variant_id).first()
         if not item:
-            item = cart.items.filter(variant__product_id=variant_id).first()
+            item = CartItem.objects.select_for_update().filter(cart=cart, variant__product_id=variant_id).first()
         if not item:
             raise BusinessException("Item not in cart.")
         
@@ -189,22 +160,22 @@ class CartService:
             item, quantity=quantity, reservation_id=reservation["reservation_id"]
         )
 
-        cart_changed.send(
+        transaction.on_commit(lambda: cart_changed.send(
             sender=self.__class__,
             user=user,
             session_key=session_key,
             action='update',
             variant_id=actual_variant_id,
-            quantity=item.quantity  # original quantity removed
-        )
+            quantity=quantity
+        ))
 
         return self._serialize_cart(cart)
 
     @transaction.atomic
     def clear_cart(self, user, session_key: str):
-        cart = self._resolve_cart(user, session_key)
+        cart = self._resolve_cart_locked(user, session_key)
         # Release all reservations
-        for item in cart.items.all():
+        for item in CartItem.objects.select_for_update().filter(cart=cart):
             if item.reservation_id:
                 try:
                     self.inventory_service.release_reservation(item.reservation_id)
@@ -215,46 +186,22 @@ class CartService:
     @transaction.atomic
     def merge_carts(self, user, session_key: str):
         """Merge guest cart into authenticated user's cart."""
-        guest_cart = CartSelector.get_cart_by_session(session_key)
+        guest_cart = Cart.objects.select_for_update().filter(session_key=session_key).first()
         if not guest_cart or not guest_cart.items.exists():
             return
         user_cart = CartRepository.get_or_create_cart_for_user(user)
-        # Combine items
-        for item in guest_cart.items.all():
-            existing = CartItemRepository.get_item(user_cart, item.variant_id)
+        # Lock user_cart
+        user_cart = Cart.objects.select_for_update().get(id=user_cart.id)
+        # Combine items - locked guest items
+        for item in CartItem.objects.select_for_update().filter(cart=guest_cart):
+            existing = CartItem.objects.select_for_update().filter(cart=user_cart, variant_id=item.variant_id).first()
             if existing:
-                # Sum quantities, keep latest reservation (maybe release guest's)
                 new_qty = existing.quantity + item.quantity
-                # Release existing reservation? Complex: we'll release both and re-reserve the total.
                 if existing.reservation_id:
                     try:
-                        self.inventory_service.release_reservation(
-                            existing.reservation_id
-                        )
+                        self.inventory_service.release_reservation(existing.reservation_id)
                     except BusinessException:
                         pass
-                if item.reservation_id:
-                    try:
-                        self.inventory_service.release_reservation(item.reservation_id)
-                    except BusinessException:
-                        pass
-                # Re‑reserve total quantity for user
-                user_id = str(user.id)
-                try:
-                    reservation = self.inventory_service.reserve_stock(
-                        item.variant_id, new_qty, user_id=user_id
-                    )
-                except BusinessException:
-                    # If reservation fails, set quantity to available? We'll add item with quantity and no reservation for now.
-                    reservation = None
-                existing.quantity = new_qty
-                existing.reservation_id = (
-                    reservation["reservation_id"] if reservation else None
-                )
-                existing.save()
-            else:
-                # Move guest item to user cart
-                # Re‑reserve with user ID
                 if item.reservation_id:
                     try:
                         self.inventory_service.release_reservation(item.reservation_id)
@@ -263,11 +210,29 @@ class CartService:
                 user_id = str(user.id)
                 try:
                     reservation = self.inventory_service.reserve_stock(
-                        item.variant_id, item.quantity, user_id=user_id
+                        str(item.variant_id), new_qty, user_id=user_id
                     )
                     reservation_id = reservation["reservation_id"]
-                except BusinessException:
-                    reservation_id = None
+                except BusinessException as e:
+                    # H4: do not create orphan without reservation - skip merge for this item
+                    raise BusinessException(f"Cannot merge item {item.variant_id}: {e}")
+                existing.quantity = new_qty
+                existing.reservation_id = reservation_id
+                existing.save(update_fields=["quantity", "reservation_id", "updated_at"])
+            else:
+                if item.reservation_id:
+                    try:
+                        self.inventory_service.release_reservation(item.reservation_id)
+                    except BusinessException:
+                        pass
+                user_id = str(user.id)
+                try:
+                    reservation = self.inventory_service.reserve_stock(
+                        str(item.variant_id), item.quantity, user_id=user_id
+                    )
+                    reservation_id = reservation["reservation_id"]
+                except BusinessException as e:
+                    raise BusinessException(f"Cannot merge item {item.variant_id}: {e}")
                 CartItem.objects.create(
                     cart=user_cart,
                     variant_id=item.variant_id,
@@ -290,6 +255,23 @@ class CartService:
         else:
             raise BusinessException("No user or session provided.")
         return cart
+
+    def _resolve_cart_locked(self, user, session_key: str) -> Cart:
+        """H5: locked version for atomic operations."""
+        if user and user.is_authenticated:
+            cart = Cart.objects.select_for_update().filter(user=user).first()
+            if not cart:
+                cart = CartRepository.get_or_create_cart_for_user(user)
+                cart = Cart.objects.select_for_update().get(id=cart.id)
+            return cart
+        elif session_key:
+            cart = Cart.objects.select_for_update().filter(session_key=session_key).first()
+            if not cart:
+                cart = CartRepository.get_or_create_cart_by_session(session_key)
+                cart = Cart.objects.select_for_update().get(id=cart.id)
+            return cart
+        else:
+            raise BusinessException("No user or session provided.")
 
     def _serialize_cart(self, cart: Cart) -> dict:
         items = []
@@ -324,8 +306,9 @@ class CartService:
                 }
             )
 
-        subtotal = sum(float(item.price_snapshot) * item.quantity for item in cart_items)
-        discount_amount = 0.0
+        # H8: use Decimal not float for money
+        subtotal = sum((item.price_snapshot * item.quantity for item in cart_items), Decimal("0.00"))
+        discount_amount = Decimal("0.00")
         coupon_code = None
         coupon_data = None
         if cart.coupon:
@@ -344,17 +327,17 @@ class CartService:
                     for item in cart_items
                 ]
                 result = coupon_service.validate_and_calculate(coupon_code, cart.user or None, coupon_items)
-                discount_amount = float(result['discount'])
+                discount_amount = result['discount'] if isinstance(result['discount'], Decimal) else Decimal(str(result['discount']))
                 coupon_data = {
                     "code": cart.coupon.code,
                     "discount_type": cart.coupon.discount_type,
-                    "discount_value": float(cart.coupon.discount_value),
+                    "discount_value": str(cart.coupon.discount_value),
                 }
             except BusinessException:
                 cart.coupon = None
-                cart.save(update_fields=['coupon'])
+                cart.save(update_fields=['coupon', 'updated_at'])
                 coupon_code = None
-        total = max(0.0, subtotal - discount_amount)
+        total = max(Decimal("0.00"), subtotal - discount_amount)
 
         return {
             "id": str(cart.id),
@@ -362,12 +345,12 @@ class CartService:
             "session_key": str(cart.session_key),
             "coupon_code": coupon_code,
             "coupon": coupon_data,
-            "discount_amount": discount_amount,
+            "discount_amount": str(discount_amount),
             "discount_type": coupon_data["discount_type"] if coupon_data else None,
-            "discount_value": coupon_data["discount_value"] if coupon_data else 0.0,
+            "discount_value": coupon_data["discount_value"] if coupon_data else "0.00",
             "items": items,
-            "subtotal": subtotal,
-            "total": total,
+            "subtotal": str(subtotal),
+            "total": str(total),
         }
 
     def _get_option_summary(self, variant):
@@ -380,10 +363,10 @@ class CartService:
 
     @transaction.atomic
     def apply_coupon(self, user, session_key: str, code: str) -> dict:
-        cart = self._resolve_cart(user, session_key)
+        cart = self._resolve_cart_locked(user, session_key)
         # Collect cart items for validation
         items_data = []
-        for item in cart.items.all():
+        for item in CartItem.objects.select_for_update().filter(cart=cart).select_related("variant__product"):
             items_data.append({
                 'variant_id': str(item.variant_id),
                 'quantity': item.quantity,
@@ -401,7 +384,7 @@ class CartService:
         return self.get_cart(user, session_key)
 
     def remove_coupon(self, user, session_key: str) -> dict:
-        cart = self._resolve_cart(user, session_key)
+        cart = self._resolve_cart_locked(user, session_key)
         cart.coupon = None
         cart.save(update_fields=['coupon', 'updated_at'])
         return self.get_cart(user, session_key)

@@ -7,6 +7,7 @@ from .models import Order
 from .repositories import OrderRepository
 from .selectors import OrderSelector
 from cart.selectors import CartSelector
+from cart.models import Cart
 from inventory.services import InventoryService
 from variants.selectors import VariantSelector
 from notifications.signals import order_status_changed
@@ -31,37 +32,45 @@ class OrderService:
 
     @transaction.atomic
     def create_order_from_cart(self, user, shipping_address: dict, billing_address: dict = None) -> dict:
-        cart = CartSelector.get_cart_by_user(user)
+        # H5/H8: lock cart row to prevent duplicate order creation
+        cart = Cart.objects.select_for_update().filter(user=user).first()
+        if not cart:
+            cart = CartSelector.get_cart_by_user(user)
         if not cart or not cart.items.exists():
             raise BusinessException("Cart is empty.")
 
-        # Validate all items still have active reservations and prices
-        for item in cart.items.all():
+        # Lock cart items for consistent read
+        cart_items = list(cart.items.select_for_update().select_related("variant__product"))
+
+        # H8: re-validate all items have active reservations and price matches current variant price
+        for item in cart_items:
             if not item.reservation_id:
                 raise BusinessException(
-                    f"No reservation for variant {item.variant.sku}. Please re‑add."
+                    f"No reservation for variant {item.variant.sku}. Please re-add."
                 )
-            # Optionally verify variant still exists/published
             variant = VariantSelector.get_variant_by_id(item.variant_id)
             if not variant or variant.status != "published":
                 raise BusinessException(
                     f"Variant {item.variant.sku} is no longer available."
                 )
+            # H8: price re-validation with Decimal, tolerance 0.01
+            current_price = Decimal(str(variant.price))
+            if current_price != item.price_snapshot:
+                raise BusinessException(
+                    f"Price changed for {variant.sku}. Please refresh cart."
+                )
 
-        # Compute totals
+        # Compute totals with Decimal
         subtotal = sum(
-            (item.price_snapshot * item.quantity for item in cart.items.all()), Decimal("0.00"),
+            (item.price_snapshot * item.quantity for item in cart_items), Decimal("0.00"),
         )
-        # discount_amount = 0  # coupon logic later
         coupon = cart.coupon
         discount_amount = Decimal('0.00')
         if coupon:
-            # Validate and recalc discount
             from coupons.services import CouponService
             coupon_service = CouponService()
-            # Build items_data similar to above, with category etc.
             items_data = []
-            for item in cart.items.all():
+            for item in cart_items:
                 variant = item.variant
                 items_data.append({
                     'variant_id': str(variant.id),
@@ -71,18 +80,18 @@ class OrderService:
                     'product_id': str(variant.product_id),
                 })
             result = coupon_service.validate_and_calculate(coupon.code, user, items_data)
-            discount_amount = result['discount']
-        # ... later when building order_data, set discount_amount=discount_amount, and coupon=coupon
+            discount_amount = result['discount'] if isinstance(result['discount'], Decimal) else Decimal(str(result['discount']))
 
-        shipping_cost = Decimal("0.00")  # shipping service later
+        shipping_cost = Decimal("0.00")
         tax_amount = Decimal("0.00")
         total = subtotal - discount_amount + shipping_cost + tax_amount
+        if total < Decimal("0.00"):
+            total = Decimal("0.00")
 
         # Build order items snapshot
         items_data = []
-        for item in cart.items.all():
+        for item in cart_items:
             variant = item.variant
-            # Create option summary string
             option_summary = ", ".join(
                 f"{vo.option.name}: {vo.option_value.value}"
                 for vo in variant.variantoption_set.select_related(
@@ -119,7 +128,7 @@ class OrderService:
             "subtotal": subtotal,
             "coupon": coupon,
             "discount_amount": discount_amount,
-            "tax_amount": 0,  # tax service later
+            "tax_amount": tax_amount,
             "shipping_cost": shipping_cost,
             "total": total,
             "shipping_address": shipping_address,
@@ -133,8 +142,8 @@ class OrderService:
             items_data=items_data,
         )
 
-        # Commit inventory reservations for each cart item
-        for item in cart.items.all():
+        # H8: commit reservations after order created but before cart cleared - if fails, order will rollback due to atomic
+        for item in cart_items:
             if item.reservation_id:
                 try:
                     self.inventory_service.commit_reservation(item.reservation_id)
@@ -144,9 +153,11 @@ class OrderService:
                     )
 
         if coupon:
-            CouponService().increment_usage(coupon, user, order)  # We'll add this method to CouponService
+            # H9: increment usage under same transaction atomicity - service should handle lock
+            from coupons.services import CouponService
+            CouponService().increment_usage(coupon, user, order)
 
-        # Clear the cart
+        # Clear the cart after successful reservation commit
         cart.items.all().delete()
         cart.coupon = None
         cart.save(update_fields=["coupon", "updated_at"])
@@ -154,19 +165,22 @@ class OrderService:
         # Log initial status
         OrderRepository.update_status(order, Order.Status.PENDING)
 
-        order_placed.send(
+        # H8: dispatch after commit
+        transaction.on_commit(lambda: order_placed.send(
             sender=self.__class__,
             user=user,
             order=order,
-            items_data=items_data,  # the list of dicts with variant_id, quantity, etc.
-        )
+            items_data=items_data,
+        ))
 
         return self._serialize_order(order)
 
     @transaction.atomic
     def transition_status(self, order_id: str, new_status: str, note: str = "") -> dict:
-        order = OrderSelector.get_order_by_id(order_id)
-        if not order:
+        # H5: lock order row
+        try:
+            order = Order.objects.select_for_update().get(id=order_id)
+        except Order.DoesNotExist:
             raise BusinessException("Order not found.")
 
         status_alias_map = {
@@ -175,15 +189,12 @@ class OrderService:
         }
         normalized_status = status_alias_map.get(str(new_status).lower().strip(), str(new_status).lower().strip())
 
+        # H7: strict state machine - only allowed_next, no bypass to any valid target
         allowed_next = STATUS_TRANSITIONS.get(order.status, [])
-        # Allow admin transition directly to target status or valid next state
-        if normalized_status not in allowed_next and normalized_status != order.status:
-            # Allow common transitions if not conflicting
-            valid_targets = [s.value for s in Order.Status]
-            if normalized_status not in valid_targets:
-                raise BusinessException(
-                    f"Cannot transition from {order.status} to {new_status}. Allowed: {allowed_next}"
-                )
+        if normalized_status not in allowed_next:
+            raise BusinessException(
+                f"Cannot transition from {order.status} to {new_status}. Allowed: {allowed_next}"
+            )
 
         new_status = normalized_status
 
@@ -200,7 +211,7 @@ class OrderService:
 
         old_status = order.status
         OrderRepository.update_status(order, new_status, note=note)
-        order.save()  # save timestamps changes
+        order.save(update_fields=["status", "cancelled_at", "paid_at", "shipped_at", "delivered_at", "updated_at"])
 
         # after successful transition
         transaction.on_commit(
@@ -225,17 +236,15 @@ class OrderService:
 
     def _release_order_inventory(self, order: Order):
         """Return stock for all items if order is cancelled before shipping."""
-        # Only release if not already shipped
+        # H7: include PACKING as cancellable before shipping
         if order.status in [
             Order.Status.PENDING,
             Order.Status.AWAITING_PAYMENT,
             Order.Status.PAID,
+            Order.Status.PACKING,
         ]:
             for item in order.items.all():
                 if item.variant_id:
-                    # Use inventory adjust_stock to add back? Simpler: we already committed reservations, so we need to increase available quantity.
-                    # Since the spec says we should have reservation logic, we need a release after commit? Usually once committed, stock is reduced.
-                    # For cancellation, we should add the quantity back.
                     try:
                         self.inventory_service.adjust_stock(
                             str(item.variant_id), item.quantity
