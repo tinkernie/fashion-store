@@ -27,10 +27,17 @@ class UserOrderViewSet(viewsets.GenericViewSet):
     def checkout(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        session_key = (
+            serializer.validated_data.get("session_key")
+            or request.headers.get("X-Cart-Session-Key")
+            or request.query_params.get("session_key")
+            or request.session.get("cart_session_key")
+        )
         order = self.service.create_order_from_cart(
             user=request.user,
             shipping_address=serializer.validated_data["shipping_address"],
             billing_address=serializer.validated_data.get("billing_address"),
+            session_key=session_key,
         )
         return Response(order, status=status.HTTP_201_CREATED)
 

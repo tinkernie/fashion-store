@@ -5,6 +5,7 @@ from .models import Order
 class CreateOrderSerializer(serializers.Serializer):
     shipping_address = serializers.JSONField()
     billing_address = serializers.JSONField(required=False)
+    session_key = serializers.CharField(required=False, allow_blank=True)
 
 
 class StatusTransitionSerializer(serializers.Serializer):

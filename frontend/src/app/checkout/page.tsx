@@ -129,25 +129,34 @@ export default function CheckoutPage() {
   const onCheckout = async (data: CheckoutForm) => {
     setIsLoading(true);
     try {
+      const guestKey = typeof window !== "undefined" ? localStorage.getItem("guest_cart_session_key") : null;
+
       // 1. Create order from active cart
-      const orderRes = await api.post("/api/orders/checkout/", {
-        shipping_address: {
-          full_name: data.fullName,
-          phone: data.phone,
-          province: data.province,
-          city: data.city,
-          address: data.address,
-          postal_code: data.postalCode,
+      const orderRes = await api.post(
+        "/api/orders/checkout/",
+        {
+          shipping_address: {
+            full_name: data.fullName,
+            phone: data.phone,
+            province: data.province,
+            city: data.city,
+            address: data.address,
+            postal_code: data.postalCode,
+          },
+          billing_address: {
+            full_name: data.fullName,
+            phone: data.phone,
+            province: data.province,
+            city: data.city,
+            address: data.address,
+            postal_code: data.postalCode,
+          },
+          session_key: guestKey,
         },
-        billing_address: {
-          full_name: data.fullName,
-          phone: data.phone,
-          province: data.province,
-          city: data.city,
-          address: data.address,
-          postal_code: data.postalCode,
-        },
-      });
+        {
+          headers: guestKey ? { "X-Cart-Session-Key": guestKey } : {},
+        }
+      );
 
       const orderData = orderRes.data;
       const orderId = orderData.id || orderData.order_number;

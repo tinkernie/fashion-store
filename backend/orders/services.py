@@ -42,9 +42,22 @@ class OrderService:
         self.inventory_service = InventoryService()
 
     @transaction.atomic
-    def create_order_from_cart(self, user, shipping_address: dict, billing_address: dict = None) -> dict:
+    def create_order_from_cart(
+        self, user, shipping_address: dict, billing_address: dict = None, session_key: str = None
+    ) -> dict:
         # H5/H8: lock cart row to prevent duplicate order creation
         cart = Cart.objects.select_for_update().filter(user=user).first()
+        
+        # If user cart is empty or missing, check if guest cart with session_key exists and merge it
+        if (not cart or not cart.items.exists()) and session_key:
+            from cart.services import CartService
+            cart_service = CartService()
+            try:
+                cart_service.merge_carts(user, str(session_key))
+                cart = Cart.objects.select_for_update().filter(user=user).first()
+            except Exception:
+                pass
+
         if not cart:
             cart = CartSelector.get_cart_by_user(user)
         if not cart or not cart.items.exists():
