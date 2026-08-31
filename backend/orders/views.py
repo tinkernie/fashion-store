@@ -64,5 +64,6 @@ class AdminOrderViewSet(viewsets.GenericViewSet):
             order_id=pk,  # pk is order ID (UUID) – we'll adjust URLs to use UUID for admin transitions
             new_status=serializer.validated_data["status"],
             note=serializer.validated_data.get("note", ""),
+            actor=request.user,
         )
         return Response(order)

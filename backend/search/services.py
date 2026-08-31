@@ -28,6 +28,7 @@ class SearchService:
             'filters': dynamic_filters,
             'pagination': {
                 'page': page_obj.number,
+                'current_page': page_obj.number,  # Step2: alias for frontend guide
                 'page_size': page_size,
                 'total_pages': paginator.num_pages,
                 'total_count': paginator.count,

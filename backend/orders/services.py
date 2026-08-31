@@ -25,6 +25,17 @@ STATUS_TRANSITIONS = {
     Order.Status.CANCELLED: [],
 }
 
+# Step3: admin bypass allowlist (guide) - requires note for audit
+ADMIN_ALLOWED_TARGETS = [
+    Order.Status.PAID,
+    Order.Status.PACKING,
+    Order.Status.SHIPPING,
+    Order.Status.DELIVERED,
+    Order.Status.CANCELLED,
+    Order.Status.RETURNED,
+    Order.Status.REFUNDED,
+]
+
 
 class OrderService:
     def __init__(self):
@@ -176,7 +187,7 @@ class OrderService:
         return self._serialize_order(order)
 
     @transaction.atomic
-    def transition_status(self, order_id: str, new_status: str, note: str = "") -> dict:
+    def transition_status(self, order_id: str, new_status: str, note: str = "", actor=None) -> dict:
         # H5: lock order row
         try:
             order = Order.objects.select_for_update().get(id=order_id)
@@ -189,9 +200,17 @@ class OrderService:
         }
         normalized_status = status_alias_map.get(str(new_status).lower().strip(), str(new_status).lower().strip())
 
-        # H7: strict state machine - only allowed_next, no bypass to any valid target
+        # H7 + Step3: strict for normal users, admin bypass with audit note
         allowed_next = STATUS_TRANSITIONS.get(order.status, [])
-        if normalized_status not in allowed_next:
+        is_admin_bypass = False
+        if actor and getattr(actor, "is_staff", False):
+            # Admin can jump to any ADMIN_ALLOWED_TARGETS if note provided (audit)
+            if normalized_status in ADMIN_ALLOWED_TARGETS:
+                if not note or not note.strip():
+                    raise BusinessException("Admin status jump requires a note for audit.")
+                is_admin_bypass = True
+
+        if not is_admin_bypass and normalized_status not in allowed_next:
             raise BusinessException(
                 f"Cannot transition from {order.status} to {new_status}. Allowed: {allowed_next}"
             )

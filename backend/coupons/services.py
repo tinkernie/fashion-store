@@ -45,13 +45,15 @@ class CouponService:
             if subtotal < coupon.min_purchase:
                 raise BusinessException(f"Minimum purchase of {coupon.min_purchase} not met.")
 
-            # Compute discount
+            # Compute discount - Step1: integer Toman to avoid frontend NaN (guide optimization)
             if coupon.discount_type == Coupon.DiscountType.PERCENTAGE:
                 if not (0 <= coupon.discount_value <= 100):
                     raise BusinessException("Invalid discount percentage.")
-                discount = (subtotal * coupon.discount_value / 100).quantize(Decimal('0.01'))
+                discount = (subtotal * coupon.discount_value / 100).quantize(Decimal('1'))
             else:
-                discount = min(coupon.discount_value, subtotal)
+                # Fixed amount - also integer Tomans
+                fixed = coupon.discount_value if isinstance(coupon.discount_value, Decimal) else Decimal(str(coupon.discount_value))
+                discount = min(fixed, subtotal).quantize(Decimal('1'))
 
             return {
                 'coupon_id': str(coupon.id),
