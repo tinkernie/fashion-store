@@ -108,8 +108,33 @@ yarn-error.log*
 lerna-debug.log*
 
 # ------------------------------------------
-# Graphify & Local AI Agents
+# AI Skills & Agent Configurations
 # ------------------------------------------
-graphify-out/
 .agents/
+.agent/
 .gemini/
+.claude/
+.cursor/
+.skills/
+
+# Graphify
+graphify-out/
+.graphify*
+GRAPH_REPORT.md
+
+# Impeccable & Taste Design Systems
+.impeccable/
+.taste/
+PRODUCT.md
+DESIGN.md
+SURFACE.md
+
+# Caveman
+.caveman/
+.cavemem/
+.caveman-learn/
+caveman.json
+CLAUDE.md
+CLAUDE.original.md
+AGENTS.md
+*.original.md
