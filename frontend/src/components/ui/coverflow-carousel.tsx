@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { FlowButton } from "@/components/ui/flow-button";
@@ -57,13 +57,13 @@ export interface CoverflowCarouselProps {
 
 export function CoverflowCarousel({
   slides,
-  rotate = 44,
-  depth = 0.6,
-  perspective = 3,
-  falloff = 0.56,
-  fade = 0.1,
-  cardWidth = "clamp(220px, 28vw, 320px)",
-  gap = 0.05,
+  rotate = 36,
+  depth = 0.52,
+  perspective = 3.5,
+  falloff = 0.58,
+  fade = 0.12,
+  cardWidth = "clamp(220px, 26vw, 310px)",
+  gap = -0.05,
   loop = true,
   showCaption = false,
   showPagination = false,
@@ -104,10 +104,15 @@ export function CoverflowCarousel({
     [count],
   );
 
-  // Paint straight to the DOM with true 3D Coverflow math
+  // Paint straight to the DOM: Playing Cards Hand Deck + Center Pop-Out
   const paint = React.useCallback(() => {
-    const width = widthRef.current;
+    let width = widthRef.current;
+    if (!width && cardRefs.current[0]) {
+      width = cardRefs.current[0].offsetWidth;
+      widthRef.current = width;
+    }
     if (!width) return;
+
     const pitch = width * (1 + gap);
     const pos = posRef.current;
 
@@ -122,19 +127,53 @@ export function CoverflowCarousel({
       }
 
       const distance = Math.abs(offset);
-      // Both the tilt and the recession ease off as cards travel out
-      const ramp = Math.pow(distance, falloff);
-      // Capped short of edge-on so a far card never turns its back
-      const tilt = Math.min(rotate * ramp, 82) * Math.sign(offset);
 
+      // Strict Left/Right Symmetry: hide cards far behind the deck
+      if (distance > 2.25) {
+        card.style.opacity = "0";
+        card.style.visibility = "hidden";
+        card.style.pointerEvents = "none";
+        return;
+      }
+      card.style.visibility = "visible";
+
+      const ramp = Math.pow(distance, falloff);
+
+      // Pop calculation: 1 at dead center (selected card), drops to 0 on neighbors
+      const pop = Math.max(0, 1 - distance * 1.15);
+      
+      // Selected card elevates UP (-36px), neighbor cards curve down along fan (+12px)
+      const elevationY = -36 * pop + Math.min(distance * 14, 30);
+      
+      // Selected card steps forward in 3D (+70px)
+      const popZ = pop * 70;
+      
+      // Cards fan slightly along Z-axis like a hand of cards
+      const fanAngleZ = offset * 2.6 * (1 - pop * 0.7);
+      
+      // 3D perspective Y-tilt for side cards (straight 0 deg at center)
+      const tilt = Math.min(rotate * ramp, 75) * Math.sign(offset) * (1 - pop * 0.6);
+      
+      // Scale pop for selected card
+      const cardScale = 0.92 + pop * 0.16;
+
+      // Dead-center placement: left: 50%, top: 50% with exact symmetric offset
       card.style.transform =
         `translateX(calc(-50% + ${offset * pitch}px)) ` +
-        `translateZ(${-depth * width * ramp}px) rotateY(${-tilt}deg)`;
+        `translateY(calc(-50% + ${elevationY}px)) ` +
+        `translateZ(${popZ - depth * width * ramp}px) ` +
+        `rotateY(${-tilt}deg) ` +
+        `rotateZ(${fanAngleZ}deg) ` +
+        `scale(${cardScale})`;
 
-      // Smooth edge fade for ring wrap
-      const edge = loop ? Math.min(1, Math.max(0, count / 2 - distance)) : 1;
-      card.style.opacity = String(Math.max(0, 1 - fade * distance) * edge);
-      card.style.zIndex = String(100 - Math.round(distance));
+      // Fade calculation with smooth edge falloff
+      const edgeFalloff = distance > 2 ? Math.max(0, (2.25 - distance) / 0.25) : 1;
+      const opacity = Math.max(0, 1 - fade * distance * 1.4) * edgeFalloff;
+      card.style.opacity = String(opacity);
+      
+      // Top stacking order: center card always elevated above hand
+      card.style.zIndex = String(Math.round(150 - distance * 20 + pop * 90));
+      card.style.pointerEvents = "auto";
     });
   }, [count, depth, fade, falloff, gap, loop, rotate]);
 
@@ -152,7 +191,7 @@ export function CoverflowCarousel({
           rafRef.current = null;
           return;
         }
-        // Exponential ease-out for silky physical deceleration
+        // Smooth exponential physics deceleration
         posRef.current += remaining * 0.16;
         paint();
         rafRef.current = requestAnimationFrame(step);
@@ -277,7 +316,7 @@ export function CoverflowCarousel({
 
   return (
     <div
-      className={cn("w-full select-none", className)}
+      className={cn("w-full select-none flex flex-col items-center", className)}
       style={{ ["--cf-card" as string]: cardWidth }}
       role="region"
       aria-roledescription="carousel"
@@ -285,7 +324,8 @@ export function CoverflowCarousel({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative">
+      {/* 3D Viewport locked to LTR coordinates for dead-center mathematical symmetry */}
+      <div className="relative w-full max-w-full overflow-hidden flex justify-center" dir="ltr">
         <div
           ref={frameRef}
           tabIndex={0}
@@ -302,16 +342,17 @@ export function CoverflowCarousel({
               nudge(1);
             }
           }}
-          className="cursor-grab overflow-hidden py-10 md:py-14 outline-none ring-ring focus-visible:ring-2 active:cursor-grabbing"
+          className="w-full cursor-grab overflow-hidden pt-14 pb-16 md:pt-16 md:pb-20 outline-none ring-ring focus-visible:ring-2 active:cursor-grabbing flex justify-center items-center"
           style={{
             perspective: `calc(var(--cf-card) * ${perspective})`,
+            perspectiveOrigin: "50% 50%",
             touchAction: "pan-y",
           }}
         >
           <div
-            className="relative select-none"
+            className="relative select-none w-full flex justify-center items-center"
             style={{
-              height: "calc(var(--cf-card) * 1.3)",
+              height: "calc(var(--cf-card) * 1.38)",
               transformStyle: "preserve-3d",
             }}
           >
@@ -331,10 +372,10 @@ export function CoverflowCarousel({
                     if (index !== selected) goTo(index);
                   }}
                   className={cn(
-                    "absolute left-1/2 top-0 aspect-[3/4] w-[var(--cf-card)] -translate-x-1/2 overflow-hidden rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl transition-[border-color,box-shadow] duration-300 group cursor-pointer will-change-transform",
+                    "absolute left-1/2 top-1/2 aspect-[3/4] w-[var(--cf-card)] overflow-hidden rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl transition-[border-color,box-shadow] duration-300 group cursor-pointer will-change-transform",
                     isSelected
-                      ? "border-white/40 shadow-2xl shadow-black/90 ring-1 ring-white/30"
-                      : "border-white/5 opacity-75 hover:opacity-95",
+                      ? "border-white/60 shadow-2xl shadow-black ring-2 ring-white/40"
+                      : "border-white/10 opacity-75 hover:opacity-95",
                     cardClassName,
                   )}
                 >
@@ -345,19 +386,19 @@ export function CoverflowCarousel({
                     className="h-full w-full select-none object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                   />
 
-                  {/* Obsidian gradient overlay for typography readability */}
+                  {/* Dark obsidian gradient for high readability */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
 
-                  {/* Badge */}
+                  {/* Top Badge */}
                   {slide.badge && (
-                    <div className="absolute top-4 right-4 z-10">
+                    <div className="absolute top-4 right-4 z-10" dir="rtl">
                       <span className="px-3 py-1 text-[11px] font-black uppercase tracking-wider rounded-full bg-white text-black shadow-lg">
                         {slide.badge}
                       </span>
                     </div>
                   )}
 
-                  {/* Slide details on card */}
+                  {/* Card Content Overlay */}
                   <div className="absolute bottom-0 inset-x-0 p-5 z-10 flex flex-col justify-end text-right" dir="rtl">
                     {slide.subtitle && (
                       <span className="text-[11px] font-semibold text-zinc-400 mb-1 tracking-wide">
@@ -388,7 +429,7 @@ export function CoverflowCarousel({
           </div>
         </div>
 
-        {/* Navigation buttons */}
+        {/* Navigation Arrows */}
         {showNavigation && (
           <>
             <button
@@ -411,9 +452,9 @@ export function CoverflowCarousel({
         )}
       </div>
 
-      {/* Synchronized Specification Drawer */}
+      {/* Synchronized Specification Drawer Centered Under Selected Card */}
       {showCaption && active && (
-        <div className="max-w-xl mx-auto mt-6 p-6 rounded-3xl bg-zinc-950/85 border border-white/10 backdrop-blur-xl shadow-2xl text-right" dir="rtl">
+        <div className="w-full max-w-xl mx-auto mt-4 p-6 rounded-3xl bg-zinc-950/85 border border-white/10 backdrop-blur-xl shadow-2xl text-right" dir="rtl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
             <div>
               <div className="flex items-center gap-2">
@@ -453,7 +494,7 @@ export function CoverflowCarousel({
             </div>
           )}
 
-          {/* Action CTA with FlowButton */}
+          {/* CTA Link to Product with FlowButton */}
           {active.href && (
             <div className="mt-4 pt-2">
               <FlowButton
@@ -467,7 +508,7 @@ export function CoverflowCarousel({
         </div>
       )}
 
-      {/* Pagination indicators */}
+      {/* Pagination Dots */}
       {showPagination && (
         <div className="flex justify-center items-center gap-2 mt-4" role="tablist">
           {slides.map((_, index) => (
