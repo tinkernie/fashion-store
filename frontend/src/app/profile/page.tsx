@@ -72,6 +72,7 @@ const getStepIndex = (status: string) => {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("orders");
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -480,48 +481,45 @@ export default function ProfilePage() {
           animate={{ opacity: 1, x: 0 }}
           className="lg:col-span-8"
         >
-          <Tabs defaultValue="orders" className="w-full" dir="rtl">
-            <div className="overflow-x-auto hide-scrollbar pb-2">
-              <TabsList className="flex w-max md:w-auto gap-2 bg-[#111111] p-1.5 rounded-2xl border border-white/10 mb-8 justify-start">
-                <TabsTrigger
-                  value="orders"
-                  className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 rounded-xl px-5 py-2.5 transition-all flex items-center gap-2 text-xs md:text-sm font-bold shrink-0"
-                >
-                  <Package className="w-4 h-4" />
-                  سفارش‌های من ({orders.length})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="wishlist"
-                  className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 rounded-xl px-5 py-2.5 transition-all flex items-center gap-2 text-xs md:text-sm font-bold shrink-0"
-                >
-                  <Heart className="w-4 h-4" />
-                  علاقه‌مندی‌ها ({wishlistItems.length})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="addresses"
-                  className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 rounded-xl px-5 py-2.5 transition-all flex items-center gap-2 text-xs md:text-sm font-bold shrink-0"
-                >
-                  <MapPin className="w-4 h-4" />
-                  آدرس‌ها ({addresses.length})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="notifications"
-                  className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 rounded-xl px-5 py-2.5 transition-all flex items-center gap-2 text-xs md:text-sm font-bold shrink-0 relative"
-                >
-                  <Bell className="w-4 h-4" />
-                  اعلان‌ها
-                  {unreadNotifsCount > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="settings"
-                  className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 rounded-xl px-5 py-2.5 transition-all flex items-center gap-2 text-xs md:text-sm font-bold shrink-0"
-                >
-                  <User className="w-4 h-4" />
-                  تنظیمات امنیتی
-                </TabsTrigger>
-              </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+            <div className="mb-8">
+              <GradientMenu
+                items={[
+                  {
+                    id: "orders",
+                    title: "سفارش‌های من",
+                    icon: <Package className="w-4 h-4" />,
+                    badge: `(${orders.length})`,
+                  },
+                  {
+                    id: "wishlist",
+                    title: "علاقه‌مندی‌ها",
+                    icon: <Heart className="w-4 h-4" />,
+                    badge: `(${wishlistItems.length})`,
+                  },
+                  {
+                    id: "addresses",
+                    title: "آدرس‌ها",
+                    icon: <MapPin className="w-4 h-4" />,
+                    badge: `(${addresses.length})`,
+                  },
+                  {
+                    id: "notifications",
+                    title: "اعلان‌ها",
+                    icon: <Bell className="w-4 h-4" />,
+                    badge: unreadNotifsCount > 0 ? (
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block" />
+                    ) : undefined,
+                  },
+                  {
+                    id: "settings",
+                    title: "تغییر اطلاعات پروفایل",
+                    icon: <User className="w-4 h-4" />,
+                  },
+                ]}
+                activeId={activeTab}
+                onChange={setActiveTab}
+              />
             </div>
 
             {/* --- 1. Orders Tab with Visual Timeline --- */}
