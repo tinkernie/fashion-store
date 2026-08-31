@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ChevronLeft, FileText, ArrowRight, Sparkles, Clock, Share2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 
 export default function DynamicCMSPage() {
   const params = useParams();
@@ -48,11 +49,11 @@ export default function DynamicCMSPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen pt-32 pb-24 px-4 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-          <p className="text-gray-400 text-sm font-sans">در حال بارگذاری برگه...</p>
-        </div>
+      <main className="min-h-screen pt-32 pb-24 px-4 flex items-center justify-center bg-[#0a0a0a]" dir="rtl">
+        <HoneycombLoader 
+          size="default" 
+          text="در حال بارگذاری برگه..." 
+        />
       </main>
     );
   }

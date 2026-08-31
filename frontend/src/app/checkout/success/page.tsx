@@ -16,6 +16,7 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -120,8 +121,11 @@ export default function CheckoutSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">
-          <div className="animate-spin w-8 h-8 border-2 border-white/20 border-t-white rounded-full" />
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white" dir="rtl">
+          <HoneycombLoader 
+            size="default" 
+            text="در حال تایید و ثبت تراکنش پرداخت..." 
+          />
         </div>
       }
     >

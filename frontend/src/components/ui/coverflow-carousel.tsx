@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight, ShoppingBag, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { FlowButton } from "@/components/ui/flow-button";
 
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
@@ -44,6 +45,14 @@ export interface CoverflowCarouselProps {
   label?: string;
   className?: string;
   cardClassName?: string;
+  /** Auto swipe interval in milliseconds (e.g. 10000) */
+  autoSwipeInterval?: number;
+  /** Initial delay before first auto-swipe in milliseconds (e.g. 0 or 5000) */
+  autoSwipeDelay?: number;
+  /** Auto swipe direction: 'right' (to the right) or 'left' */
+  autoSwipeDirection?: "right" | "left";
+  /** Pause auto swipe on mouse hover */
+  pauseOnHover?: boolean;
 }
 
 export function CoverflowCarousel({
@@ -53,7 +62,7 @@ export function CoverflowCarousel({
   perspective = 3,
   falloff = 0.56,
   fade = 0.1,
-  cardWidth = "clamp(200px, 32vw, 320px)",
+  cardWidth = "clamp(220px, 28vw, 320px)",
   gap = 0.05,
   loop = true,
   showCaption = false,
@@ -62,6 +71,10 @@ export function CoverflowCarousel({
   label = "Cover carousel",
   className,
   cardClassName,
+  autoSwipeInterval,
+  autoSwipeDelay,
+  autoSwipeDirection = "right",
+  pauseOnHover = true,
 }: CoverflowCarouselProps) {
   const count = slides.length;
 
@@ -83,6 +96,7 @@ export function CoverflowCarousel({
   } | null>(null);
 
   const [selected, setSelected] = React.useState(0);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   /** Nearest whole card, folded back into 0..count-1. */
   const indexAt = React.useCallback(
@@ -90,8 +104,7 @@ export function CoverflowCarousel({
     [count],
   );
 
-  // Paint straight to the DOM. Sixty state updates a second would re-render
-  // every card for numbers React never needs to see.
+  // Paint straight to the DOM with true 3D Coverflow math
   const paint = React.useCallback(() => {
     const width = widthRef.current;
     if (!width) return;
@@ -101,8 +114,7 @@ export function CoverflowCarousel({
     cardRefs.current.forEach((card, index) => {
       if (!card) return;
 
-      // Fold the distance into the shorter way round the ring. This is the
-      // whole looping mechanism — no cloned nodes, no shuffling the DOM.
+      // Fold the distance into the shorter way round the ring
       let offset = index - pos;
       if (loop) {
         offset = ((offset % count) + count) % count;
@@ -110,19 +122,16 @@ export function CoverflowCarousel({
       }
 
       const distance = Math.abs(offset);
-      // Both the tilt and the recession ease off as cards travel out —
-      // doubling the distance adds only about half again as much of each.
-      // A linear ramp folds the second card shut; this keeps it readable.
+      // Both the tilt and the recession ease off as cards travel out
       const ramp = Math.pow(distance, falloff);
-      // Capped short of edge-on so a far card never turns its back.
+      // Capped short of edge-on so a far card never turns its back
       const tilt = Math.min(rotate * ramp, 82) * Math.sign(offset);
 
       card.style.transform =
         `translateX(calc(-50% + ${offset * pitch}px)) ` +
         `translateZ(${-depth * width * ramp}px) rotateY(${-tilt}deg)`;
 
-      // A card is teleported across the ring at exactly half a turn out, so it
-      // has to be gone by then or the jump is visible.
+      // Smooth edge fade for ring wrap
       const edge = loop ? Math.min(1, Math.max(0, count / 2 - distance)) : 1;
       card.style.opacity = String(Math.max(0, 1 - fade * distance) * edge);
       card.style.zIndex = String(100 - Math.round(distance));
@@ -143,8 +152,7 @@ export function CoverflowCarousel({
           rafRef.current = null;
           return;
         }
-        // ponytail: exponential ease-out, not a spring. Swap in a spring only
-        // if the settle needs overshoot.
+        // Exponential ease-out for silky physical deceleration
         posRef.current += remaining * 0.16;
         paint();
         rafRef.current = requestAnimationFrame(step);
@@ -161,7 +169,6 @@ export function CoverflowCarousel({
 
   const goTo = React.useCallback(
     (index: number) => {
-      // Take the shorter way round rather than unwinding the whole ring.
       const target = loop
         ? index + Math.round((targetRef.current - index) / count) * count
         : index;
@@ -174,6 +181,31 @@ export function CoverflowCarousel({
     (by: number) => settle(clamp(Math.round(targetRef.current) + by)),
     [clamp, settle],
   );
+
+  // Auto-swipe functionality
+  React.useEffect(() => {
+    if (!autoSwipeInterval || count <= 1) return;
+
+    let intervalId: NodeJS.Timeout | null = null;
+    const directionDelta = autoSwipeDirection === "left" ? 1 : -1;
+    const initialDelay = autoSwipeDelay !== undefined ? autoSwipeDelay : autoSwipeInterval;
+
+    const timeoutId = setTimeout(() => {
+      if (!pauseOnHover || !isHovered) {
+        nudge(directionDelta);
+      }
+      intervalId = setInterval(() => {
+        if (!pauseOnHover || !isHovered) {
+          nudge(directionDelta);
+        }
+      }, autoSwipeInterval);
+    }, initialDelay);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [autoSwipeInterval, autoSwipeDelay, autoSwipeDirection, count, isHovered, nudge, pauseOnHover]);
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (rafRef.current !== null) {
@@ -201,7 +233,6 @@ export function CoverflowCarousel({
     const now = performance.now();
     const previous = posRef.current;
     posRef.current = clamp(drag.pos - (event.clientX - drag.x) / pitch);
-    // Cards per second, for the throw.
     drag.v = ((posRef.current - previous) / Math.max(now - drag.t, 1)) * 1000;
     drag.t = now;
 
@@ -214,13 +245,10 @@ export function CoverflowCarousel({
     const drag = dragRef.current;
     if (!drag || drag.id !== event.pointerId) return;
     dragRef.current = null;
-    // Let a flick carry, but never more than two cards.
     const carried = Math.max(-2, Math.min(2, drag.v * 0.18));
     settle(clamp(Math.round(posRef.current + carried)));
   };
 
-  // Card width drives pitch, depth and perspective, so it is the only thing
-  // worth measuring — and only when the box actually changes.
   useIsoLayoutEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
@@ -249,11 +277,13 @@ export function CoverflowCarousel({
 
   return (
     <div
-      className={cn("w-full", className)}
+      className={cn("w-full select-none", className)}
       style={{ ["--cf-card" as string]: cardWidth }}
       role="region"
       aria-roledescription="carousel"
       aria-label={label}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative">
         <div
@@ -272,11 +302,9 @@ export function CoverflowCarousel({
               nudge(1);
             }
           }}
-          // Vertical padding keeps the drop shadows clear of the overflow clip.
-          className="cursor-grab overflow-hidden py-8 md:py-12 outline-none ring-ring focus-visible:ring-2 active:cursor-grabbing"
+          className="cursor-grab overflow-hidden py-10 md:py-14 outline-none ring-ring focus-visible:ring-2 active:cursor-grabbing"
           style={{
             perspective: `calc(var(--cf-card) * ${perspective})`,
-            // Horizontal drag is ours; the page keeps vertical scrolling.
             touchAction: "pan-y",
           }}
         >
@@ -298,61 +326,61 @@ export function CoverflowCarousel({
                   role="group"
                   aria-roledescription="slide"
                   aria-label={`${index + 1} of ${count}`}
+                  aria-hidden={!isSelected}
                   onClick={() => {
-                    if (!isSelected) {
-                      goTo(index);
-                    }
+                    if (index !== selected) goTo(index);
                   }}
                   className={cn(
-                    "group absolute left-1/2 top-0 aspect-[3/4] overflow-hidden rounded-3xl bg-[#111111] border border-white/10 shadow-2xl will-change-transform cursor-pointer transition-all duration-300",
-                    isSelected ? "ring-2 ring-white/30 shadow-white/5" : "hover:border-white/30",
+                    "absolute left-1/2 top-0 aspect-[3/4] w-[var(--cf-card)] -translate-x-1/2 overflow-hidden rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl transition-[border-color,box-shadow] duration-300 group cursor-pointer will-change-transform",
+                    isSelected
+                      ? "border-white/40 shadow-2xl shadow-black/90 ring-1 ring-white/30"
+                      : "border-white/5 opacity-75 hover:opacity-95",
                     cardClassName,
                   )}
-                  style={{ width: "var(--cf-card)" }}
                 >
+                  <img
+                    src={slide.src}
+                    alt={slide.alt}
+                    draggable={false}
+                    className="h-full w-full select-none object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+
+                  {/* Obsidian gradient overlay for typography readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+
                   {/* Badge */}
                   {slide.badge && (
-                    <div className="absolute top-3 right-3 z-20">
-                      <span className="bg-amber-400 text-black text-[10px] md:text-xs font-black px-2.5 py-1 rounded-full shadow-lg">
+                    <div className="absolute top-4 right-4 z-10">
+                      <span className="px-3 py-1 text-[11px] font-black uppercase tracking-wider rounded-full bg-white text-black shadow-lg">
                         {slide.badge}
                       </span>
                     </div>
                   )}
 
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={slide.src}
-                    alt={slide.alt}
-                    draggable={false}
-                    className="h-full w-full select-none object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-
-                  {/* Gradient Overlay & Quick View Link */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-90 transition-opacity flex flex-col justify-end p-4 z-10">
-                    <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                      <p className="text-white text-sm md:text-base font-bold line-clamp-1">{slide.title}</p>
-                      {slide.price && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-amber-400 text-xs md:text-sm font-black">
-                            {typeof slide.price === "number" ? slide.price.toLocaleString("fa-IR") : slide.price} تومان
+                  {/* Slide details on card */}
+                  <div className="absolute bottom-0 inset-x-0 p-5 z-10 flex flex-col justify-end text-right" dir="rtl">
+                    {slide.subtitle && (
+                      <span className="text-[11px] font-semibold text-zinc-400 mb-1 tracking-wide">
+                        {slide.subtitle}
+                      </span>
+                    )}
+                    {slide.title && (
+                      <h3 className="text-base md:text-lg font-bold text-white leading-snug drop-shadow-md">
+                        {slide.title}
+                      </h3>
+                    )}
+                    {slide.price && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm font-black text-white">
+                          {typeof slide.price === "number" ? slide.price.toLocaleString("fa-IR") : slide.price} تومان
+                        </span>
+                        {slide.compareAtPrice && (
+                          <span className="text-xs text-zinc-500 line-through">
+                            {typeof slide.compareAtPrice === "number" ? slide.compareAtPrice.toLocaleString("fa-IR") : slide.compareAtPrice}
                           </span>
-                          {slide.compareAtPrice && (
-                            <span className="text-gray-400 line-through text-[10px] md:text-xs">
-                              {typeof slide.compareAtPrice === "number" ? slide.compareAtPrice.toLocaleString("fa-IR") : slide.compareAtPrice}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {slide.href && isSelected && (
-                        <Link
-                          href={slide.href}
-                          className="mt-3 inline-flex items-center justify-center gap-2 w-full py-2 px-3 bg-white text-black text-xs font-bold rounded-xl hover:bg-gray-200 transition-colors shadow-lg"
-                        >
-                          <ShoppingBag className="w-3.5 h-3.5" />
-                          مشاهده و خرید
-                        </Link>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -360,13 +388,14 @@ export function CoverflowCarousel({
           </div>
         </div>
 
+        {/* Navigation buttons */}
         {showNavigation && (
           <>
             <button
               type="button"
               aria-label="Previous slide"
               onClick={() => nudge(-1)}
-              className="absolute left-2 md:left-6 top-1/2 z-[200] -translate-y-1/2 rounded-full bg-black/60 border border-white/10 p-3 text-white backdrop-blur-md transition hover:bg-white hover:text-black shadow-xl"
+              className="absolute left-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-2xl cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -374,7 +403,7 @@ export function CoverflowCarousel({
               type="button"
               aria-label="Next slide"
               onClick={() => nudge(1)}
-              className="absolute right-2 md:right-6 top-1/2 z-[200] -translate-y-1/2 rounded-full bg-black/60 border border-white/10 p-3 text-white backdrop-blur-md transition hover:bg-white hover:text-black shadow-xl"
+              className="absolute right-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-2xl cursor-pointer"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -382,78 +411,78 @@ export function CoverflowCarousel({
         )}
       </div>
 
-      {showCaption && active?.title && (
-        <div
-          key={selected}
-          className="mt-4 flex flex-col items-center px-6 duration-300 animate-in fade-in text-center"
-        >
-          <div className="inline-flex items-center gap-2">
-            <h4 className="text-base md:text-xl font-bold tracking-tight text-white">
-              {active.title}
-            </h4>
-            {active.badge && (
-              <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black px-2 py-0.5 rounded-md">
-                {active.badge}
-              </span>
+      {/* Synchronized Specification Drawer */}
+      {showCaption && active && (
+        <div className="max-w-xl mx-auto mt-6 p-6 rounded-3xl bg-zinc-950/85 border border-white/10 backdrop-blur-xl shadow-2xl text-right" dir="rtl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+            <div>
+              <div className="flex items-center gap-2">
+                {active.badge && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white text-black">
+                    {active.badge}
+                  </span>
+                )}
+                <h4 className="text-base md:text-lg font-black text-white">{active.title}</h4>
+              </div>
+              {active.subtitle && <p className="text-xs text-zinc-400 mt-1">{active.subtitle}</p>}
+            </div>
+
+            {active.price && (
+              <div className="text-left sm:text-left">
+                <div className="text-sm md:text-base font-black text-white">
+                  {typeof active.price === "number" ? active.price.toLocaleString("fa-IR") : active.price} تومان
+                </div>
+                {active.compareAtPrice && (
+                  <div className="text-xs text-zinc-500 line-through">
+                    {typeof active.compareAtPrice === "number" ? active.compareAtPrice.toLocaleString("fa-IR") : active.compareAtPrice} تومان
+                  </div>
+                )}
+              </div>
             )}
           </div>
-          
-          {active.subtitle && (
-            <p className="mt-1 text-xs md:text-sm text-gray-400 max-w-md">
-              {active.subtitle}
-            </p>
-          )}
 
-          {active.price && (
-            <div className="mt-2 flex items-center gap-3">
-              <span className="text-lg md:text-2xl font-black text-amber-400">
-                {typeof active.price === "number" ? active.price.toLocaleString("fa-IR") : active.price} تومان
-              </span>
-              {active.compareAtPrice && (
-                <span className="text-sm text-gray-500 line-through">
-                  {typeof active.compareAtPrice === "number" ? active.compareAtPrice.toLocaleString("fa-IR") : active.compareAtPrice} تومان
-                </span>
-              )}
-            </div>
-          )}
-
-          {active.href && (
-            <div className="mt-4">
-              <Link
-                href={active.href}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white text-black hover:bg-gray-200 text-xs md:text-sm font-bold transition-all shadow-xl"
-              >
-                مشاهده مشخصات کامل و انتخاب سایز
-                <ArrowLeft className="w-4 h-4" />
-              </Link>
-            </div>
-          )}
-
+          {/* Meta Specifications */}
           {active.meta && active.meta.length > 0 && (
-            <dl className="mt-6 w-full max-w-sm text-xs bg-white/5 border border-white/10 rounded-2xl p-4 divide-y divide-white/5">
-              {active.meta.map((row) => (
-                <div key={row.label} className="flex justify-between py-2">
-                  <dt className="text-gray-400">{row.label}</dt>
-                  <dd className="font-bold text-white">{row.value}</dd>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-4">
+              {active.meta.map((m, i) => (
+                <div key={i} className="bg-white/5 rounded-xl p-2.5 border border-white/5">
+                  <div className="text-[10px] text-zinc-400">{m.label}</div>
+                  <div className="text-xs font-bold text-zinc-100 mt-0.5">{m.value}</div>
                 </div>
               ))}
-            </dl>
+            </div>
+          )}
+
+          {/* Action CTA with FlowButton */}
+          {active.href && (
+            <div className="mt-4 pt-2">
+              <FlowButton
+                href={active.href}
+                className="w-full h-11"
+              >
+                مشاهده مشخصات کامل و انتخاب سایز
+              </FlowButton>
+            </div>
           )}
         </div>
       )}
 
+      {/* Pagination indicators */}
       {showPagination && (
-        <div className="mt-6 flex items-center justify-center gap-2">
+        <div className="flex justify-center items-center gap-2 mt-4" role="tablist">
           {slides.map((_, index) => (
             <button
               key={index}
               type="button"
-              aria-label={`Go to slide ${index + 1}`}
-              aria-current={index === selected}
+              role="tab"
+              aria-selected={index === selected}
+              aria-label={`Slide ${index + 1}`}
               onClick={() => goTo(index)}
               className={cn(
-                "h-2 rounded-full transition-all duration-300",
-                index === selected ? "w-8 bg-white" : "w-2 bg-white/30",
+                "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
+                index === selected
+                  ? "w-8 bg-white"
+                  : "w-2 bg-white/20 hover:bg-white/40",
               )}
             />
           ))}
@@ -462,3 +491,5 @@ export function CoverflowCarousel({
     </div>
   );
 }
+
+export default CoverflowCarousel;

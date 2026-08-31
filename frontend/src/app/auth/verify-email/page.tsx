@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { CheckCircle, XCircle, RotateCw } from "lucide-react";
+import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 
 function VerifyEmailContent() {
   const router = useRouter();
@@ -41,9 +42,11 @@ function VerifyEmailContent() {
   return (
     <div className="space-y-6 text-center">
       {status === "loading" && (
-        <div className="py-8 space-y-4">
-          <div className="animate-spin w-10 h-10 border-2 border-white/20 border-t-white rounded-full mx-auto" />
-          <div className="text-gray-400 text-sm">در حال تایید و فعال‌سازی حساب کاربری...</div>
+        <div className="py-8">
+          <HoneycombLoader 
+            size="default" 
+            text="در حال تایید و فعال‌سازی حساب کاربری..." 
+          />
         </div>
       )}
 

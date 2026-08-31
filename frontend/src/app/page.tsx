@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { CollectionsSection } from "@/components/collections-section";
 import { CoverflowCarousel, CoverflowSlide } from "@/components/ui/coverflow-carousel";
 import { Banner } from "@/components/ui/banner";
+import { FlowButton } from "@/components/ui/flow-button";
 
 export default function Home() {
   const [bestsellers, setBestsellers] = useState<any[]>([]);
@@ -20,7 +21,12 @@ export default function Home() {
     cta_link: "/women",
     image_url: "https://images.unsplash.com/photo-1617137968427-85924c800a22?q=80&w=1920&auto=format&fit=crop",
   });
-  const [announcement, setAnnouncement] = useState<any>(null);
+  const [announcement, setAnnouncement] = useState<any>({
+    text: "ارسال رایگان برای خریدهای بالای ۱,۵۰۰,۰۰۰ تومان با کد تخفیف LUXURY2026",
+    badge: "فروش ویژه",
+    link: "/women",
+    enabled: true,
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,7 +52,7 @@ export default function Home() {
         if (announceRes.status === 'fulfilled' && announceRes.value.data) {
           const annData = announceRes.value.data.announcement || announceRes.value.data;
           if (annData && annData.enabled !== false && annData.text) {
-            setAnnouncement(annData);
+            setAnnouncement((prev: any) => ({ ...prev, ...annData }));
           }
         }
       } catch (error) {
@@ -252,29 +258,29 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-[#0a0a0a]"></div>
         </div>
 
-        {/* Dynamic Animated Rainbow/Luxury Banner */}
+        {/* Dynamic Monochrome Ambient Banner */}
         {announcement ? (
           <div className="relative z-10 w-full max-w-4xl mx-auto mb-6 px-4">
             <Banner
               id="top-hero-announcement"
               variant="rainbow"
-              className="rounded-2xl border border-amber-400/30 bg-black/60 shadow-2xl backdrop-blur-xl"
+              className="rounded-2xl border border-white/15 bg-black/60 shadow-2xl backdrop-blur-xl"
               height="3.25rem"
               rainbowColors={[
-                "rgba(245,158,11,0.75)",
-                "rgba(251,191,36,0.9)",
+                "rgba(255,255,255,0.12)",
+                "rgba(255,255,255,0.35)",
                 "transparent",
-                "rgba(245,158,11,0.8)",
+                "rgba(255,255,255,0.18)",
                 "transparent",
-                "rgba(217,119,6,0.85)",
+                "rgba(255,255,255,0.28)",
               ]}
             >
               <Link
                 href={announcement.link || "/women"}
-                className="flex items-center justify-center gap-2.5 text-xs md:text-sm font-bold text-white hover:text-amber-300 transition-colors"
+                className="flex items-center justify-center gap-2.5 text-xs md:text-sm font-medium text-zinc-200 hover:text-white transition-colors"
               >
                 {announcement.badge && (
-                  <span className="bg-amber-400 text-black text-[10px] md:text-xs font-black px-2.5 py-0.5 rounded-full shadow-md">
+                  <span className="bg-white/10 border border-white/20 text-white text-[10px] md:text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">
                     {announcement.badge}
                   </span>
                 )}
@@ -294,7 +300,7 @@ export default function Home() {
           className="relative z-10 text-center max-w-4xl mx-auto space-y-6 md:space-y-8 my-auto w-full"
         >
           {heroContent.badge && (
-            <span className="inline-block bg-white/10 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase backdrop-blur-md border border-white/10">
+            <span className="inline-block bg-white/10 text-zinc-300 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase backdrop-blur-md border border-white/10">
               {heroContent.badge}
             </span>
           )}
@@ -303,17 +309,28 @@ export default function Home() {
             {heroContent.headline}
           </h1>
           
-          <p className="text-gray-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed px-2">
+          <p className="text-zinc-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed px-2">
             {heroContent.subtitle}
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 pt-2 md:pt-4 w-full max-w-xs sm:max-w-none mx-auto">
-            <Button asChild className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl bg-white text-black hover:bg-gray-200 text-base md:text-lg font-bold transition-all shadow-xl">
-              <Link href={heroContent.cta_link || "/women"}>{heroContent.cta_label || "مشاهده محصولات"}</Link>
-            </Button>
-            <Button asChild className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl bg-[#111111] border border-white/20 text-white hover:bg-white hover:text-black text-base md:text-lg font-bold transition-all backdrop-blur-md">
-              <Link href="/women">کالکشن جدید</Link>
-            </Button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 md:pt-4 w-full max-w-md sm:max-w-none mx-auto">
+            {/* CTA 1: مشاهده جدیدترین‌ها (Flow Button) */}
+            <FlowButton
+              href={heroContent.cta_link || "/women"}
+              size="lg"
+              className="w-full sm:w-auto font-black shadow-2xl px-9"
+            >
+              {heroContent.cta_label || "مشاهده جدیدترین‌ها"}
+            </FlowButton>
+
+            {/* CTA 2: کالکشن جدید (Flow Button) */}
+            <FlowButton
+              href="/women"
+              size="lg"
+              className="w-full sm:w-auto font-bold shadow-xl px-9"
+            >
+              کالکشن جدید
+            </FlowButton>
           </div>
         </motion.div>
       </section>
@@ -324,24 +341,25 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20" dir="rtl">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 md:mb-12 border-b border-white/10 pb-6">
           <div>
-            <div className="flex items-center gap-2.5 text-amber-400 mb-2">
-              <Sparkles className="w-5 h-5" />
-              <span className="text-xs font-black tracking-wider uppercase">جدیدترین‌های فصل</span>
+            <div className="flex items-center gap-2.5 text-zinc-400 mb-2">
+              <Sparkles className="w-4 h-4 text-zinc-300" />
+              <span className="text-xs font-bold tracking-wider uppercase">جدیدترین‌های فصل</span>
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
               جدیدترین محصولات کالکشن ۲۰۲۶
             </h2>
-            <p className="text-gray-400 text-xs md:text-sm mt-1">
+            <p className="text-zinc-400 text-xs md:text-sm mt-1">
               مجموعه‌ای اختصاصی از جدیدترین پالتوها، لباس‌های مجلسی و اکسسوری‌های لوکس
             </p>
           </div>
-          <Link
+
+          {/* Flow Button: مشاهده همه جدیدترین‌ها */}
+          <FlowButton
             href="/women"
-            className="inline-flex items-center gap-2 text-xs md:text-sm font-bold text-gray-300 hover:text-white transition-colors"
+            size="sm"
           >
             مشاهده همه جدیدترین‌ها
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          </FlowButton>
         </div>
 
         {/* 3D Coverflow Carousel for New Arrivals */}
@@ -352,8 +370,13 @@ export default function Home() {
             showNavigation={true}
             showPagination={true}
             cardWidth="clamp(200px, 30vw, 300px)"
-            rotate={40}
-            depth={0.58}
+            rotate={0}
+            depth={0.4}
+            gap={0.08}
+            autoSwipeInterval={10000}
+            autoSwipeDelay={10000}
+            autoSwipeDirection="right"
+            pauseOnHover={true}
           />
         </div>
       </section>
@@ -364,42 +387,48 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20" dir="rtl">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 md:mb-12 border-b border-white/10 pb-6">
           <div>
-            <div className="flex items-center gap-2.5 text-rose-400 mb-2">
-              <Flame className="w-5 h-5 text-rose-500 animate-pulse" />
-              <span className="text-xs font-black tracking-wider uppercase">حراج محدود فصل</span>
+            <div className="flex items-center gap-2.5 text-zinc-400 mb-2">
+              <Flame className="w-4 h-4 text-zinc-300" />
+              <span className="text-xs font-bold tracking-wider uppercase">حراج محدود فصل</span>
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
-              فروش ویژه و تخفیف‌های طلایی
+              فروش ویژه و پیشنهادهای منتخب
             </h2>
-            <p className="text-gray-400 text-xs md:text-sm mt-1">
+            <p className="text-zinc-400 text-xs md:text-sm mt-1">
               فرصت استثنایی خرید کالاهای برند با ۲۰٪ تخفیف نقدی با کد «LUXE20»
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 px-3 py-1 rounded-xl text-xs font-bold">
-              <Tag className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 bg-white/10 border border-white/15 text-zinc-200 px-3 py-1.5 rounded-full text-xs font-bold">
+              <Tag className="w-3.5 h-3.5 text-zinc-400" />
               کد: LUXE20
             </span>
-            <Link
+
+            {/* Flow Button: مشاهده همه تخفیف‌ها */}
+            <FlowButton
               href="/women"
-              className="inline-flex items-center gap-2 text-xs md:text-sm font-bold text-gray-300 hover:text-white transition-colors mr-2"
+              size="sm"
             >
               مشاهده همه تخفیف‌ها
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
+            </FlowButton>
           </div>
         </div>
 
         {/* 3D Coverflow Carousel for Special Sales */}
-        <div className="bg-gradient-to-b from-rose-950/20 via-[#111111]/40 to-[#111111]/40 border border-rose-500/10 rounded-3xl p-4 md:p-8 backdrop-blur-sm shadow-2xl">
+        <div className="bg-[#111111]/40 border border-white/5 rounded-3xl p-4 md:p-8 backdrop-blur-sm shadow-2xl">
           <CoverflowCarousel
             slides={specialSaleSlides}
             showCaption={true}
             showNavigation={true}
             showPagination={true}
             cardWidth="clamp(200px, 30vw, 300px)"
-            rotate={40}
-            depth={0.58}
+            rotate={0}
+            depth={0.4}
+            gap={0.08}
+            autoSwipeInterval={10000}
+            autoSwipeDelay={5000}
+            autoSwipeDirection="right"
+            pauseOnHover={true}
           />
         </div>
       </section>
@@ -414,15 +443,20 @@ export default function Home() {
         <div className="flex items-end justify-between mb-8 md:mb-12 relative z-10 border-b border-white/10 pb-6">
           <div>
             <div className="flex items-center gap-2 md:gap-3 mb-2">
-              <TrendingUp className="w-5 h-5 text-amber-400" />
+              <TrendingUp className="w-4 h-4 text-zinc-300" />
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">پرفروش‌ترین‌ها</h2>
             </div>
-            <p className="text-sm text-gray-400">محصولاتی که بیشترین رضایت و توجه خریداران را به همراه داشته‌اند</p>
+            <p className="text-sm text-zinc-400">محصولاتی که بیشترین رضایت و توجه خریداران را به همراه داشته‌اند</p>
           </div>
-          <Link href="/women" className="hidden md:flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-medium text-sm">
+
+          {/* Flow Button: مشاهده همه (پرفروش‌ترین‌ها) */}
+          <FlowButton
+            href="/women"
+            size="sm"
+            className="hidden md:inline-flex"
+          >
             مشاهده همه
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          </FlowButton>
         </div>
 
         <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-8 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 hide-scrollbar">
@@ -450,8 +484,8 @@ export default function Home() {
               </Link>
               <div className="flex flex-col px-1">
                 <h3 className="text-sm md:text-lg font-bold text-white mb-0.5 md:mb-1 line-clamp-1">{product.name}</h3>
-                <span className="text-[10px] md:text-sm text-gray-500 mb-1 md:mb-2">{(product.category || "").split('-')[1]?.trim() || product.category}</span>
-                <span className="text-white font-medium text-xs md:text-base">
+                <span className="text-[10px] md:text-sm text-zinc-400 mb-1 md:mb-2">{(product.category || "").split('-')[1]?.trim() || product.category}</span>
+                <span className="text-white font-semibold text-xs md:text-base">
                   {typeof product.price === 'number' ? product.price.toLocaleString("fa-IR") : product.price} تومان
                 </span>
               </div>

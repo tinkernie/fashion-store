@@ -38,6 +38,8 @@ import {
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import Link from "next/link";
+import { GooeySearchBar } from "@/components/ui/animated-search-bar";
+import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { useWishlist } from "@/store/wishlist";
 import { getColorBackground, isLightColor } from "@/lib/color-utils";
 
@@ -518,37 +520,24 @@ function SearchContent() {
               </div>
             </div>
 
-            {/* Big Search Input */}
-            <form onSubmit={handleSearchSubmit} className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                <input
-                  type="text"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="نام کالا، دسته‌بندی، متریال یا استایل مورد نظر را بنویسید..."
-                  className="w-full h-14 bg-[#181818] border border-white/10 rounded-2xl pr-12 pl-12 text-sm md:text-base text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/50 transition-all"
-                />
-                {keyword && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setKeyword("");
-                      applyFiltersToUrl({ q: null });
-                    }}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <Button
-                type="submit"
-                className="h-14 px-8 rounded-2xl bg-white text-black font-black hover:bg-gray-200 transition-all shadow-lg shrink-0"
-              >
-                جستجو
-              </Button>
-            </form>
+            {/* Animated Gooey Search Bar */}
+            <div className="py-2 flex justify-center w-full">
+              <GooeySearchBar
+                initialValue={keyword}
+                placeholder="نام کالا، دسته‌بندی، متریال یا استایل مورد نظر را بنویسید..."
+                buttonLabel="جستجوی کالا"
+                autoExpand={true}
+                inputWidth={typeof window !== "undefined" && window.innerWidth < 640 ? 300 : 560}
+                onSearch={(query) => {
+                  setKeyword(query);
+                  applyFiltersToUrl({ q: query || null, page: "1" });
+                }}
+                onSelect={(selectedItem) => {
+                  setKeyword(selectedItem);
+                  applyFiltersToUrl({ q: selectedItem, page: "1" });
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -788,8 +777,11 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">
-          <div className="animate-spin w-8 h-8 border-2 border-white/20 border-t-white rounded-full" />
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white" dir="rtl">
+          <HoneycombLoader 
+            size="default" 
+            text="در حال آماده‌سازی کاتالوگ و نتایج جستجو..." 
+          />
         </div>
       }
     >

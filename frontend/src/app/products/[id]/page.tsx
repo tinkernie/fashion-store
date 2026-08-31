@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/error-utils";
+import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { formatShamsiDate } from "@/lib/jalali";
 import { getColorBackground } from "@/lib/color-utils";
 
@@ -186,10 +187,10 @@ export default function ProductDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white" dir="rtl">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-          <span className="text-xs text-gray-400">در حال دریافت مشخصات کالا...</span>
-        </div>
+        <HoneycombLoader 
+          size="default" 
+          text="در حال دریافت مشخصات و گالری کالا..." 
+        />
       </div>
     );
   }

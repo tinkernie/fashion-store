@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 
 const NAV_ITEMS = [
   {
@@ -214,10 +215,10 @@ export default function AdminLayout({
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white" dir="rtl">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-          <p className="text-gray-400 text-sm">در حال اعتبارسنجی دسترسی مدیریت...</p>
-        </div>
+        <HoneycombLoader 
+          size="default" 
+          text="در حال اعتبارسنجی دسترسی مدیریت..." 
+        />
       </div>
     );
   }
