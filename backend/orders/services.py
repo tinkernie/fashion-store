@@ -14,7 +14,7 @@ from notifications.signals import order_status_changed
 from analytics.signals import order_placed
 
 STATUS_TRANSITIONS = {
-    Order.Status.PENDING: [Order.Status.AWAITING_PAYMENT, Order.Status.CANCELLED],
+    Order.Status.PENDING: [Order.Status.AWAITING_PAYMENT, Order.Status.PAID, Order.Status.CANCELLED],
     Order.Status.AWAITING_PAYMENT: [Order.Status.PAID, Order.Status.CANCELLED],
     Order.Status.PAID: [Order.Status.PACKING, Order.Status.CANCELLED],
     Order.Status.PACKING: [Order.Status.SHIPPING, Order.Status.CANCELLED],
@@ -91,20 +91,27 @@ class OrderService:
         coupon = cart.coupon
         discount_amount = Decimal('0.00')
         if coupon:
-            from coupons.services import CouponService
-            coupon_service = CouponService()
-            items_data = []
-            for item in cart_items:
-                variant = item.variant
-                items_data.append({
-                    'variant_id': str(variant.id),
-                    'quantity': item.quantity,
-                    'price': item.price_snapshot,
-                    'category_id': str(variant.product.category_id) if variant.product.category_id else None,
-                    'product_id': str(variant.product_id),
-                })
-            result = coupon_service.validate_and_calculate(coupon.code, user, items_data)
-            discount_amount = result['discount'] if isinstance(result['discount'], Decimal) else Decimal(str(result['discount']))
+            try:
+                from coupons.services import CouponService
+                coupon_service = CouponService()
+                items_data = []
+                for item in cart_items:
+                    variant = item.variant
+                    items_data.append({
+                        'variant_id': str(variant.id),
+                        'quantity': item.quantity,
+                        'price': item.price_snapshot,
+                        'category_id': str(variant.product.category_id) if variant.product.category_id else None,
+                        'product_id': str(variant.product_id),
+                    })
+                result = coupon_service.validate_and_calculate(coupon.code, user, items_data)
+                discount_amount = result['discount'] if isinstance(result['discount'], Decimal) else Decimal(str(result['discount']))
+            except BusinessException:
+                # If attached coupon is expired or invalid, gracefully drop it
+                cart.coupon = None
+                cart.save(update_fields=['coupon', 'updated_at'])
+                coupon = None
+                discount_amount = Decimal('0.00')
 
         shipping_cost = Decimal("0.00")
         tax_amount = Decimal("0.00")

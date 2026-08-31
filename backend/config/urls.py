@@ -37,6 +37,7 @@ urlpatterns = [
     path('api/', include('analytics.urls')),
     path('api/', include('search.urls')),
     path('api/', include('coupons.urls')),
+    path('api/', include('payments.urls')),
     path('api/', include('media_libm.urls')),
 ]
 

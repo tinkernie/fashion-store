@@ -123,10 +123,12 @@ REST_FRAMEWORK.update({
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
-        "auth": "5/minute",
-        "analytics": "60/minute",
+        "anon": "500/hour",
+        "user": "2000/hour",
+        "auth": "30/minute",
+        "payment": "60/minute",
+        "payment_callback": "120/minute",
+        "analytics": "120/minute",
     },
 })
 
