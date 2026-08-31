@@ -10,6 +10,7 @@ import { CollectionsSection } from "@/components/collections-section";
 import { CoverflowCarousel, CoverflowSlide } from "@/components/ui/coverflow-carousel";
 import { Banner } from "@/components/ui/banner";
 import { FlowButton } from "@/components/ui/flow-button";
+import AnimatedText from "@/components/ui/animated-text";
 
 export default function Home() {
   const [bestsellers, setBestsellers] = useState<any[]>([]);
@@ -293,27 +294,45 @@ export default function Home() {
         )}
 
         {/* Hero Headline & Actions */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative z-10 text-center max-w-4xl mx-auto space-y-6 md:space-y-8 my-auto w-full"
-        >
+        <div className="relative z-10 text-center max-w-4xl mx-auto space-y-6 md:space-y-8 my-auto w-full">
           {heroContent.badge && (
-            <span className="inline-block bg-white/10 text-zinc-300 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase backdrop-blur-md border border-white/10">
-              {heroContent.badge}
-            </span>
+            <motion.div
+              initial={{ opacity: 0, y: -16, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+            >
+              <span className="inline-block bg-white/10 text-zinc-300 px-3.5 py-1.5 md:px-5 md:py-2 rounded-full text-xs md:text-sm font-bold tracking-widest uppercase backdrop-blur-md border border-white/15 shadow-xl">
+                {heroContent.badge}
+              </span>
+            </motion.div>
           )}
           
-          <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight md:leading-tight tracking-tight">
-            {heroContent.headline}
-          </h1>
+          <AnimatedText
+            text={heroContent.headline}
+            className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-white leading-tight md:leading-tight tracking-tight drop-shadow-2xl"
+            animationType="words"
+            duration={0.65}
+            delay={0.2}
+            staggerDelay={0.08}
+            initialY={24}
+          />
           
-          <p className="text-zinc-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed px-2">
-            {heroContent.subtitle}
-          </p>
+          <AnimatedText
+            text={heroContent.subtitle}
+            className="text-zinc-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed px-2 font-medium"
+            animationType="words"
+            duration={0.55}
+            delay={0.55}
+            staggerDelay={0.03}
+            initialY={14}
+          />
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 md:pt-4 w-full max-w-md sm:max-w-none mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.85, ease: "easeOut" }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 md:pt-4 w-full max-w-md sm:max-w-none mx-auto"
+          >
             {/* CTA 1: مشاهده جدیدترین‌ها (Flow Button) */}
             <FlowButton
               href={heroContent.cta_link || "/women"}
@@ -331,14 +350,21 @@ export default function Home() {
             >
               کالکشن جدید
             </FlowButton>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </section>
 
       {/* ==================================================================== */}
       {/* 1. 3D COVERFLOW SHOWCASE: جدیدترین محصولات (NEW ARRIVALS)             */}
       {/* ==================================================================== */}
-      <section className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20" dir="rtl">
+      <motion.section
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20"
+        dir="rtl"
+      >
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 md:mb-12 border-b border-white/10 pb-6">
           <div>
             <div className="flex items-center gap-2.5 text-zinc-400 mb-2">
@@ -379,12 +405,19 @@ export default function Home() {
             pauseOnHover={true}
           />
         </div>
-      </section>
+      </motion.section>
 
       {/* ==================================================================== */}
       {/* 2. 3D COVERFLOW SHOWCASE: فروش ویژه (SPECIAL SALE & OFFERS)           */}
       {/* ==================================================================== */}
-      <section className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20" dir="rtl">
+      <motion.section
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20"
+        dir="rtl"
+      >
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 md:mb-12 border-b border-white/10 pb-6">
           <div>
             <div className="flex items-center gap-2.5 text-zinc-400 mb-2">
@@ -431,13 +464,27 @@ export default function Home() {
             pauseOnHover={true}
           />
         </div>
-      </section>
+      </motion.section>
 
       {/* Collections API Block */}
-      <CollectionsSection />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <CollectionsSection />
+      </motion.div>
 
       {/* Bestsellers Section */}
-      <section className="relative max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 z-0 overflow-hidden" dir="rtl">
+      <motion.section
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="relative max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 z-0 overflow-hidden"
+        dir="rtl"
+      >
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] md:w-[1000px] h-[600px] md:h-[1000px] bg-white/[0.03] rounded-full blur-[120px] pointer-events-none -z-10"></div>
         
         <div className="flex items-end justify-between mb-8 md:mb-12 relative z-10 border-b border-white/10 pb-6">
@@ -466,7 +513,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.08, duration: 0.5 }}
               className="group flex flex-col w-[150px] min-w-[150px] max-w-[150px] sm:w-[200px] sm:min-w-[200px] sm:max-w-[200px] md:w-auto md:min-w-0 md:max-w-none shrink-0 snap-start"
             >
               <Link href={`/products/${product.id}`} className="block relative aspect-[4/5] md:aspect-[3/4] overflow-hidden rounded-2xl md:rounded-3xl bg-[#111111] border border-white/5 mb-2 md:mb-4">
@@ -492,7 +539,7 @@ export default function Home() {
             </motion.div>
           ))}
         </div>
-      </section>
+      </motion.section>
     </main>
   );
 }

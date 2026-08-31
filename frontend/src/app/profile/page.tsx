@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useWishlist } from "@/store/wishlist";
+import GradientMenu from "@/components/ui/gradient-menu";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
