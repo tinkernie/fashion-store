@@ -98,15 +98,16 @@ export const useCart = create<CartStore>((set, get) => ({
 
         set({ items: mapped, coupon: couponData });
       }
-    } catch {
-      // Backend starting or offline: maintain local state
+    } catch (error) {
+      console.error("Failed to fetch cart:", error);
     } finally {
       set({ isLoading: false });
     }
   },
 
-  
   addItem: async (item) => {
+    const previousItems = get().items;
+
     // Optimistic UI Update
     set((state) => {
       const existingItem = state.items.find(
@@ -141,11 +142,16 @@ export const useCart = create<CartStore>((set, get) => ({
         }
       );
     } catch (error) {
-      console.error("Failed to sync cart add:", error);
+      // Revert optimistic update on backend error (e.g. out of stock / reservation failure)
+      set({ items: previousItems });
+      await get().fetchCart();
+      throw error;
     }
   },
   
   removeItem: async (id, size, variant_id) => {
+    const previousItems = get().items;
+
     // Optimistic UI Update
     set((state) => ({
       items: state.items.filter((i) => !(i.id === id && i.size === size)),
@@ -165,16 +171,21 @@ export const useCart = create<CartStore>((set, get) => ({
         }
       );
     } catch (error) {
-      console.error("Failed to sync cart remove:", error);
+      set({ items: previousItems });
+      await get().fetchCart();
+      throw error;
     }
   },
 
   updateQuantity: async (id, size, quantity, variant_id) => {
+    const previousItems = get().items;
+
     set((state) => ({
       items: state.items.map((i) =>
         i.id === id && i.size === size ? { ...i, quantity } : i
       ),
     }));
+
     try {
       const guestKey = get().getGuestSessionKey();
       await api.post(
@@ -189,7 +200,9 @@ export const useCart = create<CartStore>((set, get) => ({
         }
       );
     } catch (error) {
-      console.error("Failed to sync cart quantity:", error);
+      set({ items: previousItems });
+      await get().fetchCart();
+      throw error;
     }
   },
 

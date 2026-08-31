@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Mail, CheckCircle2, RotateCw, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,9 +53,14 @@ const forgotPasswordSchema = z.object({
   identifier: identifierValidator,
 });
 
+const resendVerificationSchema = z.object({
+  email: z.string().email("لطفاً یک ایمیل معتبر وارد کنید"),
+});
+
 type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
+type ResendVerificationForm = z.infer<typeof resendVerificationSchema>;
 
 export default function AuthPage() {
   const router = useRouter();
@@ -63,8 +68,19 @@ export default function AuthPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-  const [view, setView] = useState<"auth" | "forgotPassword">("auth");
+  const [view, setView] = useState<"auth" | "forgotPassword" | "verifyPending" | "resendVerification">("auth");
+  const [pendingEmail, setPendingEmail] = useState<string>("");
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
   const { mergeCart } = useCart();
+
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   // Form Hooks
   const {
@@ -87,6 +103,13 @@ export default function AuthPage() {
     reset: resetForgot,
   } = useForm<ForgotPasswordForm>({ resolver: zodResolver(forgotPasswordSchema) });
 
+  const {
+    register: registerResend,
+    handleSubmit: handleResendSubmit,
+    formState: { errors: resendErrors },
+    setValue: setResendValue,
+  } = useForm<ResendVerificationForm>({ resolver: zodResolver(resendVerificationSchema) });
+
   const onLogin = async (data: LoginForm) => {
     setIsLoading(true);
     try {
@@ -103,6 +126,18 @@ export default function AuthPage() {
       toast.success("با موفقیت وارد حساب خود شدید");
       router.push("/");
     } catch (error: any) {
+      const errCode = error?.response?.data?.code || error?.response?.data?.error?.code;
+      const errMsg = error?.response?.data?.error || error?.response?.data?.detail || "";
+
+      // Inactive account check
+      if (errCode === "inactive_account" || String(errMsg).includes("not activated") || String(errMsg).includes("verify your email")) {
+        setPendingEmail(data.identifier);
+        setResendValue("email", data.identifier);
+        setView("verifyPending");
+        toast.error("حساب کاربری شما هنوز فعال نشده است. لطفاً ایمیل خود را تایید کنید.");
+        return;
+      }
+
       toast.error(getApiErrorMessage(error, "ورود ناموفق بود. اطلاعات ورود را بررسی نمایید."));
     } finally {
       setIsLoading(false);
@@ -120,26 +155,37 @@ export default function AuthPage() {
         last_name: lastNames.join(" ") || "",
       });
 
-      // Auto-login upon successful registration
-      try {
-        const loginRes = await api.post("/api/auth/login/", {
-          email: data.identifier,
-          password: data.password,
-        });
-        localStorage.setItem("access_token", loginRes.data.access);
-        localStorage.setItem("refresh_token", loginRes.data.refresh);
-        await mergeCart();
-        toast.success("حساب کاربری با موفقیت ایجاد شد. خوش آمدید!");
-        router.push("/");
-        return;
-      } catch {
-        // Fallback: switch to login tab and pre-fill email
-        setLoginValue("identifier", data.identifier);
-        setActiveTab("login");
-        toast.success("حساب کاربری با موفقیت ساخته شد. لطفاً وارد شوید.");
-      }
+      // Email verification is mandatory (is_active=False on backend)
+      setPendingEmail(data.identifier);
+      setResendValue("email", data.identifier);
+      setView("verifyPending");
+      setResendCooldown(60);
+      toast.success("حساب شما با موفقیت ایجاد شد", {
+        description: "لینک فعال‌سازی به ایمیل شما ارسال گردید.",
+      });
     } catch (error: any) {
       toast.error(getApiErrorMessage(error, "ثبت‌نام با خطا مواجه شد."));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendVerification = async (targetEmail: string) => {
+    if (!targetEmail) return;
+    if (resendCooldown > 0) {
+      toast.info(`لطفاً ${resendCooldown} ثانیه دیگر مجدداً تلاش کنید.`);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await api.post("/api/auth/resend-verification/", { email: targetEmail });
+      setResendCooldown(60);
+      toast.success("ایمیل فعال‌سازی مجدداً ارسال شد", {
+        description: "لطفاً صندوق ورودی و پوشه اسپم را بررسی کنید.",
+      });
+    } catch (error: any) {
+      toast.error(getApiErrorMessage(error, "ارسال مجدد ایمیل فعال‌سازی با خطا مواجه شد."));
     } finally {
       setIsLoading(false);
     }
@@ -220,7 +266,7 @@ export default function AuthPage() {
         className="w-full max-w-md"
       >
         <div className="bg-[#111111] border border-white/10 rounded-3xl p-8 shadow-2xl">
-          {view === "auth" ? (
+          {view === "auth" && (
             <>
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-black text-white mb-2">خوش آمدید</h1>
@@ -314,6 +360,15 @@ export default function AuthPage() {
                       {isLoading ? "در حال ورود..." : "ورود به حساب"}
                     </Button>
                   </form>
+                  <div className="mt-4 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setView("resendVerification")}
+                      className="text-xs text-gray-400 hover:text-white transition-colors"
+                    >
+                      ایمیل فعال‌سازی را دریافت نکرده‌اید؟ ارسال مجدد
+                    </button>
+                  </div>
                   <GoogleButton />
                 </TabsContent>
 
@@ -396,8 +451,105 @@ export default function AuthPage() {
                 </TabsContent>
               </Tabs>
             </>
-          ) : (
-            // Forgot Password View
+          )}
+
+          {/* Verification Pending Screen */}
+          {view === "verifyPending" && (
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-6">
+              <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mx-auto text-blue-400 shadow-lg shadow-blue-500/10">
+                <Mail className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black text-white">تایید آدرس ایمیل</h2>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto">
+                  لینک فعال‌سازی حساب کاربری به آدرس زیر ارسال شد:
+                </p>
+                {pendingEmail && (
+                  <div className="inline-block bg-[#1a1a1a] border border-white/10 px-4 py-1.5 rounded-full text-xs font-mono text-white mt-2" dir="ltr">
+                    {pendingEmail}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-[#161616] border border-white/5 p-4 rounded-2xl text-xs text-gray-400 text-right leading-5">
+                لطفاً صندوق ورودی (Inbox) یا پوشه هرزنامه (Spam) ایمیل خود را بررسی کنید و جهت تکمیل فرآیند روی لینک فعال‌سازی کلیک نمایید.
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <Button
+                  disabled={isLoading || resendCooldown > 0}
+                  onClick={() => handleSendVerification(pendingEmail)}
+                  variant="outline"
+                  className="w-full h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  <RotateCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+                  {resendCooldown > 0 ? `ارسال مجدد تا (${resendCooldown}) ثانیه` : "ارسال مجدد ایمیل فعال‌سازی"}
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    setLoginValue("identifier", pendingEmail);
+                    setActiveTab("login");
+                    setView("auth");
+                  }}
+                  className="w-full h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-sm"
+                >
+                  ورود به حساب کاربری
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Resend Verification Form */}
+          {view === "resendVerification" && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-black text-white mb-2">ارسال مجدد لینک فعال‌سازی</h2>
+                <p className="text-gray-400 text-sm">ایمیل ثبت‌نامی خود را وارد نمایید</p>
+              </div>
+              <form
+                onSubmit={handleResendSubmit((data) => {
+                  setPendingEmail(data.email);
+                  handleSendVerification(data.email);
+                  setView("verifyPending");
+                })}
+                className="space-y-5"
+              >
+                <div className="space-y-2">
+                  <Input
+                    {...registerResend("email")}
+                    placeholder="example@email.com"
+                    className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30"
+                    dir="ltr"
+                  />
+                  {resendErrors.email && (
+                    <p className="text-red-500 text-xs mt-1">{resendErrors.email.message}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-3 mt-6">
+                  <Button
+                    disabled={isLoading}
+                    type="submit"
+                    className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all"
+                  >
+                    {isLoading ? "در حال ارسال..." : "ارسال لینک فعال‌سازی"}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => setView("auth")}
+                    variant="ghost"
+                    className="w-full h-14 rounded-2xl text-gray-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
+                  >
+                    بازگشت به صفحه ورود
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
+          {/* Forgot Password View */}
+          {view === "forgotPassword" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-black text-white mb-2">بازیابی رمز عبور</h2>

@@ -49,6 +49,7 @@ export default function CheckoutPage() {
     applyCoupon,
     removeCoupon,
     clearCart,
+    fetchCart,
     getTotal,
     getDiscountAmount,
     getFinalTotal,
@@ -96,7 +97,7 @@ export default function CheckoutPage() {
             }
           }
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
@@ -152,34 +153,59 @@ export default function CheckoutPage() {
       const orderId = orderData.id || orderData.order_number;
 
       // 2. Initiate payment session
-      let paymentRes;
-      try {
-        paymentRes = await api.post("/api/payments/initiate/", {
-          order_id: orderData.id || orderId,
-          gateway: paymentGateway,
-        });
-      } catch (payErr: any) {
-        console.warn("Payment initiation warning:", payErr);
-        // If payment endpoint encounters simulated error
+      const paymentRes = await api.post("/api/payments/initiate/", {
+        order_id: orderData.id || orderId,
+        gateway: paymentGateway,
+      });
+
+      const payData = paymentRes.data;
+
+      // If gateway returns external redirect URL (e.g. Zarinpal / Mellat / Shaparak)
+      if (payData?.payment_url || payData?.redirect_url) {
+        toast.loading("در حال انتقال به درگاه پرداخت بانکی...");
+        window.location.href = payData.payment_url || payData.redirect_url;
+        return;
       }
 
-      const refNumber = paymentRes?.data?.gateway_reference || `REF-${Math.floor(100000 + Math.random() * 900000)}`;
+      // If simulated / synchronous payment completed successfully
+      if (payData?.status === "succeeded" || payData?.status === "paid") {
+        await clearCart();
+        const refNumber =
+          payData.gateway_reference ||
+          payData.authority ||
+          `REF-${Math.floor(100000 + Math.random() * 900000)}`;
+        toast.success("سفارش شما با موفقیت ثبت و پرداخت شد");
+        router.push(
+          `/checkout/success?order_id=${encodeURIComponent(
+            orderData.order_number || orderId
+          )}&ref=${encodeURIComponent(refNumber)}&amount=${finalPayable}`
+        );
+        return;
+      }
 
-      // 3. Clear cart
-      await clearCart();
-
-      // 4. Redirect to success transition page
-      toast.success("سفارش شما با موفقیت ثبت شد");
+      // If payment status returned failed or unconfirmed
       router.push(
-        `/checkout/success?order_id=${encodeURIComponent(orderData.order_number || orderId)}&ref=${encodeURIComponent(
-          refNumber
-        )}&amount=${finalPayable}`
+        `/checkout/failed?order_id=${encodeURIComponent(
+          orderData.order_number || orderId
+        )}&error=${encodeURIComponent(payData?.error || "پرداخت ناموفق بود")}`
       );
     } catch (error: any) {
       console.error("Checkout failed:", error);
-      toast.error(getApiErrorMessage(error, "ثبت سفارش ناموفق بود. لطفاً اطلاعات را بررسی کنید."));
-    } finally {
+      const errCode = error?.response?.data?.code || error?.response?.data?.error?.code;
 
+      // If error is related to expired reservations or price/inventory changes, refresh cart
+      if (
+        errCode === "reservation_expired" ||
+        errCode === "price_changed" ||
+        errCode === "insufficient_stock"
+      ) {
+        await fetchCart();
+      }
+
+      toast.error(
+        getApiErrorMessage(error, "ثبت سفارش ناموفق بود. لطفاً اطلاعات را بررسی کنید.")
+      );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -188,7 +214,10 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <main className="min-h-screen pt-32 pb-24 px-6 flex flex-col items-center justify-center text-white text-center" dir="rtl">
+      <main
+        className="min-h-screen pt-32 pb-24 px-6 flex flex-col items-center justify-center text-white text-center"
+        dir="rtl"
+      >
         <div className="w-20 h-20 bg-white/5 border border-white/10 rounded-full flex items-center justify-center mb-6">
           <Truck className="w-8 h-8 text-gray-400" />
         </div>
@@ -375,7 +404,10 @@ export default function CheckoutPage() {
             {/* Items Mini List */}
             <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
               {items.map((item) => (
-                <div key={`${item.id}-${item.size}`} className="flex gap-3 items-center bg-white/5 p-2.5 rounded-2xl border border-white/5">
+                <div
+                  key={`${item.id}-${item.size}`}
+                  className="flex gap-3 items-center bg-white/5 p-2.5 rounded-2xl border border-white/5"
+                >
                   <img
                     src={item.imageUrl || "/globe.svg"}
                     alt={item.name}
@@ -445,7 +477,11 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between text-gray-400">
                 <span>هزینه بسته‌بندی و ارسال:</span>
-                <span>{shippingCost === 0 ? "رایگان (خرید بالای ۵ میلیون)" : `${shippingCost.toLocaleString("fa-IR")} تومان`}</span>
+                <span>
+                  {shippingCost === 0
+                    ? "رایگان (خرید بالای ۵ میلیون)"
+                    : `${shippingCost.toLocaleString("fa-IR")} تومان`}
+                </span>
               </div>
 
               <div className="flex justify-between text-base font-black text-white pt-3 border-t border-white/10">

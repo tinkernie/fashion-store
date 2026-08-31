@@ -312,8 +312,16 @@ export default function Navbar() {
                         </span>
                       </div>
                       <button 
-                        onClick={() => removeItem(item.id, item.size, item.variant_id)}
-                        className="text-gray-500 hover:text-red-500 transition-colors shrink-0 outline-none"
+                        onClick={async () => {
+                          try {
+                            await removeItem(item.id, item.size, item.variant_id);
+                            toast.success("کالا از سبد خرید حذف شد");
+                          } catch (err) {
+                            toast.error(getApiErrorMessage(err, "حذف کالا با خطا مواجه شد"));
+                          }
+                        }}
+                        className="text-gray-500 hover:text-red-500 transition-colors shrink-0 outline-none p-1 cursor-pointer"
+                        title="حذف از سبد خرید"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>

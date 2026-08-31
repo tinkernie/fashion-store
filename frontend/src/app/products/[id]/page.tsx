@@ -230,7 +230,7 @@ export default function ProductDetailPage() {
     }));
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (options.length > 0) {
       const missingOption = options.find((opt) => !selectedOptions[opt.name]);
       if (missingOption) {
@@ -249,19 +249,23 @@ export default function ProductDetailPage() {
         .map(([k, v]) => `${k}: ${v}`)
         .join(" | ") || (selectedOptions["سایز"] || selectedOptions["Size"] || "Free");
 
-    addToCart({
-      id: product.id,
-      name: product.name || product.title,
-      price: currentPrice,
-      size: optionsSummary,
-      quantity: quantity,
-      imageUrl: product.imageUrl || product.image_url || "/globe.svg",
-      variant_id: matchedVariant?.id || product.id,
-    });
+    try {
+      await addToCart({
+        id: product.id,
+        name: product.name || product.title,
+        price: currentPrice,
+        size: optionsSummary,
+        quantity: quantity,
+        imageUrl: product.imageUrl || product.image_url || "/globe.svg",
+        variant_id: matchedVariant?.id || product.id,
+      });
 
-    toast.success("به سبد خرید اضافه شد", {
-      description: `${product.name || product.title} (${optionsSummary}) - ${quantity.toLocaleString("fa-IR")} عدد`,
-    });
+      toast.success("به سبد خرید اضافه شد", {
+        description: `${product.name || product.title} (${optionsSummary}) - ${quantity.toLocaleString("fa-IR")} عدد`,
+      });
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "افزودن به سبد خرید با خطا مواجه شد."));
+    }
   };
 
   const toggleWishlist = () => {
