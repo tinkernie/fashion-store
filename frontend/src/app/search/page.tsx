@@ -220,29 +220,29 @@ function SearchContent() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (keyword) {
-        params.set("q", keyword);
-        params.set("search", keyword);
+      if (queryParam) {
+        params.set("q", queryParam);
+        params.set("search", queryParam);
       }
-      if (selectedCategory && selectedCategory !== "all") {
-        params.set("category", selectedCategory);
+      if (categoryParam && categoryParam !== "all") {
+        params.set("category", categoryParam);
       }
       if (collectionParam && collectionParam !== "all") {
         params.set("collection", collectionParam);
       }
-      if (minPrice) params.set("min_price", minPrice);
-      if (maxPrice) params.set("max_price", maxPrice);
-      if (selectedSort) params.set("sort", selectedSort);
-      if (inStockOnly) params.set("in_stock", "true");
+      if (minPriceParam) params.set("min_price", minPriceParam);
+      if (maxPriceParam) params.set("max_price", maxPriceParam);
+      if (sortParam) params.set("sort", sortParam);
+      if (inStockParam) params.set("in_stock", "true");
 
-      if (Object.keys(selectedOptions).length > 0) {
-        params.set("options", JSON.stringify(selectedOptions));
+      if (Object.keys(selectedOptionsParam).length > 0) {
+        params.set("options", JSON.stringify(selectedOptionsParam));
         // Flatten size and color for direct query matching
-        if (selectedOptions["سایز"] && selectedOptions["سایز"].length > 0) {
-          params.set("size", selectedOptions["سایز"].join(","));
+        if (selectedOptionsParam["سایز"] && selectedOptionsParam["سایز"].length > 0) {
+          params.set("size", selectedOptionsParam["سایز"].join(","));
         }
-        if (selectedOptions["رنگ"] && selectedOptions["رنگ"].length > 0) {
-          params.set("color", selectedOptions["رنگ"].join(","));
+        if (selectedOptionsParam["رنگ"] && selectedOptionsParam["رنگ"].length > 0) {
+          params.set("color", selectedOptionsParam["رنگ"].join(","));
         }
       }
       params.set("page", String(currentPage));
@@ -283,13 +283,14 @@ function SearchContent() {
       setIsLoading(false);
     }
   }, [
-    keyword,
-    selectedCategory,
+    queryParam,
+    categoryParam,
     collectionParam,
-    minPrice,
-    maxPrice,
-    selectedSort,
-    selectedOptions,
+    minPriceParam,
+    maxPriceParam,
+    sortParam,
+    inStockParam,
+    searchParams,
     currentPage,
   ]);
 
@@ -356,8 +357,8 @@ function SearchContent() {
     return num.toLocaleString("fa-IR") + " تومان";
   };
 
-  // Reusable Filter Sidebar Content
-  const FilterSidebar = () => (
+  // Reusable Filter Sidebar Content (Render function to keep input focus persistent)
+  const renderFilterSidebar = () => (
     <div className="space-y-8 text-right" dir="rtl">
       {/* Active Filter Clear Header */}
       <div className="flex items-center justify-between pb-4 border-b border-white/10">
@@ -430,27 +431,39 @@ function SearchContent() {
             <label className="text-[10px] text-gray-500 block mb-1">از</label>
             <Input
               type="number"
+              inputMode="numeric"
               placeholder="۰"
               value={minPrice}
               onChange={(e) => setMinPrice(e.target.value)}
-              className="h-9 text-xs bg-white/5 border-white/10 rounded-xl text-white"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  applyFiltersToUrl({ min_price: minPrice || null, max_price: maxPrice || null, page: "1" });
+                }
+              }}
+              className="h-9 text-xs bg-white/5 border-white/10 rounded-xl text-white font-mono"
             />
           </div>
           <div>
             <label className="text-[10px] text-gray-500 block mb-1">تا</label>
             <Input
               type="number"
+              inputMode="numeric"
               placeholder="حداکثر"
               value={maxPrice}
               onChange={(e) => setMaxPrice(e.target.value)}
-              className="h-9 text-xs bg-white/5 border-white/10 rounded-xl text-white"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  applyFiltersToUrl({ min_price: minPrice || null, max_price: maxPrice || null, page: "1" });
+                }
+              }}
+              className="h-9 text-xs bg-white/5 border-white/10 rounded-xl text-white font-mono"
             />
           </div>
         </div>
         <Button
-          onClick={() => applyFiltersToUrl({ min_price: minPrice || null, max_price: maxPrice || null })}
+          onClick={() => applyFiltersToUrl({ min_price: minPrice || null, max_price: maxPrice || null, page: "1" })}
           variant="outline"
-          className="w-full h-8 text-xs border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl"
+          className="w-full h-8 text-xs border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl cursor-pointer"
         >
           اعمال فیلتر قیمت
         </Button>
@@ -613,7 +626,7 @@ function SearchContent() {
                   <SheetHeader className="text-right pb-4 border-b border-white/10 mb-6">
                     <SheetTitle className="text-white text-lg font-black">فیلترهای جستجو</SheetTitle>
                   </SheetHeader>
-                  <FilterSidebar />
+                  {renderFilterSidebar()}
                 </SheetContent>
               </Sheet>
             </div>
@@ -666,7 +679,7 @@ function SearchContent() {
           
           {/* Desktop Left Sticky Sidebar */}
           <aside className="hidden lg:block lg:col-span-3 sticky top-28 bg-[#111111] border border-white/10 rounded-3xl p-6 shadow-xl">
-            <FilterSidebar />
+            {renderFilterSidebar()}
           </aside>
 
           {/* Right Product Grid */}
