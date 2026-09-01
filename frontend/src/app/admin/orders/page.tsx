@@ -459,24 +459,48 @@ export default function AdminOrdersPage() {
                 </h4>
                 <div className="p-4 rounded-2xl bg-[#141414] border border-white/10 space-y-3">
                   {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                    selectedOrder.items.map((item: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between pb-3 border-b border-white/5 last:border-0 last:pb-0 text-xs"
-                      >
-                        <div>
-                          <span className="font-bold text-white block">
-                            {item.product_title || item.name || `کالای شماره ${idx + 1}`}
-                          </span>
-                          <span className="text-gray-500 text-[11px]">
-                            تعداد: {item.quantity} عدد {item.size ? `| سایز: ${item.size}` : ""}
+                    selectedOrder.items.map((item: any, idx: number) => {
+                      const snap = item.product_snapshot || {};
+                      const itemTitle = snap.title || item.product_title || item.name || `کالای شماره ${idx + 1}`;
+                      const itemOptions = snap.options || (item.size ? `سایز: ${item.size}` : "");
+                      let rawImage = snap.image?.url || (typeof snap.image === "string" ? snap.image : "") || item.image?.url || (typeof item.image === "string" ? item.image : "") || item.product_image || "";
+                      let finalImage = rawImage;
+                      if (finalImage && !finalImage.startsWith("http") && !finalImage.startsWith("data:")) {
+                        const backendBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+                        finalImage = `${backendBase}${finalImage.startsWith("/") ? "" : "/"}${finalImage}`;
+                      }
+
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between pb-3 border-b border-white/5 last:border-0 last:pb-0 text-xs"
+                        >
+                          <div className="flex items-center gap-3">
+                            {finalImage && (
+                              <img
+                                src={finalImage}
+                                alt={itemTitle}
+                                className="w-10 h-12 object-cover rounded-lg border border-white/10 bg-[#181818]"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = "none";
+                                }}
+                              />
+                            )}
+                            <div>
+                              <span className="font-bold text-white block">
+                                {itemTitle}
+                              </span>
+                              <span className="text-gray-400 text-[11px] block mt-0.5">
+                                تعداد: {item.quantity} عدد {itemOptions ? `| ${itemOptions}` : ""}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="font-bold text-white">
+                            {(Number(item.price || item.unit_price) * item.quantity).toLocaleString("fa-IR")} تومان
                           </span>
                         </div>
-                        <span className="font-bold text-white">
-                          {(Number(item.price || item.unit_price) * item.quantity).toLocaleString("fa-IR")} تومان
-                        </span>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-gray-500 text-xs py-2">اطلاعات ریز اقلام موجود نیست</div>
                   )}

@@ -39,6 +39,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
+import { cn } from "@/lib/utils";
 
 
 const getUserIdFromToken = () => {
@@ -87,6 +88,8 @@ const getProfileStatusBadge = (status: string) => {
       return { label: "لغو شده", bg: "bg-rose-500/10 text-rose-400 border-rose-500/20" };
     case "returned":
       return { label: "مرجوع شده", bg: "bg-orange-500/10 text-orange-400 border-orange-500/20" };
+    case "refunded":
+      return { label: "مسترد شده", bg: "bg-teal-500/10 text-teal-400 border-teal-500/20" };
     default:
       return { label: "در انتظار پرداخت", bg: "bg-amber-400/10 text-amber-400 border-amber-400/20" };
   }
@@ -1144,24 +1147,48 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 <h4 className="text-xs font-black uppercase text-gray-400">اقلام سفارش</h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {selectedOrder.items?.map((it: any) => (
-                    <div key={it.id} className="flex gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
-                      <img
-                        src={it.image?.url || it.image || it.product_image || "/globe.svg"}
-                        alt={it.product_title || it.name}
-                        className="w-14 h-16 object-cover rounded-xl shrink-0 border border-white/10"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h5 className="text-xs font-bold text-white truncate">{it.product_title || it.name}</h5>
-                        <span className="text-[11px] text-gray-400 block mt-0.5">
-                          تعداد: {it.quantity} | قیمت واحد: {parseFloat(it.price || 0).toLocaleString("fa-IR")} تومان
-                        </span>
-                        <p className="text-xs font-black text-amber-400 mt-1">
-                          {(parseFloat(it.price || 0) * (it.quantity || 1)).toLocaleString("fa-IR")} تومان
-                        </p>
+                  {selectedOrder.items?.map((it: any) => {
+                    const snap = it.product_snapshot || {};
+                    const itemTitle = snap.title || it.product_title || it.name || "کالای سفارش";
+                    const itemOptions = snap.options || (it.size ? `سایز: ${it.size}` : "");
+                    
+                    let rawImage = snap.image?.url || (typeof snap.image === "string" ? snap.image : "") || it.image?.url || (typeof it.image === "string" ? it.image : "") || it.product_image || "";
+                    let finalImage = rawImage;
+                    if (finalImage && !finalImage.startsWith("http") && !finalImage.startsWith("data:")) {
+                      const backendBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+                      finalImage = `${backendBase}${finalImage.startsWith("/") ? "" : "/"}${finalImage}`;
+                    }
+                    if (!finalImage) {
+                      finalImage = "/globe.svg";
+                    }
+
+                    return (
+                      <div key={it.id} className="flex gap-3 bg-white/5 p-3 rounded-2xl border border-white/5 items-center">
+                        <img
+                          src={finalImage}
+                          alt={itemTitle}
+                          className="w-16 h-18 object-cover rounded-xl shrink-0 border border-white/10 bg-[#181818]"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = "/globe.svg";
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-xs font-bold text-white truncate">{itemTitle}</h5>
+                          {itemOptions && (
+                            <span className="text-[11px] text-amber-400/90 block mt-0.5 truncate">
+                              {itemOptions}
+                            </span>
+                          )}
+                          <span className="text-[11px] text-gray-400 block mt-0.5">
+                            تعداد: {it.quantity} | قیمت واحد: {parseFloat(it.price || 0).toLocaleString("fa-IR")} تومان
+                          </span>
+                          <p className="text-xs font-black text-amber-400 mt-1">
+                            {(parseFloat(it.price || 0) * (it.quantity || 1)).toLocaleString("fa-IR")} تومان
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1180,14 +1207,21 @@ export default function ProfilePage() {
               )}
 
               {/* Financial Totals */}
-              <div className="border-t border-white/10 pt-4 space-y-2 text-xs">
-                <div className="flex justify-between text-gray-400">
+              <div className="border-t border-white/10 pt-4 space-y-3 text-xs">
+                <div className="flex justify-between items-center text-gray-400">
                   <span>وضعیت سفارش:</span>
-                  <span className="font-bold text-amber-400">{selectedOrder.status}</span>
+                  <span
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-bold border",
+                      getProfileStatusBadge(selectedOrder.status).bg
+                    )}
+                  >
+                    {getProfileStatusBadge(selectedOrder.status).label}
+                  </span>
                 </div>
-                <div className="flex justify-between text-base font-black text-white pt-2 border-t border-white/5">
-                  <span>مبلغ پرداختی:</span>
-                  <span className="text-emerald-400">
+                <div className="flex justify-between items-center text-base font-black text-white pt-2 border-t border-white/5">
+                  <span>مبلغ کل پرداختی:</span>
+                  <span className="text-emerald-400 font-mono">
                     {parseFloat(selectedOrder.total || selectedOrder.total_amount || 0).toLocaleString("fa-IR")} تومان
                   </span>
                 </div>

@@ -18,8 +18,18 @@ import {
   Filter,
   Grid3X3,
   Layers,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Button as PaginationButton } from "@/components/ui/button-1";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+} from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
 import {
   Sheet,
@@ -42,6 +52,33 @@ import { GooeySearchBar } from "@/components/ui/animated-search-bar";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { useWishlist } from "@/store/wishlist";
 import { getColorBackground, isLightColor } from "@/lib/color-utils";
+
+function generatePaginationPages(currentPage: number, totalPages: number): (number | string)[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const pages: (number | string)[] = [];
+  pages.push(1);
+
+  if (currentPage > 3) {
+    pages.push("ellipsis-start");
+  }
+
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  if (currentPage < totalPages - 2) {
+    pages.push("ellipsis-end");
+  }
+
+  pages.push(totalPages);
+  return pages;
+}
 
 
 
@@ -758,28 +795,82 @@ function SearchContent() {
               </div>
             )}
 
-            {/* Pagination */}
+            {/* Pagination Component */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-8">
-                <Button
-                  variant="outline"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  className="h-10 px-4 rounded-xl border-white/10 bg-white/5 text-white disabled:opacity-30"
-                >
-                  صفحه قبل
-                </Button>
-                <span className="text-xs text-gray-400 px-4 font-bold">
-                  صفحه {currentPage} از {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                  className="h-10 px-4 rounded-xl border-white/10 bg-white/5 text-white disabled:opacity-30"
-                >
-                  صفحه بعد
-                </Button>
+              <div className="pt-12 pb-6 flex justify-center">
+                <Pagination className="w-auto">
+                  <PaginationContent className="bg-[#111111]/80 backdrop-blur-md border border-white/10 p-1.5 rounded-2xl shadow-xl flex items-center gap-1.5">
+                    {/* Previous Page Button */}
+                    <PaginationItem>
+                      <PaginationButton
+                        variant="ghost"
+                        size="sm"
+                        disabled={currentPage <= 1}
+                        onClick={() => {
+                          setCurrentPage((p) => Math.max(p - 1, 1));
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="text-xs text-gray-300 hover:text-white rounded-xl gap-1 px-3 h-9 disabled:opacity-30 cursor-pointer"
+                      >
+                        <ChevronRight className="w-4 h-4 rtl:rotate-0" />
+                        <span className="hidden sm:inline">قبلی</span>
+                      </PaginationButton>
+                    </PaginationItem>
+
+                    {/* Page Numbers & Ellipsis */}
+                    {generatePaginationPages(currentPage, totalPages).map((item, idx) => {
+                      if (item === "ellipsis-start" || item === "ellipsis-end") {
+                        return (
+                          <PaginationItem key={`ellipsis-${idx}`}>
+                            <PaginationEllipsis className="text-gray-500 h-9 w-9" />
+                          </PaginationItem>
+                        );
+                      }
+
+                      const pageNum = Number(item);
+                      const isActive = pageNum === currentPage;
+
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationButton
+                            variant={isActive ? "outline" : "ghost"}
+                            mode="icon"
+                            size="sm"
+                            onClick={() => {
+                              setCurrentPage(pageNum);
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                            className={cn(
+                              "rounded-xl font-bold text-xs h-9 w-9 transition-all cursor-pointer",
+                              isActive
+                                ? "bg-white text-black border-white shadow-lg hover:bg-gray-200 hover:text-black scale-105"
+                                : "text-gray-400 hover:text-white hover:bg-white/10"
+                            )}
+                          >
+                            {pageNum.toLocaleString("fa-IR")}
+                          </PaginationButton>
+                        </PaginationItem>
+                      );
+                    })}
+
+                    {/* Next Page Button */}
+                    <PaginationItem>
+                      <PaginationButton
+                        variant="ghost"
+                        size="sm"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => {
+                          setCurrentPage((p) => Math.min(p + 1, totalPages));
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="text-xs text-gray-300 hover:text-white rounded-xl gap-1 px-3 h-9 disabled:opacity-30 cursor-pointer"
+                      >
+                        <span className="hidden sm:inline">بعدی</span>
+                        <ChevronLeft className="w-4 h-4 rtl:rotate-0" />
+                      </PaginationButton>
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
             )}
           </main>

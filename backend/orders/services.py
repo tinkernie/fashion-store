@@ -132,7 +132,21 @@ class OrderService:
 
             from media_libm.selectors import MediaSelector
             product = variant.product
-            main_image = MediaSelector.get_main_image_for_product(product)
+            main_image = None
+            if product.metadata and isinstance(product.metadata, dict):
+                main_image = product.metadata.get("image_url") or product.metadata.get("imageUrl") or product.metadata.get("image")
+            if not main_image:
+                try:
+                    img_data = MediaSelector.get_main_image_for_product(product)
+                    if img_data and isinstance(img_data, dict) and img_data.get("url"):
+                        main_image = img_data.get("url")
+                    if not main_image:
+                        media = MediaSelector.get_media_for_object(product)
+                        if media:
+                            main_image = media[0].file.url
+                except Exception:
+                    pass
+
             product_snapshot = {
                 "title": variant.product.title,
                 "options": option_summary,
@@ -295,10 +309,40 @@ class OrderService:
     def _serialize_order(self, order: Order) -> dict:
         items = []
         for item in order.items.all():
+            snap = dict(item.product_snapshot) if isinstance(item.product_snapshot, dict) else {}
+            if not snap.get("image") or not snap.get("title"):
+                product = None
+                if item.variant and item.variant.product:
+                    product = item.variant.product
+                elif item.product_id:
+                    from products.models import Product
+                    product = Product.objects.filter(id=item.product_id).first()
+
+                if product:
+                    if not snap.get("title"):
+                        snap["title"] = product.title
+                    if not snap.get("image"):
+                        img = ""
+                        if product.metadata and isinstance(product.metadata, dict):
+                            img = product.metadata.get("image_url") or product.metadata.get("imageUrl") or product.metadata.get("image") or ""
+                        if not img:
+                            try:
+                                from media_libm.selectors import MediaSelector
+                                m = MediaSelector.get_main_image_for_product(product)
+                                if m and isinstance(m, dict) and m.get("url"):
+                                    img = m["url"]
+                                if not img:
+                                    media = MediaSelector.get_media_for_object(product)
+                                    if media:
+                                        img = media[0].file.url
+                            except Exception:
+                                pass
+                        snap["image"] = img
+
             items.append(
                 {
                     "id": str(item.id),
-                    "product_snapshot": item.product_snapshot,
+                    "product_snapshot": snap,
                     "quantity": item.quantity,
                     "price": str(item.price_snapshot),
                     "line_total": str(item.line_total),
