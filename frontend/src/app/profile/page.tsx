@@ -290,20 +290,46 @@ export default function ProfilePage() {
 
     const formData = new FormData(e.currentTarget);
     const fullName = ((formData.get("fullName") as string) || "").trim();
+    if (!fullName) {
+      toast.error("نام و نام خانوادگی نمی‌تواند خالی باشد");
+      setIsLoading(false);
+      return;
+    }
+
+    // Name characters regex check (Persian, Arabic, Latin, hyphens, spaces)
+    const nameRegex = /^[\w\s\-\'\u0600-\u06FF]+$/;
+    if (!nameRegex.test(fullName) || fullName.includes("<") || fullName.includes(">")) {
+      toast.error("نام وارد شده شامل کاراکترهای غیرمجاز است");
+      setIsLoading(false);
+      return;
+    }
+
     const [firstName, ...lastNames] = fullName.split(" ");
+    const fName = (firstName || "").trim();
+    const lName = (lastNames.join(" ") || "").trim() || fName;
 
     try {
       const res = await api.patch("/api/users/me/", {
-        first_name: firstName || "",
-        last_name: lastNames.join(" ") || "",
+        first_name: fName,
+        last_name: lName,
       });
-      setUserProfile(
-        res.data || {
-          ...userProfile,
-          first_name: firstName || "",
-          last_name: lastNames.join(" ") || "",
-        }
-      );
+
+      const updatedProfile = res.data || {
+        ...userProfile,
+        first_name: fName,
+        last_name: lName,
+      };
+
+      setUserProfile(updatedProfile);
+
+      // Sync updated user in localStorage and trigger auth-change event
+      if (typeof window !== "undefined") {
+        const storedUser = localStorage.getItem("user");
+        const parsed = storedUser ? JSON.parse(storedUser) : {};
+        localStorage.setItem("user", JSON.stringify({ ...parsed, ...updatedProfile }));
+        window.dispatchEvent(new Event("auth-change"));
+      }
+
       toast.success("اطلاعات کاربری با موفقیت بروزرسانی شد");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "خطا در بروزرسانی اطلاعات"));
@@ -363,14 +389,15 @@ export default function ProfilePage() {
 
   const handleChangeEmailRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmailInput || !emailChangePassword) {
+    const normalizedEmail = newEmailInput.trim().toLowerCase();
+    if (!normalizedEmail || !emailChangePassword) {
       toast.error("لطفاً ایمیل جدید و رمز عبور را وارد کنید");
       return;
     }
     setIsSubmittingEmailChange(true);
     try {
       await api.post("/api/users/me/change_email/", {
-        new_email: newEmailInput,
+        new_email: normalizedEmail,
         password: emailChangePassword,
       });
       toast.success("لینک و کد تایید به ایمیل جدید ارسال شد. لطفاً کد را در کادر زیر وارد کنید.");
@@ -384,21 +411,29 @@ export default function ProfilePage() {
 
   const handleConfirmEmailChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailChangeToken) {
+    const token = emailChangeToken.trim();
+    if (!token) {
       toast.error("کد یا توکن تایید را وارد کنید");
       return;
     }
     setIsSubmittingEmailChange(true);
     try {
       await api.post("/api/users/me/confirm_email/", {
-        token: emailChangeToken,
+        token: token,
       });
-      toast.success("ایمیل شما با موفقیت تغییر یافت. لطفاً مجدداً وارد شوید.");
-      setUserProfile((prev: any) => ({ ...prev, email: newEmailInput }));
-      setIsEmailChangeStepTwo(false);
-      setNewEmailInput("");
-      setEmailChangePassword("");
-      setEmailChangeToken("");
+      toast.success("ایمیل شما با موفقیت تغییر یافت. به دلایل امنیتی، لطفاً مجدداً وارد حساب خود شوید.");
+      
+      // Clear blacklisted session tokens and redirect to auth
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
+        window.dispatchEvent(new Event("auth-change"));
+      }
+      
+      setTimeout(() => {
+        router.push(`/auth?email=${encodeURIComponent(newEmailInput.trim().toLowerCase())}`);
+      }, 1500);
     } catch (err: any) {
       toast.error(getApiErrorMessage(err, "کد تایید اشتباه یا منقضی شده است"));
     } finally {

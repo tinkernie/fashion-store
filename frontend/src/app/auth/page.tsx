@@ -74,15 +74,6 @@ export default function AuthPage() {
   const [resendCooldown, setResendCooldown] = useState<number>(0);
   const { mergeCart } = useCart();
 
-  // Cooldown countdown timer
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
-
   // Form Hooks
   const {
     register: registerLogin,
@@ -111,11 +102,31 @@ export default function AuthPage() {
     setValue: setResendValue,
   } = useForm<ResendVerificationForm>({ resolver: zodResolver(resendVerificationSchema) });
 
+  // Cooldown countdown timer & URL email prefill
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const emailParam = sp.get("email");
+      if (emailParam) {
+        setLoginValue("identifier", emailParam);
+      }
+    }
+  }, [setLoginValue]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
   const onLogin = async (data: LoginForm) => {
     setIsLoading(true);
+    const normalizedEmail = data.identifier.trim().toLowerCase();
     try {
       const response = await api.post("/api/auth/login/", {
-        email: data.identifier,
+        email: normalizedEmail,
         password: data.password,
       });
 
@@ -146,8 +157,8 @@ export default function AuthPage() {
 
       // Inactive account check
       if (errCode === "inactive_account" || String(errMsg).includes("not activated") || String(errMsg).includes("verify your email")) {
-        setPendingEmail(data.identifier);
-        setResendValue("email", data.identifier);
+        setPendingEmail(normalizedEmail);
+        setResendValue("email", normalizedEmail);
         setView("verifyPending");
         toast.error("حساب کاربری شما هنوز فعال نشده است. لطفاً ایمیل خود را تایید کنید.");
         return;
@@ -161,18 +172,22 @@ export default function AuthPage() {
 
   const onRegister = async (data: RegisterForm) => {
     setIsLoading(true);
+    const normalizedEmail = data.identifier.trim().toLowerCase();
     try {
       const [firstName, ...lastNames] = data.fullName.trim().split(" ");
+      const fName = (firstName || "").trim();
+      const lName = (lastNames.join(" ") || "").trim() || fName;
+
       await api.post("/api/auth/register/", {
-        email: data.identifier,
+        email: normalizedEmail,
         password: data.password,
-        first_name: firstName || "",
-        last_name: lastNames.join(" ") || "",
+        first_name: fName,
+        last_name: lName,
       });
 
       // Email verification is mandatory (is_active=False on backend)
-      setPendingEmail(data.identifier);
-      setResendValue("email", data.identifier);
+      setPendingEmail(normalizedEmail);
+      setResendValue("email", normalizedEmail);
       setView("verifyPending");
       setResendCooldown(60);
       toast.success("حساب شما با موفقیت ایجاد شد", {

@@ -18,6 +18,16 @@ const errorMap: Record<string, string> = {
   "invalid_coupon": "کد تخفیف وارد شده نامعتبر یا منقضی است.",
 
   // Authentication & User Accounts (Messages & Codes)
+  "Password is incorrect.": "رمز عبور وارد شده نادرست است.",
+  "first_name cannot be blank or whitespace.": "نام نمی‌تواند خالی یا فقط فاصله باشد.",
+  "last_name cannot be blank or whitespace.": "نام خانوادگی نمی‌تواند خالی یا فقط فاصله باشد.",
+  "first_name is required.": "وارد کردن نام الزامی است.",
+  "last_name is required.": "وارد کردن نام خانوادگی الزامی است.",
+  "first_name contains invalid characters.": "نام وارد شده شامل کاراکترهای غیرمجاز است.",
+  "last_name contains invalid characters.": "نام خانوادگی شامل کاراکترهای غیرمجاز است.",
+  "Search query too long (max 100).": "عبارت جستجو بیش از حد طولانی است (حداکثر ۱۰۰ کاراکتر).",
+  "Verification email sent to new address.": "ایمیل تایید به آدرس ایمیل جدید ارسال شد.",
+  "Email changed successfully. Please log in again.": "ایمیل با موفقیت تغییر یافت. لطفاً دوباره وارد حساب خود شوید.",
   "A user with this email already exists.": "کاربری با این آدرس ایمیل قبلاً ثبت‌نام کرده است. لطفاً وارد شوید.",
   "User with this email already exists.": "کاربری با این آدرس ایمیل قبلاً ثبت‌نام کرده است.",
   "email_exists": "کاربری با این آدرس ایمیل قبلاً ثبت‌نام کرده است. لطفاً وارد حساب خود شوید.",
