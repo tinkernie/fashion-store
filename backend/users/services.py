@@ -25,15 +25,18 @@ class UserService:
     def change_email_request(self, user: User, new_email: str, password: str) -> dict:
         if not user.check_password(password):
             raise BusinessException("Password is incorrect.", code="wrong_password")
-        UserValidator.validate_email_unique(new_email, exclude_user_id=user.id)
-        # Cancel any previous pending requests for this user
+        # Group A: normalize email for case-insensitivity
+        normalized_email = new_email.strip().lower()
+        UserValidator.validate_email_unique(normalized_email, exclude_user_id=user.id)
+        # Cancel any previous pending requests for this user + atomic creation
         from .models import EmailChangeRequest
 
-        EmailChangeRequest.objects.filter(user=user, is_used=False).update(is_used=True)
-        token = UserRepository.create_email_change_request(user, new_email)
+        with transaction.atomic():
+            EmailChangeRequest.objects.select_for_update().filter(user=user, is_used=False).update(is_used=True)
+            token = UserRepository.create_email_change_request(user, normalized_email)
         transaction.on_commit(
             lambda: send_email_change_verification.delay(
-                str(token.id), new_email, str(token.token)
+                str(token.id), normalized_email, str(token.token)
             )
         )
         return {"message": "Verification email sent to new address."}
@@ -41,24 +44,37 @@ class UserService:
     def confirm_email_change(self, token_str: str) -> dict:
         from .models import EmailChangeRequest
 
-        try:
-            token = UserSelector.get_email_change_request(token_str)
-        except EmailChangeRequest.DoesNotExist:
-            raise BusinessException("Invalid or expired token.", code="invalid_token")
-        if token.created_at < timezone.now() - timedelta(hours=1):
-            token.is_used = True
-            token.save()
-            raise BusinessException("Token expired.", code="token_expired")
-        # Update user email
-        user = token.user
-        user.email = token.new_email
-        user.save(update_fields=["email", "updated_at"])
-        UserRepository.mark_email_change_used(token)
-        # Blacklist all tokens to force re‑login
-        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+        # Group A: atomic + select_for_update + re-validate uniqueness at confirm time
+        with transaction.atomic():
+            try:
+                token = EmailChangeRequest.objects.select_for_update().select_related("user").get(
+                    token=token_str, is_used=False
+                )
+            except EmailChangeRequest.DoesNotExist:
+                raise BusinessException("Invalid or expired token.", code="invalid_token")
+            if token.created_at < timezone.now() - timedelta(hours=1):
+                token.is_used = True
+                token.save(update_fields=["is_used", "updated_at"])
+                raise BusinessException("Token expired.", code="token_expired")
 
-        for t in OutstandingToken.objects.filter(user=user):
-            t.blacklist()
+            # Re-validate uniqueness inside lock (TOCTOU between request and confirm)
+            normalized_new = token.new_email.strip().lower()
+            if User.objects.filter(email__iexact=normalized_new).exclude(id=token.user_id).exists():
+                raise BusinessException("A user with this email already exists.", code="email_exists")
+
+            user = token.user
+            user.email = normalized_new
+            user.save(update_fields=["email", "updated_at"])
+            token.is_used = True
+            token.save(update_fields=["is_used", "updated_at"])
+            # Blacklist all tokens to force re‑login
+            from rest_framework_simplejwt.token_blacklist.models import (
+                BlacklistedToken,
+                OutstandingToken,
+            )
+
+            for t in OutstandingToken.objects.select_for_update().filter(user=user):
+                BlacklistedToken.objects.get_or_create(token=t)
         return {"message": "Email changed successfully. Please log in again."}
 
     # Admin actions

@@ -16,8 +16,21 @@ class UserProfileSerializer(serializers.Serializer):
 
 
 class UpdateProfileSerializer(serializers.Serializer):
-    first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
-    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    first_name = serializers.CharField(max_length=150, required=False, allow_blank=False)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=False)
+
+    def validate_first_name(self, value):
+        # Group B: strip + BusinessException handled via DRF ValidationError
+        from .validators import UserValidator
+
+        UserValidator.validate_name(value, field_name="first_name")
+        return value.strip()
+
+    def validate_last_name(self, value):
+        from .validators import UserValidator
+
+        UserValidator.validate_name(value, field_name="last_name")
+        return value.strip()
 
 
 class ChangeEmailSerializer(serializers.Serializer):

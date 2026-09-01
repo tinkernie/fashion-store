@@ -25,10 +25,16 @@ class UserSelector:
             if "is_active" in filters:
                 qs = qs.filter(is_active=filters["is_active"])
             if "search" in filters:
+                # Group B: prevent DoS via huge search string
+                search = filters["search"]
+                if search and len(search) > 100:
+                    from common.exceptions import BusinessException
+
+                    raise BusinessException("Search query too long (max 100).")
                 qs = (
-                    qs.filter(email__icontains=filters["search"])
-                    | qs.filter(first_name__icontains=filters["search"])
-                    | qs.filter(last_name__icontains=filters["search"])
+                    qs.filter(email__icontains=search)
+                    | qs.filter(first_name__icontains=search)
+                    | qs.filter(last_name__icontains=search)
                 )
         return qs
 

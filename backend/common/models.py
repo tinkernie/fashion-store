@@ -69,5 +69,16 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
+    class Meta:
+        # Group A: case-insensitive unique (Postgres Lower, SQLite functional index)
+        constraints = [
+            models.UniqueConstraint(
+                models.functions.Lower("email"),
+                name="unique_lower_email",
+                condition=models.Q(deleted_at__isnull=True),
+                violation_error_message="A user with this email already exists.",
+            )
+        ]
+
     def __str__(self):
         return self.email

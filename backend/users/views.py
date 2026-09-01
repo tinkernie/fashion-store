@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.throttling import ScopedRateThrottle
 from django.contrib.auth import get_user_model
 from .services import UserService
 from .selectors import UserSelector
@@ -29,6 +30,13 @@ class UserProfileViewSet(
         # Always return the current authenticated user for 'me' actions
         return self.request.user
 
+    def get_throttles(self):
+        # Group B: rate limit email change to 5/min per auth scope
+        if self.action in ["change_email", "confirm_email"]:
+            self.throttle_scope = "auth"
+            return [ScopedRateThrottle()]
+        return super().get_throttles()
+
     def list(self, request):
         serializer = self.get_serializer(self.get_object())
         return Response(serializer.data)
@@ -55,10 +63,10 @@ class UserProfileViewSet(
         # Allow POST /api/users/me/ to update profile
         return self.partial_update(request, *args, **kwargs)
 
-
     @action(detail=False, methods=["post"], serializer_class=ChangeEmailSerializer)
     def change_email(self, request):
-        serializer = self.get_serializer(data=request.data)
+        # explicit serializer avoids get_serializer returning UserProfileSerializer via as_view mapping
+        serializer = ChangeEmailSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         service = UserService()
         result = service.change_email_request(
@@ -70,7 +78,7 @@ class UserProfileViewSet(
 
     @action(detail=False, methods=["post"], serializer_class=ConfirmEmailSerializer)
     def confirm_email(self, request):
-        serializer = self.get_serializer(data=request.data)
+        serializer = ConfirmEmailSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         service = UserService()
         result = service.confirm_email_change(str(serializer.validated_data["token"]))
