@@ -97,6 +97,8 @@ interface ProductItem {
   imageUrl?: string;
   is_new?: boolean;
   rating?: number;
+  stock_quantity?: number;
+  is_in_stock?: boolean;
 }
 
 interface FilterFacet {
@@ -770,11 +772,17 @@ function SearchContent() {
                         </button>
 
                         {/* Badges */}
-                        {product.is_new && (
-                          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-400 text-black text-[10px] font-black uppercase tracking-wider z-20">
-                            جدید
-                          </span>
-                        )}
+                        <div className="absolute top-3 right-3 flex flex-col gap-1 z-20">
+                          {product.is_in_stock === false || (product.stock_quantity !== undefined && product.stock_quantity <= 0) ? (
+                            <span className="px-2.5 py-1 rounded-full bg-rose-500/90 backdrop-blur-md text-white text-[10px] font-black tracking-wider">
+                              ناموجود
+                            </span>
+                          ) : product.is_new ? (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-400 text-black text-[10px] font-black uppercase tracking-wider">
+                              جدید
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
 
                       {/* Product Info */}

@@ -58,6 +58,11 @@ class SearchService:
             except Exception:
                 pass
 
+        total_stock = 0
+        for v in product.variants.filter(deleted_at__isnull=True):
+            if hasattr(v, "inventory") and v.inventory:
+                total_stock += v.inventory.available_quantity
+
         return {
             'id': str(product.id),
             'title': product.title,
@@ -72,5 +77,7 @@ class SearchService:
             'image': img,
             'imageUrl': img,
             'is_new': (timezone.now() - product.created_at).days < 30,
+            'stock_quantity': total_stock,
+            'is_in_stock': total_stock > 0,
         }
 

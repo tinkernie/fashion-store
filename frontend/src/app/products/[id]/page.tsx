@@ -22,6 +22,8 @@ import {
   Boxes,
   Tag,
   AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
   Clock,
   Sparkles,
 } from "lucide-react";
@@ -66,6 +68,7 @@ interface ProductVariant {
     available_quantity?: number;
     quantity?: number;
   };
+  stock?: number;
   metadata?: any;
 }
 
@@ -256,12 +259,47 @@ export default function ProductDetailPage() {
   const currentPrice = matchedVariant ? Number(matchedVariant.price) : basePrice;
   const isSaved = isInWishlist(product.id);
 
-  const isOutOfStock =
-    matchedVariant?.availability === "out_of_stock" ||
-    (matchedVariant?.inventory?.available_quantity !== undefined &&
-      matchedVariant.inventory.available_quantity <= 0);
+  // Determine overall product stock and variant stock
+  const totalProductStock =
+    product?.stock_quantity ??
+    product?.inventory_count ??
+    (variants && variants.length > 0
+      ? variants.reduce(
+          (sum, v) => sum + (v.stock ?? v.inventory?.available_quantity ?? v.inventory?.quantity ?? 0),
+          0
+        )
+      : 0);
 
-  const isPreOrder = matchedVariant?.availability === "pre_order";
+  const isOutOfStock = (() => {
+    // 1. If product status is not published/active
+    if (product?.status && product.status !== "published" && product.status !== "active") return true;
+
+    // 2. If product explicitly has 0 or negative total stock
+    if (totalProductStock <= 0) return true;
+
+    // 3. If options are present on the product but no variants exist in database
+    if (options.length > 0 && (!variants || variants.length === 0)) return true;
+
+    // 4. If variants exist in database
+    if (variants && variants.length > 0) {
+      if (!matchedVariant) return true;
+
+      if (matchedVariant.availability === "out_of_stock") return true;
+
+      const variantQty =
+        matchedVariant.inventory?.available_quantity ??
+        matchedVariant.inventory?.quantity ??
+        matchedVariant.stock;
+
+      if (variantQty !== undefined && variantQty <= 0) return true;
+    }
+
+    return false;
+  })();
+
+  const isPreOrder =
+    matchedVariant?.availability === "pre_order" ||
+    product?.availability === "pre_order";
 
   const handleOptionChange = (optionName: string, value: string) => {
     setSelectedOptions((prev) => ({
@@ -271,17 +309,17 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToCart = async () => {
+    if (isOutOfStock) {
+      toast.error("این محصول در حال حاضر در انبار موجود نمی‌باشد.");
+      return;
+    }
+
     if (options.length > 0) {
       const missingOption = options.find((opt) => !selectedOptions[opt.name]);
       if (missingOption) {
         toast.error(`لطفاً گزینه "${missingOption.name}" را انتخاب کنید.`);
         return;
       }
-    }
-
-    if (isOutOfStock) {
-      toast.error("تنوع انتخابی در حال حاضر ناموجود است.");
-      return;
     }
 
     const optionsSummary =
@@ -397,15 +435,18 @@ export default function ProductDetailPage() {
               <span className="text-xs font-bold text-white mt-0.5">۴.۹</span>
             </div>
             {isOutOfStock ? (
-              <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                ناموجود
+              <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                ناموجود در انبار
               </span>
             ) : isPreOrder ? (
-              <span className="bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+              <span className="bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <Clock className="w-3 h-3" />
                 پیش‌سفارش
               </span>
             ) : (
-              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
                 موجود در انبار
               </span>
             )}
@@ -505,36 +546,51 @@ export default function ProductDetailPage() {
 
           {/* Quantity & Stock Control */}
           <div className="pt-4 border-t border-white/10 space-y-4">
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-bold text-gray-300">تعداد سفارش:</span>
-              <div className="flex items-center gap-3 bg-[#141414] border border-white/10 rounded-xl p-1">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span className="w-8 text-center text-xs font-bold text-white">
-                  {quantity.toLocaleString("fa-IR")}
-                </span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
+            {isOutOfStock ? (
+              <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                <div className="space-y-0.5 text-right">
+                  <span className="text-xs font-bold text-rose-300 block">
+                    این کالا در حال حاضر در انبار موجود نمی‌باشد
+                  </span>
+                  <span className="text-[11px] text-gray-400 block">
+                    به محض شارژ مجدد کالا در انبار، امکان ثبت سفارش مجدداً فعال خواهد شد.
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-bold text-gray-300">تعداد سفارش:</span>
+                <div className="flex items-center gap-3 bg-[#141414] border border-white/10 rounded-xl p-1">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="w-8 text-center text-xs font-bold text-white">
+                    {quantity.toLocaleString("fa-IR")}
+                  </span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Desktop Action Buttons */}
             <div className="hidden md:flex gap-3 pt-2">
               <Button
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className="flex-1 h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-sm font-black transition-all shadow-xl gap-2 disabled:opacity-30 cursor-pointer"
+                className="flex-1 h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-sm font-black transition-all shadow-xl gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-[#1a1a1a] disabled:text-gray-500 disabled:border disabled:border-white/10 cursor-pointer"
               >
                 <ShoppingBag className="w-4 h-4" />
-                {isOutOfStock ? "ناموجود در این تنوع" : "افزودن به سبد خرید"}
+                {isOutOfStock ? "ناموجود در انبار" : "افزودن به سبد خرید"}
               </Button>
 
               <Button
@@ -670,10 +726,10 @@ export default function ProductDetailPage() {
         <Button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
-          className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 text-xs font-black transition-all shadow-xl gap-2 disabled:opacity-30"
+          className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 text-xs font-black transition-all shadow-xl gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-[#1a1a1a] disabled:text-gray-500 disabled:border disabled:border-white/10"
         >
           <ShoppingBag className="w-4 h-4" />
-          {isOutOfStock ? "ناموجود" : `افزودن به سبد (${currentPrice.toLocaleString("fa-IR")} تومان)`}
+          {isOutOfStock ? "ناموجود در انبار" : `افزودن به سبد (${currentPrice.toLocaleString("fa-IR")} تومان)`}
         </Button>
       </div>
     </main>

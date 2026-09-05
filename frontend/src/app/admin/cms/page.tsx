@@ -102,9 +102,19 @@ export default function AdminCMSPage() {
       }
       if (announceData.status === "fulfilled" && announceData.value) {
         setAnnouncement((prev) => ({ ...prev, ...announceData.value }));
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("fashion_announcement", JSON.stringify(announceData.value));
+          } catch {}
+        }
       }
       if (heroData.status === "fulfilled" && heroData.value) {
         setHeroBanner((prev) => ({ ...prev, ...heroData.value }));
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("fashion_hero_content", JSON.stringify(heroData.value));
+          } catch {}
+        }
       }
       if (footerData.status === "fulfilled" && footerData.value) {
         setFooterInfo((prev) => ({ ...prev, ...footerData.value }));
@@ -121,6 +131,11 @@ export default function AdminCMSPage() {
     setIsLoading(true);
     try {
       await adminApi.updateSiteContent("announcement", announcement);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("fashion_announcement", JSON.stringify(announcement));
+        } catch {}
+      }
       toast.success("تنظیمات نوار اطلاعیه با موفقیت ذخیره شد");
     } catch (e: any) {
       const msg = e?.response?.data?.detail || e?.response?.data?.error?.message || "خطا در ذخیره نوار اطلاعیه. اطمینان حاصل کنید با حساب ادمین وارد شده‌اید.";
@@ -134,6 +149,11 @@ export default function AdminCMSPage() {
     setIsLoading(true);
     try {
       await adminApi.updateSiteContent("hero", heroBanner);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("fashion_hero_content", JSON.stringify(heroBanner));
+        } catch {}
+      }
       toast.success("تنظیمات بنر صفحه نخست با موفقیت ذخیره شد");
     } catch (e: any) {
       const msg = e?.response?.data?.detail || e?.response?.data?.error?.message || "خطا در ذخیره بنر صفحه نخست. اطمینان حاصل کنید با حساب ادمین وارد شده‌اید.";
