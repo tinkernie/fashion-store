@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
+import { isTokenExpired, clearAuthSession, getStoredAuth, setAuthSession } from "@/lib/auth";
 
 const NAV_ITEMS = [
   {
@@ -109,43 +110,36 @@ export default function AdminLayout({
 
   const checkAdminAuth = async () => {
     if (typeof window === "undefined") return;
-    const token = localStorage.getItem("access_token");
-    if (!token) {
+    const { accessToken, refreshToken } = getStoredAuth();
+    if (!accessToken && !refreshToken) {
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      return;
+    }
+
+    if (accessToken && isTokenExpired(accessToken, 0) && (!refreshToken || isTokenExpired(refreshToken, 0))) {
+      clearAuthSession({ notify: false, redirect: false });
       setIsAuthenticated(false);
       setCurrentUser(null);
       return;
     }
 
     try {
-      // Fast check with JWT payload
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      
       // Verify with backend user profile
-      let profile = null;
-      try {
-        const res = await api.get(`/api/users/me/`);
-        profile = res.data;
-      } catch {
-        profile = null;
-      }
+      const res = await api.get(`/api/users/me/`);
+      const profile = res.data;
 
-      const isSuperUser = Boolean(profile?.is_superuser || payload?.is_superuser);
-      const isStaffUser = Boolean(profile?.is_staff || payload?.is_staff);
+      const isSuperUser = Boolean(profile?.is_superuser);
+      const isStaffUser = Boolean(profile?.is_staff);
 
       if (!isSuperUser && !isStaffUser) {
         // Logged in as regular customer - block access to admin panel
         setIsAuthenticated(false);
-        setCurrentUser(profile || { email: payload.email, is_staff: false, is_superuser: false });
+        setCurrentUser(profile || { is_staff: false, is_superuser: false });
         return;
       }
 
-      setCurrentUser(
-        profile || {
-          email: payload.email || "مدیر ارشد سیستم",
-          is_staff: isStaffUser,
-          is_superuser: isSuperUser,
-        }
-      );
+      setCurrentUser(profile);
       setIsAuthenticated(true);
     } catch {
       setIsAuthenticated(false);
@@ -185,12 +179,11 @@ export default function AdminLayout({
         return;
       }
 
-      localStorage.setItem("access_token", token);
-      localStorage.setItem("refresh_token", refresh);
-      if (user) {
-        localStorage.setItem("user", JSON.stringify(user));
-      }
-      window.dispatchEvent(new Event("auth-change"));
+      setAuthSession({
+        access: token,
+        refresh: refresh,
+        user: user,
+      });
 
       setCurrentUser(
         user || {
@@ -217,8 +210,7 @@ export default function AdminLayout({
     } catch {
       // ignore
     }
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    clearAuthSession({ notify: false, redirect: false });
     setIsAuthenticated(false);
     setCurrentUser(null);
     toast.success("از پنل مدیریت خارج شدید");

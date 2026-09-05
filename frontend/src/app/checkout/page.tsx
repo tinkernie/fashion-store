@@ -29,6 +29,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { isTokenExpired, parseJwtPayload } from "@/lib/auth";
 
 const checkoutSchema = z.object({
   fullName: z.string().min(3, "نام و نام خانوادگی باید حداقل ۳ کاراکتر باشد"),
@@ -76,11 +77,12 @@ export default function CheckoutPage() {
     // Auto-fill from saved profile addresses if available
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("access_token");
-      if (!token) {
+      const isExpired = isTokenExpired(token, 0);
+      if (!token || isExpired) {
         toast.info("برای تکمیل سفارش، لطفاً ابتدا وارد حساب خود شوید یا اطلاعات ارسال را وارد کنید.");
       }
       try {
-        const payload = token ? JSON.parse(atob(token.split(".")[1])) : null;
+        const payload = token && !isExpired ? parseJwtPayload(token) : null;
         const userId = payload?.user_id || payload?.id;
         if (userId) {
           const saved = localStorage.getItem(`user_addresses_${userId}`);

@@ -316,3 +316,10 @@ export const useCart = create<CartStore>((set, get) => ({
     return Math.max(0, total - discount);
   },
 }));
+
+// Automatically synchronize cart on login or logout
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth-change', () => {
+    useCart.getState().fetchCart();
+  });
+}

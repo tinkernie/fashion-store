@@ -15,6 +15,7 @@ import * as z from "zod";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import { getApiErrorMessage } from "@/lib/error-utils";
+import { setAuthSession } from "@/lib/auth";
 
 // --- Validation Schemas ---
 const phoneRegex = /^09\d{9}$/;
@@ -130,14 +131,11 @@ export default function AuthPage() {
         password: data.password,
       });
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("access_token", response.data.access);
-        localStorage.setItem("refresh_token", response.data.refresh);
-        if (response.data.user) {
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-        }
-        window.dispatchEvent(new Event("auth-change"));
-      }
+      setAuthSession({
+        access: response.data.access,
+        refresh: response.data.refresh,
+        user: response.data.user,
+      });
 
       // Sync backend cart & wishlist on login
       try {

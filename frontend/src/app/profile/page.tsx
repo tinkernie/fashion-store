@@ -40,18 +40,26 @@ import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
 import { cn } from "@/lib/utils";
+import { isTokenExpired, clearAuthSession, parseJwtPayload } from "@/lib/auth";
 
 
 const getUserIdFromToken = () => {
   if (typeof window === "undefined") return null;
   const token = localStorage.getItem("access_token");
-  if (!token) return null;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.user_id || payload.id;
-  } catch (e) {
-    return null;
+  const refreshToken = localStorage.getItem("refresh_token");
+  if (!token && !refreshToken) return null;
+
+  if (token && !isTokenExpired(token, 0)) {
+    const payload = parseJwtPayload(token);
+    return payload?.user_id || payload?.id || null;
   }
+
+  if (refreshToken && !isTokenExpired(refreshToken, 0)) {
+    const payload = parseJwtPayload(refreshToken);
+    return payload?.user_id || payload?.id || null;
+  }
+
+  return null;
 };
 
 const ORDER_STEPS = [
@@ -138,8 +146,8 @@ export default function ProfilePage() {
 
     const userId = getUserIdFromToken();
     if (!userId) {
-      toast.error("لطفاً ابتدا وارد حساب کاربری خود شوید");
-      router.push("/auth");
+      clearAuthSession({ notify: true, redirect: false });
+      router.push("/auth?redirect=/profile");
       return;
     }
 
@@ -161,6 +169,15 @@ export default function ProfilePage() {
           api.get("/api/notifications/"),
           api.get("/api/notifications/preferences/"),
         ]);
+
+        const isAuth401 = (res: PromiseSettledResult<any>) =>
+          res.status === "rejected" && res.reason?.response?.status === 401;
+
+        if (isAuth401(profileRes) || isAuth401(ordersRes)) {
+          clearAuthSession({ notify: true, redirect: false });
+          router.push("/auth?redirect=/profile");
+          return;
+        }
 
         if (ordersRes.status === "fulfilled") {
           const fetchedOrders = Array.isArray(ordersRes.value.data)
@@ -278,8 +295,7 @@ export default function ProfilePage() {
     } catch (e) {
       console.error("Logout error:", e);
     }
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    clearAuthSession({ notify: false, redirect: false });
     toast.success("با موفقیت از حساب کاربری خارج شدید");
     router.push("/");
   };
@@ -426,13 +442,8 @@ export default function ProfilePage() {
       });
       toast.success("ایمیل شما با موفقیت تغییر یافت. به دلایل امنیتی، لطفاً مجدداً وارد حساب خود شوید.");
       
-      // Clear blacklisted session tokens and redirect to auth
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("user");
-        window.dispatchEvent(new Event("auth-change"));
-      }
+      // Clear session tokens and redirect to auth
+      clearAuthSession({ notify: false, redirect: false });
       
       setTimeout(() => {
         router.push(`/auth?email=${encodeURIComponent(newEmailInput.trim().toLowerCase())}`);

@@ -28,6 +28,7 @@ import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
+import { isTokenExpired, clearAuthSession, getStoredAuth } from "@/lib/auth";
 
 const POPULAR_SEARCH_TAGS = [
   "پالتو کشمیر",
@@ -43,9 +44,10 @@ export default function Navbar() {
     items,
     removeItem,
     fetchCart,
-    coupon,
+    updateQuantity,
     applyCoupon,
     removeCoupon,
+    coupon,
     getTotal,
     getDiscountAmount,
     getFinalTotal,
@@ -59,23 +61,36 @@ export default function Navbar() {
 
   const checkAuth = () => {
     if (typeof window === "undefined") return;
-    const token = localStorage.getItem("access_token");
-    setIsLoggedIn(!!token);
-    try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const u = JSON.parse(userStr);
+    const { accessToken, refreshToken, user } = getStoredAuth();
+
+    // Check if user has an active, valid token or refresh token
+    const hasValidAccess = accessToken && !isTokenExpired(accessToken, 0);
+    const hasValidRefresh = refreshToken && !isTokenExpired(refreshToken, 0);
+    const authenticated = Boolean(hasValidAccess || hasValidRefresh);
+
+    setIsLoggedIn(authenticated);
+
+    if (authenticated) {
+      if (user) {
         setUserDisplayName(
-          [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "کاربر گرامی"
+          [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email || "کاربر گرامی"
         );
-      } else if (token) {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        setUserDisplayName(payload.email || "کاربر گرامی");
+      } else if (accessToken) {
+        try {
+          const payload = JSON.parse(atob(accessToken.split(".")[1]));
+          setUserDisplayName(payload.email || "کاربر گرامی");
+        } catch {
+          setUserDisplayName("کاربر گرامی");
+        }
       } else {
-        setUserDisplayName(null);
+        setUserDisplayName("کاربر گرامی");
       }
-    } catch {
+    } else {
       setUserDisplayName(null);
+      // Clean up orphaned user state if tokens are already expired/gone
+      if (accessToken || refreshToken || user) {
+        clearAuthSession({ notify: false, redirect: false });
+      }
     }
   };
 
@@ -99,12 +114,7 @@ export default function Navbar() {
         // Graceful silent fallback
       }
     }
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("user");
-      window.dispatchEvent(new Event("auth-change"));
-    }
+    clearAuthSession({ notify: false, redirect: false });
     setIsLoggedIn(false);
     setUserDisplayName(null);
     toast.success("با موفقیت از حساب کاربری خارج شدید");
@@ -116,8 +126,8 @@ export default function Navbar() {
     const initData = async () => {
       try {
         await fetchCart();
-        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-        if (token) {
+        const { accessToken, refreshToken } = getStoredAuth();
+        if (accessToken && (!isTokenExpired(accessToken, 0) || (refreshToken && !isTokenExpired(refreshToken, 0)))) {
           await fetchWishlist();
         }
       } catch {

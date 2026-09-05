@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api } from "@/lib/api";
+import { getStoredAuth, isTokenExpired } from "@/lib/auth";
 
 export interface WishlistItem {
   id: string;
@@ -15,6 +16,7 @@ interface WishlistStore {
   addItem: (item: WishlistItem) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
   isInWishlist: (id: string) => boolean;
+  resetWishlist: () => void;
 }
 
 const WISHLIST_STORAGE_KEY = "luxury_wishlist_items";
@@ -38,14 +40,22 @@ const saveWishlist = (items: WishlistItem[]) => {
   }
 };
 
+const checkHasAuth = (): boolean => {
+  const { accessToken, refreshToken } = getStoredAuth();
+  return Boolean(
+    (accessToken && !isTokenExpired(accessToken, 0)) ||
+    (refreshToken && !isTokenExpired(refreshToken, 0))
+  );
+};
+
 export const useWishlist = create<WishlistStore>((set, get) => ({
   items: getSavedWishlist(),
-  
+
   fetchWishlist: async () => {
     if (typeof window === "undefined") return;
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      set({ items: getSavedWishlist() });
+    if (!checkHasAuth()) {
+      set({ items: [] });
+      saveWishlist([]);
       return;
     }
 
@@ -63,8 +73,11 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
         saveWishlist(mappedItems);
       }
     } catch {
-      // Unauthenticated or backend offline: use local state
-      set({ items: getSavedWishlist() });
+      // If unauthorized or backend offline, reset if unauthenticated
+      if (!checkHasAuth()) {
+        set({ items: [] });
+        saveWishlist([]);
+      }
     }
   },
 
@@ -73,9 +86,8 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
       const updated = [...get().items, item];
       set({ items: updated });
       saveWishlist(updated);
-      
-      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-      if (token) {
+
+      if (checkHasAuth()) {
         try {
           await api.post('/api/wishlist/add_item/', {
             product_id: item.id,
@@ -91,9 +103,8 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
     const updated = get().items.filter((i) => i.id !== id);
     set({ items: updated });
     saveWishlist(updated);
-    
-    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-    if (token) {
+
+    if (checkHasAuth()) {
       try {
         await api.post('/api/wishlist/remove-item/', {
           product_id: id,
@@ -105,4 +116,25 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
   },
 
   isInWishlist: (id) => !!get().items.find((i) => i.id === id),
+
+  resetWishlist: () => {
+    set({ items: [] });
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(WISHLIST_STORAGE_KEY);
+    }
+  },
 }));
+
+// Automatically synchronize wishlist state on login or logout across window and storage events
+if (typeof window !== "undefined") {
+  const syncWishlistWithAuth = () => {
+    if (!checkHasAuth()) {
+      useWishlist.getState().resetWishlist();
+    } else {
+      useWishlist.getState().fetchWishlist();
+    }
+  };
+
+  window.addEventListener("auth-change", syncWishlistWithAuth);
+  window.addEventListener("storage", syncWishlistWithAuth);
+}
