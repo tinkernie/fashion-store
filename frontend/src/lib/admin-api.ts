@@ -129,12 +129,20 @@ export const adminApi = {
 
   // Categories & Collections
   async getCategories(): Promise<any[]> {
-    const res = await api.get('/api/categories/');
-    return Array.isArray(res.data) ? res.data : res.data.results || [];
+    const { getCategories } = await import('./categories');
+    return getCategories();
   },
-  async createCategory(data: { name: string; slug: string }): Promise<any> {
-    const res = await api.post('/api/admin/categories/', data);
-    return res.data;
+  async createCategory(data: { name: string; slug?: string; description?: string }): Promise<any> {
+    const { createCategory } = await import('./categories');
+    return createCategory(data);
+  },
+  async updateCategory(id: string, data: { name?: string; slug?: string; description?: string }): Promise<any> {
+    const { updateCategory } = await import('./categories');
+    return updateCategory(id, data);
+  },
+  async deleteCategory(id: string): Promise<any> {
+    const { deleteCategory } = await import('./categories');
+    return deleteCategory(id);
   },
   async getCollections(): Promise<any[]> {
     const res = await api.get('/api/collections/');

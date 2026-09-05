@@ -51,7 +51,6 @@ import Link from "next/link";
 import { GooeySearchBar } from "@/components/ui/animated-search-bar";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { useWishlist } from "@/store/wishlist";
-import { getColorBackground, isLightColor } from "@/lib/color-utils";
 
 function generatePaginationPages(currentPage: number, totalPages: number): (number | string)[] {
   if (totalPages <= 7) {
@@ -108,13 +107,6 @@ interface FilterFacet {
   options: Array<{ name: string; values: string[] }>;
 }
 
-const SORT_OPTIONS = [
-  { label: "جدیدترین‌ها", value: "newest" },
-  { label: "ارزان‌ترین", value: "price_asc" },
-  { label: "گران‌ترین", value: "price_desc" },
-  { label: "پرفروش‌ترین‌ها", value: "popularity" },
-];
-
 const POPULAR_KEYWORDS = [
   "کت پاییزه",
   "هودی اورسایز",
@@ -124,19 +116,12 @@ const POPULAR_KEYWORDS = [
   "اکسسوری",
 ];
 
-const PRESET_COLORS: Record<string, string> = {
-  مشکی: "#000000",
-  سفید: "#FFFFFF",
-  طوسی: "#6B7280",
-  کرم: "#E5D3B3",
-  شتری: "#C19A6B",
-  زیتونی: "#556B2F",
-  سرمه‌ای: "#1E293B",
-  آبی: "#3B82F6",
-  قرمز: "#EF4444",
-  سبز: "#10B981",
-  خردلی: "#EAB308",
-};
+const SORT_OPTIONS = [
+  { label: "جدیدترین‌ها", value: "newest" },
+  { label: "ارزان‌ترین", value: "price_asc" },
+  { label: "گران‌ترین", value: "price_desc" },
+  { label: "پرفروش‌ترین‌ها", value: "popularity" },
+];
 
 function SearchContent() {
   const router = useRouter();
@@ -148,8 +133,8 @@ function SearchContent() {
   const collectionParam = searchParams.get("collection") || "";
   const minPriceParam = searchParams.get("min_price") || "";
   const maxPriceParam = searchParams.get("max_price") || "";
-  const sortParam = searchParams.get("sort") || "newest";
   const inStockParam = searchParams.get("in_stock") === "true";
+  const sortParam = searchParams.get("sort") || "newest";
   const selectedOptionsParam = searchParams.get("options")
     ? JSON.parse(searchParams.get("options") || "{}")
     : {};
@@ -172,8 +157,8 @@ function SearchContent() {
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
   const [minPrice, setMinPrice] = useState(minPriceParam);
   const [maxPrice, setMaxPrice] = useState(maxPriceParam);
-  const [selectedSort, setSelectedSort] = useState(sortParam);
   const [inStockOnly, setInStockOnly] = useState(inStockParam);
+  const [selectedSort, setSelectedSort] = useState(sortParam);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>(selectedOptionsParam);
 
   const { items: wishlistItems, addItem: addWishlist, removeItem: removeWishlist } = useWishlist();
@@ -184,21 +169,21 @@ function SearchContent() {
     setSelectedCategory(categoryParam);
     setMinPrice(minPriceParam);
     setMaxPrice(maxPriceParam);
-    setSelectedSort(sortParam);
     setInStockOnly(inStockParam);
+    setSelectedSort(sortParam);
     setSelectedOptions(
       searchParams.get("options")
         ? JSON.parse(searchParams.get("options") || "{}")
         : {}
     );
-  }, [searchParams]);
+  }, [searchParams, queryParam, categoryParam, minPriceParam, maxPriceParam, inStockParam, sortParam]);
 
-  // Ensure category facets are always available
+  // Ensure category facets are always available and synced with admin
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const res = await api.get('/api/categories/flat/');
-        const list = Array.isArray(res.data) ? res.data : res.data.results || [];
+        const { getCategories } = await import("@/lib/categories");
+        const list = await getCategories();
         if (list.length > 0) {
           setFacets((prev) => ({
             ...prev,
@@ -214,6 +199,21 @@ function SearchContent() {
       }
     };
     loadCategories();
+
+    const handleCatsUpdated = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setFacets((prev) => ({
+          ...prev,
+          categories: e.detail.map((c: any) => ({
+            id: c.id,
+            name: c.name || c.title,
+            slug: c.slug || c.id,
+          })),
+        }));
+      }
+    };
+    window.addEventListener("fashion_categories_updated", handleCatsUpdated);
+    return () => window.removeEventListener("fashion_categories_updated", handleCatsUpdated);
   }, []);
 
 
@@ -234,17 +234,17 @@ function SearchContent() {
       }
       if (minPriceParam) params.set("min_price", minPriceParam);
       if (maxPriceParam) params.set("max_price", maxPriceParam);
-      if (sortParam) params.set("sort", sortParam);
       if (inStockParam) params.set("in_stock", "true");
+      if (sortParam) {
+        params.set("sort", sortParam);
+        params.set("ordering", sortParam);
+      }
 
       if (Object.keys(selectedOptionsParam).length > 0) {
         params.set("options", JSON.stringify(selectedOptionsParam));
-        // Flatten size and color for direct query matching
+        // Flatten size for direct query matching
         if (selectedOptionsParam["سایز"] && selectedOptionsParam["سایز"].length > 0) {
           params.set("size", selectedOptionsParam["سایز"].join(","));
-        }
-        if (selectedOptionsParam["رنگ"] && selectedOptionsParam["رنگ"].length > 0) {
-          params.set("color", selectedOptionsParam["رنگ"].join(","));
         }
       }
       params.set("page", String(currentPage));
@@ -290,8 +290,8 @@ function SearchContent() {
     collectionParam,
     minPriceParam,
     maxPriceParam,
-    sortParam,
     inStockParam,
+    sortParam,
     searchParams,
     currentPage,
   ]);
@@ -471,13 +471,16 @@ function SearchContent() {
         </Button>
       </div>
 
-      {/* Dynamic Options Filters (Color / Size) */}
-      {facets.options?.map((opt) => {
-        const uniqueValues = Array.from(new Set(opt.values || []));
-        const isColor = opt.name.toLowerCase().includes("color") || opt.name.includes("رنگ");
+      {/* Dynamic Options Filters (Size only - Color filter removed) */}
+      {facets.options
+        ?.filter((opt) => {
+          const lower = opt.name.toLowerCase();
+          return !lower.includes("color") && !opt.name.includes("رنگ");
+        })
+        .map((opt) => {
+          const uniqueValues = Array.from(new Set(opt.values || []));
 
-        // Custom sort for clothing/shoe sizes
-        if (!isColor) {
+          // Custom sort for clothing/shoe sizes
           const sizeOrder: Record<string, number> = {
             "2XS": 1, "XS": 2, "S": 3, "M": 4, "L": 5, "XL": 6, "2XL": 7, "3XL": 8, "تک سایز": 9, "Free": 10
           };
@@ -486,42 +489,13 @@ function SearchContent() {
             const orderB = sizeOrder[b] || (isNaN(Number(b)) ? 99 : Number(b));
             return orderA - orderB;
           });
-        }
 
-        return (
-          <div key={opt.name} className="space-y-3 pt-4 border-t border-white/10">
-            <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">
-              {isColor ? "انتخاب رنگ" : opt.name}
-            </h4>
+          return (
+            <div key={opt.name} className="space-y-3 pt-4 border-t border-white/10">
+              <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">
+                {opt.name.includes("سایز") ? "انتخاب سایز" : opt.name}
+              </h4>
 
-            {isColor ? (
-              <div className="flex flex-wrap gap-2">
-                {uniqueValues.map((val) => {
-                  const isSelected = (selectedOptions[opt.name] || []).includes(val);
-                  const bg = getColorBackground(val);
-
-                  return (
-                    <button
-                      key={val}
-                      onClick={() => handleOptionToggle(opt.name, val)}
-                      title={val}
-                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs transition-all cursor-pointer ${
-                        isSelected
-                          ? "border-amber-400 bg-amber-400/10 text-white font-bold ring-1 ring-amber-400/50"
-                          : "border-white/10 bg-white/5 text-gray-300 hover:border-white/30 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      <span
-                        className="w-3.5 h-3.5 rounded-full border border-white/20 shrink-0 shadow-inner"
-                        style={{ background: bg }}
-                      />
-                      <span>{val}</span>
-                      {isSelected && <Check className="w-3 h-3 text-amber-400" />}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
               <div className="flex flex-wrap gap-2">
                 {uniqueValues.map((val) => {
                   const isSelected = (selectedOptions[opt.name] || []).includes(val);
@@ -540,10 +514,9 @@ function SearchContent() {
                   );
                 })}
               </div>
-            )}
-          </div>
-        );
-      })}
+            </div>
+          );
+        })}
     </div>
   );
 
@@ -646,20 +619,20 @@ function SearchContent() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="h-10 px-4 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 font-bold text-xs flex items-center gap-2"
+                  className="h-10 px-4 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 font-bold text-xs flex items-center gap-2 cursor-pointer"
                 >
                   <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
                   {SORT_OPTIONS.find((s) => s.value === selectedSort)?.label || "جدیدترین‌ها"}
                   <ChevronDown className="w-3.5 h-3.5 text-gray-400 mr-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-[#181818] border-white/10 text-white rounded-xl shadow-2xl">
+              <DropdownMenuContent className="bg-[#181818] border-white/10 text-white rounded-xl shadow-2xl z-50">
                 {SORT_OPTIONS.map((sortItem) => (
                   <DropdownMenuItem
                     key={sortItem.value}
                     onClick={() => {
                       setSelectedSort(sortItem.value);
-                      applyFiltersToUrl({ sort: sortItem.value });
+                      applyFiltersToUrl({ sort: sortItem.value, page: "1" });
                     }}
                     className={`text-xs cursor-pointer py-2.5 px-4 rounded-lg flex items-center justify-between ${
                       selectedSort === sortItem.value

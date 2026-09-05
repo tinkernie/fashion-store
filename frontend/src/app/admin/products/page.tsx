@@ -98,8 +98,29 @@ export default function AdminProductsPage() {
   const [newVariantStock, setNewVariantStock] = useState("10");
   const [selectedOptionValueIds, setSelectedOptionValueIds] = useState<Record<string, string>>({});
 
+  // Dedicated Category Manager Modal State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatSlug, setNewCatSlug] = useState("");
+  const [newCatDesc, setNewCatDesc] = useState("");
+  const [isSubmittingCat, setIsSubmittingCat] = useState(false);
+
+  // Category Inline Edit State
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [editCatSlug, setEditCatSlug] = useState("");
+  const [editCatDesc, setEditCatDesc] = useState("");
+
   useEffect(() => {
     loadCatalogData();
+
+    const handleCatsUpdated = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setCategories(e.detail);
+      }
+    };
+    window.addEventListener("fashion_categories_updated", handleCatsUpdated);
+    return () => window.removeEventListener("fashion_categories_updated", handleCatsUpdated);
   }, []);
 
   const loadCatalogData = async () => {
@@ -147,7 +168,17 @@ export default function AdminProductsPage() {
     setEditingProduct(p);
     setTitle(p.name || p.title || "");
     setSlug(p.slug || "");
-    setCategoryId(p.category_id || p.category?.id || categories[0]?.id || "");
+
+    // Precise Category Matching by ID, Name, or Slug
+    let matchedCatId = p.category_id || p.category?.id;
+    if (!matchedCatId && p.category) {
+      const rawCat = typeof p.category === "string" ? p.category : p.category?.name || p.category?.slug;
+      const found = categories.find(
+        (c) => c.name === rawCat || c.slug === rawCat || c.id === rawCat
+      );
+      if (found) matchedCatId = found.id;
+    }
+    setCategoryId(matchedCatId || categories[0]?.id || "");
     setCollectionId(p.collection_id || p.collection?.id || "");
     setPrice(String(p.price || ""));
     setDiscountPrice(p.discount_price ? String(p.discount_price) : "");
@@ -355,10 +386,12 @@ export default function AdminProductsPage() {
         .replace(/[^\w\u0600-\u06FF\s-]/g, "")
         .replace(/\s+/g, "-") || `prod-${Date.now()}`;
 
+    const matchedCategory = categories.find((c) => c.id === categoryId);
     const payload: any = {
       title,
       slug: cleanSlug,
       category_id: categoryId || undefined,
+      category: matchedCategory?.name || undefined,
       collection_id: collectionId || undefined,
       price: Number(price),
       discount_price: discountPrice ? Number(discountPrice) : undefined,
@@ -396,16 +429,101 @@ export default function AdminProductsPage() {
   };
 
 
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) {
+      toast.error("نام دسته‌بندی الزامی است");
+      return;
+    }
+    setIsSubmittingCat(true);
+    try {
+      const created = await adminApi.createCategory({
+        name: newCatName.trim(),
+        slug: newCatSlug.trim() || undefined,
+        description: newCatDesc.trim() || undefined,
+      });
+      toast.success(`دسته‌بندی «${created.name}» با موفقیت اضافه شد`);
+      setNewCatName("");
+      setNewCatSlug("");
+      setNewCatDesc("");
+      const updatedCats = await adminApi.getCategories();
+      setCategories(updatedCats);
+      if (isModalOpen) {
+        setCategoryId(created.id);
+      }
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در ایجاد دسته‌بندی"));
+    } finally {
+      setIsSubmittingCat(false);
+    }
+  };
+
+  const handleStartEditCat = (cat: any) => {
+    setEditingCatId(cat.id);
+    setEditCatName(cat.name);
+    setEditCatSlug(cat.slug);
+    setEditCatDesc(cat.description || "");
+  };
+
+  const handleCancelEditCat = () => {
+    setEditingCatId(null);
+    setEditCatName("");
+    setEditCatSlug("");
+    setEditCatDesc("");
+  };
+
+  const handleSaveEditCat = async (id: string) => {
+    if (!editCatName.trim()) {
+      toast.error("نام دسته‌بندی الزامی است");
+      return;
+    }
+    try {
+      await adminApi.updateCategory(id, {
+        name: editCatName.trim(),
+        slug: editCatSlug.trim() || undefined,
+        description: editCatDesc.trim() || undefined,
+      });
+      toast.success("دسته‌بندی با موفقیت بروزرسانی شد");
+      handleCancelEditCat();
+      const updatedCats = await adminApi.getCategories();
+      setCategories(updatedCats);
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در بروزرسانی دسته‌بندی"));
+    }
+  };
+
+  const handleDeleteCat = async (id: string, name: string) => {
+    if (!confirm(`آیا از حذف دسته‌بندی «${name}» اطمینان دارید؟`)) return;
+    try {
+      await adminApi.deleteCategory(id);
+      toast.success(`دسته‌بندی «${name}» حذف شد`);
+      const updatedCats = await adminApi.getCategories();
+      setCategories(updatedCats);
+      if (selectedCategory === id) setSelectedCategory("all");
+      if (categoryId === id) setCategoryId(updatedCats[0]?.id || "");
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در حذف دسته‌بندی"));
+    }
+  };
+
   const filteredProducts = products.filter((p) => {
     const name = (p.name || p.title || "").toLowerCase();
     const matchesQuery =
       name.includes(searchQuery.toLowerCase()) ||
       (p.slug || "").includes(searchQuery.toLowerCase());
+    const matchedFilterCat = categories.find((c) => c.id === selectedCategory);
     const matchesCategory =
       selectedCategory === "all" ||
       p.category === selectedCategory ||
       p.category?.name === selectedCategory ||
-      p.category_id === selectedCategory;
+      p.category?.slug === selectedCategory ||
+      p.category_id === selectedCategory ||
+      (matchedFilterCat && (
+        p.category === matchedFilterCat.name ||
+        p.category === matchedFilterCat.slug ||
+        p.category_id === matchedFilterCat.id ||
+        p.category?.name === matchedFilterCat.name
+      ));
     return matchesQuery && matchesCategory;
   });
 
@@ -431,6 +549,15 @@ export default function AdminProductsPage() {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
             بروزرسانی
+          </Button>
+
+          <Button
+            onClick={() => setIsCategoryModalOpen(true)}
+            variant="outline"
+            className="h-11 px-4 rounded-xl border-amber-400/20 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20 font-bold text-xs flex items-center gap-2 shrink-0"
+          >
+            <Layers className="w-4 h-4 text-amber-400" />
+            مدیریت دسته‌بندی‌ها ({categories.length})
           </Button>
 
           <Button
@@ -509,7 +636,10 @@ export default function AdminProductsPage() {
               ) : (
                 filteredProducts.map((p) => {
                   const img = p.imageUrl || p.image_url || p.image || "/globe.svg";
-                  const catName = p.category?.name || p.category || "نامشخص";
+                  const matchedCat = categories.find(
+                    (c) => c.id === p.category_id || c.name === p.category || c.slug === p.category || c.id === p.category
+                  );
+                  const catName = matchedCat?.name || p.category?.name || p.category || "نامشخص";
 
                   return (
                     <tr key={p.id} className="hover:bg-white/5 transition-colors">
@@ -925,16 +1055,27 @@ export default function AdminProductsPage() {
             {/* Category & Price */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300">دسته‌بندی</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-300">دسته‌بندی</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryModalOpen(true)}
+                    className="text-[11px] text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    مدیریت دسته‌بندی
+                  </button>
+                </div>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full bg-[#181818] border border-white/10 h-11 text-xs text-white rounded-xl px-3 outline-none"
+                  className="w-full bg-[#181818] border border-white/10 h-11 text-xs text-white rounded-xl px-3 outline-none focus:border-amber-400/50"
+                  required
                 >
                   <option value="">انتخاب دسته‌بندی...</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {c.name} ({c.slug})
                     </option>
                   ))}
                 </select>
@@ -1012,6 +1153,183 @@ export default function AdminProductsPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- Category Management Modal --- */}
+      <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
+        <DialogContent
+          className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-3xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
+          dir="rtl"
+        >
+          <DialogHeader className="border-b border-white/10 pb-4">
+            <DialogTitle className="text-xl font-black flex items-center gap-2">
+              <Layers className="w-6 h-6 text-amber-400" />
+              مدیریت دسته‌بندی‌های کاتالوگ ({categories.length})
+            </DialogTitle>
+            <p className="text-xs text-gray-400 mt-1">
+              مشاهده، افزودن، ویرایش و حذف دسته‌بندی‌های لباس و اکسسوری فروشگاه
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+            {/* Create New Category Form */}
+            <form onSubmit={handleAddCategory} className="bg-[#141414] border border-white/10 rounded-2xl p-5 space-y-4">
+              <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <Plus className="w-4 h-4 text-amber-400" />
+                افزودن دسته‌بندی جدید
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-300">نام فارسی دسته‌بندی *</label>
+                  <Input
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="مثال: شومیز و بلوز مجلسی"
+                    required
+                    className="bg-[#1a1a1a] border-white/10 h-10 text-xs text-white rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-300">نامک انگلیسی (Slug اختیاری)</label>
+                  <Input
+                    value={newCatSlug}
+                    onChange={(e) => setNewCatSlug(e.target.value)}
+                    placeholder="blouses-and-shirts"
+                    className="bg-[#1a1a1a] border-white/10 h-10 text-xs text-white rounded-xl font-mono"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-gray-300">توضیحات کوتاه (اختیاری)</label>
+                <Input
+                  value={newCatDesc}
+                  onChange={(e) => setNewCatDesc(e.target.value)}
+                  placeholder="توضیحات کوتاه جهت نمایش در هدر کالکشن یا نتایج جستجو..."
+                  className="bg-[#1a1a1a] border-white/10 h-10 text-xs text-white rounded-xl"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isSubmittingCat}
+                className="w-full sm:w-auto h-10 px-6 rounded-xl bg-amber-400 text-black hover:bg-amber-300 font-black text-xs flex items-center gap-2"
+              >
+                {isSubmittingCat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                افزودن دسته‌بندی
+              </Button>
+            </form>
+
+            {/* Existing Categories List */}
+            <div className="bg-[#141414] border border-white/10 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-amber-400" />
+                  دسته‌بندی‌های موجود در سیستم
+                </h3>
+                <span className="text-xs text-gray-400">{categories.length} دسته‌بندی</span>
+              </div>
+
+              <div className="divide-y divide-white/5 max-h-72 overflow-y-auto pr-1">
+                {categories.map((cat) => {
+                  const isEditing = editingCatId === cat.id;
+                  const catProductCount = products.filter(
+                    (p) =>
+                      p.category_id === cat.id ||
+                      p.category === cat.name ||
+                      p.category === cat.slug ||
+                      p.category?.id === cat.id ||
+                      p.category?.name === cat.name
+                  ).length;
+
+                  return (
+                    <div key={cat.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {isEditing ? (
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <Input
+                            value={editCatName}
+                            onChange={(e) => setEditCatName(e.target.value)}
+                            placeholder="نام دسته‌بندی..."
+                            className="bg-[#222] border-white/20 h-9 text-xs text-white rounded-lg"
+                          />
+                          <Input
+                            value={editCatSlug}
+                            onChange={(e) => setEditCatSlug(e.target.value)}
+                            placeholder="slug..."
+                            className="bg-[#222] border-white/20 h-9 text-xs text-white rounded-lg font-mono"
+                            dir="ltr"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-400" />
+                            <span className="font-bold text-white text-xs">{cat.name}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-400 font-mono" dir="ltr">
+                              {cat.slug}
+                            </span>
+                          </div>
+                          {cat.description ? (
+                            <p className="text-[11px] text-gray-400 line-clamp-1">{cat.description}</p>
+                          ) : null}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        <span className="text-[11px] text-gray-500 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+                          {catProductCount} محصول
+                        </span>
+
+                        {isEditing ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveEditCat(cat.id)}
+                              className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+                              title="ذخیره"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelEditCat}
+                              className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+                              title="انصراف"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditCat(cat)}
+                              className="p-2 rounded-lg text-gray-400 hover:text-amber-400 hover:bg-white/10 transition-colors"
+                              title="ویرایش دسته‌بندی"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCat(cat.id, cat.name)}
+                              className="p-2 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-white/10 transition-colors"
+                              title="حذف دسته‌بندی"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
