@@ -136,7 +136,7 @@ class PublicReviewViewSet(viewsets.GenericViewSet):
             product=product,
             status=Review.Status.APPROVED,
             deleted_at__isnull=True,
-        ).order_by("-created_at")
+        ).select_related("product", "user").order_by("-created_at")
         serializer = ReviewSerializer(reviews, many=True)
         return Response(serializer.data)
 
@@ -146,11 +146,20 @@ class PublicReviewViewSet(viewsets.GenericViewSet):
             return Response({"detail": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = ReviewCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = request.user if request.user.is_authenticated else None
+        user = request.user if request.user and request.user.is_authenticated else None
+
+        custom_name = serializer.validated_data.get("user_name")
+        if custom_name and custom_name.strip() and custom_name.strip() != "کاربر خریدار":
+            user_display = custom_name.strip()
+        elif user:
+            user_display = f"{user.first_name} {user.last_name}".strip() or user.email or "کاربر خریدار"
+        else:
+            user_display = "کاربر خریدار"
+
         review = Review.objects.create(
             product=product,
             user=user,
-            user_name=serializer.validated_data.get("user_name") or ("کاربر خریدار" if not user else f"{user.first_name} {user.last_name}".strip() or user.email),
+            user_name=user_display,
             rating=serializer.validated_data.get("rating", 5),
             text=serializer.validated_data["text"],
             status=Review.Status.PENDING,
@@ -162,7 +171,7 @@ class AdminReviewViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAdminUser]
 
     def list(self, request):
-        qs = Review.objects.filter(deleted_at__isnull=True).select_related("product")
+        qs = Review.objects.filter(deleted_at__isnull=True).select_related("product", "user")
         status_param = request.query_params.get("status")
         if status_param and status_param != "all":
             qs = qs.filter(status=status_param)

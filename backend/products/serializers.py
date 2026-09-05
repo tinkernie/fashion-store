@@ -134,8 +134,9 @@ from .models import Review
 class ReviewSerializer(serializers.ModelSerializer):
     product_id = serializers.UUIDField(source="product.id", read_only=True)
     product_title = serializers.CharField(source="product.title", read_only=True)
-    product_slug = serializers.CharField(source="product.slug", read_only=True)
+    product_slug = serializers.SlugField(source="product.slug", read_only=True)
     product_image = serializers.SerializerMethodField()
+    user_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
@@ -153,6 +154,17 @@ class ReviewSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+    def get_user_name(self, review):
+        if review.user:
+            name = f"{review.user.first_name} {review.user.last_name}".strip()
+            if name:
+                return name
+            if review.user.email:
+                return review.user.email
+        if review.user_name and review.user_name.strip() and review.user_name.strip() != "کاربر خریدار":
+            return review.user_name.strip()
+        return "کاربر خریدار"
+
     def get_product_image(self, review):
         product = review.product
         if product.metadata and "image_url" in product.metadata:
@@ -163,7 +175,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class ReviewCreateSerializer(serializers.Serializer):
-    user_name = serializers.CharField(max_length=150, required=False, default="کاربر خریدار")
+    user_name = serializers.CharField(max_length=150, required=False, allow_blank=True, default=None)
     rating = serializers.IntegerField(min_value=1, max_value=5, default=5)
     text = serializers.CharField(min_length=3)
 

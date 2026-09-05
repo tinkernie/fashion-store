@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/error-utils";
+import { getStoredAuth } from "@/lib/auth";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { formatShamsiDate } from "@/lib/jalali";
 import { getColorBackground } from "@/lib/color-utils";
@@ -332,9 +333,15 @@ export default function ProductDetailPage() {
 
     setIsSubmittingReview(true);
     try {
+      const { user } = getStoredAuth();
+      const displayName = user
+        ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email
+        : undefined;
+
       await api.post(`/api/products/${params.id}/reviews/`, {
         rating,
         text: reviewText.trim(),
+        user_name: displayName,
       });
       toast.success(
         "دیدگاه شما با موفقیت ثبت شد و پس از بازبینی ادمین نمایش داده خواهد شد.",
