@@ -25,13 +25,27 @@ class AdminInventoryViewSet(viewsets.GenericViewSet):
         serializer = InventorySerializer(inventory)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["post"], serializer_class=AdjustStockSerializer)
+    @action(
+        detail=True,
+        methods=["post"],
+        serializer_class=AdjustStockSerializer,
+        url_path="adjust-stock",
+    )
     def adjust_stock(self, request, variant_id=None):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         service = InventoryService()
         result = service.adjust_stock(variant_id, serializer.validated_data["delta"])
         return Response(result)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        serializer_class=AdjustStockSerializer,
+        url_path="adjust_stock",
+    )
+    def adjust_stock_underscore(self, request, variant_id=None):
+        return self.adjust_stock(request, variant_id=variant_id)
 
     @action(
         detail=True,
