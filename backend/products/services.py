@@ -14,7 +14,10 @@ class ProductService:
         category = None
         if category_id:
             category = CategorySelector.get_category_by_id(category_id)
+            if not category:
+                raise BusinessException("Category not found for given category_id.")
         if not category:
+            # Fallback only when no category_id supplied (legacy support)
             from categories.models import Category
             category = Category.objects.filter(deleted_at__isnull=True).first()
             if not category:

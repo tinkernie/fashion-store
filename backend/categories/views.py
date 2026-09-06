@@ -8,6 +8,7 @@ from .serializers import (
     CategoryCreateSerializer,
     CategoryUpdateSerializer,
     CategoryTreeSerializer,
+    CategoryAdminDetailSerializer,
 )
 
 
@@ -27,8 +28,7 @@ class PublicCategoryViewSet(viewsets.GenericViewSet):
         category = CategorySelector.get_category_by_slug(slug)
         if not category:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-        # Return the category along with its children tree
-        serializer = CategoryTreeSerializer(category)
+        serializer = CategoryTreeSerializer(category, context={"request": request})
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"], url_path="flat")
@@ -50,6 +50,26 @@ class PublicCategoryViewSet(viewsets.GenericViewSet):
 
 class AdminCategoryViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAdminUser]
+
+    def list(self, request):
+        """Fetch all categories (both active and inactive) for the admin panel."""
+        categories = CategorySelector.get_all_categories_admin()
+        serializer = CategoryAdminDetailSerializer(
+            categories, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        category = CategorySelector.get_category_by_id(pk)
+        if not category:
+            return Response(
+                {"detail": "Category not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = CategoryAdminDetailSerializer(
+            category, context={"request": request}
+        )
+        return Response(serializer.data)
 
     def create(self, request):
         serializer = CategoryCreateSerializer(data=request.data)
