@@ -73,7 +73,7 @@ class SearchSelector:
                           filter=Q(variants__status=Variant.Status.PUBLISHED, variants__deleted_at__isnull=True)),
         )
 
-        # Sorting
+        # Sorting - frontend sends popularity via sort and ordering
         if sort == 'price_asc':
             qs = qs.order_by('min_price')
         elif sort == 'price_desc':
@@ -82,6 +82,14 @@ class SearchSelector:
             qs = qs.order_by('-created_at')
         elif sort == 'name':
             qs = qs.order_by('title')
+        elif sort == 'popularity':
+            # Popularity = most ordered / most reviewed. Annotate with order count, fallback to newest
+            # Count distinct orders that contain any variant of this product
+            from orders.models import OrderItem
+            # Use subquery count to avoid join duplication
+            qs = qs.annotate(
+                popularity_count=Count('variants__order_items', distinct=True)
+            ).order_by('-popularity_count', '-created_at')
         else:
             # Default: relevance if query and postgres, else newest
             if has_rank:
