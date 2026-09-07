@@ -9,6 +9,7 @@ export interface CartItem {
   size: string;
   quantity: number;
   variant_id?: string;
+  weight?: number;
 }
 
 export interface AppliedCoupon {
@@ -32,6 +33,7 @@ interface CartStore {
   mergeCart: (session_key?: string) => Promise<void>;
   clearCart: () => Promise<void>;
   getTotal: () => number;
+  getTotalWeight: () => number;
   getDiscountAmount: () => number;
   getFinalTotal: () => number;
 }
@@ -81,6 +83,7 @@ export const useCart = create<CartStore>((set, get) => ({
           imageUrl: it.image?.url || it.image || it.imageUrl || "",
           size: it.option_details || it.size || "",
           quantity: it.quantity || 1,
+          weight: Number(it.weight || it.variant?.weight || it.variant_weight || 500),
         }));
 
         let couponData: AppliedCoupon | null = null;
@@ -287,6 +290,13 @@ export const useCart = create<CartStore>((set, get) => ({
   
   getTotal: () => {
     return get().items.reduce((total, item) => total + (Number(item.price) * item.quantity), 0);
+  },
+
+  getTotalWeight: () => {
+    return get().items.reduce((totalWeight, item) => {
+      const itemWeight = typeof item.weight === "number" && item.weight > 0 ? item.weight : 500;
+      return totalWeight + itemWeight * (item.quantity || 1);
+    }, 0);
   },
 
   getDiscountAmount: () => {

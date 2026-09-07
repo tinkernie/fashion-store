@@ -56,6 +56,7 @@ interface ProductVariant {
   product_id: string;
   sku: string;
   price: string | number;
+  weight?: number;
   availability: "in_stock" | "out_of_stock" | "pre_order" | string;
   status: string;
   options: Array<{
@@ -327,6 +328,12 @@ export default function ProductDetailPage() {
         .map(([k, v]) => `${k}: ${v}`)
         .join(" | ") || (selectedOptions["سایز"] || selectedOptions["Size"] || "Free");
 
+    const itemWeight =
+      matchedVariant?.weight ||
+      (product?.metadata && (product.metadata.weight || product.metadata.product_weight)) ||
+      product?.weight ||
+      500;
+
     try {
       await addToCart({
         id: product.id,
@@ -336,6 +343,7 @@ export default function ProductDetailPage() {
         quantity: quantity,
         imageUrl: product.imageUrl || product.image_url || "/globe.svg",
         variant_id: matchedVariant?.id || product.id,
+        weight: Number(itemWeight) || 500,
       });
 
       toast.success("به سبد خرید اضافه شد", {

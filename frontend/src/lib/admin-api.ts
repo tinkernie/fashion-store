@@ -305,7 +305,7 @@ export const adminApi = {
     product_id: string;
     sku: string;
     price: number | string;
-    weight?: number;
+    weight: number;
     availability?: 'in_stock' | 'out_of_stock' | 'pre_order';
     status?: 'draft' | 'published' | 'discontinued';
     option_values: Array<{ option_id: string; value_id: string }>;

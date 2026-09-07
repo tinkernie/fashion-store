@@ -49,6 +49,7 @@ interface VariantItem {
   name: string;
   sku: string;
   price: string;
+  weight?: number;
   stock: number;
 }
 
@@ -71,6 +72,7 @@ export default function AdminProductsPage() {
   const [collectionId, setCollectionId] = useState("");
   const [price, setPrice] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
+  const [weight, setWeight] = useState("500");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [status, setStatus] = useState<string>("active");
@@ -95,6 +97,7 @@ export default function AdminProductsPage() {
   // Single Variant Add Form inside Variant Modal
   const [newVariantSku, setNewVariantSku] = useState("");
   const [newVariantPrice, setNewVariantPrice] = useState("");
+  const [newVariantWeight, setNewVariantWeight] = useState("500");
   const [newVariantStock, setNewVariantStock] = useState("10");
   const [selectedOptionValueIds, setSelectedOptionValueIds] = useState<Record<string, string>>({});
 
@@ -156,6 +159,7 @@ export default function AdminProductsPage() {
     setCollectionId("");
     setPrice("");
     setDiscountPrice("");
+    setWeight("500");
     setDescription("");
     setImageUrl("");
     setStatus("active");
@@ -182,6 +186,8 @@ export default function AdminProductsPage() {
     setCollectionId(p.collection_id || p.collection?.id || "");
     setPrice(String(p.price || ""));
     setDiscountPrice(p.discount_price ? String(p.discount_price) : "");
+    const prodWeight = p.metadata?.weight || p.weight;
+    setWeight(prodWeight ? String(prodWeight) : "500");
     setDescription(p.description || "");
     setImageUrl(p.imageUrl || p.image_url || p.image || p.images?.[0]?.url || "");
     setStatus(p.status || "active");
@@ -193,6 +199,7 @@ export default function AdminProductsPage() {
           name: v.title || v.name || "تنوع",
           sku: v.sku || "",
           price: String(v.price || p.price || ""),
+          weight: v.weight || prodWeight || 500,
           stock: v.inventory?.quantity || v.stock || 10,
         }))
       );
@@ -217,6 +224,8 @@ export default function AdminProductsPage() {
       setProductOptions(opts);
       setProductVariants(vars);
       setNewVariantPrice(String(product.price || ""));
+      const prodWeight = product.metadata?.weight || product.weight || 500;
+      setNewVariantWeight(String(prodWeight));
       setNewVariantSku(`${(product.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`);
     } catch (e) {
       console.error("Error loading product options & variants:", e);
@@ -297,6 +306,7 @@ export default function AdminProductsPage() {
         product_id: selectedProductForVariants.id,
         sku: newVariantSku.trim().toUpperCase(),
         price: Number(newVariantPrice),
+        weight: Number(newVariantWeight) || 500,
         availability: "in_stock",
         status: "published",
         option_values: optionValuesPayload,
@@ -362,6 +372,7 @@ export default function AdminProductsPage() {
         name: comboName,
         sku: comboSku,
         price: price || "0",
+        weight: Number(weight) || 500,
         stock: 10,
       };
     });
@@ -387,6 +398,7 @@ export default function AdminProductsPage() {
         .replace(/\s+/g, "-") || `prod-${Date.now()}`;
 
     const matchedCategory = categories.find((c) => c.id === categoryId);
+    const parsedWeight = Number(weight) > 0 ? Number(weight) : 500;
     const payload: any = {
       title,
       slug: cleanSlug,
@@ -395,6 +407,11 @@ export default function AdminProductsPage() {
       collection_id: collectionId || undefined,
       price: Number(price),
       discount_price: discountPrice ? Number(discountPrice) : undefined,
+      weight: parsedWeight,
+      metadata: {
+        ...(editingProduct?.metadata || {}),
+        weight: parsedWeight,
+      },
       description,
       image_url: imageUrl,
       status: status === "active" ? "published" : status,
@@ -917,7 +934,7 @@ export default function AdminProductsPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="space-y-1">
                       <label className="text-[10px] text-gray-400 font-bold">کد انبار (SKU)</label>
                       <Input
@@ -938,6 +955,20 @@ export default function AdminProductsPage() {
                         onChange={(e) => setNewVariantPrice(e.target.value)}
                         placeholder="1200000"
                         required
+                        className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 font-bold">وزن تنوع (گرم)</label>
+                      <Input
+                        type="number"
+                        value={newVariantWeight}
+                        onChange={(e) => setNewVariantWeight(e.target.value)}
+                        placeholder="500"
+                        required
+                        min={1}
                         className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg"
                         dir="ltr"
                       />
@@ -984,15 +1015,21 @@ export default function AdminProductsPage() {
                           >
                             <div className="space-y-0.5">
                               <span className="font-bold text-white block">{optSummary}</span>
-                              <span className="text-[10px] text-gray-500 font-mono" dir="ltr">
-                                SKU: {v.sku}
-                              </span>
+                              <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono" dir="ltr">
+                                <span>SKU: {v.sku}</span>
+                                {v.weight && <span>• {v.weight}g</span>}
+                              </div>
                             </div>
 
                             <div className="flex items-center gap-4">
-                              <span className="font-black text-amber-400">
-                                {Number(v.price).toLocaleString("fa-IR")} تومان
-                              </span>
+                              <div className="text-left">
+                                <span className="font-black text-amber-400 block">
+                                  {Number(v.price).toLocaleString("fa-IR")} تومان
+                                </span>
+                                <span className="text-[10px] text-gray-400 font-normal block">
+                                  وزن: {Number(v.weight || 500).toLocaleString("fa-IR")} گرم
+                                </span>
+                              </div>
                               <button
                                 onClick={() => handleDeleteVariant(v.id)}
                                 className="p-1.5 text-gray-500 hover:text-rose-400 transition-colors"
@@ -1052,8 +1089,8 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
-            {/* Category & Price */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Category, Price & Weight */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-gray-300">دسته‌بندی</label>
@@ -1101,6 +1138,23 @@ export default function AdminProductsPage() {
                   value={discountPrice}
                   onChange={(e) => setDiscountPrice(e.target.value)}
                   placeholder="950000"
+                  className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-300 flex items-center justify-between">
+                  <span>وزن کالا (گرم)</span>
+                  <span className="text-[10px] text-amber-400 font-normal">محاسبه پست</span>
+                </label>
+                <Input
+                  type="number"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  placeholder="500"
+                  required
+                  min={1}
                   className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
                   dir="ltr"
                 />

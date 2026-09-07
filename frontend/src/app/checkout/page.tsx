@@ -42,6 +42,10 @@ const checkoutSchema = z.object({
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
 
+// Postal shipping constants (base_amount + (total_weight * 1.6))
+const BASE_SHIPPING_AMOUNT = 35000; // مبلغ پایه ارسال پستی (تومان)
+const WEIGHT_MULTIPLIER = 1.6; // ضریب هزینه به ازای هر گرم وزن
+
 export default function CheckoutPage() {
   const router = useRouter();
   const {
@@ -52,6 +56,7 @@ export default function CheckoutPage() {
     clearCart,
     fetchCart,
     getTotal,
+    getTotalWeight,
     getDiscountAmount,
     getFinalTotal,
   } = useCart();
@@ -106,8 +111,10 @@ export default function CheckoutPage() {
   }, [setValue]);
 
   const cartTotal = getTotal();
+  const totalWeight = getTotalWeight();
   const discountAmount = getDiscountAmount();
-  const shippingCost = cartTotal > 5000000 ? 0 : 45000;
+  // هزینه ارسال = پایه + (مجموع وزن کل اقلام به گرم * ۱.۶)
+  const shippingCost = items.length === 0 ? 0 : Math.round(BASE_SHIPPING_AMOUNT + totalWeight * WEIGHT_MULTIPLIER);
   const finalPayable = Math.max(0, cartTotal - discountAmount) + shippingCost;
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
@@ -144,6 +151,8 @@ export default function CheckoutPage() {
             city: data.city,
             address: data.address,
             postal_code: data.postalCode,
+            shipping_cost: shippingCost,
+            total_weight: totalWeight,
           },
           billing_address: {
             full_name: data.fullName,
@@ -350,6 +359,38 @@ export default function CheckoutPage() {
             </form>
           </div>
 
+          {/* Shipping Method & Weight Info */}
+          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-4">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+              <Truck className="w-6 h-6 text-amber-400" />
+              <div>
+                <h2 className="text-xl md:text-2xl font-black text-white">روش و هزینه ارسال</h2>
+                <p className="text-xs text-gray-400 mt-0.5">محاسبه دقیق تعرفه پستی بر پایه وزن محصولات سفارش</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white">پست پیشتاز سراسری</span>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                    وزن کل: {totalWeight.toLocaleString("fa-IR")} گرم
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  فرمول محاسبه: {BASE_SHIPPING_AMOUNT.toLocaleString("fa-IR")} تومان پایه + ({totalWeight.toLocaleString("fa-IR")} گرم × ۱.۶)
+                </p>
+              </div>
+
+              <div className="text-right">
+                <span className="text-[11px] text-gray-400 block">هزینه ارسال:</span>
+                <span className="text-base font-black text-amber-400">
+                  {shippingCost.toLocaleString("fa-IR")} تومان
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Payment Method Selector */}
           <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl">
             <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4">
@@ -427,7 +468,7 @@ export default function CheckoutPage() {
                   <div className="flex-1 min-w-0">
                     <h4 className="text-xs font-bold text-white truncate">{item.name}</h4>
                     <span className="text-[10px] text-gray-400 block mt-0.5">
-                      سایز: {item.size || "Free"} | تعداد: {item.quantity.toLocaleString("fa-IR")}
+                      سایز: {item.size || "Free"} | تعداد: {item.quantity.toLocaleString("fa-IR")} | وزن: {((item.weight || 500) * item.quantity).toLocaleString("fa-IR")} گرم
                     </span>
                     <p className="text-xs font-bold text-gray-200 mt-1">
                       {(item.price * item.quantity).toLocaleString("fa-IR")} تومان
@@ -486,12 +527,15 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              <div className="flex justify-between text-gray-400">
-                <span>هزینه بسته‌بندی و ارسال:</span>
-                <span>
-                  {shippingCost === 0
-                    ? "رایگان (خرید بالای ۵ میلیون)"
-                    : `${shippingCost.toLocaleString("fa-IR")} تومان`}
+              <div className="flex justify-between items-start text-gray-400">
+                <div className="flex flex-col">
+                  <span className="text-white font-medium">هزینه ارسال:</span>
+                  <span className="text-[10px] text-gray-400">
+                    پست پیشتاز ({totalWeight.toLocaleString("fa-IR")} گرم)
+                  </span>
+                </div>
+                <span className="font-bold text-white text-sm">
+                  {shippingCost.toLocaleString("fa-IR")} تومان
                 </span>
               </div>
 
