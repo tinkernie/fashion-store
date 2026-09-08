@@ -52,6 +52,12 @@ const NAV_ITEMS = [
     badge: null,
   },
   {
+    title: "کالکشن‌ها و مناسبت‌ها",
+    href: "/admin/collections",
+    icon: Sparkles,
+    badge: "ویژه",
+  },
+  {
     title: "نظرات کاربران",
     href: "/admin/reviews",
     icon: MessageSquare,
