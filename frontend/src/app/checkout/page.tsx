@@ -26,6 +26,7 @@ import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { toast } from "sonner";
 import Link from "next/link";
+import { formatPrice, formatPriceNumber, parsePrice } from "@/lib/price-utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -378,14 +379,14 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 <p className="text-xs text-gray-400">
-                  فرمول محاسبه: {BASE_SHIPPING_AMOUNT.toLocaleString("fa-IR")} تومان پایه + ({totalWeight.toLocaleString("fa-IR")} گرم × ۱.۶)
+                  فرمول محاسبه: {formatPriceNumber(BASE_SHIPPING_AMOUNT)} تومان پایه + ({totalWeight.toLocaleString("fa-IR")} گرم × ۱.۶)
                 </p>
               </div>
 
               <div className="text-right">
                 <span className="text-[11px] text-gray-400 block">هزینه ارسال:</span>
                 <span className="text-base font-black text-amber-400">
-                  {shippingCost.toLocaleString("fa-IR")} تومان
+                  {formatPrice(shippingCost)}
                 </span>
               </div>
             </div>
@@ -471,7 +472,7 @@ export default function CheckoutPage() {
                       سایز: {item.size || "Free"} | تعداد: {item.quantity.toLocaleString("fa-IR")} | وزن: {((item.weight || 500) * item.quantity).toLocaleString("fa-IR")} گرم
                     </span>
                     <p className="text-xs font-bold text-gray-200 mt-1">
-                      {(item.price * item.quantity).toLocaleString("fa-IR")} تومان
+                      {formatPrice(parsePrice(item.price) * item.quantity)}
                     </p>
                   </div>
                 </div>
@@ -517,13 +518,13 @@ export default function CheckoutPage() {
             <div className="border-t border-white/10 pt-4 space-y-3 text-xs">
               <div className="flex justify-between text-gray-400">
                 <span>مجموع سبد خرید:</span>
-                <span>{cartTotal.toLocaleString("fa-IR")} تومان</span>
+                <span>{formatPrice(cartTotal)}</span>
               </div>
 
               {discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-400 font-bold">
                   <span>تخفیف کوپن:</span>
-                  <span>- {discountAmount.toLocaleString("fa-IR")} تومان</span>
+                  <span>- {formatPrice(discountAmount)}</span>
                 </div>
               )}
 
@@ -535,13 +536,13 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 <span className="font-bold text-white text-sm">
-                  {shippingCost.toLocaleString("fa-IR")} تومان
+                  {formatPrice(shippingCost)}
                 </span>
               </div>
 
               <div className="flex justify-between text-base font-black text-white pt-3 border-t border-white/10">
                 <span>مبلغ نهایی پرداخت:</span>
-                <span className="text-amber-400">{finalPayable.toLocaleString("fa-IR")} تومان</span>
+                <span className="text-amber-400">{formatPrice(finalPayable)}</span>
               </div>
             </div>
 

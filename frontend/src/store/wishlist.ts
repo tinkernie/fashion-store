@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api } from "@/lib/api";
 import { getStoredAuth, isTokenExpired } from "@/lib/auth";
+import { parsePrice } from "@/lib/price-utils";
 
 export interface WishlistItem {
   id: string;
@@ -65,7 +66,7 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
         const mappedItems: WishlistItem[] = response.data.items.map((item: any) => ({
           id: item.product_id || item.id,
           name: item.product_name || item.name || item.title || "محصول",
-          price: Number(item.product_price || item.price) || 0,
+          price: parsePrice(item.product_price || item.price),
           imageUrl: item.product_image || item.imageUrl || item.image || "/globe.svg",
           category: item.category || "پوشاک",
         }));
@@ -82,8 +83,9 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
   },
 
   addItem: async (item) => {
-    if (!get().items.find((i) => i.id === item.id)) {
-      const updated = [...get().items, item];
+    const sanitizedItem = { ...item, price: parsePrice(item.price) };
+    if (!get().items.find((i) => i.id === sanitizedItem.id)) {
+      const updated = [...get().items, sanitizedItem];
       set({ items: updated });
       saveWishlist(updated);
 

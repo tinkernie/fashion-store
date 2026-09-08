@@ -41,6 +41,7 @@ import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
 import { cn } from "@/lib/utils";
 import { isTokenExpired, clearAuthSession, parseJwtPayload } from "@/lib/auth";
+import { formatPrice, parsePrice } from "@/lib/price-utils";
 
 
 const getUserIdFromToken = () => {
@@ -643,7 +644,7 @@ export default function ProfilePage() {
                   {filteredOrders.map((order) => {
                     const orderId = order.order_number || order.id;
                     const orderDate = order.placed_at || order.created_at || "اخیراً";
-                    const orderTotal = parseFloat(order.total || order.total_amount || 0);
+                    const orderTotal = parsePrice(order.total || order.total_amount || 0);
                     const currentStep = getStepIndex(order.status);
                     const isCancelled = order.status?.toLowerCase() === "cancelled";
 
@@ -662,7 +663,7 @@ export default function ProfilePage() {
                               </span>
                             </div>
                             <span className="text-xs text-gray-400">
-                              مبلغ کل: <strong className="text-white">{orderTotal.toLocaleString("fa-IR")} تومان</strong>
+                              مبلغ کل: <strong className="text-white">{formatPrice(orderTotal)}</strong>
                             </span>
                           </div>
 
@@ -761,7 +762,7 @@ export default function ProfilePage() {
                         </Link>
                         <span className="text-xs text-gray-500 block">{item.category || "پوشاک"}</span>
                         <p className="text-xs font-black text-gray-200 pt-1">
-                          {item.price?.toLocaleString("fa-IR")} تومان
+                          {formatPrice(item.price)}
                         </p>
                       </div>
                       <button
@@ -1191,10 +1192,10 @@ export default function ProfilePage() {
                             </span>
                           )}
                           <span className="text-[11px] text-gray-400 block mt-0.5">
-                            تعداد: {it.quantity} | قیمت واحد: {parseFloat(it.price || 0).toLocaleString("fa-IR")} تومان
+                            تعداد: {it.quantity} | قیمت واحد: {formatPrice(it.price)}
                           </span>
                           <p className="text-xs font-black text-amber-400 mt-1">
-                            {(parseFloat(it.price || 0) * (it.quantity || 1)).toLocaleString("fa-IR")} تومان
+                            {formatPrice(parsePrice(it.price) * (it.quantity || 1))}
                           </p>
                         </div>
                       </div>
@@ -1233,7 +1234,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between items-center text-base font-black text-white pt-2 border-t border-white/5">
                   <span>مبلغ کل پرداختی:</span>
                   <span className="text-emerald-400 font-mono">
-                    {parseFloat(selectedOrder.total || selectedOrder.total_amount || 0).toLocaleString("fa-IR")} تومان
+                    {formatPrice(selectedOrder.total || selectedOrder.total_amount)}
                   </span>
                 </div>
               </div>

@@ -28,6 +28,7 @@ import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
+import { formatPrice, formatPriceNumber } from "@/lib/price-utils";
 import { isTokenExpired, clearAuthSession, getStoredAuth } from "@/lib/auth";
 
 const POPULAR_SEARCH_TAGS = [
@@ -407,7 +408,7 @@ export default function Navbar() {
                           </div>
                         )}
                         <div className="text-xs text-gray-300 font-medium">
-                          {Number(item.price).toLocaleString("fa-IR")} تومان × {item.quantity}
+                          {formatPriceNumber(item.price)} تومان × {item.quantity}
                         </div>
                       </div>
                       <button onClick={() => removeItem(item.id, item.size, item.variant_id)} className="text-gray-500 hover:text-rose-400 transition-colors p-2 cursor-pointer">
@@ -467,17 +468,17 @@ export default function Navbar() {
                   <div className="space-y-1.5 text-xs text-gray-400">
                     <div className="flex justify-between">
                       <span>جمع اقلام:</span>
-                      <span>{getTotal().toLocaleString("fa-IR")} تومان</span>
+                      <span>{formatPrice(getTotal())}</span>
                     </div>
                     {coupon && (
                       <div className="flex justify-between text-emerald-400 font-medium">
                         <span>تخفیف ({coupon.code}):</span>
-                        <span>- {getDiscountAmount().toLocaleString("fa-IR")} تومان</span>
+                        <span>- {formatPrice(getDiscountAmount())}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-white/10">
                       <span>مبلغ قابل پرداخت:</span>
-                      <span>{getFinalTotal().toLocaleString("fa-IR")} تومان</span>
+                      <span>{formatPrice(getFinalTotal())}</span>
                     </div>
                   </div>
 
@@ -590,7 +591,7 @@ export default function Navbar() {
                       <span className="text-[11px] text-zinc-400 mt-0.5 truncate">{product.category}</span>
                     </div>
                     <div className="text-xs font-bold text-zinc-200 shrink-0">
-                      {typeof product.price === "number" ? product.price.toLocaleString("fa-IR") : product.price} تومان
+                      {formatPrice(product.price)}
                     </div>
                   </div>
                 ))}

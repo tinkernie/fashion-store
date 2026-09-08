@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
+import { formatPrice, parsePrice } from "@/lib/price-utils";
 import { ArrowRight, SlidersHorizontal, Filter, X, ShoppingBag } from "lucide-react";
 
 export default function WomenCategoryPage() {
@@ -66,14 +67,14 @@ export default function WomenCategoryPage() {
 
     if (sortBy === "price-low") {
       result.sort((a, b) => {
-        const priceA = typeof a.price === 'number' ? a.price : Number(String(a.price).replace(/\D/g, ''));
-        const priceB = typeof b.price === 'number' ? b.price : Number(String(b.price).replace(/\D/g, ''));
+        const priceA = parsePrice(a.price);
+        const priceB = parsePrice(b.price);
         return priceA - priceB;
       });
     } else if (sortBy === "price-high") {
       result.sort((a, b) => {
-        const priceA = typeof a.price === 'number' ? a.price : Number(String(a.price).replace(/\D/g, ''));
-        const priceB = typeof b.price === 'number' ? b.price : Number(String(b.price).replace(/\D/g, ''));
+        const priceA = parsePrice(a.price);
+        const priceB = parsePrice(b.price);
         return priceB - priceA;
       });
     }
@@ -297,7 +298,7 @@ export default function WomenCategoryPage() {
                         {product.name || product.title}
                       </h3>
                       <span className="text-amber-400 font-black text-xs md:text-sm pt-1">
-                        {priceNum.toLocaleString("fa-IR")} تومان
+                        {formatPrice(product.price)}
                       </span>
                     </div>
                   </motion.div>

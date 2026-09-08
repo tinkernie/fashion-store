@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import MediaUploader from "@/components/admin/media-uploader";
+import { formatPrice, formatPriceNumber } from "@/lib/price-utils";
 
 
 interface OptionDef {
@@ -688,7 +689,7 @@ export default function AdminProductsPage() {
 
                       {/* Price */}
                       <td className="py-4 px-4 font-bold text-white">
-                        {p.price ? Number(p.price).toLocaleString("fa-IR") : "تماس بگیرید"}
+                        {p.price ? `${formatPriceNumber(p.price)} تومان` : "تماس بگیرید"}
                       </td>
 
                       {/* Variants & Options Button */}
@@ -1024,7 +1025,7 @@ export default function AdminProductsPage() {
                             <div className="flex items-center gap-4">
                               <div className="text-left">
                                 <span className="font-black text-amber-400 block">
-                                  {Number(v.price).toLocaleString("fa-IR")} تومان
+                                  {formatPrice(v.price)}
                                 </span>
                                 <span className="text-[10px] text-gray-400 font-normal block">
                                   وزن: {Number(v.weight || 500).toLocaleString("fa-IR")} گرم

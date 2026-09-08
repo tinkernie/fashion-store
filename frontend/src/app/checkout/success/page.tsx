@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
+import { formatPrice } from "@/lib/price-utils";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -71,7 +72,7 @@ function SuccessContent() {
             {amount && (
               <div className="flex justify-between items-center pb-3 border-b border-white/10">
                 <span className="text-gray-400">مبلغ پرداخت شده:</span>
-                <span className="font-bold text-white">{amount.toLocaleString("fa-IR")} تومان</span>
+                <span className="font-bold text-white">{formatPrice(amount)}</span>
               </div>
             )}
 

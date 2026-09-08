@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { formatPrice } from "@/lib/price-utils";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -55,7 +56,7 @@ export default function CollectionPage() {
                 )}
               </div>
               <h3 className="text-sm md:text-base font-bold text-white mb-1 line-clamp-1">{product.name || product.title}</h3>
-              <p className="text-xs md:text-sm text-gray-400">{product.price?.toLocaleString('fa-IR')} تومان</p>
+              <p className="text-xs md:text-sm text-gray-400">{formatPrice(product.price)}</p>
             </Link>
           ))}
         </div>

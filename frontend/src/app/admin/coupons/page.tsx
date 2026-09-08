@@ -24,6 +24,7 @@ import { adminApi } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
 import { ShamsiDatePicker } from "@/components/ui/shamsi-date-picker";
+import { formatPrice } from "@/lib/price-utils";
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -173,7 +174,7 @@ export default function AdminCouponsPage() {
                     <td className="p-4 md:p-5 font-bold text-white">
                       {c.discount_type === "percentage" || c.discount_percent
                         ? `${(c.discount_value || c.discount_percent).toLocaleString("fa-IR")}% تخفیف`
-                        : `${(c.discount_value || c.amount || 0).toLocaleString("fa-IR")} تومان`}
+                        : formatPrice(c.discount_value || c.amount || 0)}
                     </td>
 
                     <td className="p-4 md:p-5 text-gray-300">

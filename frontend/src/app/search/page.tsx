@@ -48,6 +48,7 @@ import {
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import Link from "next/link";
+import { formatPrice as formatPriceUtil, parsePrice } from "@/lib/price-utils";
 import { GooeySearchBar } from "@/components/ui/animated-search-bar";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { useWishlist } from "@/store/wishlist";
@@ -355,8 +356,7 @@ function SearchContent() {
 
   const formatPrice = (val?: string | number) => {
     if (!val) return "تماس بگیرید";
-    const num = typeof val === "string" ? parseFloat(val) : val;
-    return num.toLocaleString("fa-IR") + " تومان";
+    return formatPriceUtil(val, "تماس بگیرید");
   };
 
   // Reusable Filter Sidebar Content (Render function to keep input focus persistent)
@@ -728,7 +728,7 @@ function SearchContent() {
                               addWishlist({
                                 id: product.id,
                                 name: product.title || product.name || "",
-                                price: typeof product.price === "number" ? product.price : parseFloat(String(product.price || "0")),
+                                price: parsePrice(product.price),
                                 imageUrl: img,
                                 category: product.category || "فشن",
                               });

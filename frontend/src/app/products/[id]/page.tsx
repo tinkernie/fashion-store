@@ -34,6 +34,7 @@ import { getStoredAuth } from "@/lib/auth";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { formatShamsiDate } from "@/lib/jalali";
 import { getColorBackground } from "@/lib/color-utils";
+import { formatPrice, formatPriceNumber, parsePrice } from "@/lib/price-utils";
 
 
 
@@ -252,12 +253,8 @@ export default function ProductDetailPage() {
     );
   }
 
-  const basePrice =
-    typeof product.price === "number"
-      ? product.price
-      : Number(String(product.price || "0").replace(/\D/g, ""));
-
-  const currentPrice = matchedVariant ? Number(matchedVariant.price) : basePrice;
+  const basePrice = parsePrice(product.price);
+  const currentPrice = matchedVariant ? parsePrice(matchedVariant.price) : basePrice;
   const isSaved = isInWishlist(product.id);
 
   // Determine overall product stock and variant stock
@@ -301,6 +298,37 @@ export default function ProductDetailPage() {
   const isPreOrder =
     matchedVariant?.availability === "pre_order" ||
     product?.availability === "pre_order";
+
+  // Calculate actual rating average and count from verified reviews (avoiding hardcoded mock ratings)
+  const ratingStats = useMemo(() => {
+    if (!reviews || reviews.length === 0) {
+      const backendAvg = Number(product?.average_rating ?? product?.rating);
+      const backendCount = Number(product?.reviews_count ?? product?.review_count ?? 0);
+      if (!isNaN(backendAvg) && backendAvg > 0 && backendCount > 0) {
+        return {
+          average: Math.round(backendAvg * 10) / 10,
+          count: backendCount,
+        };
+      }
+      return { average: null, count: 0 };
+    }
+
+    const validRatings = reviews
+      .map((r) => Number(r.rating))
+      .filter((r) => !isNaN(r) && r >= 1 && r <= 5);
+
+    if (validRatings.length === 0) {
+      return { average: null, count: reviews.length };
+    }
+
+    const sum = validRatings.reduce((acc, curr) => acc + curr, 0);
+    const avg = Math.round((sum / validRatings.length) * 10) / 10;
+
+    return {
+      average: avg,
+      count: reviews.length,
+    };
+  }, [reviews, product]);
 
   const handleOptionChange = (optionName: string, value: string) => {
     setSelectedOptions((prev) => ({
@@ -438,10 +466,34 @@ export default function ProductDetailPage() {
             <span className="bg-white/10 text-white px-3 py-1 rounded-full text-[11px] font-bold tracking-wider">
               {product.category || product.category_name || "پوشاک لوکس"}
             </span>
-            <div className="flex items-center gap-1 text-amber-400">
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span className="text-xs font-bold text-white mt-0.5">۴.۹</span>
-            </div>
+            {/* Rating or New/No Review Indicator */}
+            {ratingStats.average !== null ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("reviews-section");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="flex items-center gap-1.5 text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full text-xs font-bold transition-colors hover:bg-amber-400/20 cursor-pointer"
+                title={`${ratingStats.count.toLocaleString("fa-IR")} دیدگاه خریداران`}
+              >
+                <Star className="w-3.5 h-3.5 fill-current" />
+                <span className="text-amber-300 font-bold">
+                  {ratingStats.average.toLocaleString("fa-IR", {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  })}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-normal">
+                  ({ratingStats.count.toLocaleString("fa-IR")})
+                </span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 text-zinc-500 bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full text-xs">
+                <Star className="w-3.5 h-3.5 text-zinc-500" />
+                <span className="text-[11px] text-zinc-400 font-medium">بدون امتیاز</span>
+              </div>
+            )}
             {isOutOfStock ? (
               <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
@@ -467,8 +519,8 @@ export default function ProductDetailPage() {
 
           {/* Price */}
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl md:text-3xl font-black text-amber-400">
-              {currentPrice.toLocaleString("fa-IR")}
+            <span className="text-2xl md:text-4xl font-black text-amber-400">
+              {formatPriceNumber(currentPrice)}
             </span>
             <span className="text-xs text-gray-400">تومان</span>
           </div>
@@ -630,11 +682,30 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Reviews & Social Proof */}
-      <div className="border-t border-white/10 pt-12 space-y-8">
-        <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-3">
-          <MessageSquare className="w-6 h-6 text-amber-400" />
-          دیدگاه‌ها و نظرات خریداران ({reviews.length})
-        </h2>
+      <div id="reviews-section" className="border-t border-white/10 pt-12 space-y-8 scroll-mt-24">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-3">
+            <MessageSquare className="w-6 h-6 text-amber-400" />
+            دیدگاه‌ها و نظرات خریداران ({ratingStats.count.toLocaleString("fa-IR")})
+          </h2>
+          {ratingStats.average !== null && (
+            <div className="flex items-center gap-2 bg-[#161616] border border-white/10 px-3.5 py-1.5 rounded-2xl self-start sm:self-auto">
+              <div className="flex items-center gap-1 text-amber-400">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star
+                    key={i}
+                    className={`w-3.5 h-3.5 ${
+                      i <= Math.round(ratingStats.average!) ? "fill-current text-amber-400" : "text-gray-700"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs font-black text-white">
+                {ratingStats.average.toLocaleString("fa-IR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} از ۵
+              </span>
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Review List */}
@@ -737,7 +808,7 @@ export default function ProductDetailPage() {
           className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 text-xs font-black transition-all shadow-xl gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-[#1a1a1a] disabled:text-gray-500 disabled:border disabled:border-white/10"
         >
           <ShoppingBag className="w-4 h-4" />
-          {isOutOfStock ? "ناموجود در انبار" : `افزودن به سبد (${currentPrice.toLocaleString("fa-IR")} تومان)`}
+          {isOutOfStock ? "ناموجود در انبار" : `افزودن به سبد (${formatPrice(currentPrice)})`}
         </Button>
       </div>
     </main>

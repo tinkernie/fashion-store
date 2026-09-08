@@ -264,7 +264,7 @@ export function setupMockServer(axiosInstance: AxiosInstance) {
           response: createMockResponse(newRev, 201, config),
         });
       }
-      const reviews = MOCK_REVIEWS[prodId] || MOCK_REVIEWS["prod-1"] || [];
+      const reviews = MOCK_REVIEWS[prodId] || [];
       return Promise.reject({
         __mock_handled: true,
         response: createMockResponse(reviews, 200, config),

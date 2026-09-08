@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { FlowButton } from "@/components/ui/flow-button";
+import { formatPriceNumber } from "@/lib/price-utils";
 
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
@@ -97,6 +98,8 @@ export function CoverflowCarousel({
 
   const [selected, setSelected] = React.useState(0);
   const [isHovered, setIsHovered] = React.useState(false);
+  const hasDraggedRef = React.useRef(false);
+  const dragResetTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   /** Nearest whole card, folded back into 0..count-1. */
   const indexAt = React.useCallback(
@@ -247,6 +250,12 @@ export function CoverflowCarousel({
   }, [autoSwipeInterval, autoSwipeDelay, autoSwipeDirection, count, isHovered, nudge, pauseOnHover]);
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragResetTimerRef.current !== null) {
+      clearTimeout(dragResetTimerRef.current);
+      dragResetTimerRef.current = null;
+    }
+    hasDraggedRef.current = false;
+
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -265,6 +274,10 @@ export function CoverflowCarousel({
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.id !== event.pointerId) return;
+
+    if (Math.abs(event.clientX - drag.x) > 6) {
+      hasDraggedRef.current = true;
+    }
 
     const pitch = widthRef.current * (1 + gap);
     if (!pitch) return;
@@ -286,6 +299,12 @@ export function CoverflowCarousel({
     dragRef.current = null;
     const carried = Math.max(-2, Math.min(2, drag.v * 0.18));
     settle(clamp(Math.round(posRef.current + carried)));
+
+    if (hasDraggedRef.current) {
+      dragResetTimerRef.current = setTimeout(() => {
+        hasDraggedRef.current = false;
+      }, 100);
+    }
   };
 
   useIsoLayoutEffect(() => {
@@ -308,6 +327,7 @@ export function CoverflowCarousel({
   React.useEffect(
     () => () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (dragResetTimerRef.current !== null) clearTimeout(dragResetTimerRef.current);
     },
     [],
   );
@@ -368,9 +388,6 @@ export function CoverflowCarousel({
                   aria-roledescription="slide"
                   aria-label={`${index + 1} of ${count}`}
                   aria-hidden={!isSelected}
-                  onClick={() => {
-                    if (index !== selected) goTo(index);
-                  }}
                   className={cn(
                     "absolute left-1/2 top-1/2 aspect-[3/4] w-[var(--cf-card)] overflow-hidden rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl transition-[border-color,box-shadow] duration-300 group cursor-pointer will-change-transform",
                     isSelected
@@ -379,50 +396,122 @@ export function CoverflowCarousel({
                     cardClassName,
                   )}
                 >
-                  <img
-                    src={slide.src}
-                    alt={slide.alt}
-                    draggable={false}
-                    className="h-full w-full select-none object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
+                  {slide.href ? (
+                    <Link
+                      href={slide.href}
+                      aria-label={slide.title || slide.alt || `محصول ${index + 1}`}
+                      tabIndex={isSelected ? 0 : -1}
+                      onClick={(e) => {
+                        if (hasDraggedRef.current) {
+                          e.preventDefault();
+                          return;
+                        }
+                        if (index !== selected) {
+                          e.preventDefault();
+                          goTo(index);
+                        }
+                      }}
+                      className="relative block h-full w-full overflow-hidden"
+                    >
+                      <img
+                        src={slide.src}
+                        alt={slide.alt}
+                        draggable={false}
+                        className="h-full w-full select-none object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      />
 
-                  {/* Dark obsidian gradient for high readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+                      {/* Dark obsidian gradient for high readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
 
-                  {/* Top Badge */}
-                  {slide.badge && (
-                    <div className="absolute top-4 right-4 z-10" dir="rtl">
-                      <span className="px-3 py-1 text-[11px] font-black uppercase tracking-wider rounded-full bg-white text-black shadow-lg">
-                        {slide.badge}
-                      </span>
-                    </div>
-                  )}
+                      {/* Top Badge */}
+                      {slide.badge && (
+                        <div className="absolute top-4 right-4 z-10" dir="rtl">
+                          <span className="px-3 py-1 text-[11px] font-black uppercase tracking-wider rounded-full bg-white text-black shadow-lg">
+                            {slide.badge}
+                          </span>
+                        </div>
+                      )}
 
-                  {/* Card Content Overlay */}
-                  <div className="absolute bottom-0 inset-x-0 p-5 z-10 flex flex-col justify-end text-right" dir="rtl">
-                    {slide.subtitle && (
-                      <span className="text-[11px] font-semibold text-zinc-400 mb-1 tracking-wide">
-                        {slide.subtitle}
-                      </span>
-                    )}
-                    {slide.title && (
-                      <h3 className="text-base md:text-lg font-bold text-white leading-snug drop-shadow-md">
-                        {slide.title}
-                      </h3>
-                    )}
-                    {slide.price && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-sm font-black text-white">
-                          {typeof slide.price === "number" ? slide.price.toLocaleString("fa-IR") : slide.price} تومان
-                        </span>
-                        {slide.compareAtPrice && (
-                          <span className="text-xs text-zinc-500 line-through">
-                            {typeof slide.compareAtPrice === "number" ? slide.compareAtPrice.toLocaleString("fa-IR") : slide.compareAtPrice}
+                      {/* Card Content Overlay */}
+                      <div className="absolute bottom-0 inset-x-0 p-5 z-10 flex flex-col justify-end text-right" dir="rtl">
+                        {slide.subtitle && (
+                          <span className="text-[11px] font-semibold text-zinc-400 mb-1 tracking-wide">
+                            {slide.subtitle}
                           </span>
                         )}
+                        {slide.title && (
+                          <h3 className="text-base md:text-lg font-bold text-white leading-snug drop-shadow-md">
+                            {slide.title}
+                          </h3>
+                        )}
+                        {slide.price && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-sm font-black text-white">
+                              {formatPriceNumber(slide.price)} تومان
+                            </span>
+                            {slide.compareAtPrice && (
+                              <span className="text-xs text-zinc-500 line-through">
+                                {formatPriceNumber(slide.compareAtPrice)}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </Link>
+                  ) : (
+                    <div
+                      onClick={() => {
+                        if (hasDraggedRef.current) return;
+                        if (index !== selected) goTo(index);
+                      }}
+                      className="relative block h-full w-full overflow-hidden"
+                    >
+                      <img
+                        src={slide.src}
+                        alt={slide.alt}
+                        draggable={false}
+                        className="h-full w-full select-none object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      />
+
+                      {/* Dark obsidian gradient for high readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+
+                      {/* Top Badge */}
+                      {slide.badge && (
+                        <div className="absolute top-4 right-4 z-10" dir="rtl">
+                          <span className="px-3 py-1 text-[11px] font-black uppercase tracking-wider rounded-full bg-white text-black shadow-lg">
+                            {slide.badge}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Card Content Overlay */}
+                      <div className="absolute bottom-0 inset-x-0 p-5 z-10 flex flex-col justify-end text-right" dir="rtl">
+                        {slide.subtitle && (
+                          <span className="text-[11px] font-semibold text-zinc-400 mb-1 tracking-wide">
+                            {slide.subtitle}
+                          </span>
+                        )}
+                        {slide.title && (
+                          <h3 className="text-base md:text-lg font-bold text-white leading-snug drop-shadow-md">
+                            {slide.title}
+                          </h3>
+                        )}
+                        {slide.price && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-sm font-black text-white">
+                              {formatPriceNumber(slide.price)} تومان
+                            </span>
+                            {slide.compareAtPrice && (
+                              <span className="text-xs text-zinc-500 line-through">
+                                {formatPriceNumber(slide.compareAtPrice)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -471,11 +560,11 @@ export function CoverflowCarousel({
             {active.price && (
               <div className="text-left sm:text-left">
                 <div className="text-sm md:text-base font-black text-white">
-                  {typeof active.price === "number" ? active.price.toLocaleString("fa-IR") : active.price} تومان
+                  {formatPriceNumber(active.price)} تومان
                 </div>
                 {active.compareAtPrice && (
                   <div className="text-xs text-zinc-500 line-through">
-                    {typeof active.compareAtPrice === "number" ? active.compareAtPrice.toLocaleString("fa-IR") : active.compareAtPrice} تومان
+                    {formatPriceNumber(active.compareAtPrice)} تومان
                   </div>
                 )}
               </div>

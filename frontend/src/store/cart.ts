@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { api } from '@/lib/api';
+import { parsePrice } from '@/lib/price-utils';
 
 export interface CartItem {
   id: string;
@@ -79,7 +80,7 @@ export const useCart = create<CartStore>((set, get) => ({
           id: String(it.id),
           variant_id: it.variant_id ? String(it.variant_id) : undefined,
           name: it.product_title || it.name || "محصول",
-          price: parseFloat(it.price) || 0,
+          price: parsePrice(it.price),
           imageUrl: it.image?.url || it.image || it.imageUrl || "",
           size: it.option_details || it.size || "",
           quantity: it.quantity || 1,
@@ -88,9 +89,9 @@ export const useCart = create<CartStore>((set, get) => ({
 
         let couponData: AppliedCoupon | null = null;
         if (response.data.coupon || response.data.coupon_code) {
-          const discAmt = parseFloat(response.data.discount_amount) || 0;
+          const discAmt = parsePrice(response.data.discount_amount);
           const discType = response.data.coupon?.discount_type || response.data.discount_type;
-          const discVal = parseFloat(response.data.coupon?.discount_value ?? response.data.discount_value) || 0;
+          const discVal = parsePrice(response.data.coupon?.discount_value ?? response.data.discount_value);
           couponData = {
             code: response.data.coupon?.code || response.data.coupon_code || (typeof response.data.coupon === "string" ? response.data.coupon : ""),
             discount_amount: discAmt,
@@ -111,23 +112,28 @@ export const useCart = create<CartStore>((set, get) => ({
   addItem: async (item) => {
     const previousItems = get().items;
 
+    const sanitizedItem = {
+      ...item,
+      price: parsePrice(item.price),
+    };
+
     // Optimistic UI Update
     set((state) => {
       const existingItem = state.items.find(
-        (i) => (i.variant_id && item.variant_id ? i.variant_id === item.variant_id : i.id === item.id && i.size === item.size)
+        (i) => (i.variant_id && sanitizedItem.variant_id ? i.variant_id === sanitizedItem.variant_id : i.id === sanitizedItem.id && i.size === sanitizedItem.size)
       );
       
       if (existingItem) {
         return {
           items: state.items.map((i) =>
-            (i.variant_id && item.variant_id ? i.variant_id === item.variant_id : i.id === item.id && i.size === item.size)
-              ? { ...i, quantity: i.quantity + (item.quantity || 1) }
+            (i.variant_id && sanitizedItem.variant_id ? i.variant_id === sanitizedItem.variant_id : i.id === sanitizedItem.id && i.size === sanitizedItem.size)
+              ? { ...i, quantity: i.quantity + (sanitizedItem.quantity || 1) }
               : i
           ),
         };
       }
       
-      return { items: [...state.items, { ...item, quantity: item.quantity || 1 }] };
+      return { items: [...state.items, { ...sanitizedItem, quantity: sanitizedItem.quantity || 1 }] };
     });
 
     // Backend Sync
@@ -289,7 +295,7 @@ export const useCart = create<CartStore>((set, get) => ({
   },
   
   getTotal: () => {
-    return get().items.reduce((total, item) => total + (Number(item.price) * item.quantity), 0);
+    return get().items.reduce((total, item) => total + (parsePrice(item.price) * (item.quantity || 1)), 0);
   },
 
   getTotalWeight: () => {

@@ -11,6 +11,7 @@ import { CoverflowCarousel, CoverflowSlide } from "@/components/ui/coverflow-car
 import { Banner } from "@/components/ui/banner";
 import { FlowButton } from "@/components/ui/flow-button";
 import AnimatedText from "@/components/ui/animated-text";
+import { formatPrice, parsePrice } from "@/lib/price-utils";
 
 const DEFAULT_HERO_CONTENT = {
   badge: "کالکشن جدید ۲۰۲۶",
@@ -257,12 +258,8 @@ export default function HomeClient({
   const mapProductsToSlides = (productsList: any[], defaultBadge: string): CoverflowSlide[] => {
     if (!productsList || productsList.length === 0) return [];
     return productsList.map((p) => {
-      const rawPrice = typeof p.price === "number" ? p.price : Number(String(p.price || 0).replace(/\D/g, ""));
-      const rawDiscount = p.discount_price
-        ? typeof p.discount_price === "number"
-          ? p.discount_price
-          : Number(String(p.discount_price).replace(/\D/g, ""))
-        : undefined;
+      const rawPrice = parsePrice(p.price);
+      const rawDiscount = p.discount_price ? parsePrice(p.discount_price) : undefined;
 
       return {
         src: p.imageUrl || p.image_url || p.image || "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?q=80&w=900&auto=format&fit=crop",
@@ -628,7 +625,7 @@ export default function HomeClient({
                 <h3 className="text-sm md:text-lg font-bold text-white mb-0.5 md:mb-1 line-clamp-1">{product.name}</h3>
                 <span className="text-[10px] md:text-sm text-zinc-400 mb-1 md:mb-2">{(product.category || "").split('-')[1]?.trim() || product.category}</span>
                 <span className="text-white font-semibold text-xs md:text-base">
-                  {typeof product.price === 'number' ? product.price.toLocaleString("fa-IR") : product.price} تومان
+                  {formatPrice(product.price)}
                 </span>
               </div>
             </motion.div>

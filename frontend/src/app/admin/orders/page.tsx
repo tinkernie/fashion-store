@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
+import { formatPrice, parsePrice } from "@/lib/price-utils";
 
 const STATUS_TABS = [
   { id: "all", label: "تمام سفارشات" },
@@ -245,7 +246,6 @@ export default function AdminOrdersPage() {
                   const Icon = badge.icon;
                   const customer = order.shipping_address?.full_name || "کاربر سایت";
                   const phone = order.shipping_address?.phone || "";
-                  const total = (Number(order.total) || 0).toLocaleString("fa-IR");
                   const itemCount = order.items?.length || 1;
 
                   return (
@@ -277,7 +277,7 @@ export default function AdminOrdersPage() {
                       </td>
 
                       <td className="p-4 md:p-5 font-bold text-white text-xs md:text-sm">
-                        {total} تومان
+                        {formatPrice(order.total)}
                       </td>
 
                       <td className="p-4 md:p-5">
@@ -496,7 +496,7 @@ export default function AdminOrdersPage() {
                             </div>
                           </div>
                           <span className="font-bold text-white">
-                            {(Number(item.price || item.unit_price) * item.quantity).toLocaleString("fa-IR")} تومان
+                            {formatPrice(parsePrice(item.price || item.unit_price) * item.quantity)}
                           </span>
                         </div>
                       );
@@ -511,7 +511,7 @@ export default function AdminOrdersPage() {
               <div className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/10">
                 <span className="text-sm font-bold text-gray-300">مبلغ کل قابل پرداخت:</span>
                 <span className="text-lg font-black text-white">
-                  {(Number(selectedOrder.total) || 0).toLocaleString("fa-IR")} تومان
+                  {formatPrice(selectedOrder.total)}
                 </span>
               </div>
             </div>

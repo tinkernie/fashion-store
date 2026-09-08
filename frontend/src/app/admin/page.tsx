@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { adminApi } from "@/lib/admin-api";
 import { toast } from "sonner";
+import { formatPriceNumber, parsePrice } from "@/lib/price-utils";
 
 export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +63,7 @@ export default function AdminDashboardPage() {
       const coupons = couponsRes.status === "fulfilled" ? couponsRes.value : [];
       const popProducts = popProductsRes.status === "fulfilled" ? popProductsRes.value : [];
 
-      const totalRevenue = sales.total_revenue || orders.reduce((sum: number, o: any) => sum + (Number(o.total) || 0), 0);
+      const totalRevenue = parsePrice(sales.total_revenue) || orders.reduce((sum: number, o: any) => sum + parsePrice(o.total), 0);
       const orderCount = orders.length || sales.order_count || 0;
       const avg = orderCount > 0 ? Math.round(totalRevenue / orderCount) : 0;
 
@@ -86,7 +87,7 @@ export default function AdminDashboardPage() {
   };
 
   const formatPrice = (val: number) => {
-    return (val || 0).toLocaleString("fa-IR");
+    return formatPriceNumber(val);
   };
 
   return (
@@ -266,7 +267,7 @@ export default function AdminDashboardPage() {
             ) : (
               recentOrders.map((order) => {
                 const orderId = order.order_number || order.id?.substring(0, 8) || "سفارش";
-                const amount = Number(order.total) || 0;
+                const amount = parsePrice(order.total);
                 const status = order.status || "pending";
 
                 const getStatusBadge = (st: string) => {

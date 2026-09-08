@@ -238,6 +238,30 @@ export const adminApi = {
     const res = await api.post(`/api/admin/users/${userId}/${action}/`);
     return res.data;
   },
+  async getUserOrders(userId: string, userEmail?: string): Promise<any[]> {
+    try {
+      const res = await api.get(`/api/admin/users/${userId}/orders/`);
+      return Array.isArray(res.data) ? res.data : res.data.results || [];
+    } catch {
+      try {
+        const res = await api.get(`/api/admin/orders/?user_id=${userId}`);
+        const list = Array.isArray(res.data) ? res.data : res.data.results || [];
+        if (list.length > 0) return list;
+      } catch {}
+
+      try {
+        const all = await this.getOrders();
+        return all.filter((o: any) => {
+          if (o.user_id === userId || o.user === userId || o.user?.id === userId) return true;
+          if (userEmail && o.shipping_address?.email && o.shipping_address.email.toLowerCase() === userEmail.toLowerCase()) return true;
+          if (userEmail && o.user?.email && o.user.email.toLowerCase() === userEmail.toLowerCase()) return true;
+          return false;
+        });
+      } catch {
+        return [];
+      }
+    }
+  },
 
   // Reviews
   async getReviews(params?: { status?: string; product_id?: string; search?: string }): Promise<ProductReview[]> {
@@ -335,6 +359,69 @@ export const adminApi = {
   async getAdminNotifications(): Promise<any[]> {
     const res = await api.get('/api/admin/notifications/');
     return Array.isArray(res.data) ? res.data : res.data.results || [];
+  },
+
+  // Collections Management
+  async getCollections(): Promise<any[]> {
+    try {
+      const res = await api.get('/api/admin/collections/');
+      return Array.isArray(res.data) ? res.data : res.data.results || [];
+    } catch {
+      // Graceful fallback to public endpoint if admin list action isn't available yet
+      const res = await api.get('/api/collections/');
+      return Array.isArray(res.data) ? res.data : res.data.results || [];
+    }
+  },
+
+  async getCollection(idOrSlug: string): Promise<any> {
+    const res = await api.get(`/api/collections/${idOrSlug}/`);
+    return res.data;
+  },
+
+  async createCollection(data: {
+    name: string;
+    slug: string;
+    description?: string;
+    hero_banner?: any;
+    priority?: number;
+    is_active?: boolean;
+    published_from?: string | null;
+    published_until?: string | null;
+  }): Promise<any> {
+    const res = await api.post('/api/admin/collections/', data);
+    return res.data;
+  },
+
+  async updateCollection(id: string, data: any): Promise<any> {
+    const res = await api.patch(`/api/admin/collections/${id}/`, data);
+    return res.data;
+  },
+
+  async deleteCollection(id: string): Promise<any> {
+    const res = await api.delete(`/api/admin/collections/${id}/`);
+    return res.data;
+  },
+
+  async addProductToCollection(collectionId: string, productId: string, position: number = 0): Promise<any> {
+    const res = await api.post(`/api/admin/collections/${collectionId}/add-product/`, {
+      product_id: productId,
+      position,
+    });
+    return res.data;
+  },
+
+  async removeProductFromCollection(collectionId: string, productId: string): Promise<any> {
+    const res = await api.post(`/api/admin/collections/${collectionId}/remove-product/`, {
+      product_id: productId,
+    });
+    return res.data;
+  },
+
+  async setCollectionProducts(collectionId: string, items: Array<{ product_id: string; position: number }>): Promise<any> {
+    const res = await api.post(`/api/admin/collections/${collectionId}/set_products/`, {
+      items,
+    });
+    return res.data;
   },
 };
 
