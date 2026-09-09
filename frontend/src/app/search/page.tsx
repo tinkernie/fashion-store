@@ -48,7 +48,7 @@ import {
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import Link from "next/link";
-import { formatPrice as formatPriceUtil, parsePrice } from "@/lib/price-utils";
+import { formatPrice as formatPriceUtil, parsePrice, getDiscountInfo } from "@/lib/price-utils";
 import { GooeySearchBar } from "@/components/ui/animated-search-bar";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { useWishlist } from "@/store/wishlist";
@@ -698,6 +698,7 @@ function SearchContent() {
                 {products.map((product) => {
                   const isWishlisted = wishlistItems.some((w) => w.id === product.id);
                   const img = product.image || product.imageUrl || "/globe.svg";
+                  const disc = getDiscountInfo(product);
 
                   return (
                     <motion.div
@@ -728,7 +729,7 @@ function SearchContent() {
                               addWishlist({
                                 id: product.id,
                                 name: product.title || product.name || "",
-                                price: parsePrice(product.price),
+                                price: disc.hasDiscount ? disc.discountPrice : parsePrice(product.price),
                                 imageUrl: img,
                                 category: product.category || "فشن",
                               });
@@ -745,7 +746,12 @@ function SearchContent() {
                         </button>
 
                         {/* Badges */}
-                        <div className="absolute top-3 right-3 flex flex-col gap-1 z-20">
+                        <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-20">
+                          {disc.hasDiscount && (
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-black text-[10px] font-black shadow-[0_2px_10px_rgba(16,185,129,0.5)]">
+                              ٪{disc.discountPercent} تخفیف
+                            </span>
+                          )}
                           {product.is_in_stock === false || (product.stock_quantity !== undefined && product.stock_quantity <= 0) ? (
                             <span className="px-2.5 py-1 rounded-full bg-rose-500/90 backdrop-blur-md text-white text-[10px] font-black tracking-wider">
                               ناموجود
@@ -771,10 +777,22 @@ function SearchContent() {
                           </Link>
                         </div>
 
+                        {/* Price Area: Original strikethrough & Green discounted price */}
                         <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-                          <span className="text-sm font-black text-white">
-                            {formatPrice(product.price)}
-                          </span>
+                          {disc.hasDiscount ? (
+                            <div className="flex flex-col">
+                              <span className="text-xs text-gray-500 line-through">
+                                {formatPriceUtil(disc.basePrice)}
+                              </span>
+                              <span className="text-sm font-black text-emerald-400">
+                                {formatPriceUtil(disc.discountPrice)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm font-black text-white">
+                              {formatPriceUtil(product.price)}
+                            </span>
+                          )}
                           <Link
                             href={`/products/${product.id}`}
                             className="text-xs text-gray-400 hover:text-amber-400 transition-colors font-medium"

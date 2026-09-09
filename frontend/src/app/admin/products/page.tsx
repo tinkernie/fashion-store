@@ -24,6 +24,8 @@ import {
   Tag,
   Check,
   Package,
+  Hash,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +39,18 @@ import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import MediaUploader from "@/components/admin/media-uploader";
-import { formatPrice, formatPriceNumber } from "@/lib/price-utils";
+import {
+  formatPrice,
+  formatPriceNumber,
+  parsePrice,
+  cleanPriceInput,
+  isValidDiscountPercent,
+  calculateDiscountPrice,
+  calculateDiscountPercent,
+  getDiscountInfo,
+} from "@/lib/price-utils";
+import { useNotifications } from "@/store/notifications";
+import { useWishlist } from "@/store/wishlist";
 
 
 interface OptionDef {
@@ -60,9 +73,10 @@ export default function AdminProductsPage() {
   const [collections, setCollections] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [uuidSearchQuery, setUuidSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  // Product Create/Edit Modal State
+  // Edit / Create Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
 
@@ -72,6 +86,8 @@ export default function AdminProductsPage() {
   const [categoryId, setCategoryId] = useState("");
   const [collectionId, setCollectionId] = useState("");
   const [price, setPrice] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("");
+  const [discountRemaining, setDiscountRemaining] = useState("۴۸ ساعت");
   const [discountPrice, setDiscountPrice] = useState("");
   const [weight, setWeight] = useState("500");
   const [description, setDescription] = useState("");
@@ -159,6 +175,8 @@ export default function AdminProductsPage() {
     setCategoryId(categories[0]?.id || "");
     setCollectionId("");
     setPrice("");
+    setDiscountPercent("");
+    setDiscountRemaining("۴۸ ساعت");
     setDiscountPrice("");
     setWeight("500");
     setDescription("");
@@ -185,8 +203,20 @@ export default function AdminProductsPage() {
     }
     setCategoryId(matchedCatId || categories[0]?.id || "");
     setCollectionId(p.collection_id || p.collection?.id || "");
-    setPrice(String(p.price || ""));
-    setDiscountPrice(p.discount_price ? String(p.discount_price) : "");
+    setPrice(cleanPriceInput(p.price));
+
+    // Extract discount percent and price
+    const discInfo = getDiscountInfo(p);
+    if (discInfo.hasDiscount) {
+      setDiscountPercent(String(discInfo.discountPercent));
+      setDiscountPrice(cleanPriceInput(discInfo.discountPrice));
+      setDiscountRemaining(discInfo.remainingTime || "۴۸ ساعت");
+    } else {
+      setDiscountPercent("");
+      setDiscountPrice("");
+      setDiscountRemaining("۴۸ ساعت");
+    }
+
     const prodWeight = p.metadata?.weight || p.weight;
     setWeight(prodWeight ? String(prodWeight) : "500");
     setDescription(p.description || "");
@@ -199,7 +229,7 @@ export default function AdminProductsPage() {
           id: v.id,
           name: v.title || v.name || "تنوع",
           sku: v.sku || "",
-          price: String(v.price || p.price || ""),
+          price: cleanPriceInput(v.price || p.price),
           weight: v.weight || prodWeight || 500,
           stock: v.inventory?.quantity || v.stock || 10,
         }))
@@ -224,7 +254,7 @@ export default function AdminProductsPage() {
       ]);
       setProductOptions(opts);
       setProductVariants(vars);
-      setNewVariantPrice(String(product.price || ""));
+      setNewVariantPrice(cleanPriceInput(product.price));
       const prodWeight = product.metadata?.weight || product.weight || 500;
       setNewVariantWeight(String(prodWeight));
       setNewVariantSku(`${(product.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`);
@@ -306,7 +336,7 @@ export default function AdminProductsPage() {
       const createdVar = await adminApi.createVariant({
         product_id: selectedProductForVariants.id,
         sku: newVariantSku.trim().toUpperCase(),
-        price: Number(newVariantPrice),
+        price: parsePrice(newVariantPrice),
         weight: Number(newVariantWeight) || 500,
         availability: "in_stock",
         status: "published",
@@ -372,7 +402,7 @@ export default function AdminProductsPage() {
       return {
         name: comboName,
         sku: comboSku,
-        price: price || "0",
+        price: cleanPriceInput(price) || "0",
         weight: Number(weight) || 500,
         stock: 10,
       };
@@ -390,6 +420,19 @@ export default function AdminProductsPage() {
       return;
     }
 
+    const basePriceNum = parsePrice(price);
+    let finalDiscountPrice: number | undefined = undefined;
+    let finalDiscountPercent: number | null = null;
+
+    if (discountPercent.trim() !== "") {
+      if (!isValidDiscountPercent(discountPercent.trim())) {
+        toast.error("درصد تخفیف فقط باید یک عدد صحیح بین ۱ تا ۹۹ باشد (هر مقدار دیگری غیرمجاز است).");
+        return;
+      }
+      finalDiscountPercent = Number(discountPercent.trim());
+      finalDiscountPrice = calculateDiscountPrice(basePriceNum, finalDiscountPercent);
+    }
+
     setIsLoading(true);
     const cleanSlug =
       (slug || title)
@@ -400,18 +443,22 @@ export default function AdminProductsPage() {
 
     const matchedCategory = categories.find((c) => c.id === categoryId);
     const parsedWeight = Number(weight) > 0 ? Number(weight) : 500;
+    const finalRemaining = discountRemaining.trim() || "۴۸ ساعت";
+
     const payload: any = {
       title,
       slug: cleanSlug,
       category_id: categoryId || undefined,
       category: matchedCategory?.name || undefined,
       collection_id: collectionId || undefined,
-      price: Number(price),
-      discount_price: discountPrice ? Number(discountPrice) : undefined,
+      price: basePriceNum,
+      discount_price: finalDiscountPrice,
       weight: parsedWeight,
       metadata: {
         ...(editingProduct?.metadata || {}),
         weight: parsedWeight,
+        discount_percent: finalDiscountPercent,
+        discount_remaining: finalDiscountPercent ? finalRemaining : null,
       },
       description,
       image_url: imageUrl,
@@ -419,13 +466,39 @@ export default function AdminProductsPage() {
     };
 
     try {
+      let savedProduct: any;
       if (editingProduct) {
-        await adminApi.updateProduct(editingProduct.id, payload);
+        savedProduct = await adminApi.updateProduct(editingProduct.id, payload);
         toast.success("محصول با موفقیت بروزرسانی شد");
       } else {
-        await adminApi.createProduct(payload);
+        savedProduct = await adminApi.createProduct(payload);
         toast.success("محصول جدید با موفقیت اضافه شد");
       }
+
+      // Wishlist Discount Notification Dispatch:
+      // When a product gets a discount, dispatch notification with discount details (percentage, new price, remaining time)
+      if (finalDiscountPercent && finalDiscountPrice) {
+        const prodId = savedProduct?.id || editingProduct?.id;
+        useNotifications.getState().addNotification({
+          id: `notif-discount-${prodId}-${Date.now()}`,
+          type: "wishlist_discount",
+          subject: `تخفیف ویژه: «${title}» تخفیف خورد!`,
+          body: `خبر خوب! محصول «${title}» که در لیست علاقه‌مندی‌های شما قرار دارد، مشمول ${finalDiscountPercent}٪ تخفیف شد. قیمت جدید: ${formatPrice(finalDiscountPrice)}. مهلت استفاده: ${finalRemaining}.`,
+          is_read: false,
+          created_at: new Date().toISOString(),
+          productId: prodId,
+          productName: title,
+          discountPercent: finalDiscountPercent,
+          newPrice: finalDiscountPrice,
+          remainingTime: finalRemaining,
+        });
+
+        const isWishlisted = useWishlist.getState().isInWishlist(prodId);
+        if (isWishlisted) {
+          toast.info(`اعلان تخفیف محصول «${title}» برای کاربران نشان‌کرده ارسال شد.`);
+        }
+      }
+
       setIsModalOpen(false);
       loadCatalogData();
     } catch (err: any) {
@@ -526,9 +599,23 @@ export default function AdminProductsPage() {
 
   const filteredProducts = products.filter((p) => {
     const name = (p.name || p.title || "").toLowerCase();
-    const matchesQuery =
-      name.includes(searchQuery.toLowerCase()) ||
-      (p.slug || "").includes(searchQuery.toLowerCase());
+    const slug = (p.slug || "").toLowerCase();
+    const id = String(p.id || "").toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
+    const uuidQuery = uuidSearchQuery.trim().toLowerCase();
+
+    // General search matches name, slug, or UUID
+    const matchesGeneralQuery =
+      !query ||
+      name.includes(query) ||
+      slug.includes(query) ||
+      id.includes(query);
+
+    // Dedicated UUID search matches product ID
+    const matchesUuidQuery =
+      !uuidQuery ||
+      id.includes(uuidQuery);
+
     const matchedFilterCat = categories.find((c) => c.id === selectedCategory);
     const matchesCategory =
       selectedCategory === "all" ||
@@ -542,7 +629,7 @@ export default function AdminProductsPage() {
         p.category_id === matchedFilterCat.id ||
         p.category?.name === matchedFilterCat.name
       ));
-    return matchesQuery && matchesCategory;
+    return matchesGeneralQuery && matchesUuidQuery && matchesCategory;
   });
 
   return (
@@ -589,21 +676,57 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Control Bar: Search & Category Filter */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Search */}
-        <div className="flex items-center gap-3 bg-[#111111] border border-white/10 rounded-2xl px-4 py-2 w-full sm:max-w-md">
-          <Search className="w-4 h-4 text-gray-500 shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="جستجوی محصول بر اساس نام یا نامک..."
-            className="flex-1 bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-600"
-          />
+      <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
+        {/* Search Inputs Group */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:max-w-2xl">
+          {/* General Name / Slug Search */}
+          <div className="flex items-center gap-3 bg-[#111111] border border-white/10 rounded-2xl px-4 py-2 w-full sm:flex-1 focus-within:border-white/20 transition-all">
+            <Search className="w-4 h-4 text-gray-500 shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="جستجوی محصول بر اساس نام یا نامک..."
+              className="flex-1 bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-600"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-gray-500 hover:text-white text-xs px-1"
+                aria-label="پاک کردن جستجو"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Dedicated UUID Search Bar */}
+          <div className="flex items-center gap-2.5 bg-[#111111] border border-amber-400/20 focus-within:border-amber-400/60 rounded-2xl px-3.5 py-2 w-full sm:w-72 transition-all shadow-inner">
+            <Hash className="w-4 h-4 text-amber-400 shrink-0" />
+            <input
+              type="text"
+              value={uuidSearchQuery}
+              onChange={(e) => setUuidSearchQuery(e.target.value)}
+              placeholder="جستجو بر اساس UUID (شناسه)..."
+              dir="ltr"
+              className="flex-1 bg-transparent border-none outline-none text-amber-300 font-mono text-xs placeholder:text-gray-600 placeholder:font-sans placeholder:text-right"
+            />
+            {uuidSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setUuidSearchQuery("")}
+                className="text-gray-500 hover:text-amber-300 text-xs px-1"
+                aria-label="پاک کردن شناسه"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full sm:w-auto pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full xl:w-auto pb-1">
           <button
             onClick={() => setSelectedCategory("all")}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
@@ -661,21 +784,51 @@ export default function AdminProductsPage() {
 
                   return (
                     <tr key={p.id} className="hover:bg-white/5 transition-colors">
-                      {/* Product Name & Image */}
+                      {/* Product Name & Image & UUID */}
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={img}
-                            alt={p.name || p.title}
-                            className="w-12 h-14 object-cover rounded-xl border border-white/10 shrink-0"
-                          />
-                          <div className="space-y-0.5 min-w-0">
+                          <div className="flex flex-col items-center gap-1 shrink-0">
+                            <img
+                              src={img}
+                              alt={p.name || p.title}
+                              className="w-12 h-14 object-cover rounded-xl border border-white/10"
+                            />
+                            {/* Short UUID displayed under photo as ID */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (p.id) {
+                                  navigator.clipboard.writeText(p.id);
+                                  toast.success(`شناسه ${p.id.slice(0, 8)} کپی شد`);
+                                }
+                              }}
+                              className="text-[9px] font-mono text-amber-400/90 bg-white/5 hover:bg-amber-400/10 hover:border-amber-400/30 px-1.5 py-0.5 rounded border border-white/10 max-w-[64px] truncate cursor-pointer transition-colors"
+                              title={`شناسه کامل: ${p.id} (کلیک برای کپی)`}
+                              dir="ltr"
+                            >
+                              {p.id ? p.id.slice(0, 8) : "—"}
+                            </button>
+                          </div>
+                          <div className="space-y-1 min-w-0">
                             <span className="font-bold text-white text-xs block truncate max-w-xs">
                               {p.name || p.title}
                             </span>
-                            <span className="text-[10px] text-gray-500 font-mono block" dir="ltr">
-                              {p.slug}
-                            </span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] text-gray-500 font-mono block" dir="ltr">
+                                {p.slug}
+                              </span>
+                              {p.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => setUuidSearchQuery(p.id.slice(0, 8))}
+                                  className="text-[9px] text-zinc-500 hover:text-amber-300 font-mono hidden sm:inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                  title="فیلتر بر اساس این شناسه"
+                                  dir="ltr"
+                                >
+                                  <span>ID: {p.id.slice(0, 8)}</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -688,8 +841,30 @@ export default function AdminProductsPage() {
                       </td>
 
                       {/* Price */}
-                      <td className="py-4 px-4 font-bold text-white">
-                        {p.price ? `${formatPriceNumber(p.price)} تومان` : "تماس بگیرید"}
+                      <td className="py-4 px-4">
+                        {(() => {
+                          const disc = getDiscountInfo(p);
+                          if (disc.hasDiscount) {
+                            return (
+                              <div className="flex flex-col">
+                                <span className="text-[11px] text-gray-500 line-through">
+                                  {formatPrice(disc.basePrice)}
+                                </span>
+                                <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5">
+                                  {formatPrice(disc.discountPrice)}
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                                    ٪{disc.discountPercent}
+                                  </span>
+                                </span>
+                              </div>
+                            );
+                          }
+                          return (
+                            <span className="font-bold text-white text-xs">
+                              {p.price ? formatPrice(p.price) : "تماس بگیرید"}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Variants & Options Button */}
@@ -1124,7 +1299,13 @@ export default function AdminProductsPage() {
                 <Input
                   type="number"
                   value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  onChange={(e) => {
+                    const newPrice = e.target.value;
+                    setPrice(newPrice);
+                    if (isValidDiscountPercent(discountPercent)) {
+                      setDiscountPrice(String(calculateDiscountPrice(newPrice, discountPercent)));
+                    }
+                  }}
                   placeholder="1250000"
                   required
                   className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
@@ -1133,12 +1314,30 @@ export default function AdminProductsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300">قیمت با تخفیف (اختیاری)</label>
+                <label className="text-xs font-bold text-gray-300 flex items-center justify-between">
+                  <span>درصد تخفیف (۱ تا ۹۹)</span>
+                  <span className="text-[10px] text-amber-400 font-normal">اختیاری</span>
+                </label>
                 <Input
                   type="number"
-                  value={discountPrice}
-                  onChange={(e) => setDiscountPrice(e.target.value)}
-                  placeholder="950000"
+                  min={1}
+                  max={99}
+                  value={discountPercent}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDiscountPercent(val);
+                    if (!val) {
+                      setDiscountPrice("");
+                    } else {
+                      const num = parseInt(val, 10);
+                      if (num >= 1 && num <= 99) {
+                        setDiscountPrice(String(calculateDiscountPrice(price, num)));
+                      } else {
+                        setDiscountPrice("");
+                      }
+                    }
+                  }}
+                  placeholder="مثال: 20"
                   className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
                   dir="ltr"
                 />
@@ -1161,6 +1360,65 @@ export default function AdminProductsPage() {
                 />
               </div>
             </div>
+
+            {/* Discount Preview & Remaining Time Panel (Shown when discount percent is entered) */}
+            {discountPercent.trim() !== "" && (
+              <div className="p-4 bg-[#141414] border border-white/10 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-bold text-white">پیش‌نمایش تخفیف و زمان اعتبار</span>
+                  </div>
+                  {isValidDiscountPercent(discountPercent) ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                      {discountPercent}٪ تخفیف معتبر
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold">
+                      درصد نامعتبر
+                    </span>
+                  )}
+                </div>
+
+                {isValidDiscountPercent(discountPercent) ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                    <div className="p-3 bg-emerald-950/20 border border-emerald-500/20 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-400">قیمت جدید (سبز در سایت):</span>
+                        <span className="text-emerald-400 font-black text-sm">
+                          {formatPrice(calculateDiscountPrice(price, discountPercent))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-emerald-500/10">
+                        <span>میزان تخفیف و سود خریدار:</span>
+                        <span className="text-emerald-300 font-bold">
+                          {formatPrice(Math.max(0, parsePrice(price) - calculateDiscountPrice(price, discountPercent)))}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-300">
+                        مهلت / زمان باقی‌مانده تخفیف
+                      </label>
+                      <Input
+                        value={discountRemaining}
+                        onChange={(e) => setDiscountRemaining(e.target.value)}
+                        placeholder="مثال: ۴۸ ساعت یا ۳ روز"
+                        className="bg-[#181818] border-white/10 h-10 text-xs text-white rounded-xl"
+                      />
+                      <span className="text-[10px] text-gray-500 block">
+                        این عبارت در اعلان ارسالی به کاربران نشان‌کرده نمایش داده می‌شود.
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2.5 bg-rose-950/40 border border-rose-500/30 rounded-xl text-rose-300 text-xs font-medium">
+                    ⚠️ توجه: درصد تخفیف فقط باید عددی بین ۱ تا ۹۹ باشد. سایر مقادیر قابل ثبت نیستند.
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Media Uploader Component */}
             <div className="p-4 bg-[#141414] border border-white/10 rounded-2xl">

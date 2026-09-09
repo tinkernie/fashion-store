@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
-import { formatPrice, parsePrice } from "@/lib/price-utils";
+import { formatPrice, parsePrice, getDiscountInfo } from "@/lib/price-utils";
 import { ArrowRight, SlidersHorizontal, Filter, X, ShoppingBag } from "lucide-react";
 
 export default function WomenCategoryPage() {
@@ -269,8 +269,8 @@ export default function WomenCategoryPage() {
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
               {filteredProducts.map((product, index) => {
                 const img = product.imageUrl || product.image || product.image_url || "/globe.svg";
-                const priceNum = Number(product.price) || 0;
                 const catLabel = product.category_name || product.category || "فشن استور";
+                const disc = getDiscountInfo(product);
 
                 return (
                   <motion.div 
@@ -281,6 +281,13 @@ export default function WomenCategoryPage() {
                     className="group flex flex-col bg-[#111111] border border-white/5 hover:border-white/20 rounded-3xl p-3 md:p-4 transition-all shadow-xl"
                   >
                     <Link href={`/products/${product.slug || product.id}`} className="block relative aspect-[3/4] overflow-hidden rounded-2xl bg-black/40 mb-3">
+                      {disc.hasDiscount && (
+                        <div className="absolute top-2.5 right-2.5 z-20">
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-black text-[10px] font-black shadow-[0_2px_10px_rgba(16,185,129,0.5)]">
+                            ٪{disc.discountPercent} تخفیف
+                          </span>
+                        </div>
+                      )}
                       <img 
                         src={img} 
                         alt={product.name || product.title}
@@ -297,9 +304,20 @@ export default function WomenCategoryPage() {
                       <h3 className="text-xs md:text-sm font-black text-white line-clamp-1 group-hover:text-amber-400 transition-colors">
                         {product.name || product.title}
                       </h3>
-                      <span className="text-amber-400 font-black text-xs md:text-sm pt-1">
-                        {formatPrice(product.price)}
-                      </span>
+                      {disc.hasDiscount ? (
+                        <div className="flex flex-col pt-1">
+                          <span className="text-[10px] text-gray-500 line-through">
+                            {formatPrice(disc.basePrice)}
+                          </span>
+                          <span className="text-emerald-400 font-black text-xs md:text-sm">
+                            {formatPrice(disc.discountPrice)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-amber-400 font-black text-xs md:text-sm pt-1">
+                          {formatPrice(product.price)}
+                        </span>
+                      )}
                     </div>
                   </motion.div>
                 );

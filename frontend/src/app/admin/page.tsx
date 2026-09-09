@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const formatPrice = (val: number) => {
+  const formatPrice = (val: any) => {
     return formatPriceNumber(val);
   };
 

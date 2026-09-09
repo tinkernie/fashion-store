@@ -144,14 +144,6 @@ export const adminApi = {
     const { deleteCategory } = await import('./categories');
     return deleteCategory(id);
   },
-  async getCollections(): Promise<any[]> {
-    const res = await api.get('/api/collections/');
-    return Array.isArray(res.data) ? res.data : res.data.results || [];
-  },
-  async createCollection(data: { name: string; slug: string; description?: string }): Promise<any> {
-    const res = await api.post('/api/admin/collections/', data);
-    return res.data;
-  },
 
   // Orders
   async getOrders(): Promise<any[]> {

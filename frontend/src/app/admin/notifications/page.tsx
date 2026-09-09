@@ -20,6 +20,7 @@ import { adminApi } from "@/lib/admin-api";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
+import { localizeNotification } from "@/lib/notification-utils";
 
 export default function AdminNotificationsPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -58,12 +59,15 @@ export default function AdminNotificationsPage() {
     return <Bell className="w-4 h-4 text-blue-400" />;
   };
 
-  const filteredNotifications = notifications.filter((n) => {
-    const subject = (n.subject || n.title || "").toLowerCase();
+  const filteredNotifications = notifications.map(localizeNotification).filter((n) => {
+    const subject = (n.title || n.subject || "").toLowerCase();
+    const body = (n.body || "").toLowerCase();
     const email = (n.user_email || "").toLowerCase();
+    const query = searchQuery.toLowerCase();
     const matchesSearch =
-      subject.includes(searchQuery.toLowerCase()) ||
-      email.includes(searchQuery.toLowerCase());
+      subject.includes(query) ||
+      body.includes(query) ||
+      email.includes(query);
     const matchesFilter =
       filterType === "all" ||
       (n.type && n.type.toLowerCase() === filterType.toLowerCase());
@@ -144,10 +148,11 @@ export default function AdminNotificationsPage() {
                         </div>
                         <div className="space-y-0.5">
                           <span className="font-bold text-white text-xs block">
-                            {notif.subject || notif.title || "پیام سیستمی"}
+                            {notif.title || notif.subject || "پیام سیستمی"}
                           </span>
-                          <span className="text-[10px] text-gray-500 block">
-                            نوع: {notif.type || "عمومی"}
+                          <span className="text-[10px] text-gray-400 block">
+                            نوع: {notif.typeLabel || "عمومی"}
+                            {notif.statusLabel && ` • وضعیت: ${notif.statusLabel}`}
                           </span>
                         </div>
                       </div>

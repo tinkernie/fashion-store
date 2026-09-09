@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
+import { useNotifications } from "@/store/notifications";
+import NotificationDropdown from "@/components/notification-dropdown";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatPrice, formatPriceNumber } from "@/lib/price-utils";
@@ -118,6 +120,7 @@ export default function Navbar() {
     clearAuthSession({ notify: false, redirect: false });
     setIsLoggedIn(false);
     setUserDisplayName(null);
+    useNotifications.getState().resetNotifications();
     toast.success("با موفقیت از حساب کاربری خارج شدید");
     router.push("/");
   };
@@ -321,6 +324,11 @@ export default function Navbar() {
             >
               <Search className="w-5 h-5" />
             </motion.button>
+          )}
+
+          {/* Customer Notifications (Strictly visible only when logged in, hidden for guests) */}
+          {isLoggedIn && (
+            <NotificationDropdown />
           )}
 
           {/* User Dropdown */}

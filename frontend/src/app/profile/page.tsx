@@ -41,7 +41,7 @@ import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
 import { cn } from "@/lib/utils";
 import { isTokenExpired, clearAuthSession, parseJwtPayload } from "@/lib/auth";
-import { formatPrice, parsePrice } from "@/lib/price-utils";
+import { formatPrice, parsePrice, getDiscountInfo } from "@/lib/price-utils";
 
 
 const getUserIdFromToken = () => {
@@ -368,31 +368,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleMarkNotificationRead = async (notifId: string) => {
-    try {
-      await api.post("/api/notifications/mark-read/", { notification_id: notifId });
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
-      );
-      toast.success("اعلان خوانده شد");
-    } catch {
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
-      );
-    }
-  };
-
-  const handleMarkAllNotificationsRead = async () => {
-    try {
-      await api.post("/api/notifications/mark-all-read/");
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-      toast.success("تمام اعلان‌ها به عنوان خوانده شده علامت‌گذاری شدند");
-    } catch {
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    }
-  };
-
-
   const handleTogglePreference = async (key: string, value: boolean) => {
     setIsUpdatingPrefs(true);
     try {
@@ -485,8 +460,6 @@ export default function ProfilePage() {
     return true;
   });
 
-  const unreadNotifsCount = notifications.filter((n) => !n.is_read).length;
-
   const profileFullName = userProfile
     ? `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim()
     : "";
@@ -576,16 +549,8 @@ export default function ProfilePage() {
                     badge: `(${addresses.length})`,
                   },
                   {
-                    id: "notifications",
-                    title: "اعلان‌ها",
-                    icon: <Bell className="w-4 h-4" />,
-                    badge: unreadNotifsCount > 0 ? (
-                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block" />
-                    ) : undefined,
-                  },
-                  {
                     id: "settings",
-                    title: "تغییر اطلاعات پروفایل",
+                    title: "تنظیمات حساب",
                     icon: <User className="w-4 h-4" />,
                   },
                 ]}
@@ -744,39 +709,60 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {wishlistItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-[#111111] border border-white/10 hover:border-white/20 rounded-3xl p-4 flex items-center gap-4 transition-all shadow-lg"
-                    >
-                      <img
-                        src={item.imageUrl || "/globe.svg"}
-                        alt={item.name}
-                        className="w-20 h-24 object-cover rounded-2xl border border-white/10 shrink-0"
-                      />
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <Link href={`/products/${item.id}`} className="block">
-                          <h4 className="text-sm font-bold text-white hover:text-amber-400 transition-colors truncate">
-                            {item.name}
-                          </h4>
-                        </Link>
-                        <span className="text-xs text-gray-500 block">{item.category || "پوشاک"}</span>
-                        <p className="text-xs font-black text-gray-200 pt-1">
-                          {formatPrice(item.price)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          removeWishlistItem(item.id);
-                          toast.info("از علاقه‌مندی‌ها حذف شد");
-                        }}
-                        className="p-2.5 text-gray-500 hover:text-rose-400 transition-colors rounded-xl hover:bg-white/5"
-                        title="حذف"
+                  {wishlistItems.map((item) => {
+                    const disc = getDiscountInfo(item);
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-[#111111] border border-white/10 hover:border-white/20 rounded-3xl p-4 flex items-center gap-4 transition-all shadow-lg relative overflow-hidden"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                        <div className="relative shrink-0">
+                          <img
+                            src={item.imageUrl || "/globe.svg"}
+                            alt={item.name}
+                            className="w-20 h-24 object-cover rounded-2xl border border-white/10"
+                          />
+                          {disc.hasDiscount && (
+                            <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-emerald-500 text-black text-[9px] font-black shadow-md">
+                              ٪{disc.discountPercent}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <Link href={`/products/${item.id}`} className="block">
+                            <h4 className="text-sm font-bold text-white hover:text-amber-400 transition-colors truncate">
+                              {item.name}
+                            </h4>
+                          </Link>
+                          <span className="text-xs text-gray-500 block">{item.category || "پوشاک"}</span>
+                          {disc.hasDiscount ? (
+                            <div className="flex flex-col pt-1">
+                              <span className="text-[10px] text-gray-500 line-through">
+                                {formatPrice(disc.basePrice)}
+                              </span>
+                              <span className="text-xs font-black text-emerald-400">
+                                {formatPrice(disc.discountPrice)}
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="text-xs font-black text-gray-200 pt-1">
+                              {formatPrice(item.price)}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            removeWishlistItem(item.id);
+                            toast.info("از علاقه‌مندی‌ها حذف شد");
+                          }}
+                          className="p-2.5 text-gray-500 hover:text-rose-400 transition-colors rounded-xl hover:bg-white/5 cursor-pointer"
+                          title="حذف"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
@@ -863,111 +849,7 @@ export default function ProfilePage() {
               )}
             </TabsContent>
 
-            {/* --- 4. In-App Notifications Tab --- */}
-            <TabsContent value="notifications" className="space-y-6 outline-none mt-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-black text-white">اعلان‌ها و رویدادهای حساب</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">پیام‌های سفارش‌ها، تخفیف‌های ویژه و هشدارهای امنیتی</p>
-                </div>
-                {unreadNotifsCount > 0 && (
-                  <Button
-                    onClick={handleMarkAllNotificationsRead}
-                    variant="outline"
-                    className="h-9 px-3.5 rounded-xl border-white/10 bg-white/5 text-xs text-amber-400 hover:text-white font-bold"
-                  >
-                    خوانده شدن همه ({unreadNotifsCount.toLocaleString("fa-IR")})
-                  </Button>
-                )}
-              </div>
-
-
-              {notifications.length === 0 ? (
-                <div className="text-center py-16 bg-[#111111] border border-white/10 rounded-3xl space-y-4">
-                  <Bell className="w-12 h-12 text-gray-600 mx-auto" />
-                  <p className="text-sm text-gray-400">در حال حاضر هیچ اعلان جدیدی وجود ندارد.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {notifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      className={`p-5 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
-                        notif.is_read
-                          ? "bg-[#111111] border-white/5 opacity-70"
-                          : "bg-white/5 border-white/15 shadow-lg"
-                      }`}
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-white">{notif.title || "پیام سیستم"}</span>
-                          {!notif.is_read && (
-                            <span className="w-2 h-2 rounded-full bg-amber-400" />
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-300 leading-relaxed">{notif.body || notif.message}</p>
-                        <span className="text-[10px] text-gray-400 font-sans block pt-1">
-                          {formatShamsiDate(notif.created_at, { mode: "full", withTime: true })}
-                        </span>
-                      </div>
-
-                      {!notif.is_read && (
-                        <Button
-                          onClick={() => handleMarkNotificationRead(notif.id)}
-                          variant="ghost"
-                          className="text-xs text-gray-400 hover:text-white h-8 px-3 rounded-lg"
-                        >
-                          خوانده شد
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Notification Preferences Sub-Panel */}
-              <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 space-y-4 shadow-xl">
-                <h4 className="text-sm font-black text-white flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-amber-400" />
-                  تنظیمات دریافت اعلان‌ها و پیامک‌ها
-                </h4>
-                <p className="text-xs text-gray-400">کانال‌های اطلاع‌رسانی دلخواه خود را فعال یا غیرفعال کنید</p>
-
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
-                    <span className="text-xs font-bold text-white">ایمیل‌های تغییر وضعیت سفارش</span>
-                    <input
-                      type="checkbox"
-                      checked={!!preferences.email_order_updates}
-                      onChange={(e) => handleTogglePreference("email_order_updates", e.target.checked)}
-                      className="w-4 h-4 accent-amber-400 cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
-                    <span className="text-xs font-bold text-white">ایمیل‌های تخفیف‌ها و پیشنهادات شگفت‌انگیز</span>
-                    <input
-                      type="checkbox"
-                      checked={!!preferences.email_promotions}
-                      onChange={(e) => handleTogglePreference("email_promotions", e.target.checked)}
-                      className="w-4 h-4 accent-amber-400 cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
-                    <span className="text-xs font-bold text-white">اعلان‌های درون‌برنامه‌ای سفارش‌ها</span>
-                    <input
-                      type="checkbox"
-                      checked={!!preferences.in_app_order_updates}
-                      onChange={(e) => handleTogglePreference("in_app_order_updates", e.target.checked)}
-                      className="w-4 h-4 accent-amber-400 cursor-pointer"
-                    />
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* --- 5. Security & Settings Tab --- */}
+            {/* --- 4. Security & Settings Tab --- */}
             <TabsContent value="settings" className="space-y-8 outline-none mt-0">
               {/* Basic Profile Name */}
               <div>
@@ -1116,6 +998,47 @@ export default function ProfilePage() {
                     {isLoading ? "در حال ذخیره..." : "تغییر کلمه عبور"}
                   </Button>
                 </form>
+              </div>
+
+              {/* Notification Preferences Sub-Panel */}
+              <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 space-y-4 max-w-xl shadow-xl">
+                <h4 className="text-sm font-black text-white flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-amber-400" />
+                  تنظیمات دریافت اعلان‌ها و پیامک‌ها
+                </h4>
+                <p className="text-xs text-gray-400">کانال‌های اطلاع‌رسانی دلخواه خود را فعال یا غیرفعال کنید</p>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
+                    <span className="text-xs font-bold text-white">ایمیل‌های تغییر وضعیت سفارش</span>
+                    <input
+                      type="checkbox"
+                      checked={!!preferences.email_order_updates}
+                      onChange={(e) => handleTogglePreference("email_order_updates", e.target.checked)}
+                      className="w-4 h-4 accent-amber-400 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
+                    <span className="text-xs font-bold text-white">ایمیل‌های تخفیف‌ها و پیشنهادات شگفت‌انگیز</span>
+                    <input
+                      type="checkbox"
+                      checked={!!preferences.email_promotions}
+                      onChange={(e) => handleTogglePreference("email_promotions", e.target.checked)}
+                      className="w-4 h-4 accent-amber-400 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
+                    <span className="text-xs font-bold text-white">اعلان‌های درون‌برنامه‌ای سفارش‌ها</span>
+                    <input
+                      type="checkbox"
+                      checked={!!preferences.in_app_order_updates}
+                      onChange={(e) => handleTogglePreference("in_app_order_updates", e.target.checked)}
+                      className="w-4 h-4 accent-amber-400 cursor-pointer"
+                    />
+                  </div>
+                </div>
               </div>
             </TabsContent>
 

@@ -34,7 +34,7 @@ import { getStoredAuth } from "@/lib/auth";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { formatShamsiDate } from "@/lib/jalali";
 import { getColorBackground } from "@/lib/color-utils";
-import { formatPrice, formatPriceNumber, parsePrice } from "@/lib/price-utils";
+import { formatPrice, formatPriceNumber, parsePrice, getDiscountInfo } from "@/lib/price-utils";
 
 
 
@@ -255,6 +255,11 @@ export default function ProductDetailPage() {
 
   const basePrice = parsePrice(product.price);
   const currentPrice = matchedVariant ? parsePrice(matchedVariant.price) : basePrice;
+  const discInfo = getDiscountInfo({
+    ...product,
+    price: currentPrice,
+  });
+  const finalPayablePrice = discInfo.hasDiscount ? discInfo.discountPrice : currentPrice;
   const isSaved = isInWishlist(product.id);
 
   // Determine overall product stock and variant stock
@@ -366,7 +371,7 @@ export default function ProductDetailPage() {
       await addToCart({
         id: product.id,
         name: product.name || product.title,
-        price: currentPrice,
+        price: finalPayablePrice,
         size: optionsSummary,
         quantity: quantity,
         imageUrl: product.imageUrl || product.image_url || "/globe.svg",
@@ -390,7 +395,7 @@ export default function ProductDetailPage() {
       addToWishlist({
         id: product.id,
         name: product.name || product.title,
-        price: currentPrice,
+        price: finalPayablePrice,
         imageUrl: product.imageUrl || product.image_url,
         category: product.category,
       });
@@ -446,6 +451,21 @@ export default function ProductDetailPage() {
         {/* Product Image Gallery */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
           <div className="w-full aspect-[3/4] bg-[#111111] rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative">
+            {/* Discount Badge on Product Photo */}
+            {discInfo.hasDiscount && (
+              <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
+                <span className="px-3.5 py-1.5 rounded-full bg-emerald-500 text-black text-xs font-black shadow-[0_4px_15px_rgba(16,185,129,0.5)] flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  ٪{discInfo.discountPercent} تخفیف
+                </span>
+                {discInfo.remainingTime && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                    مهلت: {discInfo.remainingTime}
+                  </span>
+                )}
+              </div>
+            )}
+
             <img
               src={product.imageUrl || product.image_url || "/globe.svg"}
               alt={product.name || product.title}
@@ -517,13 +537,37 @@ export default function ProductDetailPage() {
             {product.name || product.title}
           </h1>
 
-          {/* Price */}
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl md:text-4xl font-black text-amber-400">
-              {formatPriceNumber(currentPrice)}
-            </span>
-            <span className="text-xs text-gray-400">تومان</span>
-          </div>
+          {/* Price: Strikethrough original and green discounted price */}
+          {discInfo.hasDiscount ? (
+            <div className="space-y-2">
+              <div className="flex items-baseline gap-3">
+                <span className="text-base md:text-lg text-gray-500 line-through decoration-rose-500/50 font-medium">
+                  {formatPriceNumber(currentPrice)}
+                </span>
+                <span className="text-2xl md:text-4xl font-black text-emerald-400">
+                  {formatPriceNumber(discInfo.discountPrice)}
+                </span>
+                <span className="text-xs text-emerald-400 font-bold">تومان</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                  سود شما از این خرید: {formatPriceNumber(discInfo.savings)} تومان ({discInfo.discountPercent}٪ تخفیف)
+                </span>
+                {discInfo.remainingTime && (
+                  <span className="text-xs text-gray-400">
+                    مهلت باقی‌مانده: <strong className="text-white">{discInfo.remainingTime}</strong>
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl md:text-4xl font-black text-amber-400">
+                {formatPriceNumber(currentPrice)}
+              </span>
+              <span className="text-xs text-gray-400">تومان</span>
+            </div>
+          )}
 
           {/* Description */}
           <p className="text-xs md:text-sm text-gray-400 leading-relaxed">
