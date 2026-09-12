@@ -27,7 +27,22 @@ class StatusTransitionSerializer(serializers.Serializer):
 
 class OrderListSerializer(serializers.ModelSerializer):
     items_count = serializers.IntegerField(source="items.count", read_only=True)
+    user_id = serializers.UUIDField(source="user.id", read_only=True)
+    customer_email = serializers.EmailField(source="user.email", read_only=True)
+    total = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ("id", "order_number", "status", "total", "placed_at", "items_count")
+        fields = (
+            "id",
+            "order_number",
+            "user_id",
+            "customer_email",
+            "status",
+            "total",
+            "placed_at",
+            "items_count",
+        )
+
+    def get_total(self, obj):
+        return int(round(float(obj.total))) if obj.total is not None else 0

@@ -25,6 +25,22 @@ class NotificationService:
         # M1/L1: limit context size to prevent JSONField DoS / PII bloat
         if context and len(str(context)) > 5000:
             raise BusinessException("Notification context too large.")
+        # Enrich context with Persian status labels if order status change
+        if context is None:
+            context = {}
+        if context.get('new_status') and 'new_status_fa' not in context:
+            try:
+                from .constants import get_persian_status
+                context['new_status_fa'] = get_persian_status(context['new_status'])
+            except Exception:
+                pass
+        if context.get('old_status') and 'old_status_fa' not in context:
+            try:
+                from .constants import get_persian_status
+                context['old_status_fa'] = get_persian_status(context['old_status'])
+            except Exception:
+                pass
+
         # Check user preferences for email
         prefs = PreferenceRepository.get_or_create_preferences(user)
         email_allowed = self._is_email_allowed(type, prefs)
@@ -34,23 +50,22 @@ class NotificationService:
                 subject = self._render_template_string(template.subject_template, context)
                 body = self._render_template_string(template.body_template, context)
             except BusinessException:
-                # Fallback if template not seeded (e.g., fresh DB without init_notification_templates)
                 fallback_subjects = {
-                    "order_confirmation": "Order {{ order_number }} confirmed",
-                    "order_status_change": "Order {{ order_number }} status updated",
-                    "shipping_update": "Your order {{ order_number }} has shipped",
-                    "welcome": "Welcome to Luxe!",
-                    "generic": "Notification from Luxe",
+                    "order_confirmation": "سفارش {{ order_number }} با موفقیت ثبت شد",
+                    "order_status_change": "وضعیت سفارش {{ order_number }}: {{ new_status_fa|default:new_status }}",
+                    "shipping_update": "سفارش {{ order_number }} تحویل پست شد",
+                    "welcome": "به فروشگاه لوکس خوش آمدید",
+                    "generic": "اطلاعیه سیستم",
                 }
                 fallback_bodies = {
-                    "order_confirmation": "Hi {{ user_name }}, your order {{ order_number }} (total {{ total }}) has been placed. View invoice: {{ invoice_url }}",
-                    "order_status_change": "Hi {{ user_name }}, order {{ order_number }} is now {{ new_status }} (was {{ old_status }}).",
-                    "shipping_update": "Hi {{ user_name }}, order {{ order_number }} shipped. Tracking: {{ tracking_number }}",
-                    "welcome": "Hi {{ user_name }}, welcome to Luxe!",
-                    "generic": "Hello {{ user_name }}, you have a new notification.",
+                    "order_confirmation": "{{ user_name }} عزیز، سفارش {{ order_number }} به مبلغ {{ total }} تومان ثبت شد. فاکتور: {{ invoice_url }}",
+                    "order_status_change": "{{ user_name }} عزیز، وضعیت سفارش {{ order_number }} به «{{ new_status_fa|default:new_status }}» تغییر یافت.",
+                    "shipping_update": "{{ user_name }} عزیز، مرسوله سفارش {{ order_number }} تحویل شرکت پست گردید. کد رهگیری: {{ tracking_number|default:'---' }}",
+                    "welcome": "{{ user_name }} عزیز، به فروشگاه لوکس خوش آمدید!",
+                    "generic": "{{ user_name }} عزیز، شما یک اعلان جدید دارید.",
                 }
-                subject = self._render_template_string(fallback_subjects.get(type, "Notification"), context)
-                body = self._render_template_string(fallback_bodies.get(type, "You have a new notification."), context)
+                subject = self._render_template_string(fallback_subjects.get(type, "اطلاعیه سیستم"), context)
+                body = self._render_template_string(fallback_bodies.get(type, "یک پیام سیستمی جدید برای شما ثبت شده است."), context)
         else:
             subject = ""
             body = ""

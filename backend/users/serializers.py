@@ -50,9 +50,37 @@ class AdminUserSerializer(serializers.Serializer):
     is_active = serializers.BooleanField(required=False)
     date_joined = serializers.DateTimeField(read_only=True)
     groups = serializers.SerializerMethodField()
+    total_spent = serializers.SerializerMethodField()
+    orders_count = serializers.SerializerMethodField()
 
     def get_groups(self, obj):
         return list(obj.groups.values_list("name", flat=True))
+
+    def get_total_spent(self, obj):
+        from orders.models import Order
+        from django.db.models import Sum
+
+        # Sum total for non-cancelled/active orders (paid, packing, shipping, delivered)
+        active_statuses = [
+            Order.Status.PAID,
+            Order.Status.PACKING,
+            Order.Status.SHIPPING,
+            Order.Status.DELIVERED,
+        ]
+        agg = Order.objects.filter(user=obj, status__in=active_statuses).aggregate(
+            total=Sum("total")
+        )
+        total = agg["total"] or 0
+        # Format to 2 decimal places
+        try:
+            return format(total, ".2f")
+        except Exception:
+            return "0.00"
+
+    def get_orders_count(self, obj):
+        from orders.models import Order
+
+        return Order.objects.filter(user=obj).count()
 
 
 class AdminUserUpdateSerializer(serializers.Serializer):

@@ -7,8 +7,8 @@ class ProductCreateSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True)
     category_id = serializers.UUIDField(required=False, allow_null=True)
     collection_id = serializers.UUIDField(required=False, allow_null=True)
-    price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
-    discount_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    price = serializers.IntegerField(min_value=0, required=False)
+    discount_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     image_url = serializers.CharField(required=False, allow_blank=True)
     status = serializers.ChoiceField(
         choices=["draft", "published", "archived", "active"], default="published"
@@ -33,8 +33,8 @@ class ProductUpdateSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True)
     category_id = serializers.UUIDField(required=False, allow_null=True)
     collection_id = serializers.UUIDField(required=False, allow_null=True)
-    price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
-    discount_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    price = serializers.IntegerField(min_value=0, required=False)
+    discount_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     image_url = serializers.CharField(required=False, allow_blank=True)
     status = serializers.ChoiceField(
         choices=["draft", "published", "archived", "active"], required=False
@@ -60,6 +60,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     stock_quantity = serializers.SerializerMethodField()
     inventory_count = serializers.SerializerMethodField()
     variants = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
+    discount_percent = serializers.SerializerMethodField()
+    discount_price = serializers.SerializerMethodField()
+    discount_expires_at = serializers.DateTimeField(read_only=True)
+    is_discount_active = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -67,6 +73,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "id", "title", "name", "slug", "description", "category_id", "category_name", "category_slug", "category",
             "price", "imageUrl", "image_url", "stock_quantity", "inventory_count",
             "status", "seo_metadata", "metadata", "collections", "variants",
+            "average_rating", "reviews_count",
+            "discount_percent", "discount_price", "discount_expires_at", "is_discount_active",
         )
 
     def get_variants(self, product):
@@ -88,11 +96,17 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     def get_price(self, product):
         if hasattr(product, "variants"):
             first_variant = product.variants.filter(deleted_at__isnull=True).first()
-            if first_variant:
-                return str(first_variant.price)
+            if first_variant and first_variant.price is not None:
+                try:
+                    return int(round(float(first_variant.price)))
+                except (ValueError, TypeError):
+                    return 0
         if product.metadata and "price" in product.metadata:
-            return str(product.metadata["price"])
-        return "0"
+            try:
+                return int(round(float(product.metadata["price"])))
+            except (ValueError, TypeError):
+                pass
+        return 0
 
     def get_imageUrl(self, product):
         return self._get_image(product)
@@ -126,6 +140,38 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return ""
+
+    def get_average_rating(self, product):
+        # Use annotated value if present to avoid N+1
+        if hasattr(product, "annotated_avg_rating"):
+            avg = product.annotated_avg_rating
+            if avg is None:
+                return None
+            try:
+                return round(float(avg), 1)
+            except Exception:
+                return None
+        # Fallback: query directly (for products not fetched via selector)
+        from django.db.models import Avg, Q
+        from .models import Review
+        agg = Review.objects.filter(
+            product=product, status="approved", deleted_at__isnull=True
+        ).aggregate(avg=Avg("rating"))
+        avg = agg["avg"]
+        if avg is None:
+            return None
+        return round(float(avg), 1)
+
+    def get_reviews_count(self, product):
+        if hasattr(product, "annotated_reviews_count"):
+            try:
+                return int(product.annotated_reviews_count or 0)
+            except Exception:
+                return 0
+        from .models import Review
+        return Review.objects.filter(
+            product=product, status="approved", deleted_at__isnull=True
+        ).count()
 
 
 from .models import Review

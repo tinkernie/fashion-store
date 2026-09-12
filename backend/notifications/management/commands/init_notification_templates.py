@@ -4,43 +4,43 @@ from notifications.models import NotificationTemplate
 DEFAULT_TEMPLATES = [
     {
         'type': 'order_confirmation',
-        'subject_template': 'Order {{ order_number }} confirmed — Luxe',
-        'body_template': 'Hi {{ user_name }}, your order {{ order_number }} ({{ total }}) has been placed. Invoice: {{ invoice_url }}. Items: {{ items|length }} item(s).',
+        'subject_template': 'سفارش {{ order_number }} با موفقیت ثبت شد — فروشگاه لوکس',
+        'body_template': '{{ user_name }} عزیز، سفارش شما به شماره {{ order_number }} با مبلغ {{ total }} تومان با موفقیت ثبت گردید و در حال آماده‌سازی است. مشاهده فاکتور: {{ invoice_url }}',
     },
     {
         'type': 'order_status_change',
-        'subject_template': 'Order {{ order_number }} is now {{ new_status|upper }}',
-        'body_template': 'Hi {{ user_name }}, order {{ order_number }} changed from {{ old_status }} to {{ new_status }}. View: {{ frontend_url }}/orders/{{ order_number }}',
+        'subject_template': 'وضعیت سفارش {{ order_number }}: {{ new_status_fa|default:new_status }}',
+        'body_template': '{{ user_name }} عزیز، وضعیت سفارش شما به شماره {{ order_number }} به «{{ new_status_fa|default:new_status }}» تغییر یافت. جهت مشاهده جزئیات سفارش به حساب کاربری خود مراجعه فرمایید: {{ frontend_url }}/profile?tab=orders',
     },
     {
         'type': 'shipping_update',
-        'subject_template': 'Your order {{ order_number }} has shipped — Luxe',
-        'body_template': 'Hi {{ user_name }}, great news! Order {{ order_number }} shipped. Tracking: {{ tracking_number|default:"pending" }} {{ tracking_url|default:"" }}',
+        'subject_template': 'سفارش شما تحویل شرکت پست شد — کد رهگیری {{ tracking_number|default:"" }}',
+        'body_template': '{{ user_name }} عزیز، سفارش شما به شماره {{ order_number }} بسته‌بندی شد و جهت ارسال تحویل شرکت پست گردید. کد رهگیری پستی: {{ tracking_number|default:"در انتظار صدور" }}',
     },
     {
         'type': 'password_reset',
-        'subject_template': 'Reset your password — Luxe',
-        'body_template': 'Hi {{ user_name|default:"there" }}, reset your password: {{ reset_url }} (expires in 24h)',
+        'subject_template': 'درخواست بازیابی رمز عبور — فروشگاه لوکس',
+        'body_template': 'کاربر گرامی، جهت تغییر رمز عبور حساب کاربری خود از لینک زیر استفاده نمایید (اعتبار لینک ۲۴ ساعت می‌باشد): {{ reset_url }}',
     },
     {
         'type': 'welcome',
-        'subject_template': 'Welcome to Luxe, {{ user_name }}!',
-        'body_template': 'Hi {{ user_name }}, welcome to Luxe! Explore: {{ frontend_url }}/collections',
+        'subject_template': 'به فروشگاه لوکس فشن خوش آمدید',
+        'body_template': '{{ user_name }} عزیز، از اینکه به جمع مشتریان خاص لوکس پیوستید بسیار خرسندیم. برای مشاهده جدیدترین کالکشن‌های فصلی به وب‌سایت مراجعه فرمایید: {{ frontend_url }}/collections',
     },
     {
         'type': 'generic',
-        'subject_template': 'Notification from Luxe',
-        'body_template': 'Hi {{ user_name|default:"there" }}, you have a new notification: {{ message|default:"" }}',
+        'subject_template': 'اطلاعیه سیستم — فروشگاه لوکس',
+        'body_template': 'کاربر گرامی، یک پیام سیستمی جدید برای شما ثبت شده است: {{ message|default:"" }}',
     },
 ]
 
 
 class Command(BaseCommand):
-    help = 'Initialize default notification templates'
+    help = 'Initialize default notification templates in Persian'
 
     def handle(self, *args, **options):
         for tpl in DEFAULT_TEMPLATES:
-            NotificationTemplate.objects.get_or_create(
+            NotificationTemplate.objects.update_or_create(
                 type=tpl['type'],
                 defaults={
                     'subject_template': tpl['subject_template'],
@@ -48,4 +48,4 @@ class Command(BaseCommand):
                     'is_active': True,
                 }
             )
-        self.stdout.write(self.style.SUCCESS('Notification templates initialized.'))
+        self.stdout.write(self.style.SUCCESS('Persian notification templates initialized.'))

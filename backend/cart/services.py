@@ -299,14 +299,14 @@ class CartService:
                     "product_title": item.variant.product.title,
                     "option_details": self._get_option_summary(item.variant),
                     "quantity": item.quantity,
-                    "price": str(item.price_snapshot),
+                    "price": int(round(float(item.price_snapshot))) if item.price_snapshot is not None else 0,
                     "image": img,
                     "imageUrl": img,
                     "reservation_id": item.reservation_id,
                 }
             )
 
-        # H8: use Decimal not float for money
+        # H8: use Decimal for internal calc, return integer Tomans
         subtotal = sum((item.price_snapshot * item.quantity for item in cart_items), Decimal("0.00"))
         discount_amount = Decimal("0.00")
         coupon_code = None
@@ -331,7 +331,7 @@ class CartService:
                 coupon_data = {
                     "code": cart.coupon.code,
                     "discount_type": cart.coupon.discount_type,
-                    "discount_value": str(cart.coupon.discount_value),
+                    "discount_value": int(round(float(cart.coupon.discount_value))) if cart.coupon.discount_value is not None else 0,
                 }
             except BusinessException:
                 cart.coupon = None
@@ -345,12 +345,12 @@ class CartService:
             "session_key": str(cart.session_key),
             "coupon_code": coupon_code,
             "coupon": coupon_data,
-            "discount_amount": str(discount_amount),
+            "discount_amount": int(round(float(discount_amount))),
             "discount_type": coupon_data["discount_type"] if coupon_data else None,
-            "discount_value": coupon_data["discount_value"] if coupon_data else "0.00",
+            "discount_value": coupon_data["discount_value"] if coupon_data else 0,
             "items": items,
-            "subtotal": str(subtotal),
-            "total": str(total),
+            "subtotal": int(round(float(subtotal))),
+            "total": int(round(float(total))),
         }
 
     def _get_option_summary(self, variant):

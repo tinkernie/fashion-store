@@ -145,3 +145,20 @@ class AdminUserViewSet(viewsets.GenericViewSet):
             pk, serializer.validated_data["group_ids"], request.user
         )
         return Response(result)
+
+    @action(detail=True, methods=["get"])
+    def orders(self, request, pk=None):
+        """Dedicated admin user orders endpoint: GET /api/admin/users/<id>/orders/"""
+        user = UserSelector.get_user_by_id(pk)
+        if not user:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        from orders.models import Order
+        from orders.services import OrderService
+
+        orders = (
+            Order.objects.filter(user=user)
+            .order_by("-placed_at")
+            .prefetch_related("items", "status_history")
+        )
+        data = [OrderService()._serialize_order(order) for order in orders]
+        return Response(data)

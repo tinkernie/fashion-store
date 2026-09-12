@@ -32,15 +32,14 @@ class PaymentService:
         if order.payments.filter(status=Payment.Status.SUCCEEDED).exists():
             raise BusinessException("Order already has a successful payment.")
 
-        # H10: amount validation
-        amount = order.total
-        if not isinstance(amount, Decimal):
-            amount = Decimal(str(amount))
-        amount = amount.quantize(Decimal("0.01"))
-        if amount <= Decimal("0.00"):
+        # H10 + Toman integer: amount must be integer Tomans for Shaparak/ZarinPal
+        amount_toman = int(round(float(order.total))) if order.total is not None else 0
+        if amount_toman <= 0:
             raise BusinessException("Invalid order amount.")
-
-        payment = PaymentRepository.create_payment(order, user, str(amount), gateway)
+        # Store as string integer for DecimalField compatibility
+        payment = PaymentRepository.create_payment(order, user, str(amount_toman), gateway)
+        # Gateway payload must be integer
+        # payload = {"amount": amount_toman, ...} handled in gateway
 
         # Call gateway to initiate transaction
         gateway_cls = GATEWAYS.get(gateway)
@@ -136,7 +135,7 @@ class PaymentService:
             'id': str(payment.id),
             'order_id': str(payment.order_id),
             'authority': payment.authority,
-            'amount': str(payment.amount),
+            'amount': int(round(float(payment.amount))) if payment.amount is not None else 0,
             'gateway': payment.gateway,
             'status': payment.status,
             'gateway_reference': payment.gateway_reference,

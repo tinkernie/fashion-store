@@ -37,6 +37,24 @@ class PublicCollectionViewSet(viewsets.GenericViewSet):
 class AdminCollectionViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAdminUser]
 
+    def list(self, request):
+        """Returns all collections (both active and inactive) for admin management."""
+        collections = CollectionSelector.get_all_collections_admin()
+        serializer = CollectionDetailSerializer(
+            collections, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        """Returns full details of a specific collection including its linked products."""
+        collection = CollectionSelector.get_collection_by_id(pk)
+        if not collection:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CollectionDetailSerializer(
+            collection, context={"request": request}
+        )
+        return Response(serializer.data)
+
     def create(self, request):
         serializer = CollectionCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

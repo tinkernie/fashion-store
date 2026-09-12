@@ -9,13 +9,18 @@ logger = logging.getLogger(__name__)
 
 
 def order_status_changed_handler(sender, order, old_status, new_status, **kwargs):
+    from .constants import get_persian_status
     service = NotificationService()
     user = order.user
     type = 'order_status_change'
+    new_status_fa = get_persian_status(new_status)
+    old_status_fa = get_persian_status(old_status)
     context = {
         'order_number': order.order_number,
         'old_status': old_status,
         'new_status': new_status,
+        'old_status_fa': old_status_fa,
+        'new_status_fa': new_status_fa,
         'user_name': user.first_name or user.email.split("@")[0],
         'email': user.email,
         'frontend_url': settings.FRONTEND_URL,
@@ -88,10 +93,10 @@ def order_placed_handler(sender, user, order, items_data, **kwargs):
         try:
             from .tasks import send_sms
 
-            sms_message = f"Luxe: Order {order.order_number} confirmed. Total {order.total}. Invoice: {invoice_url}"
-            # Ensure message < 160 chars for SMS, keep link short
+            formatted_total = f"{int(round(float(order.total))):,}" if order.total else "0"
+            sms_message = f"لوکس: سفارش {order.order_number} با موفقیت ثبت شد. مبلغ: {formatted_total} تومان. مشاهده فاکتور: {invoice_url}"
             if len(sms_message) > 160:
-                sms_message = f"Luxe: Order {order.order_number} done. View: {invoice_url}"
+                sms_message = f"لوکس: سفارش {order.order_number} ثبت شد. فاکتور: {invoice_url}"
 
             # Use same notification_id for idempotency if created
             nid = result.get("notification_id")

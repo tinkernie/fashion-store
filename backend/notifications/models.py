@@ -9,6 +9,7 @@ class NotificationTemplate(BaseModel):
         ('shipping_update', 'Shipping Update'),
         ('password_reset', 'Password Reset'),
         ('welcome', 'Welcome'),
+        ('wishlist_discount', 'Wishlist Product Discount'),
         ('generic', 'Generic'),
     ]
     type = models.CharField(max_length=50, choices=TYPE_CHOICES, unique=True)

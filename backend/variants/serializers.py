@@ -44,6 +44,7 @@ class VariantUpdateSerializer(serializers.Serializer):
 
 
 class VariantDetailSerializer(serializers.ModelSerializer):
+    price = serializers.SerializerMethodField()
     options = serializers.SerializerMethodField()
     inventory = serializers.SerializerMethodField()
     stock = serializers.SerializerMethodField()
@@ -55,6 +56,9 @@ class VariantDetailSerializer(serializers.ModelSerializer):
             "dimensions", "availability", "status", "metadata", "options",
             "inventory", "stock",
         )
+
+    def get_price(self, variant):
+        return int(round(float(variant.price))) if variant.price is not None else 0
 
     def get_options(self, variant):
         return [

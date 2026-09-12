@@ -47,14 +47,13 @@ class AdminOrderViewSet(viewsets.GenericViewSet):
     service = OrderService()
 
     def list(self, request):
-        # Admin can list all orders (not just own). Add filtering later.
-        from orders.selectors import OrderSelector
-
-        orders = OrderSelector.get_user_orders(user=None)  # need a method that gets all
-        # We'll implement an admin selector method.
+        # Admin can list all orders with optional user_id filter for efficient querying
         from .selectors import OrderSelector as OS
 
         all_orders = OS.get_all_orders()
+        user_id = request.query_params.get("user_id")
+        if user_id:
+            all_orders = all_orders.filter(user_id=user_id)
         serializer = OrderListSerializer(all_orders, many=True)
         return Response(serializer.data)
 

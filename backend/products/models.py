@@ -1,4 +1,6 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 from common.models import BaseModel
 
 
@@ -26,9 +28,48 @@ class Product(BaseModel):
     seo_metadata = models.JSONField(default=dict, blank=True)
     metadata = models.JSONField(default=dict, blank=True)  # extensible attributes
 
+    # Discount fields - Toman integer precision
+    discount_percent = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(1, message="درصد تخفیف باید حداقل ۱ درصد باشد."),
+            MaxValueValidator(99, message="درصد تخفیف نمی‌تواند بیشتر از ۹۹ درصد باشد."),
+        ],
+        help_text="درصد تخفیف بین ۱ تا ۹۹",
+    )
+    discount_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        null=True,
+        blank=True,
+        help_text="مبلغ پس از تخفیف به تومان (محاسبه خودکار)",
+    )
+    discount_expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="زمان پایان مهلت تخفیف (اختیاری)",
+    )
+
     class Meta:
         db_table = "product"
         ordering = ["-created_at"]
+
+    @property
+    def is_discount_active(self) -> bool:
+        """Check if discount is currently active and not expired."""
+        if not self.discount_percent or not self.discount_price:
+            return False
+        if self.discount_expires_at and self.discount_expires_at < timezone.now():
+            return False
+        return True
+
+    def calculate_discount_price(self, base_price: int) -> int:
+        """Server-side calculation of rounded discounted price in Tomans."""
+        if not self.discount_percent:
+            return base_price
+        factor = (100 - self.discount_percent) / 100.0
+        return int(round(base_price * factor))
 
     def __str__(self):
         return self.title
