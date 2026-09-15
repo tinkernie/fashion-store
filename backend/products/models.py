@@ -79,6 +79,36 @@ class Product(BaseModel):
         super().delete(*args, **kwargs)
 
 
+class ProductImage(BaseModel):
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="images",
+        db_index=True,
+    )
+    image = models.FileField(upload_to="products/%Y/%m/", max_length=500, blank=True, null=True)
+    image_url = models.CharField(max_length=1000, blank=True)
+    alt_text = models.CharField(max_length=500, blank=True)
+    position = models.PositiveIntegerField(default=0, db_index=True)
+    is_cover = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "product_image"
+        ordering = ["position", "created_at"]
+
+    def __str__(self):
+        return f"Image {self.position} for {self.product.title}"
+
+    @property
+    def url(self) -> str:
+        if self.image:
+            try:
+                return self.image.url
+            except Exception:
+                pass
+        return self.image_url or ""
+
+
 class Review(BaseModel):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"

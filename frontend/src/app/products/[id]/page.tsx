@@ -35,6 +35,7 @@ import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { formatShamsiDate } from "@/lib/jalali";
 import { getColorBackground } from "@/lib/color-utils";
 import { formatPrice, formatPriceNumber, parsePrice, getDiscountInfo } from "@/lib/price-utils";
+import ProductGallery from "@/components/products/product-gallery";
 
 
 
@@ -228,6 +229,37 @@ export default function ProductDetailPage() {
     );
   }, [variants, selectedOptions]);
 
+  // Calculate actual rating average and count from verified reviews (avoiding hardcoded mock ratings)
+  const ratingStats = useMemo(() => {
+    if (!reviews || reviews.length === 0) {
+      const backendAvg = Number(product?.average_rating ?? product?.rating);
+      const backendCount = Number(product?.reviews_count ?? product?.review_count ?? 0);
+      if (!isNaN(backendAvg) && backendAvg > 0 && backendCount > 0) {
+        return {
+          average: Math.round(backendAvg * 10) / 10,
+          count: backendCount,
+        };
+      }
+      return { average: null, count: 0 };
+    }
+
+    const validRatings = reviews
+      .map((r) => Number(r.rating))
+      .filter((r) => !isNaN(r) && r >= 1 && r <= 5);
+
+    if (validRatings.length === 0) {
+      return { average: null, count: reviews.length };
+    }
+
+    const sum = validRatings.reduce((acc, curr) => acc + curr, 0);
+    const avg = Math.round((sum / validRatings.length) * 10) / 10;
+
+    return {
+      average: avg,
+      count: reviews.length,
+    };
+  }, [reviews, product]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white" dir="rtl">
@@ -303,37 +335,6 @@ export default function ProductDetailPage() {
   const isPreOrder =
     matchedVariant?.availability === "pre_order" ||
     product?.availability === "pre_order";
-
-  // Calculate actual rating average and count from verified reviews (avoiding hardcoded mock ratings)
-  const ratingStats = useMemo(() => {
-    if (!reviews || reviews.length === 0) {
-      const backendAvg = Number(product?.average_rating ?? product?.rating);
-      const backendCount = Number(product?.reviews_count ?? product?.review_count ?? 0);
-      if (!isNaN(backendAvg) && backendAvg > 0 && backendCount > 0) {
-        return {
-          average: Math.round(backendAvg * 10) / 10,
-          count: backendCount,
-        };
-      }
-      return { average: null, count: 0 };
-    }
-
-    const validRatings = reviews
-      .map((r) => Number(r.rating))
-      .filter((r) => !isNaN(r) && r >= 1 && r <= 5);
-
-    if (validRatings.length === 0) {
-      return { average: null, count: reviews.length };
-    }
-
-    const sum = validRatings.reduce((acc, curr) => acc + curr, 0);
-    const avg = Math.round((sum / validRatings.length) * 10) / 10;
-
-    return {
-      average: avg,
-      count: reviews.length,
-    };
-  }, [reviews, product]);
 
   const handleOptionChange = (optionName: string, value: string) => {
     setSelectedOptions((prev) => ({
@@ -448,35 +449,13 @@ export default function ProductDetailPage() {
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 mb-16">
-        {/* Product Image Gallery */}
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-          <div className="w-full aspect-[3/4] bg-[#111111] rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative">
-            {/* Discount Badge on Product Photo */}
-            {discInfo.hasDiscount && (
-              <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
-                <span className="px-3.5 py-1.5 rounded-full bg-emerald-500 text-black text-xs font-black shadow-[0_4px_15px_rgba(16,185,129,0.5)] flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  ٪{discInfo.discountPercent} تخفیف
-                </span>
-                {discInfo.remainingTime && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
-                    مهلت: {discInfo.remainingTime}
-                  </span>
-                )}
-              </div>
-            )}
-
-            <img
-              src={product.imageUrl || product.image_url || "/globe.svg"}
-              alt={product.name || product.title}
-              className="w-full h-full object-cover object-center"
-            />
-            {matchedVariant?.sku && (
-              <span className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-mono text-gray-300 border border-white/10" dir="ltr">
-                SKU: {matchedVariant.sku}
-              </span>
-            )}
-          </div>
+        {/* Product Image Gallery Slideshow */}
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+          <ProductGallery
+            product={product}
+            discountInfo={discInfo}
+            matchedVariant={matchedVariant}
+          />
         </motion.div>
 
         {/* Product Info & Options */}

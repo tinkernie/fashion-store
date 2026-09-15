@@ -27,7 +27,7 @@ class ProductSelector:
                 category__is_active=True,  # ensure category is visible
             )
             .select_related("category")
-            .prefetch_related("collections")
+            .prefetch_related("collections", "images")
         )
 
         if filters:
@@ -53,7 +53,7 @@ class ProductSelector:
                 category__is_active=True,
             )
             .select_related("category")
-            .prefetch_related("collections")
+            .prefetch_related("collections", "images")
         )
         qs = ProductSelector._annotate_reviews(qs)
         return qs.first()
@@ -63,7 +63,7 @@ class ProductSelector:
         qs = (
             Product.objects.filter(id=product_id, deleted_at__isnull=True)
             .select_related("category")
-            .prefetch_related("collections")
+            .prefetch_related("collections", "images")
         )
         qs = ProductSelector._annotate_reviews(qs)
         return qs.first()
@@ -73,7 +73,7 @@ class ProductSelector:
         qs = (
             Product.objects.filter(deleted_at__isnull=True)
             .select_related("category")
-            .prefetch_related("collections")
+            .prefetch_related("collections", "images")
         )
         if filters:
             if "status" in filters:

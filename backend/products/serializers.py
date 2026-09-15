@@ -1,5 +1,22 @@
 from rest_framework import serializers
-from .models import Product
+from .models import Product, ProductImage
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductImage
+        fields = ("id", "url", "image_url", "alt_text", "position", "is_cover")
+
+    def get_url(self, obj):
+        if obj.image:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return obj.image_url or ""
+
 
 class ProductCreateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=300)
@@ -10,6 +27,7 @@ class ProductCreateSerializer(serializers.Serializer):
     price = serializers.IntegerField(min_value=0, required=False)
     discount_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     image_url = serializers.CharField(required=False, allow_blank=True)
+    images = serializers.ListField(required=False, allow_empty=True)
     status = serializers.ChoiceField(
         choices=["draft", "published", "archived", "active"], default="published"
     )
@@ -36,6 +54,7 @@ class ProductUpdateSerializer(serializers.Serializer):
     price = serializers.IntegerField(min_value=0, required=False)
     discount_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     image_url = serializers.CharField(required=False, allow_blank=True)
+    images = serializers.ListField(required=False, allow_empty=True)
     status = serializers.ChoiceField(
         choices=["draft", "published", "archived", "active"], required=False
     )
@@ -57,6 +76,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     price = serializers.SerializerMethodField()
     imageUrl = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
     stock_quantity = serializers.SerializerMethodField()
     inventory_count = serializers.SerializerMethodField()
     variants = serializers.SerializerMethodField()
@@ -71,7 +91,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         model = Product
         fields = (
             "id", "title", "name", "slug", "description", "category_id", "category_name", "category_slug", "category",
-            "price", "imageUrl", "image_url", "stock_quantity", "inventory_count",
+            "price", "imageUrl", "image_url", "images", "stock_quantity", "inventory_count",
             "status", "seo_metadata", "metadata", "collections", "variants",
             "average_rating", "reviews_count",
             "discount_percent", "discount_price", "discount_expires_at", "is_discount_active",
@@ -127,11 +147,41 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                 total += variant.inventory.available_quantity
         return total
 
+    def get_images(self, product):
+        if hasattr(product, "images"):
+            imgs = product.images.filter(deleted_at__isnull=True).order_by("position")
+            if imgs.exists():
+                return ProductImageSerializer(imgs, many=True, context=self.context).data
+        if product.metadata and "images" in product.metadata and isinstance(product.metadata["images"], list):
+            res = []
+            for idx, item in enumerate(product.metadata["images"]):
+                if isinstance(item, dict):
+                    res.append(item)
+                elif isinstance(item, str):
+                    res.append({
+                        "id": f"meta-{idx}",
+                        "url": item,
+                        "position": idx,
+                        "is_cover": idx == 0,
+                    })
+            return res
+        single = self._get_image(product)
+        return [{"id": "main", "url": single, "position": 0, "is_cover": True}] if single else []
+
     def _get_image(self, product):
+        if hasattr(product, "images"):
+            cover_img = product.images.filter(deleted_at__isnull=True, is_cover=True).first()
+            if not cover_img:
+                cover_img = product.images.filter(deleted_at__isnull=True).order_by("position").first()
+            if cover_img and cover_img.url:
+                return cover_img.url
         if product.metadata and "image_url" in product.metadata:
             return product.metadata["image_url"]
         if product.metadata and "imageUrl" in product.metadata:
             return product.metadata["imageUrl"]
+        if product.metadata and "images" in product.metadata and len(product.metadata["images"]) > 0:
+            first = product.metadata["images"][0]
+            return first if isinstance(first, str) else first.get("url", "")
         try:
             from media_libm.selectors import MediaSelector
             main_img = MediaSelector.get_main_image_for_product(product)

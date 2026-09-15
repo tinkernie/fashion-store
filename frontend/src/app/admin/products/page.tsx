@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import MediaUploader from "@/components/admin/media-uploader";
+import MultiMediaUploader from "@/components/admin/multi-media-uploader";
 import {
   formatPrice,
   formatPriceNumber,
@@ -92,6 +93,7 @@ export default function AdminProductsPage() {
   const [weight, setWeight] = useState("500");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [status, setStatus] = useState<string>("active");
 
   // Variant Builder State for in-form generator
@@ -181,6 +183,7 @@ export default function AdminProductsPage() {
     setWeight("500");
     setDescription("");
     setImageUrl("");
+    setImageUrls([]);
     setStatus("active");
     setVariantsMatrix([]);
     setShowVariantGenerator(false);
@@ -220,7 +223,23 @@ export default function AdminProductsPage() {
     const prodWeight = p.metadata?.weight || p.weight;
     setWeight(prodWeight ? String(prodWeight) : "500");
     setDescription(p.description || "");
-    setImageUrl(p.imageUrl || p.image_url || p.image || p.images?.[0]?.url || "");
+
+    const extractedImages: string[] = [];
+    if (Array.isArray(p.metadata?.images) && p.metadata.images.length > 0) {
+      extractedImages.push(
+        ...p.metadata.images.map((img: any) => (typeof img === "string" ? img : img?.url)).filter(Boolean)
+      );
+    } else if (Array.isArray(p.images) && p.images.length > 0) {
+      extractedImages.push(
+        ...p.images.map((img: any) => (typeof img === "string" ? img : img?.url)).filter(Boolean)
+      );
+    }
+    if (extractedImages.length === 0) {
+      const single = p.imageUrl || p.image_url || p.image;
+      if (single) extractedImages.push(single);
+    }
+    setImageUrls(extractedImages);
+    setImageUrl(extractedImages[0] || "");
     setStatus(p.status || "active");
 
     if (Array.isArray(p.variants) && p.variants.length > 0) {
@@ -445,6 +464,7 @@ export default function AdminProductsPage() {
     const parsedWeight = Number(weight) > 0 ? Number(weight) : 500;
     const finalRemaining = discountRemaining.trim() || "۴۸ ساعت";
 
+    const primaryImg = imageUrls[0] || imageUrl || "";
     const payload: any = {
       title,
       slug: cleanSlug,
@@ -454,14 +474,16 @@ export default function AdminProductsPage() {
       price: basePriceNum,
       discount_price: finalDiscountPrice,
       weight: parsedWeight,
+      images: imageUrls,
       metadata: {
         ...(editingProduct?.metadata || {}),
         weight: parsedWeight,
         discount_percent: finalDiscountPercent,
         discount_remaining: finalDiscountPercent ? finalRemaining : null,
+        images: imageUrls,
       },
       description,
-      image_url: imageUrl,
+      image_url: primaryImg,
       status: status === "active" ? "published" : status,
     };
 
@@ -776,7 +798,18 @@ export default function AdminProductsPage() {
                 </tr>
               ) : (
                 filteredProducts.map((p) => {
-                  const img = p.imageUrl || p.image_url || p.image || "/globe.svg";
+                  const productImagesCount = Array.isArray(p.metadata?.images)
+                    ? p.metadata.images.length
+                    : Array.isArray(p.images)
+                    ? p.images.length
+                    : 1;
+                  const img =
+                    p.imageUrl ||
+                    p.image_url ||
+                    p.image ||
+                    (Array.isArray(p.metadata?.images) && p.metadata.images[0]) ||
+                    (Array.isArray(p.images) && (typeof p.images[0] === "string" ? p.images[0] : p.images[0]?.url)) ||
+                    "/globe.svg";
                   const matchedCat = categories.find(
                     (c) => c.id === p.category_id || c.name === p.category || c.slug === p.category || c.id === p.category
                   );
@@ -788,11 +821,21 @@ export default function AdminProductsPage() {
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
                           <div className="flex flex-col items-center gap-1 shrink-0">
-                            <img
-                              src={img}
-                              alt={p.name || p.title}
-                              className="w-12 h-14 object-cover rounded-xl border border-white/10"
-                            />
+                            <div className="relative">
+                              <img
+                                src={img}
+                                alt={p.name || p.title}
+                                className="w-12 h-14 object-cover rounded-xl border border-white/10"
+                              />
+                              {productImagesCount > 1 && (
+                                <span
+                                  className="absolute -top-1.5 -right-1.5 px-1 py-0.2 rounded-full bg-amber-400 text-black font-black text-[9px] shadow"
+                                  title={`${productImagesCount} تصویر برای این کالا`}
+                                >
+                                  {productImagesCount}
+                                </span>
+                              )}
+                            </div>
                             {/* Short UUID displayed under photo as ID */}
                             <button
                               type="button"
@@ -1420,12 +1463,15 @@ export default function AdminProductsPage() {
               </div>
             )}
 
-            {/* Media Uploader Component */}
+            {/* Multi-Media Uploader Component */}
             <div className="p-4 bg-[#141414] border border-white/10 rounded-2xl">
-              <MediaUploader
-                value={imageUrl}
-                onChange={setImageUrl}
-                label="تصویر شاخص محصول (آپلود مستقیم یا لینک)"
+              <MultiMediaUploader
+                values={imageUrls}
+                onChange={(urls) => {
+                  setImageUrls(urls);
+                  setImageUrl(urls[0] || "");
+                }}
+                label="تصاویر و گالری محصول (آپلود مستقیم چندین عکس یا لینک)"
               />
             </div>
 

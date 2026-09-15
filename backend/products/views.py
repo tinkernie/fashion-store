@@ -59,6 +59,13 @@ class AdminProductViewSet(viewsets.GenericViewSet):
         result = service.create_product(serializer.validated_data)
         return Response(result, status=status.HTTP_201_CREATED)
 
+    def update(self, request, pk=None):
+        serializer = ProductUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        service = ProductService()
+        result = service.update_product(pk, serializer.validated_data)
+        return Response(result)
+
     def partial_update(self, request, pk=None):
         serializer = ProductUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

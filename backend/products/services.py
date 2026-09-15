@@ -27,6 +27,7 @@ class ProductService:
         price = data.pop("price", None)
         discount_price = data.pop("discount_price", None)
         image_url = data.pop("image_url", None)
+        images = data.pop("images", None)
         collection_id = data.pop("collection_id", None)
 
         if "metadata" not in data or data["metadata"] is None:
@@ -40,6 +41,9 @@ class ProductService:
             data["metadata"]["imageUrl"] = image_url
 
         product = ProductRepository.create_product(**data)
+
+        if images and isinstance(images, list):
+            self._save_product_images(product, images)
 
         if collection_id:
             try:
@@ -93,6 +97,7 @@ class ProductService:
         price = data.pop("price", None)
         discount_price = data.pop("discount_price", None)
         image_url = data.pop("image_url", None)
+        images = data.pop("images", None)
         collection_id = data.pop("collection_id", None)
 
         meta = product.metadata or {}
@@ -115,7 +120,53 @@ class ProductService:
                 pass
 
         updated = ProductRepository.update_product(product, **data)
+
+        if images is not None and isinstance(images, list):
+            self._save_product_images(updated, images)
+
         return self._serialize(updated)
+
+    def _save_product_images(self, product, images: list):
+        from .models import ProductImage
+        product.images.all().delete()
+        if not images:
+            return
+
+        parsed = []
+        has_cover = False
+        for idx, img_item in enumerate(images):
+            if isinstance(img_item, dict):
+                img_url = img_item.get("url") or img_item.get("image_url") or ""
+                pos = img_item.get("position", idx)
+                is_cov = bool(img_item.get("is_cover", False))
+                alt = img_item.get("alt_text", "")
+            else:
+                img_url = str(img_item).strip() if img_item else ""
+                pos = idx
+                is_cov = (idx == 0)
+                alt = ""
+            if not img_url:
+                continue
+            if is_cov:
+                has_cover = True
+            parsed.append({
+                "image_url": img_url,
+                "position": pos,
+                "is_cover": is_cov,
+                "alt_text": alt,
+            })
+
+        if parsed and not has_cover:
+            parsed[0]["is_cover"] = True
+
+        for p_img in parsed:
+            ProductImage.objects.create(
+                product=product,
+                image_url=p_img["image_url"],
+                position=p_img["position"],
+                is_cover=p_img["is_cover"],
+                alt_text=p_img["alt_text"],
+            )
 
     def archive_product(self, product_id) -> dict:
         product = ProductSelector.get_product_by_id(product_id)
@@ -136,6 +187,12 @@ class ProductService:
     def _serialize(self, product: Product) -> dict:
         from media_libm.selectors import MediaSelector
         image = MediaSelector.get_main_image_for_product(product)
+        from .serializers import ProductImageSerializer
+        images_data = []
+        if hasattr(product, "images"):
+            imgs = product.images.filter(deleted_at__isnull=True).order_by("position")
+            if imgs.exists():
+                images_data = ProductImageSerializer(imgs, many=True).data
         return {
             "id": str(product.id),
             "title": product.title,
@@ -147,6 +204,7 @@ class ProductService:
             "seo_metadata": product.seo_metadata,
             "metadata": product.metadata,
             'image': image,
+            'images': images_data,
             "collections": [
                 {"id": str(c.id), "slug": c.slug, "name": c.name}
                 for c in product.collections.all()
