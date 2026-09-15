@@ -173,6 +173,24 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             product=product, status="approved", deleted_at__isnull=True
         ).count()
 
+    def get_discount_percent(self, product):
+        return getattr(product, "discount_percent", None)
+
+    def get_discount_price(self, product):
+        val = getattr(product, "discount_price", None)
+        if val is None:
+            return None
+        try:
+            return int(val)
+        except Exception:
+            return None
+
+    def get_is_discount_active(self, product):
+        try:
+            return bool(product.is_discount_active)
+        except Exception:
+            return False
+
 
 from .models import Review
 
