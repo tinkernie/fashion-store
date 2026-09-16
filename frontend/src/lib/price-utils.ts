@@ -47,6 +47,31 @@ export function cleanPriceInput(val: any): string {
 }
 
 /**
+ * Takes user input string or number, strips non-digits (converting Persian/Arabic numerals to Latin),
+ * and formats with 3-digit comma grouping (e.g. 1250000 -> "1,250,000").
+ * Returns "" if input has no digits.
+ */
+export function formatPriceInput(val: any): string {
+  if (val === null || val === undefined) return "";
+  const str = String(val).trim();
+  if (!str) return "";
+
+  const latin = str
+    .replace(/[۰-۹]/g, (d: string) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d).toString())
+    .replace(/[٠-٩]/g, (d: string) => "٠١٢٣٤٥٦٧۸۹".indexOf(d).toString());
+
+  const digits = latin.replace(/\D/g, "");
+  if (!digits) return "";
+
+  try {
+    return BigInt(digits).toLocaleString("en-US");
+  } catch {
+    const num = Number(digits);
+    return isNaN(num) ? "" : num.toLocaleString("en-US");
+  }
+}
+
+/**
  * Formats a price into Persian digits with 3-digit grouping and zero decimal places.
  * E.g. "420000.00" -> "۴۲۰٬۰۰۰"
  */

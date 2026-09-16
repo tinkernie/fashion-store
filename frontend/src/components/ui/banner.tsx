@@ -80,13 +80,14 @@ export function Banner({
       id={id}
       {...props}
       className={cn(
-        "relative z-40 flex flex-row items-center justify-center px-4 text-center text-sm font-medium overflow-hidden transition-all duration-300",
+        "relative z-40 flex flex-row items-center justify-center px-3 sm:px-4 text-center text-xs sm:text-sm font-medium overflow-hidden transition-all duration-300 min-h-[2.5rem] sm:min-h-[2.75rem] md:min-h-[3rem] h-auto py-1.5 sm:py-2",
         variant === "normal" && "bg-zinc-900 text-zinc-100 border-b border-white/10",
         variant === "rainbow" && "bg-black/60 text-white backdrop-blur-md border-b border-white/10",
         props.className,
       )}
       style={{
-        height,
+        minHeight: height,
+        ...props.style,
       }}
     >
       {variant === "rainbow"

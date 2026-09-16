@@ -50,12 +50,38 @@ export default function CollectionPage() {
 
   const products = collection.products || [];
 
+  const bannerImg = collection.hero_banner || collection.image_url || collection.image;
+
   return (
     <main className="min-h-screen pt-24 md:pt-32 pb-24 px-4 md:px-12 max-w-7xl mx-auto" dir="rtl">
-      <div className="mb-12 text-center">
-        <h1 className="text-3xl md:text-5xl font-black text-white mb-4">{collection.name || collection.title}</h1>
-        {collection.description && <p className="text-gray-400 max-w-2xl mx-auto">{collection.description}</p>}
-      </div>
+      {/* Responsive Event Banner (Fixed & Proportional on Phone, Tablet, & Desktop) */}
+      {bannerImg ? (
+        <div className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 mb-8 md:mb-12 aspect-[2/1] sm:aspect-[16/7] md:aspect-[21/8] bg-neutral-900 shadow-2xl">
+          <img
+            src={bannerImg}
+            alt={collection.name || collection.title}
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col justify-end p-4 sm:p-6 md:p-10">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[10px] sm:text-xs text-amber-300 font-bold w-max mb-2">
+              رویداد ویژه و کالکشن
+            </span>
+            <h1 className="text-xl sm:text-3xl md:text-5xl font-black text-white mb-1 sm:mb-2">
+              {collection.name || collection.title}
+            </h1>
+            {collection.description && (
+              <p className="text-xs sm:text-sm md:text-base text-gray-300 max-w-2xl line-clamp-2 sm:line-clamp-3">
+                {collection.description}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="mb-12 text-center">
+          <h1 className="text-3xl md:text-5xl font-black text-white mb-4">{collection.name || collection.title}</h1>
+          {collection.description && <p className="text-gray-400 max-w-2xl mx-auto">{collection.description}</p>}
+        </div>
+      )}
 
       {products.length === 0 ? (
         <div className="text-center text-gray-500 py-12">محصولی در این کالکشن وجود ندارد.</div>

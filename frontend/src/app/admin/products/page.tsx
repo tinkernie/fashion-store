@@ -43,6 +43,7 @@ import MultiMediaUploader from "@/components/admin/multi-media-uploader";
 import {
   formatPrice,
   formatPriceNumber,
+  formatPriceInput,
   parsePrice,
   cleanPriceInput,
   isValidDiscountPercent,
@@ -77,6 +78,11 @@ export default function AdminProductsPage() {
   const [uuidSearchQuery, setUuidSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
+  // Filters & Sorting State (Task 2)
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortFilter, setSortFilter] = useState<string>("newest");
+  const [discountOnlyFilter, setDiscountOnlyFilter] = useState<boolean>(false);
+
   // Edit / Create Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
@@ -90,17 +96,16 @@ export default function AdminProductsPage() {
   const [discountPercent, setDiscountPercent] = useState("");
   const [discountRemaining, setDiscountRemaining] = useState("۴۸ ساعت");
   const [discountPrice, setDiscountPrice] = useState("");
-  const [weight, setWeight] = useState("500");
+  const [weight, setWeight] = useState("1"); // Task 3: Default weight is 1
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [status, setStatus] = useState<string>("active");
 
-  // Variant Builder State for in-form generator
-  const [options, setOptions] = useState<OptionDef[]>([
-    { name: "رنگ", valuesInput: "مشکی, سفید, کرم" },
-    { name: "سایز", valuesInput: "S, M, L, XL" },
-  ]);
+  // Clothing Variant Fields for in-modal generator (Task 4)
+  const [clothingColor, setClothingColor] = useState<string>("");
+  const [clothingSize, setClothingSize] = useState<string>("");
+  const [clothingMaterial, setClothingMaterial] = useState<string>("");
   const [variantsMatrix, setVariantsMatrix] = useState<VariantItem[]>([]);
   const [showVariantGenerator, setShowVariantGenerator] = useState(false);
 
@@ -116,7 +121,7 @@ export default function AdminProductsPage() {
   // Single Variant Add Form inside Variant Modal
   const [newVariantSku, setNewVariantSku] = useState("");
   const [newVariantPrice, setNewVariantPrice] = useState("");
-  const [newVariantWeight, setNewVariantWeight] = useState("500");
+  const [newVariantWeight, setNewVariantWeight] = useState("1");
   const [newVariantStock, setNewVariantStock] = useState("10");
   const [selectedOptionValueIds, setSelectedOptionValueIds] = useState<Record<string, string>>({});
 
@@ -180,11 +185,14 @@ export default function AdminProductsPage() {
     setDiscountPercent("");
     setDiscountRemaining("۴۸ ساعت");
     setDiscountPrice("");
-    setWeight("500");
+    setWeight("1"); // Task 3: Default weight is 1
     setDescription("");
     setImageUrl("");
     setImageUrls([]);
     setStatus("active");
+    setClothingColor("");
+    setClothingSize("");
+    setClothingMaterial("");
     setVariantsMatrix([]);
     setShowVariantGenerator(false);
     setIsModalOpen(true);
@@ -206,13 +214,13 @@ export default function AdminProductsPage() {
     }
     setCategoryId(matchedCatId || categories[0]?.id || "");
     setCollectionId(p.collection_id || p.collection?.id || "");
-    setPrice(cleanPriceInput(p.price));
+    setPrice(formatPriceInput(p.price)); // Task 1: Format with commas
 
     // Extract discount percent and price
     const discInfo = getDiscountInfo(p);
     if (discInfo.hasDiscount) {
       setDiscountPercent(String(discInfo.discountPercent));
-      setDiscountPrice(cleanPriceInput(discInfo.discountPrice));
+      setDiscountPrice(formatPriceInput(discInfo.discountPrice));
       setDiscountRemaining(discInfo.remainingTime || "۴۸ ساعت");
     } else {
       setDiscountPercent("");
@@ -221,8 +229,12 @@ export default function AdminProductsPage() {
     }
 
     const prodWeight = p.metadata?.weight || p.weight;
-    setWeight(prodWeight ? String(prodWeight) : "500");
+    setWeight(prodWeight ? String(prodWeight) : "1"); // Task 3: Default weight 1
     setDescription(p.description || "");
+
+    setClothingColor("");
+    setClothingSize("");
+    setClothingMaterial("");
 
     const extractedImages: string[] = [];
     if (Array.isArray(p.metadata?.images) && p.metadata.images.length > 0) {
@@ -248,8 +260,8 @@ export default function AdminProductsPage() {
           id: v.id,
           name: v.title || v.name || "تنوع",
           sku: v.sku || "",
-          price: cleanPriceInput(v.price || p.price),
-          weight: v.weight || prodWeight || 500,
+          price: formatPriceInput(v.price || p.price),
+          weight: v.weight || prodWeight || 1,
           stock: v.inventory?.quantity || v.stock || 10,
         }))
       );
@@ -273,8 +285,8 @@ export default function AdminProductsPage() {
       ]);
       setProductOptions(opts);
       setProductVariants(vars);
-      setNewVariantPrice(cleanPriceInput(product.price));
-      const prodWeight = product.metadata?.weight || product.weight || 500;
+      setNewVariantPrice(formatPriceInput(product.price)); // Task 1: Format with commas
+      const prodWeight = product.metadata?.weight || product.weight || 1; // Task 3: Default 1
       setNewVariantWeight(String(prodWeight));
       setNewVariantSku(`${(product.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`);
     } catch (e) {
@@ -347,6 +359,26 @@ export default function AdminProductsPage() {
       return;
     }
 
+    // Task 4: In clothing variant creation, Color, Size, and Material must NOT be empty!
+    const colorOpt = productOptions.find((o) =>
+      o.name?.includes("رنگ") || o.name?.toLowerCase().includes("color")
+    );
+    const sizeOpt = productOptions.find((o) =>
+      o.name?.includes("سایز") || o.name?.toLowerCase().includes("size")
+    );
+    const materialOpt = productOptions.find((o) =>
+      o.name?.includes("جنس") || o.name?.includes("متریال") || o.name?.includes("پارچه") || o.name?.toLowerCase().includes("material")
+    );
+
+    const hasColorVal = Boolean(colorOpt && selectedOptionValueIds[colorOpt.id]);
+    const hasSizeVal = Boolean(sizeOpt && selectedOptionValueIds[sizeOpt.id]);
+    const hasMaterialVal = Boolean(materialOpt && selectedOptionValueIds[materialOpt.id]);
+
+    if (!hasColorVal || !hasSizeVal || !hasMaterialVal) {
+      toast.error("فیلدهای رنگ، سایز و جنس نباید خالی باشند. حداقل یک مقدار برای هرکدام باید وارد شود.");
+      return;
+    }
+
     const optionValuesPayload = Object.entries(selectedOptionValueIds).map(
       ([option_id, value_id]) => ({ option_id, value_id })
     );
@@ -356,7 +388,7 @@ export default function AdminProductsPage() {
         product_id: selectedProductForVariants.id,
         sku: newVariantSku.trim().toUpperCase(),
         price: parsePrice(newVariantPrice),
-        weight: Number(newVariantWeight) || 500,
+        weight: Number(newVariantWeight) > 0 ? Number(newVariantWeight) : 1, // Task 3
         availability: "in_stock",
         status: "published",
         option_values: optionValuesPayload,
@@ -375,6 +407,32 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleCreateDefaultClothingOptions = async () => {
+    if (!selectedProductForVariants) return;
+    try {
+      const existingNames = productOptions.map((o) => o.name?.trim());
+      const defaultsToCreate = ["رنگ", "سایز", "جنس"].filter(
+        (name) => !existingNames.includes(name)
+      );
+
+      if (defaultsToCreate.length === 0) {
+        toast.info("ویژگی‌های رنگ، سایز و جنس از قبل تعریف شده‌اند.");
+        return;
+      }
+
+      for (const optName of defaultsToCreate) {
+        await adminApi.createProductOption(selectedProductForVariants.id, {
+          name: optName,
+        });
+      }
+      toast.success("ویژگی‌های استاندارد لباس (رنگ، سایز، جنس) ایجاد شدند.");
+      const opts = await adminApi.getProductOptions(selectedProductForVariants.id);
+      setProductOptions(opts);
+    } catch {
+      toast.error("خطا در ایجاد ویژگی‌های پیش‌فرض");
+    }
+  };
+
   const handleDeleteVariant = async (variantId: string) => {
     if (!confirm("آیا از حذف این تنوع کالا مطمئن هستید؟")) return;
     try {
@@ -387,49 +445,52 @@ export default function AdminProductsPage() {
     }
   };
 
-  // Generate Combinatorial Matrix for in-product form
-  const handleGenerateMatrix = () => {
-    const parsedOptions = options
-      .map((opt) => ({
-        name: opt.name.trim(),
-        values: opt.valuesInput
-          .split(/[,،]/)
-          .map((v) => v.trim())
-          .filter(Boolean),
-      }))
-      .filter((opt) => opt.name && opt.values.length > 0);
+  // Generate Combinatorial Matrix for in-product form (Task 4)
+  const handleGenerateClothingVariants = () => {
+    const colors = clothingColor
+      .split(/[,،]/)
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const sizes = clothingSize
+      .split(/[,،]/)
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const materials = clothingMaterial
+      .split(/[,،]/)
+      .map((v) => v.trim())
+      .filter(Boolean);
 
-    if (parsedOptions.length === 0) {
-      toast.error("لطفاً حداقل یک ویژگی با مقادیر معتبر وارد کنید.");
-      return;
+    // Task 4: Fields for color, size, and material must NOT be empty!
+    if (colors.length === 0 || sizes.length === 0 || materials.length === 0) {
+      toast.error("فیلدهای رنگ، سایز و جنس نباید خالی باشند. حداقل یک مقدار برای هرکدام باید وارد شود.");
+      return false;
     }
 
-    const cartesian = (arrays: string[][]): string[][] => {
-      return arrays.reduce<string[][]>(
-        (a, b) => a.flatMap((d) => b.map((e) => [...d, e])),
-        [[]]
-      );
-    };
-
-    const valueArrays = parsedOptions.map((o) => o.values);
-    const combinations = cartesian(valueArrays);
-
     const baseSlug = (slug || title).trim().toLowerCase().replace(/\s+/g, "-") || "item";
-    const generated: VariantItem[] = combinations.map((combo, idx) => {
-      const comboName = combo.join(" / ");
-      const comboSku = `${baseSlug.toUpperCase().slice(0, 4)}-${combo.map((c) => c.slice(0, 2).toUpperCase()).join("")}-${idx + 1}`;
-      return {
-        name: comboName,
-        sku: comboSku,
-        price: cleanPriceInput(price) || "0",
-        weight: Number(weight) || 500,
-        stock: 10,
-      };
-    });
+    const generated: VariantItem[] = [];
+    let idx = 1;
+
+    for (const c of colors) {
+      for (const s of sizes) {
+        for (const m of materials) {
+          const comboName = `${c} / ${s} / ${m}`;
+          const comboSku = `${baseSlug.toUpperCase().slice(0, 3)}-${c.slice(0, 2).toUpperCase()}-${s}-${m.slice(0, 2).toUpperCase()}-${idx}`;
+          generated.push({
+            name: comboName,
+            sku: comboSku,
+            price: formatPriceInput(price) || "0",
+            weight: Number(weight) > 0 ? Number(weight) : 1, // Task 3
+            stock: 10,
+          });
+          idx++;
+        }
+      }
+    }
 
     setVariantsMatrix(generated);
     setShowVariantGenerator(true);
-    toast.success(`${generated.length} تنوع محصول با موفقیت ایجاد شد.`);
+    toast.success(`${generated.length} تنوع لباس با موفقیت ایجاد شد.`);
+    return true;
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -437,6 +498,19 @@ export default function AdminProductsPage() {
     if (!title.trim() || !price) {
       toast.error("نام و قیمت محصول الزامی است");
       return;
+    }
+
+    // Task 4: In clothing variant creation, Color, Size, and Material must NOT be empty if any is provided
+    const hasAnyClothingVariant = Boolean(clothingColor.trim() || clothingSize.trim() || clothingMaterial.trim());
+    if (hasAnyClothingVariant) {
+      const colors = clothingColor.split(/[,،]/).map((v) => v.trim()).filter(Boolean);
+      const sizes = clothingSize.split(/[,،]/).map((v) => v.trim()).filter(Boolean);
+      const materials = clothingMaterial.split(/[,،]/).map((v) => v.trim()).filter(Boolean);
+
+      if (colors.length === 0 || sizes.length === 0 || materials.length === 0) {
+        toast.error("فیلدهای رنگ، سایز و جنس نباید خالی باشند. حداقل یک مقدار برای هرکدام باید وارد شود.");
+        return;
+      }
     }
 
     const basePriceNum = parsePrice(price);
@@ -461,7 +535,7 @@ export default function AdminProductsPage() {
         .replace(/\s+/g, "-") || `prod-${Date.now()}`;
 
     const matchedCategory = categories.find((c) => c.id === categoryId);
-    const parsedWeight = Number(weight) > 0 ? Number(weight) : 500;
+    const parsedWeight = Number(weight) > 0 ? Number(weight) : 1; // Task 3: Default weight is 1
     const finalRemaining = discountRemaining.trim() || "۴۸ ساعت";
 
     const primaryImg = imageUrls[0] || imageUrl || "";
@@ -651,7 +725,41 @@ export default function AdminProductsPage() {
         p.category_id === matchedFilterCat.id ||
         p.category?.name === matchedFilterCat.name
       ));
-    return matchesGeneralQuery && matchesUuidQuery && matchesCategory;
+
+    // Status filter (Task 2)
+    const normalizedStatus = p.status === "active" ? "published" : p.status;
+    const matchesStatus =
+      statusFilter === "all" || normalizedStatus === statusFilter;
+
+    // Discount filter (Task 2)
+    const discInfo = getDiscountInfo(p);
+    const matchesDiscount = !discountOnlyFilter || discInfo.hasDiscount;
+
+    return (
+      matchesGeneralQuery &&
+      matchesUuidQuery &&
+      matchesCategory &&
+      matchesStatus &&
+      matchesDiscount
+    );
+  }).sort((a, b) => {
+    // Sorting (Task 2)
+    const priceA = parsePrice(a.price);
+    const priceB = parsePrice(b.price);
+    const dateA = new Date(a.created_at || 0).getTime();
+    const dateB = new Date(b.created_at || 0).getTime();
+
+    switch (sortFilter) {
+      case "price_asc":
+        return priceA - priceB;
+      case "price_desc":
+        return priceB - priceA;
+      case "oldest":
+        return dateA - dateB;
+      case "newest":
+      default:
+        return dateB - dateA;
+    }
   });
 
   return (
@@ -772,6 +880,78 @@ export default function AdminProductsPage() {
               {c.name}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Secondary Filter & Sorting Toolbar (Task 2: Status, Price Sort, Date Sort, Discount Filter) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-[#111111] border border-white/10 rounded-2xl">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 font-medium">وضعیت:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-[#181818] border border-white/10 text-white text-xs rounded-xl px-3 py-1.5 outline-none focus:border-amber-400/50 cursor-pointer"
+            >
+              <option value="all">همه وضعیت‌ها</option>
+              <option value="published">منتشر شده (فعال)</option>
+              <option value="draft">پیش‌نویس</option>
+              <option value="archived">بایگانی‌شده</option>
+            </select>
+          </div>
+
+          {/* Sort Filter: Price and Date */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 font-medium">مرتب‌سازی:</span>
+            <select
+              value={sortFilter}
+              onChange={(e) => setSortFilter(e.target.value)}
+              className="bg-[#181818] border border-white/10 text-white text-xs rounded-xl px-3 py-1.5 outline-none focus:border-amber-400/50 cursor-pointer"
+            >
+              <option value="newest">جدیدترین محصولات</option>
+              <option value="oldest">قدیمی‌ترین محصولات</option>
+              <option value="price_asc">قیمت: صعودی (ارزان‌ترین)</option>
+              <option value="price_desc">قیمت: نزولی (گران‌ترین)</option>
+            </select>
+          </div>
+
+          {/* Discount Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setDiscountOnlyFilter((prev) => !prev)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
+              discountOnlyFilter
+                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm"
+                : "bg-white/5 text-gray-400 hover:text-white border-white/10"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>محصولات دارای تخفیف</span>
+          </button>
+        </div>
+
+        {/* Counter and Reset */}
+        <div className="flex items-center gap-3 text-xs">
+          <span className="text-gray-400">
+            نمایش <strong className="text-white">{filteredProducts.length.toLocaleString("fa-IR")}</strong> از {products.length.toLocaleString("fa-IR")} محصول
+          </span>
+          {(statusFilter !== "all" || sortFilter !== "newest" || discountOnlyFilter || selectedCategory !== "all" || searchQuery || uuidSearchQuery) && (
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter("all");
+                setSortFilter("newest");
+                setDiscountOnlyFilter(false);
+                setSelectedCategory("all");
+                setSearchQuery("");
+                setUuidSearchQuery("");
+              }}
+              className="text-amber-400 hover:text-amber-300 text-[11px] underline underline-offset-4 cursor-pointer"
+            >
+              پاک‌سازی فیلترها
+            </button>
+          )}
         </div>
       </div>
 
@@ -999,7 +1179,7 @@ export default function AdminProductsPage() {
             <div className="space-y-8 mt-6">
               {/* Section 1: Define Options (e.g. Color, Size) */}
               <div className="bg-[#141414] border border-white/10 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-black text-white flex items-center gap-2">
                       <Tag className="w-4 h-4 text-amber-400" />
@@ -1009,6 +1189,14 @@ export default function AdminProductsPage() {
                       ویژگی‌ها و مقادیر قابل انتخاب توسط خریدار را تعریف کنید
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateDefaultClothingOptions}
+                    className="text-xs px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    افزودن خودکار ۳ ویژگی الزامی لباس (رنگ، سایز، جنس)
+                  </button>
                 </div>
 
                 {/* Add New Option Input */}
@@ -1169,12 +1357,13 @@ export default function AdminProductsPage() {
                     <div className="space-y-1">
                       <label className="text-[10px] text-gray-400 font-bold">قیمت تنوع (تومان)</label>
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={newVariantPrice}
-                        onChange={(e) => setNewVariantPrice(e.target.value)}
-                        placeholder="1200000"
+                        onChange={(e) => setNewVariantPrice(formatPriceInput(e.target.value))}
+                        placeholder="۱,۲۰۰,۰۰۰"
                         required
-                        className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg"
+                        className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg font-mono text-left"
                         dir="ltr"
                       />
                     </div>
@@ -1185,10 +1374,10 @@ export default function AdminProductsPage() {
                         type="number"
                         value={newVariantWeight}
                         onChange={(e) => setNewVariantWeight(e.target.value)}
-                        placeholder="500"
+                        placeholder="1"
                         required
                         min={1}
-                        className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg"
+                        className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg font-sans"
                         dir="ltr"
                       />
                     </div>
@@ -1340,18 +1529,19 @@ export default function AdminProductsPage() {
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-300">قیمت پایه (تومان)</label>
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={price}
                   onChange={(e) => {
-                    const newPrice = e.target.value;
-                    setPrice(newPrice);
+                    const formatted = formatPriceInput(e.target.value);
+                    setPrice(formatted);
                     if (isValidDiscountPercent(discountPercent)) {
-                      setDiscountPrice(String(calculateDiscountPrice(newPrice, discountPercent)));
+                      setDiscountPrice(String(calculateDiscountPrice(formatted, discountPercent)));
                     }
                   }}
-                  placeholder="1250000"
+                  placeholder="۱,۲۵۰,۰۰۰"
                   required
-                  className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
+                  className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-mono text-left"
                   dir="ltr"
                 />
               </div>
@@ -1395,7 +1585,7 @@ export default function AdminProductsPage() {
                   type="number"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
-                  placeholder="500"
+                  placeholder="1"
                   required
                   min={1}
                   className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
@@ -1473,6 +1663,123 @@ export default function AdminProductsPage() {
                 }}
                 label="تصاویر و گالری محصول (آپلود مستقیم چندین عکس یا لینک)"
               />
+            </div>
+
+            {/* Clothing Variants Generator Panel (Task 4: Color, Size, Material validation) */}
+            <div className="p-4 bg-[#141414] border border-white/10 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Boxes className="w-4 h-4 text-purple-400" />
+                  <span className="text-xs font-bold text-white">تنوع‌های لباس (رنگ، سایز، جنس)</span>
+                </div>
+                <span className="text-[10px] text-gray-400">
+                  {variantsMatrix.length > 0
+                    ? `${variantsMatrix.length} تنوع ایجاد شده`
+                    : "اختیاری اما در صورت ثبت، هر ۳ فیلد الزامی است"}
+                </span>
+              </div>
+
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                مقادیر مختلف را با ویرگول (، یا ,) جدا کنید تا ترکیبات تنوع به طور خودکار ساخته شوند.
+                <span className="text-amber-400 font-medium block mt-0.5">
+                  ⚠️ الزامی: فیلدهای رنگ، سایز و جنس نباید خالی باشند. در صورت خالی بودن هرکدام، خطا نمایش داده خواهد شد.
+                </span>
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-300 flex items-center gap-1">
+                    <span>رنگ‌ها</span>
+                    <span className="text-rose-400">*</span>
+                  </label>
+                  <Input
+                    value={clothingColor}
+                    onChange={(e) => setClothingColor(e.target.value)}
+                    placeholder="مشکی, سفید, سرمه‌ای"
+                    className={`bg-[#181818] h-10 text-xs text-white rounded-xl ${
+                      (clothingSize || clothingMaterial) && !clothingColor.trim()
+                        ? "border-rose-500/70 focus:border-rose-500"
+                        : "border-white/10"
+                    }`}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-300 flex items-center gap-1">
+                    <span>سایزها</span>
+                    <span className="text-rose-400">*</span>
+                  </label>
+                  <Input
+                    value={clothingSize}
+                    onChange={(e) => setClothingSize(e.target.value)}
+                    placeholder="S, M, L, XL"
+                    className={`bg-[#181818] h-10 text-xs text-white rounded-xl ${
+                      (clothingColor || clothingMaterial) && !clothingSize.trim()
+                        ? "border-rose-500/70 focus:border-rose-500"
+                        : "border-white/10"
+                    }`}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-300 flex items-center gap-1">
+                    <span>جنس / متریال</span>
+                    <span className="text-rose-400">*</span>
+                  </label>
+                  <Input
+                    value={clothingMaterial}
+                    onChange={(e) => setClothingMaterial(e.target.value)}
+                    placeholder="کتان, پنبه‌ای, چرم"
+                    className={`bg-[#181818] h-10 text-xs text-white rounded-xl ${
+                      (clothingColor || clothingSize) && !clothingMaterial.trim()
+                        ? "border-rose-500/70 focus:border-rose-500"
+                        : "border-white/10"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={handleGenerateClothingVariants}
+                  className="px-4 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  ساخت ترکیبی تنوع‌های لباس
+                </button>
+
+                {variantsMatrix.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVariantsMatrix([]);
+                      setClothingColor("");
+                      setClothingSize("");
+                      setClothingMaterial("");
+                    }}
+                    className="text-xs text-rose-400 hover:underline cursor-pointer"
+                  >
+                    حذف تنوع‌های ساخته‌شده
+                  </button>
+                )}
+              </div>
+
+              {/* Preview of generated matrix */}
+              {variantsMatrix.length > 0 && (
+                <div className="mt-3 max-h-40 overflow-y-auto space-y-1 p-2 bg-black/40 rounded-xl border border-white/5 text-[11px]">
+                  {variantsMatrix.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between py-1 px-2 rounded-lg bg-white/5 text-gray-300"
+                    >
+                      <span className="font-bold text-white">{item.name}</span>
+                      <span className="font-mono text-[10px] text-gray-400">{item.sku}</span>
+                      <span>وزن: {item.weight} گرم</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Description */}

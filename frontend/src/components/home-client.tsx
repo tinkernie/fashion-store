@@ -375,17 +375,17 @@ export default function HomeClient({
 
         {/* Dynamic Monochrome Ambient Banner */}
         {announcement ? (
-          <div className="relative z-10 w-full max-w-4xl mx-auto mb-6 px-4">
+          <div className="relative z-10 w-full max-w-4xl mx-auto mb-4 sm:mb-6 px-3 sm:px-4">
             <Banner
               id="top-hero-announcement"
               variant="rainbow"
-              className="rounded-2xl border border-white/15 bg-black/60 shadow-2xl backdrop-blur-xl"
+              className="rounded-xl sm:rounded-2xl border border-white/15 bg-black/60 shadow-2xl backdrop-blur-xl w-full min-h-[2.5rem] sm:min-h-[2.75rem] md:min-h-[3rem] px-3 sm:px-6"
             >
-              <div className="flex items-center gap-2">
-                <span className="bg-white text-black font-black text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">
+              <div className="flex items-center justify-center gap-2 flex-wrap sm:flex-nowrap text-center max-w-full">
+                <span className="bg-white text-black font-black text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                   {announcement.badge || "اطلاعیه"}
                 </span>
-                <span className="text-xs md:text-sm font-medium text-white/90 truncate max-w-xs sm:max-w-md md:max-w-xl">
+                <span className="text-xs sm:text-sm font-medium text-white/90 truncate max-w-[240px] sm:max-w-md md:max-w-xl">
                   {announcement.text}
                 </span>
               </div>

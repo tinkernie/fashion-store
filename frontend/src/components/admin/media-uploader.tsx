@@ -76,7 +76,7 @@ export default function MediaUploader({
 
   const getAspectClass = () => {
     if (aspectRatio === "square") return "aspect-square max-w-[200px]";
-    if (aspectRatio === "banner") return "aspect-[21/9] w-full";
+    if (aspectRatio === "banner") return "aspect-[2/1] sm:aspect-[16/7] md:aspect-[21/9] w-full";
     return "aspect-[3/4] max-w-[180px]";
   };
 
