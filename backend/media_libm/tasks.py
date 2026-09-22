@@ -1,17 +1,31 @@
+import logging
 from celery import shared_task
 from io import BytesIO
 from PIL import Image
 from django.core.files.base import ContentFile
+from django.db.utils import OperationalError
 from .models import Media
+
+logger = logging.getLogger(__name__)
 
 RESPONSIVE_WIDTHS = [480, 768, 1280]
 
 
-@shared_task
-def generate_thumbnails(media_id: str):
+@shared_task(
+    bind=True,
+    acks_late=True,
+    time_limit=120,
+    soft_time_limit=90,
+    autoretry_for=(OperationalError, ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=2,
+)
+def generate_thumbnails(self, media_id: str):
     try:
         media = Media.objects.get(id=media_id)
     except Media.DoesNotExist:
+        logger.warning("generate_thumbnails: media %s not found", media_id)
         return
 
     if media.media_type != 'image':

@@ -207,8 +207,12 @@ CELERY_TASK_ROUTES = {
     "notifications.tasks.send_sms": {"queue": "sms"},
     "notifications.tasks.*": {"queue": "emails"},
     "inventory.tasks.*": {"queue": "inventory"},
+    "media_libm.tasks.*": {"queue": "media"},
 }
 CELERY_TASK_DEFAULT_QUEUE = "default"
+# Celery worker optimization (non-auth)
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+CELERY_TASK_COMPRESSION = "gzip"
 
 
 # Security
