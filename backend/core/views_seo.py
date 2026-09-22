@@ -9,8 +9,12 @@ def robots_txt(request):
     lines = [
         "User-agent: *",
         "Allow: /",
+        "Disallow: /api/admin/",
+        "Disallow: /api/cart/",
+        "Disallow: /admin/",
         f"Sitemap: {frontend}/sitemap.xml",
-        # Also expose API sitemap via backend if needed
         f"Sitemap: {request.build_absolute_uri('/sitemap.xml')}",
+        "",
+        "Crawl-delay: 1",
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")

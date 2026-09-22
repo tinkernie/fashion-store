@@ -1,3 +1,6 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_headers
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,6 +18,8 @@ class PublicProductViewSet(viewsets.GenericViewSet):
     permission_classes = [AllowAny]
     lookup_field = "slug"
 
+    @method_decorator(cache_page(300))
+    @method_decorator(vary_on_headers("Accept-Language"))
     def list(self, request):
         filters = {}
         if "category" in request.query_params:

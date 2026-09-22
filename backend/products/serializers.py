@@ -171,6 +171,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     related_products = serializers.SerializerMethodField()
     complete_look = serializers.SerializerMethodField()
     seo_schema = serializers.SerializerMethodField()
+    meta_title = serializers.SerializerMethodField()
+    meta_description = serializers.SerializerMethodField()
+    canonical_url = serializers.SerializerMethodField()
+    breadcrumbs = serializers.SerializerMethodField()
+    og_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -181,6 +186,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "average_rating", "reviews_count",
             "discount_percent", "discount_price", "discount_expires_at", "is_discount_active",
             "related_products", "complete_look", "seo_schema",
+            "meta_title", "meta_description", "canonical_url", "breadcrumbs", "og_image",
         )
 
     def get_variants(self, product):
@@ -370,6 +376,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                     img_list = [single]
             rating = self.get_average_rating(product)
             count = self.get_reviews_count(product)
+            # Breadcrumbs for schema
+            breadcrumbs = self.get_breadcrumbs(product)
+            breadcrumb_items = []
+            for idx, bc in enumerate(breadcrumbs):
+                breadcrumb_items.append({"@type": "ListItem", "position": idx + 1, "name": bc["name"], "item": bc["url"]})
+            breadcrumb_items.append({"@type": "ListItem", "position": len(breadcrumb_items) + 1, "name": product.title, "item": f"{base}/products/{product.slug}"})
             schema = {
                 "@context": "https://schema.org",
                 "@type": "Product",
@@ -386,12 +398,79 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                     "availability": "https://schema.org/InStock" if self.get_stock_quantity(product) > 0 else "https://schema.org/OutOfStock",
                     "url": f"{base}/products/{product.slug}",
                 },
+                "breadcrumb": {"@type": "BreadcrumbList", "itemListElement": breadcrumb_items},
             }
             if rating is not None and count:
                 schema["aggregateRating"] = {"@type": "AggregateRating", "ratingValue": rating, "reviewCount": count}
             return schema
         except Exception:
             return None
+
+    def get_meta_title(self, product):
+        try:
+            # Priority: seo_metadata.meta_title > title + category + brand
+            meta = product.seo_metadata or {}
+            if meta.get("meta_title"):
+                return meta["meta_title"]
+            if meta.get("title"):
+                return meta["title"]
+            cat = product.category.name if product.category else ""
+            suffix = f" — {cat} | Luxe" if cat else " | Luxe"
+            return f"{product.title}{suffix}"[:70]
+        except Exception:
+            return product.title
+
+    def get_meta_description(self, product):
+        try:
+            meta = product.seo_metadata or {}
+            if meta.get("meta_description"):
+                return meta["meta_description"][:160]
+            if meta.get("description"):
+                return meta["description"][:160]
+            desc = (product.description or "").strip()
+            if len(desc) > 160:
+                desc = desc[:157] + "..."
+            if not desc:
+                cat = product.category.name if product.category else "فشن"
+                return f"خرید {product.title} از دسته {cat} با بهترین قیمت و ارسال سریع از فروشگاه لوکس."[:160]
+            return desc
+        except Exception:
+            return (product.description or "")[:160]
+
+    def get_canonical_url(self, product):
+        try:
+            from django.conf import settings
+            base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+            return f"{base}/products/{product.slug}"
+        except Exception:
+            return f"/products/{product.slug}"
+
+    def get_breadcrumbs(self, product):
+        try:
+            from django.conf import settings
+            base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+            crumbs = [{"name": "خانه", "url": base}]
+            if product.category:
+                # Build ancestor chain via MPTT
+                ancestors = []
+                cat = product.category
+                # Walk up parent chain
+                curr = cat
+                while curr:
+                    ancestors.insert(0, {"name": curr.name, "url": f"{base}/categories/{curr.slug}"})
+                    curr = curr.parent if hasattr(curr, "parent") else None
+                    if len(ancestors) > 5:
+                        break
+                crumbs.extend(ancestors)
+            return crumbs
+        except Exception:
+            return []
+
+    def get_og_image(self, product):
+        try:
+            return self._get_image(product)
+        except Exception:
+            return ""
 
 
 from .models import Review
