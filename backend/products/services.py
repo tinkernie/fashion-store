@@ -58,11 +58,16 @@ class ProductService:
         try:
             from variants.models import Variant
             from inventory.models import Inventory
+            # Use product weight if provided, else default 1g per spec
+            variant_weight = data.get("weight", 1) if isinstance(data.get("weight"), int) else 1
+            # Also check product instance weight
+            if hasattr(product, "weight") and product.weight:
+                variant_weight = product.weight
             variant = Variant.objects.create(
                 product=product,
                 sku=f"{product.slug}-DEFAULT",
                 price=price if price is not None else 0,
-                weight=500,
+                weight=variant_weight,
                 status=Variant.Status.PUBLISHED,
                 availability=Variant.Availability.IN_STOCK,
             )

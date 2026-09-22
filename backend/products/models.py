@@ -1,3 +1,4 @@
+import uuid
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
@@ -24,6 +25,10 @@ class Product(BaseModel):
         choices=Status.choices,
         default=Status.DRAFT,
         db_index=True,
+    )
+    weight = models.PositiveIntegerField(
+        default=1,
+        help_text="Product weight in grams (used for post shipping calculations)",
     )
     seo_metadata = models.JSONField(default=dict, blank=True)
     metadata = models.JSONField(default=dict, blank=True)  # extensible attributes
@@ -144,4 +149,36 @@ class Review(BaseModel):
 
     def __str__(self):
         return f"Review for {self.product.title} by {self.user_name} ({self.status})"
+
+
+class RelatedProduct(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    source_product = models.ForeignKey(
+        "products.Product",
+        on_delete=models.CASCADE,
+        related_name="manual_related_targets",
+        help_text="The product on whose page these related items appear",
+    )
+    target_product = models.ForeignKey(
+        "products.Product",
+        on_delete=models.CASCADE,
+        related_name="manual_related_sources",
+        help_text="The recommended complementary product",
+    )
+    position = models.PositiveIntegerField(
+        default=0,
+        help_text="Ordering index (0 = first item shown)",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "products_related_product"
+        ordering = ["position", "-created_at"]
+        unique_together = ("source_product", "target_product")
+        indexes = [
+            models.Index(fields=["source_product", "position"]),
+        ]
+
+    def __str__(self):
+        return f"{self.source_product.title} -> {self.target_product.title} (#{self.position})"
 

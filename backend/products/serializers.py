@@ -27,7 +27,7 @@ class ProductCreateSerializer(serializers.Serializer):
     price = serializers.IntegerField(min_value=0, required=False)
     discount_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     image_url = serializers.CharField(required=False, allow_blank=True)
-    images = serializers.ListField(required=False, allow_empty=True)
+    weight = serializers.IntegerField(min_value=1, required=False, default=1)
     status = serializers.ChoiceField(
         choices=["draft", "published", "archived", "active"], default="published"
     )
@@ -54,7 +54,7 @@ class ProductUpdateSerializer(serializers.Serializer):
     price = serializers.IntegerField(min_value=0, required=False)
     discount_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     image_url = serializers.CharField(required=False, allow_blank=True)
-    images = serializers.ListField(required=False, allow_empty=True)
+    weight = serializers.IntegerField(min_value=1, required=False)
     status = serializers.ChoiceField(
         choices=["draft", "published", "archived", "active"], required=False
     )
@@ -65,6 +65,88 @@ class ProductUpdateSerializer(serializers.Serializer):
         if attrs.get("status") == "active":
             attrs["status"] = "published"
         return attrs
+
+
+class RelatedProductCardSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    slug = serializers.SlugField()
+    price = serializers.SerializerMethodField()
+    discount_price = serializers.SerializerMethodField()
+    discount_percent = serializers.IntegerField(allow_null=True)
+    discount_expires_at = serializers.DateTimeField(allow_null=True)
+    is_discount_active = serializers.SerializerMethodField()
+    imageUrl = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    category = serializers.CharField(source="category.name", default="", allow_null=True)
+    category_slug = serializers.CharField(source="category.slug", default="", allow_null=True)
+    average_rating = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
+    is_manual_pin = serializers.SerializerMethodField()
+
+    def get_price(self, obj):
+        try:
+            variant = obj.variants.filter(deleted_at__isnull=True).first()
+            if variant and variant.price is not None:
+                return int(round(float(variant.price)))
+        except Exception:
+            pass
+        if obj.metadata and "price" in obj.metadata:
+            try:
+                return int(round(float(obj.metadata["price"])))
+            except Exception:
+                pass
+        return 0
+
+    def get_discount_price(self, obj):
+        val = getattr(obj, "discount_price", None)
+        if val is None:
+            return None
+        try:
+            return int(val)
+        except Exception:
+            return None
+
+    def get_is_discount_active(self, obj):
+        try:
+            return bool(obj.is_discount_active)
+        except Exception:
+            return False
+
+    def get_imageUrl(self, obj):
+        if hasattr(obj, "images"):
+            cover = obj.images.filter(deleted_at__isnull=True, is_cover=True).first()
+            if not cover:
+                cover = obj.images.filter(deleted_at__isnull=True).order_by("position").first()
+            if cover and cover.url:
+                return cover.url
+        if obj.metadata and "image_url" in obj.metadata:
+            return obj.metadata["image_url"]
+        if obj.metadata and "imageUrl" in obj.metadata:
+            return obj.metadata["imageUrl"]
+        return ""
+
+    def get_image_url(self, obj):
+        return self.get_imageUrl(obj)
+
+    def get_average_rating(self, obj):
+        if hasattr(obj, "annotated_avg_rating"):
+            avg = obj.annotated_avg_rating
+            return None if avg is None else round(float(avg), 1)
+        from django.db.models import Avg
+        from .models import Review
+        agg = Review.objects.filter(product=obj, status="approved", deleted_at__isnull=True).aggregate(avg=Avg("rating"))
+        avg = agg["avg"]
+        return None if avg is None else round(float(avg), 1)
+
+    def get_reviews_count(self, obj):
+        if hasattr(obj, "annotated_reviews_count"):
+            return int(obj.annotated_reviews_count or 0)
+        from .models import Review
+        return Review.objects.filter(product=obj, status="approved", deleted_at__isnull=True).count()
+
+    def get_is_manual_pin(self, obj):
+        return bool(getattr(obj, "is_manual_pin", False))
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -86,6 +168,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     discount_price = serializers.SerializerMethodField()
     discount_expires_at = serializers.DateTimeField(read_only=True)
     is_discount_active = serializers.SerializerMethodField()
+    related_products = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -95,6 +178,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "status", "seo_metadata", "metadata", "collections", "variants",
             "average_rating", "reviews_count",
             "discount_percent", "discount_price", "discount_expires_at", "is_discount_active",
+            "related_products",
         )
 
     def get_variants(self, product):
@@ -240,6 +324,22 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return bool(product.is_discount_active)
         except Exception:
             return False
+
+    def get_related_products(self, product):
+        # Include related products inline for PDP; for list views, respect context flag to avoid N+1
+        if self.context.get("include_related") is False:
+            return []
+        try:
+            limit = self.context.get("related_limit", 4)
+            # Allow view to pass limit via context
+            if isinstance(limit, str):
+                limit = int(limit)
+            limit = min(max(int(limit), 1), 12)
+            from .selectors import ProductSelector
+            related = ProductSelector.get_related_products(product, limit=limit)
+            return RelatedProductCardSerializer(related, many=True, context=self.context).data
+        except Exception:
+            return []
 
 
 from .models import Review

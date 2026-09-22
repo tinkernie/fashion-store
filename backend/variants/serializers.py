@@ -11,7 +11,7 @@ class VariantCreateSerializer(serializers.Serializer):
     sku = serializers.CharField(max_length=100)
     barcode = serializers.CharField(max_length=100, required=False, allow_blank=True)
     price = serializers.DecimalField(max_digits=10, decimal_places=2)
-    weight = serializers.IntegerField(min_value=0)
+    weight = serializers.IntegerField(min_value=1, required=False, default=1)
     dimensions = serializers.JSONField(required=False, default=dict)
     availability = serializers.ChoiceField(
         choices=["in_stock", "out_of_stock", "pre_order"]
@@ -23,6 +23,20 @@ class VariantCreateSerializer(serializers.Serializer):
     option_values = serializers.ListField(
         child=OptionAssignmentSerializer(), allow_empty=False
     )
+
+    def validate(self, attrs):
+        option_values = attrs.get("option_values", [])
+        if not option_values:
+            raise serializers.ValidationError(
+                {"detail": "حداقل یک مقدار برای گزینه‌ها باید وارد شود."}
+            )
+        # Basic non-empty check for each assignment
+        for ov in option_values:
+            if not ov.get("option_id") or not ov.get("value_id"):
+                raise serializers.ValidationError(
+                    {"detail": "فیلدهای رنگ، سایز و جنس نباید خالی باشند. هر گزینه باید مقدار داشته باشد."}
+                )
+        return attrs
 
 
 class VariantUpdateSerializer(serializers.Serializer):

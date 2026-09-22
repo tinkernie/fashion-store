@@ -135,3 +135,60 @@ class CartViewSet(viewsets.GenericViewSet):
         session_key = self._get_session_key(request) if not user else None
         result = self.service.remove_coupon(user, session_key)
         return Response(result)
+
+    @action(detail=False, methods=["get"], url_path="related")
+    def related(self, request):
+        """GET /api/cart/related/?limit=8 - cross-sell based on cart items"""
+        user = request.user if request.user.is_authenticated else None
+        session_key = self._get_session_key(request) if not user else None
+        from cart.models import Cart
+        from products.models import Product
+        from products.selectors import ProductSelector
+        from products.serializers import RelatedProductCardSerializer
+
+        # Get cart
+        try:
+            cart = None
+            if user and user.is_authenticated:
+                cart = Cart.objects.filter(user=user).first()
+            elif session_key:
+                cart = Cart.objects.filter(session_key=session_key).first()
+            if not cart or not cart.items.exists():
+                return Response([])
+
+            # Collect product ids from cart
+            cart_product_ids = set()
+            cart_products = []
+            for item in cart.items.select_related("variant__product"):
+                prod = item.variant.product if item.variant else None
+                if prod and prod.id not in cart_product_ids:
+                    cart_product_ids.add(prod.id)
+                    cart_products.append(prod)
+                # Also try to get product directly if variant missing
+                if not prod and item.variant and item.variant.product_id:
+                    try:
+                        p = Product.objects.filter(id=item.variant.product_id).first()
+                        if p and p.id not in cart_product_ids:
+                            cart_product_ids.add(p.id)
+                            cart_products.append(p)
+                    except Exception:
+                        pass
+
+            if not cart_products:
+                return Response([])
+
+            try:
+                limit = int(request.query_params.get("limit", 8))
+            except ValueError:
+                limit = 8
+            limit = min(max(limit, 1), 12)
+
+            # Use selector union logic, exclude cart products
+            related = ProductSelector.get_related_for_cart(
+                cart_products, limit=limit, exclude_ids=cart_product_ids
+            )
+            serializer = RelatedProductCardSerializer(related, many=True, context={"request": request})
+            return Response(serializer.data)
+        except Exception as e:
+            # Return empty on error to avoid breaking cart flow
+            return Response([])

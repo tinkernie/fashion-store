@@ -25,8 +25,8 @@ class Variant(BaseModel):
     )
     price = models.DecimalField(max_digits=10, decimal_places=2)
     weight = models.PositiveIntegerField(
-        default=500, help_text="Weight in grams"
-    )  # or Decimal, but grams as integer is safe
+        default=1, help_text="Weight in grams"
+    )  # Toman spec: default 1g for shipping calc
     dimensions = models.JSONField(
         default=dict,
         blank=True,

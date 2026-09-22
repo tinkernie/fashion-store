@@ -18,21 +18,27 @@ class PublicProductViewSet(viewsets.GenericViewSet):
     def list(self, request):
         filters = {}
         if "category" in request.query_params:
-            filters["category_slug"] = request.query_params["category"]
+            filters["category"] = request.query_params["category"]
         if "collection" in request.query_params:
             filters["collection_slug"] = request.query_params["collection"]
         if "search" in request.query_params:
             filters["search"] = request.query_params["search"]
+        if "status" in request.query_params:
+            filters["status"] = request.query_params["status"]
+        if "ordering" in request.query_params:
+            filters["ordering"] = request.query_params["ordering"]
+        if "has_discount" in request.query_params:
+            filters["has_discount"] = request.query_params["has_discount"]
         products = ProductSelector.get_visible_products(filters)
         # manual pagination? We'll use DRF's default pagination via core.pagination.StandardPagination.
         page = self.paginate_queryset(products)
         if page is not None:
             serializer = ProductDetailSerializer(
-                page, many=True, context={"request": request}
+                page, many=True, context={"request": request, "include_related": False}
             )
             return self.get_paginated_response(serializer.data)
         serializer = ProductDetailSerializer(
-            products, many=True, context={"request": request}
+            products, many=True, context={"request": request, "include_related": False}
         )
         return Response(serializer.data)
 
@@ -46,6 +52,27 @@ class PublicProductViewSet(viewsets.GenericViewSet):
         if not product:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = ProductDetailSerializer(product, context={"request": request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["get"], url_path="related")
+    def related(self, request, slug=None):
+        """Dedicated lazy related endpoint: GET /api/products/<slug>/related/?limit=4"""
+        product = ProductSelector.get_product_by_slug(slug)
+        if not product:
+            try:
+                product = ProductSelector.get_product_by_id(slug)
+            except Exception:
+                product = None
+        if not product:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            limit = int(request.query_params.get("limit", 4))
+        except ValueError:
+            limit = 4
+        limit = min(max(limit, 1), 12)
+        related = ProductSelector.get_related_products(product, limit=limit)
+        from .serializers import RelatedProductCardSerializer
+        serializer = RelatedProductCardSerializer(related, many=True, context={"request": request})
         return Response(serializer.data)
 
 
@@ -86,7 +113,29 @@ class AdminProductViewSet(viewsets.GenericViewSet):
         return Response(result)
 
     def list(self, request):
-        return self.admin_list(request)
+        # Direct admin list with full filter support per spec
+        filters = {}
+        if "status" in request.query_params:
+            filters["status"] = request.query_params["status"]
+        if "search" in request.query_params:
+            filters["search"] = request.query_params["search"]
+        if "category" in request.query_params:
+            filters["category"] = request.query_params["category"]
+        if "ordering" in request.query_params:
+            filters["ordering"] = request.query_params["ordering"]
+        if "has_discount" in request.query_params:
+            filters["has_discount"] = request.query_params["has_discount"]
+        products = ProductSelector.get_all_products_admin(filters)
+        page = self.paginate_queryset(products)
+        if page is not None:
+            serializer = ProductDetailSerializer(
+                page, many=True, context={"request": request, "include_related": False}
+            )
+            return self.get_paginated_response(serializer.data)
+        serializer = ProductDetailSerializer(
+            products, many=True, context={"request": request, "include_related": False}
+        )
+        return Response(serializer.data)
 
     @action(detail=False, methods=["get"], url_path="admin-list")
     def admin_list(self, request):
@@ -95,17 +144,105 @@ class AdminProductViewSet(viewsets.GenericViewSet):
             filters["status"] = request.query_params["status"]
         if "search" in request.query_params:
             filters["search"] = request.query_params["search"]
+        if "category" in request.query_params:
+            filters["category"] = request.query_params["category"]
+        if "ordering" in request.query_params:
+            filters["ordering"] = request.query_params["ordering"]
+        if "has_discount" in request.query_params:
+            filters["has_discount"] = request.query_params["has_discount"]
         products = ProductSelector.get_all_products_admin(filters)
         page = self.paginate_queryset(products)
         if page is not None:
             serializer = ProductDetailSerializer(
-                page, many=True, context={"request": request}
+                page, many=True, context={"request": request, "include_related": False}
             )
             return self.get_paginated_response(serializer.data)
         serializer = ProductDetailSerializer(
-            products, many=True, context={"request": request}
+            products, many=True, context={"request": request, "include_related": False}
         )
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get", "post"], url_path="related")
+    def related(self, request, pk=None):
+        """GET /api/admin/products/<id>/related/ - list manual pins
+        POST /api/admin/products/<id>/related/ {target_ids, positions} - set pins"""
+        if request.method == "GET":
+            product = ProductSelector.get_product_by_id(pk)
+            if not product:
+                return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+            from .models import RelatedProduct
+            from .serializers import RelatedProductCardSerializer
+
+            related_qs = (
+                RelatedProduct.objects.filter(source_product=product)
+                .select_related("target_product", "target_product__category")
+                .order_by("position", "-created_at")
+            )
+            data = []
+            for rel in related_qs:
+                target = rel.target_product
+                card = RelatedProductCardSerializer(target, context={"request": request}).data
+                card["position"] = rel.position
+                card["is_manual_pin"] = True
+                data.append(card)
+            return Response(data)
+
+        # POST - set pins
+        product = ProductSelector.get_product_by_id(pk)
+        if not product:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        target_ids = request.data.get("target_ids", [])
+        positions = request.data.get("positions", [])
+        if not isinstance(target_ids, list) or not target_ids:
+            return Response({"detail": "target_ids required."}, status=status.HTTP_400_BAD_REQUEST)
+        if isinstance(target_ids, str):
+            target_ids = [target_ids]
+        from .models import RelatedProduct
+
+        RelatedProduct.objects.filter(source_product=product).delete()
+        to_create = []
+        for idx, tid in enumerate(target_ids):
+            try:
+                target = ProductSelector.get_product_by_id(tid)
+                if not target:
+                    continue
+                if str(target.id) == str(product.id):
+                    continue
+                pos = positions[idx] if idx < len(positions) else idx
+                to_create.append(
+                    RelatedProduct(
+                        source_product=product, target_product=target, position=int(pos)
+                    )
+                )
+            except Exception:
+                continue
+        if to_create:
+            RelatedProduct.objects.bulk_create(to_create)
+        related_qs = RelatedProduct.objects.filter(source_product=product).order_by("position")
+        from .serializers import RelatedProductCardSerializer
+
+        data = []
+        for rel in related_qs.select_related("target_product"):
+            card = RelatedProductCardSerializer(rel.target_product, context={"request": request}).data
+            card["position"] = rel.position
+            card["is_manual_pin"] = True
+            data.append(card)
+        return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["delete"], url_path=r"related/(?P<target_id>[^/.]+)")
+    def related_delete(self, request, pk=None, target_id=None):
+        """DELETE /api/admin/products/<id>/related/<target_id>/"""
+        product = ProductSelector.get_product_by_id(pk)
+        if not product:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        from .models import RelatedProduct
+
+        deleted, _ = RelatedProduct.objects.filter(
+            source_product=product, target_product__id=target_id
+        ).delete()
+        if deleted == 0:
+            return Response({"detail": "Relation not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Relation removed."})
 
     def retrieve(self, request, pk=None):
         product = ProductSelector.get_product_by_id(pk)

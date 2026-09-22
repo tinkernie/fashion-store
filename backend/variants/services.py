@@ -12,7 +12,7 @@ class VariantService:
         option_assignments = data.pop("option_values", [])
         if not option_assignments:
             raise BusinessException("At least one option value must be provided.")
-        self._validate_option_assignments(option_assignments)
+        self._validate_option_assignments(option_assignments, product_id=product_id)
 
         try:
             variant = VariantRepository.create_variant(
@@ -34,7 +34,7 @@ class VariantService:
         updated = VariantRepository.update_variant(variant, data)
 
         if option_assignments is not None:
-            self._validate_option_assignments(option_assignments)
+            self._validate_option_assignments(option_assignments, product_id=str(updated.product_id))
             VariantRepository.replace_option_assignments(updated, option_assignments)
             updated.refresh_from_db()  # to reload prefetched M2M
 
@@ -47,7 +47,7 @@ class VariantService:
         VariantRepository.delete_variant(variant)
         return {"message": f"Variant {variant.sku} deleted."}
 
-    def _validate_option_assignments(self, assignments: list[dict]):
+    def _validate_option_assignments(self, assignments: list[dict], product_id: str = None):
         """Ensure each assignment has a valid option_id and value_id, and the value belongs to the option."""
         for item in assignments:
             option = ProductOptionSelector.get_option_by_id(item["option_id"])
@@ -61,6 +61,55 @@ class VariantService:
                 raise BusinessException(
                     f"Value {item['value_id']} does not belong to option {item['option_id']}."
                 )
+
+        # Clothing variant integrity per BACKEND_PRODUCT_FILTERS_SPEC: ensure Color, Size, Material not empty when defined
+        if product_id:
+            try:
+                from products.models import Product
+                from product_options.models import ProductOption
+
+                product = Product.objects.filter(id=product_id).first()
+                if product:
+                    # Get product's defined option names
+                    product_option_names = list(
+                        ProductOption.objects.filter(product=product).values_list("name", flat=True)
+                    )
+                    normalized_names = [str(n).strip().lower() for n in product_option_names if n]
+
+                    # Determine which required attributes are defined for this product
+                    has_color_def = any("رنگ" in n or "color" in n for n in normalized_names)
+                    has_size_def = any("سایز" in n or "size" in n for n in normalized_names)
+                    has_material_def = any("جنس" in n or "متریال" in n or "material" in n for n in normalized_names)
+
+                    # If none of the clothing attributes are defined, skip strict check (non-clothing product)
+                    if has_color_def or has_size_def or has_material_def:
+                        # Collect assignment option names
+                        assignment_names = []
+                        for item in assignments:
+                            opt = ProductOptionSelector.get_option_by_id(item["option_id"])
+                            if opt and opt.name:
+                                assignment_names.append(opt.name.strip().lower())
+
+                        has_color = any("رنگ" in n or "color" in n for n in assignment_names)
+                        has_size = any("سایز" in n or "size" in n for n in assignment_names)
+                        has_material = any("جنس" in n or "متریال" in n or "material" in n for n in assignment_names)
+
+                        missing = []
+                        if has_color_def and not has_color:
+                            missing.append("رنگ")
+                        if has_size_def and not has_size:
+                            missing.append("سایز")
+                        if has_material_def and not has_material:
+                            missing.append("جنس")
+
+                        if missing:
+                            raise BusinessException(
+                                f"فیلدهای {', '.join(missing)} نباید خالی باشند. حداقل یک مقدار برای هرکدام باید وارد شود."
+                            )
+            except BusinessException:
+                raise
+            except Exception:
+                pass
 
     def _serialize_variant(self, variant: Variant) -> dict:
         return {
