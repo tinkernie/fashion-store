@@ -170,6 +170,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     is_discount_active = serializers.SerializerMethodField()
     related_products = serializers.SerializerMethodField()
     complete_look = serializers.SerializerMethodField()
+    seo_schema = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -179,7 +180,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "status", "seo_metadata", "metadata", "collections", "variants",
             "average_rating", "reviews_count",
             "discount_percent", "discount_price", "discount_expires_at", "is_discount_active",
-            "related_products", "complete_look",
+            "related_products", "complete_look", "seo_schema",
         )
 
     def get_variants(self, product):
@@ -355,6 +356,42 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return RelatedProductCardSerializer(complete, many=True, context=self.context).data
         except Exception:
             return []
+
+    def get_seo_schema(self, product):
+        try:
+            from django.conf import settings
+            base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+            price_val = self.get_price(product)
+            images = self.get_images(product)
+            img_list = [img.get("url") for img in images if img.get("url")] if isinstance(images, list) else []
+            if not img_list:
+                single = self._get_image(product)
+                if single:
+                    img_list = [single]
+            rating = self.get_average_rating(product)
+            count = self.get_reviews_count(product)
+            schema = {
+                "@context": "https://schema.org",
+                "@type": "Product",
+                "name": product.title,
+                "description": (product.description or "")[:300],
+                "sku": product.slug,
+                "url": f"{base}/products/{product.slug}",
+                "image": img_list[:5],
+                "category": product.category.name if product.category else None,
+                "offers": {
+                    "@type": "Offer",
+                    "priceCurrency": "IRR",
+                    "price": price_val,
+                    "availability": "https://schema.org/InStock" if self.get_stock_quantity(product) > 0 else "https://schema.org/OutOfStock",
+                    "url": f"{base}/products/{product.slug}",
+                },
+            }
+            if rating is not None and count:
+                schema["aggregateRating"] = {"@type": "AggregateRating", "ratingValue": rating, "reviewCount": count}
+            return schema
+        except Exception:
+            return None
 
 
 from .models import Review

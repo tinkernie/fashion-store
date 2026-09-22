@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
     # Third party
     "rest_framework",
     "rest_framework_simplejwt",
@@ -244,9 +245,41 @@ USE_TZ = True
 
 # Static / Media
 STATIC_URL = "static/"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = "/media_libm/"
 MEDIA_ROOT = BASE_DIR / "media_libm"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Cache headers for product/category APIs (CDN friendly)
+CACHE_MIDDLEWARE_SECONDS = 300
+# Observability - Sentry (optional, set SENTRY_DSN env to enable)
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+        sentry_sdk.init(dsn=SENTRY_DSN, integrations=[DjangoIntegration()], traces_sample_rate=0.1, send_default_pii=False)
+    except Exception:
+        pass
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {"format": '{"time":"%(asctime)s","level":"%(levelname)s","name":"%(name)s","msg":%(message)s}', "class": "logging.Formatter"},
+        "simple": {"format": "%(levelname)s %(name)s %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+        "access": {"class": "logging.StreamHandler", "formatter": "simple"},
+    },
+    "loggers": {
+        "audit": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "access": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "celery": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+}
 
 # S3 / Object Storage
 # DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"

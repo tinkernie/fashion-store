@@ -1,13 +1,21 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.sitemaps.views import sitemap
+from django.views.decorators.cache import cache_page
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
     SpectacularRedocView,
 )
+from core.sitemaps import ProductSitemap, CategorySitemap
+from core.views_seo import robots_txt
+
+sitemaps = {"products": ProductSitemap, "categories": CategorySitemap}
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("robots.txt", robots_txt, name="robots_txt"),
+    path("sitemap.xml", cache_page(3600)(sitemap), {"sitemaps": sitemaps}, name="sitemap"),
     # drf schema swagger -> api document
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
