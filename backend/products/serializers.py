@@ -169,6 +169,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     discount_expires_at = serializers.DateTimeField(read_only=True)
     is_discount_active = serializers.SerializerMethodField()
     related_products = serializers.SerializerMethodField()
+    complete_look = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -178,7 +179,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "status", "seo_metadata", "metadata", "collections", "variants",
             "average_rating", "reviews_count",
             "discount_percent", "discount_price", "discount_expires_at", "is_discount_active",
-            "related_products",
+            "related_products", "complete_look",
         )
 
     def get_variants(self, product):
@@ -326,18 +327,32 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return False
 
     def get_related_products(self, product):
-        # Include related products inline for PDP; for list views, respect context flag to avoid N+1
+        # Hybrid: manual (suggested type) + auto fallback via popularity/category/collection, max 8
         if self.context.get("include_related") is False:
             return []
         try:
-            limit = self.context.get("related_limit", 4)
-            # Allow view to pass limit via context
+            limit = self.context.get("related_limit", 8)
             if isinstance(limit, str):
                 limit = int(limit)
-            limit = min(max(int(limit), 1), 12)
+            limit = min(max(int(limit), 1), 8)
             from .selectors import ProductSelector
             related = ProductSelector.get_related_products(product, limit=limit)
             return RelatedProductCardSerializer(related, many=True, context=self.context).data
+        except Exception:
+            return []
+
+    def get_complete_look(self, product):
+        # Manual only, no auto fallback, max 6
+        if self.context.get("include_related") is False:
+            return []
+        try:
+            limit = self.context.get("complete_look_limit", 6)
+            if isinstance(limit, str):
+                limit = int(limit)
+            limit = min(max(int(limit), 1), 6)
+            from .selectors import ProductSelector
+            complete = ProductSelector.get_complete_look_products(product, limit=limit)
+            return RelatedProductCardSerializer(complete, many=True, context=self.context).data
         except Exception:
             return []
 

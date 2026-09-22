@@ -140,12 +140,35 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
+# --- Redis & Cache (django-redis) ---
+# Use Redis for cache (related products, product lists, category tree), sessions, and locks.
+# Separate DBs: 0=broker, 1=cache/sessions/locks to avoid Celery eviction.
+REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1")
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("CACHE_REDIS_URL", REDIS_URL),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 2,
+            "SOCKET_TIMEOUT": 2,
+            "IGNORE_EXCEPTIONS": True,  # fall back to DB on Redis down
+        },
+        "KEY_PREFIX": "luxe",
+        "TIMEOUT": 3600,  # 1h default for related/filters
+    }
+}
+# Sessions via cache (faster than DB, shared across workers)
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
 # Celery — Redis as broker, env-driven for 12-factor config
 # CELERY_BROKER_URL / CELERY_RESULT_BACKEND default to local Redis; override via .env in production.
 # CELERY_TASK_ALWAYS_EAGER=True runs tasks synchronously (no worker needed) — useful for tests/CI.
 # Set CELERY_TASK_ALWAYS_EAGER=False (or unset) when running real workers.
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/0")
+CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}  # Redis: ack timeout
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"

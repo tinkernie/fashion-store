@@ -1,4 +1,5 @@
-from django.db.models import Q, Prefetch, Avg, Count, Min, Max
+from django.core.cache import cache
+from django.db.models import Q, Prefetch, Avg, Count, Min, Max, Case, When, F, Value, IntegerField, Exists, OuterRef
 from .models import Product, RelatedProduct
 
 
@@ -151,12 +152,39 @@ class ProductSelector:
         return qs.distinct()
 
     @staticmethod
-    def get_related_products(product, limit: int = 4) -> list[Product]:
-        """Hybrid related products: manual pins first, then auto fallback by collection/category."""
-        # Manual pins
+    def get_related_products(product, limit: int = 8) -> list[Product]:
+        """Legacy alias for suggested_products — merged hybrid (manual suggested + auto fallback), max 8."""
+        # Merged: related_products now equals suggested_products (complete_look is separate)
+        limit = min(max(int(limit), 1), 8)
+        return ProductSelector.get_suggested_products(product, limit=limit)
+
+    @staticmethod
+    def get_complete_look_products(product, limit: int = 6) -> list[Product]:
+        """Complete the Look: manual only (relation_type=complete_look), no auto fallback, max 6."""
+        limit = min(max(int(limit), 1), 6)
+        cache_key = f"complete_look:{product.id}:{limit}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            try:
+                if cached and isinstance(cached[0], (list, tuple)):
+                    ids = [pid for pid, _ in cached]
+                    qs = Product.objects.filter(id__in=ids).select_related("category").prefetch_related("collections", "images")
+                    qs = ProductSelector._annotate_reviews(qs)
+                    id_map = {str(p.id): p for p in qs}
+                    results = []
+                    for pid, is_manual in cached:
+                        p = id_map.get(str(pid))
+                        if p:
+                            p.is_manual_pin = True
+                            results.append(p)
+                    if results:
+                        return results[:limit]
+            except Exception:
+                pass
         pinned = (
             RelatedProduct.objects.filter(
                 source_product=product,
+                relation_type=RelatedProduct.RelationType.COMPLETE_LOOK,
                 target_product__status=Product.Status.PUBLISHED,
                 target_product__deleted_at__isnull=True,
             )
@@ -169,10 +197,70 @@ class ProductSelector:
             target = rel.target_product
             if target.id not in seen_ids:
                 seen_ids.add(target.id)
-                # Attach flag for serializer
                 target.is_manual_pin = True
+                if not hasattr(target, 'annotated_avg_rating'):
+                    target.annotated_avg_rating = None
+                    target.annotated_reviews_count = 0
+                results.append(target)
+                if len(results) >= limit:
+                    break
+        try:
+            cache.set(cache_key, [(str(r.id), True) for r in results[:limit]], 3600)
+        except Exception:
+            pass
+        return results[:limit]
+
+    @staticmethod
+    def get_suggested_products(product, limit: int = 8) -> list[Product]:
+        """Suggested: manual pins (relation_type=suggested) + auto fallback (collection/category/popularity), max 8."""
+        limit = min(max(int(limit), 1), 8)
+        cache_key = f"suggested:{product.id}:{limit}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            try:
+                if cached and isinstance(cached[0], (list, tuple)):
+                    ids = [pid for pid, _ in cached]
+                    qs = Product.objects.filter(id__in=ids).select_related("category").prefetch_related("collections", "images")
+                    qs = ProductSelector._annotate_reviews(qs)
+                    id_map = {str(p.id): p for p in qs}
+                    results = []
+                    for pid, is_manual in cached:
+                        p = id_map.get(str(pid))
+                        if p:
+                            p.is_manual_pin = bool(is_manual)
+                            results.append(p)
+                    if results:
+                        return results[:limit]
+            except Exception:
+                pass
+
+        # Manual pins for suggested
+        pinned = (
+            RelatedProduct.objects.filter(
+                source_product=product,
+                relation_type=RelatedProduct.RelationType.SUGGESTED,
+                target_product__status=Product.Status.PUBLISHED,
+                target_product__deleted_at__isnull=True,
+            )
+            .select_related("target_product", "target_product__category")
+            .order_by("position", "-created_at")
+        )
+        results = []
+        seen_ids = {product.id}
+        for rel in pinned:
+            target = rel.target_product
+            if target.id not in seen_ids:
+                seen_ids.add(target.id)
+                target.is_manual_pin = True
+                if not hasattr(target, 'annotated_avg_rating'):
+                    target.annotated_avg_rating = None
+                    target.annotated_reviews_count = 0
                 results.append(target)
             if len(results) >= limit:
+                try:
+                    cache.set(cache_key, [(str(r.id), True) for r in results[:limit]], 3600)
+                except Exception:
+                    pass
                 return results
 
         needed = limit - len(results)
@@ -186,44 +274,46 @@ class ProductSelector:
                 .select_related("category")
                 .prefetch_related("collections", "images")
             )
-            # Re-annotate reviews for serialized cards
-            fallback_qs = ProductSelector._annotate_reviews(fallback_qs)
-
-            # Preference A: same collection
             collection_ids = list(product.collections.values_list("id", flat=True))
-            if collection_ids:
-                col_matches = list(
-                    fallback_qs.filter(collections__in=collection_ids).distinct()[:needed]
+            fallback_qs = fallback_qs.annotate(
+                popularity=Count("order_items", distinct=True),
+                cat_match=Case(
+                    When(category=product.category, then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                ),
+                coll_match=Count(
+                    "collections",
+                    filter=Q(collections__in=collection_ids) if collection_ids else Q(pk__in=[]),
+                    distinct=True,
+                ),
+            )
+            fallback_qs = fallback_qs.filter(
+                Exists(
+                    Product.objects.filter(
+                        pk=OuterRef("pk"),
+                        variants__status="published",
+                        variants__deleted_at__isnull=True,
+                        variants__inventory__available_quantity__gt=0,
+                    )
                 )
-                for item in col_matches:
-                    if item.id not in seen_ids:
-                        seen_ids.add(item.id)
-                        item.is_manual_pin = False
-                        results.append(item)
-                        if len(results) >= limit:
-                            return results[:limit]
-
-            # Preference B: same category
-            still_needed = limit - len(results)
-            if still_needed > 0 and product.category:
-                cat_matches = list(
-                    fallback_qs.filter(category=product.category).exclude(id__in=seen_ids)[:still_needed]
-                )
-                for item in cat_matches:
+            )
+            fallback_qs = fallback_qs.annotate(
+                score=F("cat_match") * 3 + F("coll_match") * 2 + F("popularity")
+            ).order_by("-score", "-popularity", "-created_at")
+            fallback_qs = ProductSelector._annotate_reviews(fallback_qs)
+            candidates = list(fallback_qs.distinct()[: needed * 2])
+            for item in candidates:
+                if item.id not in seen_ids:
                     seen_ids.add(item.id)
                     item.is_manual_pin = False
                     results.append(item)
                     if len(results) >= limit:
-                        return results[:limit]
-
-            # Preference C: any published if still needed
-            still_needed = limit - len(results)
-            if still_needed > 0:
-                any_matches = list(fallback_qs.exclude(id__in=seen_ids)[:still_needed])
-                for item in any_matches:
-                    item.is_manual_pin = False
-                    results.append(item)
-
+                        break
+        try:
+            cache.set(cache_key, [(str(r.id), bool(getattr(r, 'is_manual_pin', False))) for r in results[:limit]], 3600)
+        except Exception:
+            pass
         return results[:limit]
 
     @staticmethod
@@ -234,7 +324,8 @@ class ProductSelector:
         seen = set(exclude_ids)
         results = []
         for prod in cart_products:
-            related = ProductSelector.get_related_products(prod, limit=4)
+            # Use suggested logic for cart cross-sell (hybrid)
+            related = ProductSelector.get_suggested_products(prod, limit=4)
             for r in related:
                 if r.id not in seen:
                     seen.add(r.id)

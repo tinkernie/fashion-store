@@ -24,6 +24,13 @@ class CategoryService:
             is_active=data.get("is_active", True),
             parent=parent,
         )
+        # Invalidate Redis category cache
+        try:
+            from django.core.cache import cache
+            cache.delete("categories:active_tree")
+            cache.delete("categories:active_flat")
+        except Exception:
+            pass
         return self._serialize_category(category)
 
     def update_category(self, category_id, data: dict) -> dict:
@@ -42,6 +49,12 @@ class CategoryService:
                 )
             data["parent"] = new_parent
         updated = CategoryRepository.update_category(category, **data)
+        try:
+            from django.core.cache import cache
+            cache.delete("categories:active_tree")
+            cache.delete("categories:active_flat")
+        except Exception:
+            pass
         return self._serialize_category(updated)
 
     def deactivate_category(self, category_id) -> dict:
@@ -50,6 +63,12 @@ class CategoryService:
             raise BusinessException("Category not found.")
         # Deactivation cascades? Only the node itself is deactivated; children remain but hidden.
         CategoryRepository.soft_delete_category(category)
+        try:
+            from django.core.cache import cache
+            cache.delete("categories:active_tree")
+            cache.delete("categories:active_flat")
+        except Exception:
+            pass
         return {"message": f"Category '{category.name}' deactivated."}
 
     def _serialize_category(self, category) -> dict:

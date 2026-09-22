@@ -56,7 +56,7 @@ class PublicProductViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=["get"], url_path="related")
     def related(self, request, slug=None):
-        """Dedicated lazy related endpoint: GET /api/products/<slug>/related/?limit=4"""
+        """Dedicated lazy related endpoint: GET /api/products/<slug>/related/?limit=8 (hybrid, max 8)"""
         product = ProductSelector.get_product_by_slug(slug)
         if not product:
             try:
@@ -66,14 +66,37 @@ class PublicProductViewSet(viewsets.GenericViewSet):
         if not product:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         try:
-            limit = int(request.query_params.get("limit", 4))
+            limit = int(request.query_params.get("limit", 8))
         except ValueError:
-            limit = 4
-        limit = min(max(limit, 1), 12)
+            limit = 8
+        limit = min(max(limit, 1), 8)
         related = ProductSelector.get_related_products(product, limit=limit)
         from .serializers import RelatedProductCardSerializer
         serializer = RelatedProductCardSerializer(related, many=True, context={"request": request})
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get"], url_path="complete-look")
+    def complete_look(self, request, slug=None):
+        """GET /api/products/<slug>/complete-look/?limit=6 - manual only, no fallback, max 6"""
+        product = ProductSelector.get_product_by_slug(slug)
+        if not product:
+            try:
+                product = ProductSelector.get_product_by_id(slug)
+            except Exception:
+                product = None
+        if not product:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            limit = int(request.query_params.get("limit", 6))
+        except ValueError:
+            limit = 6
+        limit = min(max(limit, 1), 6)
+        related = ProductSelector.get_complete_look_products(product, limit=limit)
+        from .serializers import RelatedProductCardSerializer
+        serializer = RelatedProductCardSerializer(related, many=True, context={"request": request})
+        return Response(serializer.data)
+
+
 
 
 class AdminProductViewSet(viewsets.GenericViewSet):
@@ -164,8 +187,8 @@ class AdminProductViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=["get", "post"], url_path="related")
     def related(self, request, pk=None):
-        """GET /api/admin/products/<id>/related/ - list manual pins
-        POST /api/admin/products/<id>/related/ {target_ids, positions} - set pins"""
+        """GET /api/admin/products/<id>/related/ - list manual pins (suggested, hybrid)
+        POST /api/admin/products/<id>/related/ {target_ids, positions} - set pins (suggested)"""
         if request.method == "GET":
             product = ProductSelector.get_product_by_id(pk)
             if not product:
@@ -174,7 +197,9 @@ class AdminProductViewSet(viewsets.GenericViewSet):
             from .serializers import RelatedProductCardSerializer
 
             related_qs = (
-                RelatedProduct.objects.filter(source_product=product)
+                RelatedProduct.objects.filter(
+                    source_product=product, relation_type=RelatedProduct.RelationType.SUGGESTED
+                )
                 .select_related("target_product", "target_product__category")
                 .order_by("position", "-created_at")
             )
@@ -187,7 +212,7 @@ class AdminProductViewSet(viewsets.GenericViewSet):
                 data.append(card)
             return Response(data)
 
-        # POST - set pins
+        # POST - set pins (suggested)
         product = ProductSelector.get_product_by_id(pk)
         if not product:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -195,13 +220,17 @@ class AdminProductViewSet(viewsets.GenericViewSet):
         positions = request.data.get("positions", [])
         if not isinstance(target_ids, list) or not target_ids:
             return Response({"detail": "target_ids required."}, status=status.HTTP_400_BAD_REQUEST)
+        if len(target_ids) > 8:
+            return Response({"detail": "Related products allows at most 8 items (remaining auto-filled)."}, status=status.HTTP_400_BAD_REQUEST)
         if isinstance(target_ids, str):
             target_ids = [target_ids]
         from .models import RelatedProduct
 
-        RelatedProduct.objects.filter(source_product=product).delete()
+        RelatedProduct.objects.filter(
+            source_product=product, relation_type=RelatedProduct.RelationType.SUGGESTED
+        ).delete()
         to_create = []
-        for idx, tid in enumerate(target_ids):
+        for idx, tid in enumerate(target_ids[:8]):
             try:
                 target = ProductSelector.get_product_by_id(tid)
                 if not target:
@@ -211,14 +240,28 @@ class AdminProductViewSet(viewsets.GenericViewSet):
                 pos = positions[idx] if idx < len(positions) else idx
                 to_create.append(
                     RelatedProduct(
-                        source_product=product, target_product=target, position=int(pos)
+                        source_product=product,
+                        target_product=target,
+                        relation_type=RelatedProduct.RelationType.SUGGESTED,
+                        position=int(pos),
                     )
                 )
             except Exception:
                 continue
         if to_create:
             RelatedProduct.objects.bulk_create(to_create)
-        related_qs = RelatedProduct.objects.filter(source_product=product).order_by("position")
+        # Invalidate cache for this product (all limits)
+        try:
+            from django.core.cache import cache
+
+            for lim in range(1, 9):
+                cache.delete(f"related:{product.id}:{lim}")
+                cache.delete(f"suggested:{product.id}:{lim}")
+        except Exception:
+            pass
+        related_qs = RelatedProduct.objects.filter(
+            source_product=product, relation_type=RelatedProduct.RelationType.SUGGESTED
+        ).order_by("position")
         from .serializers import RelatedProductCardSerializer
 
         data = []
@@ -231,17 +274,123 @@ class AdminProductViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=["delete"], url_path=r"related/(?P<target_id>[^/.]+)")
     def related_delete(self, request, pk=None, target_id=None):
-        """DELETE /api/admin/products/<id>/related/<target_id>/"""
+        """DELETE /api/admin/products/<id>/related/<target_id>/ (suggested)"""
         product = ProductSelector.get_product_by_id(pk)
         if not product:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         from .models import RelatedProduct
 
         deleted, _ = RelatedProduct.objects.filter(
-            source_product=product, target_product__id=target_id
+            source_product=product, target_product__id=target_id, relation_type=RelatedProduct.RelationType.SUGGESTED
         ).delete()
         if deleted == 0:
             return Response({"detail": "Relation not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            from django.core.cache import cache
+
+            for lim in range(1, 13):
+                cache.delete(f"related:{product.id}:{lim}")
+                cache.delete(f"suggested:{product.id}:{lim}")
+        except Exception:
+            pass
+        return Response({"message": "Relation removed."})
+
+    @action(detail=True, methods=["get", "post"], url_path="complete-look")
+    def complete_look_admin(self, request, pk=None):
+        """GET/POST /api/admin/products/<id>/complete-look/ - manual only, no fallback"""
+        from .models import RelatedProduct
+        from .serializers import RelatedProductCardSerializer
+
+        product = ProductSelector.get_product_by_id(pk)
+        if not product:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        if request.method == "GET":
+            qs = (
+                RelatedProduct.objects.filter(
+                    source_product=product, relation_type=RelatedProduct.RelationType.COMPLETE_LOOK
+                )
+                .select_related("target_product", "target_product__category")
+                .order_by("position", "-created_at")
+            )
+            data = []
+            for rel in qs:
+                card = RelatedProductCardSerializer(rel.target_product, context={"request": request}).data
+                card["position"] = rel.position
+                card["is_manual_pin"] = True
+                data.append(card)
+            return Response(data)
+        # POST
+        target_ids = request.data.get("target_ids", [])
+        positions = request.data.get("positions", [])
+        if not isinstance(target_ids, list) or not target_ids:
+            return Response({"detail": "target_ids required."}, status=status.HTTP_400_BAD_REQUEST)
+        if len(target_ids) > 6:
+            return Response({"detail": "Complete look allows at most 6 items."}, status=status.HTTP_400_BAD_REQUEST)
+        RelatedProduct.objects.filter(
+            source_product=product, relation_type=RelatedProduct.RelationType.COMPLETE_LOOK
+        ).delete()
+        to_create = []
+        for idx, tid in enumerate(target_ids[:6]):
+            try:
+                target = ProductSelector.get_product_by_id(tid)
+                if not target or str(target.id) == str(product.id):
+                    continue
+                pos = positions[idx] if idx < len(positions) else idx
+                to_create.append(
+                    RelatedProduct(
+                        source_product=product,
+                        target_product=target,
+                        relation_type=RelatedProduct.RelationType.COMPLETE_LOOK,
+                        position=int(pos),
+                    )
+                )
+            except Exception:
+                continue
+        if to_create:
+            RelatedProduct.objects.bulk_create(to_create)
+        # Invalidate cache
+        try:
+            from django.core.cache import cache
+
+            for lim in range(1, 7):
+                cache.delete(f"complete_look:{product.id}:{lim}")
+                cache.delete(f"related:{product.id}:{lim}")
+        except Exception:
+            pass
+        qs = RelatedProduct.objects.filter(
+            source_product=product, relation_type=RelatedProduct.RelationType.COMPLETE_LOOK
+        ).order_by("position")
+        data = []
+        for rel in qs.select_related("target_product"):
+            card = RelatedProductCardSerializer(rel.target_product, context={"request": request}).data
+            card["position"] = rel.position
+            card["is_manual_pin"] = True
+            data.append(card)
+        return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["delete"], url_path=r"complete-look/(?P<target_id>[^/.]+)")
+    def complete_look_delete(self, request, pk=None, target_id=None):
+        """DELETE /api/admin/products/<id>/complete-look/<target_id>/"""
+        product = ProductSelector.get_product_by_id(pk)
+        if not product:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        from .models import RelatedProduct
+
+        deleted, _ = RelatedProduct.objects.filter(
+            source_product=product,
+            target_product__id=target_id,
+            relation_type=RelatedProduct.RelationType.COMPLETE_LOOK,
+        ).delete()
+        if deleted == 0:
+            return Response({"detail": "Relation not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            from django.core.cache import cache
+
+            for lim in range(1, 13):
+                cache.delete(f"complete_look:{product.id}:{lim}")
+                cache.delete(f"related:{product.id}:{lim}")
+        except Exception:
+            pass
         return Response({"message": "Relation removed."})
 
     def retrieve(self, request, pk=None):

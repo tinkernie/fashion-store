@@ -152,6 +152,10 @@ class Review(BaseModel):
 
 
 class RelatedProduct(models.Model):
+    class RelationType(models.TextChoices):
+        COMPLETE_LOOK = "complete_look", "Complete the Look"
+        SUGGESTED = "suggested", "Suggested"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     source_product = models.ForeignKey(
         "products.Product",
@@ -165,6 +169,13 @@ class RelatedProduct(models.Model):
         related_name="manual_related_sources",
         help_text="The recommended complementary product",
     )
+    relation_type = models.CharField(
+        max_length=20,
+        choices=RelationType.choices,
+        default=RelationType.COMPLETE_LOOK,
+        db_index=True,
+        help_text="Complete look (manual only) vs Suggested (manual+auto fallback)",
+    )
     position = models.PositiveIntegerField(
         default=0,
         help_text="Ordering index (0 = first item shown)",
@@ -174,11 +185,12 @@ class RelatedProduct(models.Model):
     class Meta:
         db_table = "products_related_product"
         ordering = ["position", "-created_at"]
-        unique_together = ("source_product", "target_product")
+        unique_together = ("source_product", "target_product", "relation_type")
         indexes = [
             models.Index(fields=["source_product", "position"]),
+            models.Index(fields=["source_product", "relation_type", "position"]),
         ]
 
     def __str__(self):
-        return f"{self.source_product.title} -> {self.target_product.title} (#{self.position})"
+        return f"{self.source_product.title} -> {self.target_product.title} (#{self.position}, {self.relation_type})"
 

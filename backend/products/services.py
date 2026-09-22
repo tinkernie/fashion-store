@@ -79,6 +79,12 @@ class ProductService:
         except Exception:
             pass
 
+        # Invalidate product list caches
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+        except Exception:
+            pass
         return self._serialize(product)
 
     def update_product(self, product_id, data: dict) -> dict:
@@ -129,6 +135,12 @@ class ProductService:
         if images is not None and isinstance(images, list):
             self._save_product_images(updated, images)
 
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+            cache.delete_pattern("luxe:categories:*")
+        except Exception:
+            pass
         return self._serialize(updated)
 
     def _save_product_images(self, product, images: list):
@@ -179,7 +191,11 @@ class ProductService:
             raise BusinessException("Product not found.")
         product.status = Product.Status.ARCHIVED
         product.save(update_fields=["status", "updated_at"])
-        # Optionally soft delete as well
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+        except Exception:
+            pass
         return {"message": f"Product '{product.title}' archived."}
 
     def delete_product(self, product_id) -> dict:
@@ -187,6 +203,11 @@ class ProductService:
         if not product:
             raise BusinessException("Product not found.")
         ProductRepository.soft_delete_product(product)
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+        except Exception:
+            pass
         return {"message": f"Product '{product.title}' deleted."}
 
     def _serialize(self, product: Product) -> dict:
