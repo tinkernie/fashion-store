@@ -36,6 +36,7 @@ import { formatShamsiDate } from "@/lib/jalali";
 import { getColorBackground } from "@/lib/color-utils";
 import { formatPrice, formatPriceNumber, parsePrice, getDiscountInfo } from "@/lib/price-utils";
 import ProductGallery from "@/components/products/product-gallery";
+import RelatedProductsSlider, { RelatedProductItem } from "@/components/products/related-products-slider";
 
 
 
@@ -130,6 +131,8 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<any>(null);
   const [options, setOptions] = useState<ProductOption[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<RelatedProductItem[]>([]);
+  const [isRelatedLoading, setIsRelatedLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   // Selected Option Values Map: { [optionName]: optionValueString }
@@ -147,11 +150,12 @@ export default function ProductDetailPage() {
     const fetchProductFullData = async () => {
       try {
         const prodIdOrSlug = params.id;
-        const [prodRes, optRes, varRes, revRes] = await Promise.allSettled([
+        const [prodRes, optRes, varRes, revRes, relRes] = await Promise.allSettled([
           api.get(`/api/products/${prodIdOrSlug}/`),
           api.get(`/api/products/${prodIdOrSlug}/options/`),
           api.get(`/api/products/${prodIdOrSlug}/variants/`),
           api.get(`/api/products/${prodIdOrSlug}/reviews/`),
+          api.get(`/api/products/${prodIdOrSlug}/related/?limit=10`),
         ]);
 
         if (prodRes.status === "fulfilled") {
@@ -182,6 +186,20 @@ export default function ProductDetailPage() {
           );
         }
 
+        if (
+          relRes.status === "fulfilled" &&
+          Array.isArray(relRes.value.data) &&
+          relRes.value.data.length > 0
+        ) {
+          setRelatedProducts(relRes.value.data);
+        } else if (
+          prodRes.status === "fulfilled" &&
+          Array.isArray(prodRes.value.data?.related_products) &&
+          prodRes.value.data.related_products.length > 0
+        ) {
+          setRelatedProducts(prodRes.value.data.related_products);
+        }
+
         // Initialize default option selections
         const initialSelected: Record<string, string> = {};
         if (loadedOptions.length > 0) {
@@ -203,6 +221,7 @@ export default function ProductDetailPage() {
         console.error("Error fetching product details:", error);
       } finally {
         setIsLoading(false);
+        setIsRelatedLoading(false);
       }
     };
 
@@ -703,6 +722,13 @@ export default function ProductDetailPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Related Products Slider Section */}
+      <RelatedProductsSlider
+        products={relatedProducts}
+        isLoading={isRelatedLoading}
+        currentProductId={product?.id || (params.id as string)}
+      />
 
       {/* Reviews & Social Proof */}
       <div id="reviews-section" className="border-t border-white/10 pt-12 space-y-8 scroll-mt-24">
