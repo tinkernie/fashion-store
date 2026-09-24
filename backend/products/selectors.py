@@ -65,7 +65,7 @@ class ProductSelector:
                 | Q(variants__sku__icontains=search)
             )
 
-        # Ordering
+        # Ordering - including popularity/best_selling/trending
         ordering = filters.get("ordering")
         allowed_orderings = {
             "newest": "-created_at",
@@ -76,22 +76,71 @@ class ProductSelector:
             "price": "price",
             "price_desc": "-price",
             "-price": "-price",
+            "popularity": "popularity",
+            "-popularity": "-popularity",
+            "best_selling": "best_selling",
+            "-best_selling": "-best_selling",
+            "trending": "trending",
+            "-trending": "-trending",
         }
         if ordering in allowed_orderings:
             order_val = allowed_orderings[ordering]
             if "price" in order_val:
-                # Annotate min_price for price ordering
                 qs = qs.annotate(
                     min_price_ord=Min(
                         "variants__price",
                         filter=Q(variants__deleted_at__isnull=True),
                     )
                 )
-                # Fallback to metadata price if no variants
                 if order_val == "price":
                     qs = qs.order_by("min_price_ord")
                 else:
                     qs = qs.order_by("-min_price_ord")
+            elif order_val in ("popularity", "-popularity"):
+                qs = qs.annotate(
+                    popularity=Count("order_items", distinct=True),
+                )
+                qs = qs.order_by(order_val)
+            elif order_val in ("best_selling", "-best_selling"):
+                from django.db.models import Sum
+                # Best selling = total quantity sold in paid/delivered statuses
+                qs = qs.annotate(
+                    best_selling=Sum(
+                        "order_items__quantity",
+                        filter=Q(
+                            order_items__order__status__in=[
+                                "paid",
+                                "packing",
+                                "shipping",
+                                "delivered",
+                            ],
+                            order_items__order__deleted_at__isnull=True,
+                        ),
+                    )
+                )
+                qs = qs.order_by(order_val)
+            elif order_val in ("trending", "-trending"):
+                from django.db.models import Sum
+                from django.utils import timezone
+                from datetime import timedelta
+
+                since = timezone.now() - timedelta(days=30)
+                qs = qs.annotate(
+                    trending=Sum(
+                        "order_items__quantity",
+                        filter=Q(
+                            order_items__order__status__in=[
+                                "paid",
+                                "packing",
+                                "shipping",
+                                "delivered",
+                            ],
+                            order_items__order__deleted_at__isnull=True,
+                            order_items__order__placed_at__gte=since,
+                        ),
+                    )
+                )
+                qs = qs.order_by(order_val)
             else:
                 qs = qs.order_by(order_val)
         else:
