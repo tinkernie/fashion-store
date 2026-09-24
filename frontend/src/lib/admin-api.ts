@@ -115,6 +115,38 @@ export const adminApi = {
     return res.data;
   },
 
+  // Complete the Look & Related Products
+  async getCompleteLook(productId: string): Promise<any[]> {
+    const res = await api.get(`/api/admin/products/${productId}/complete-look/`);
+    return Array.isArray(res.data) ? res.data : [];
+  },
+  async updateCompleteLook(productId: string, target_ids: string[], positions?: number[]): Promise<any> {
+    const res = await api.post(`/api/admin/products/${productId}/complete-look/`, {
+      target_ids,
+      positions: positions || target_ids.map((_, i) => i),
+    });
+    return res.data;
+  },
+  async deleteCompleteLookItem(productId: string, targetId: string): Promise<any> {
+    const res = await api.delete(`/api/admin/products/${productId}/complete-look/${targetId}/`);
+    return res.data;
+  },
+  async getRelatedProducts(productId: string): Promise<any[]> {
+    const res = await api.get(`/api/products/${productId}/related/?limit=8`);
+    return Array.isArray(res.data) ? res.data : [];
+  },
+  async updateRelatedProducts(productId: string, target_ids: string[], positions?: number[]): Promise<any> {
+    const res = await api.post(`/api/admin/products/${productId}/related/`, {
+      target_ids,
+      positions: positions || target_ids.map((_, i) => i),
+    });
+    return res.data;
+  },
+  async deleteRelatedItem(productId: string, targetId: string): Promise<any> {
+    const res = await api.delete(`/api/admin/products/${productId}/related/${targetId}/`);
+    return res.data;
+  },
+
   // Media Upload
   async uploadImage(file: File): Promise<{ url: string; image_url: string; relative_url?: string }> {
     const formData = new FormData();

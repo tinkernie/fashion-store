@@ -40,6 +40,7 @@ import { adminApi } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import MediaUploader from "@/components/admin/media-uploader";
 import MultiMediaUploader from "@/components/admin/multi-media-uploader";
+import ProductRelationsManager from "@/components/admin/product-relations-manager";
 import {
   formatPrice,
   formatPriceNumber,
@@ -101,6 +102,14 @@ export default function AdminProductsPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [status, setStatus] = useState<string>("active");
+
+  // SEO & Metadata State
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+
+  // Product Relations & Complete the Look Modal State
+  const [selectedProductForRelations, setSelectedProductForRelations] = useState<any | null>(null);
+  const [isRelationsModalOpen, setIsRelationsModalOpen] = useState(false);
 
   // Clothing Variant Fields for in-modal generator (Task 4)
   const [clothingColor, setClothingColor] = useState<string>("");
@@ -187,6 +196,8 @@ export default function AdminProductsPage() {
     setDiscountPrice("");
     setWeight("1"); // Task 3: Default weight is 1
     setDescription("");
+    setMetaTitle("");
+    setMetaDescription("");
     setImageUrl("");
     setImageUrls([]);
     setStatus("active");
@@ -202,6 +213,8 @@ export default function AdminProductsPage() {
     setEditingProduct(p);
     setTitle(p.name || p.title || "");
     setSlug(p.slug || "");
+    setMetaTitle(p.seo_metadata?.meta_title || "");
+    setMetaDescription(p.seo_metadata?.meta_description || "");
 
     // Precise Category Matching by ID, Name, or Slug
     let matchedCatId = p.category_id || p.category?.id;
@@ -295,6 +308,11 @@ export default function AdminProductsPage() {
     } finally {
       setIsLoadingVariants(false);
     }
+  };
+
+  const handleOpenRelationsManager = (product: any) => {
+    setSelectedProductForRelations(product);
+    setIsRelationsModalOpen(true);
   };
 
   const handleAddProductOption = async (e: React.FormEvent) => {
@@ -555,6 +573,10 @@ export default function AdminProductsPage() {
         discount_percent: finalDiscountPercent,
         discount_remaining: finalDiscountPercent ? finalRemaining : null,
         images: imageUrls,
+      },
+      seo_metadata: {
+        meta_title: metaTitle.trim() || undefined,
+        meta_description: metaDescription.trim() || undefined,
       },
       description,
       image_url: primaryImg,
@@ -1090,16 +1112,30 @@ export default function AdminProductsPage() {
                         })()}
                       </td>
 
-                      {/* Variants & Options Button */}
+                      {/* Variants & Relations Actions */}
                       <td className="py-4 px-4">
-                        <Button
-                          onClick={() => handleOpenVariantManager(p)}
-                          variant="outline"
-                          className="h-8 px-3 rounded-xl border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 font-bold text-[11px] flex items-center gap-1.5"
-                        >
-                          <Boxes className="w-3.5 h-3.5" />
-                          ویژگی‌ها و تنوع‌ها
-                        </Button>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Button
+                            type="button"
+                            onClick={() => handleOpenVariantManager(p)}
+                            variant="outline"
+                            className="h-7 px-2.5 rounded-lg border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 font-bold text-[10px] flex items-center gap-1"
+                            title="مدیریت ویژگی‌ها و تنوع‌های لباس"
+                          >
+                            <Boxes className="w-3 h-3" />
+                            ویژگی‌ها
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => handleOpenRelationsManager(p)}
+                            variant="outline"
+                            className="h-7 px-2.5 rounded-lg border-amber-400/30 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20 font-bold text-[10px] flex items-center gap-1"
+                            title="تنظیم ست کامل (Complete the Look) و پیشنهادات مشابه"
+                          >
+                            <Sparkles className="w-3 h-3 text-amber-400" />
+                            ست و پیشنهادات
+                          </Button>
+                        </div>
                       </td>
 
                       {/* Status */}
@@ -1794,6 +1830,52 @@ export default function AdminProductsPage() {
               />
             </div>
 
+            {/* SEO & Metadata Section */}
+            <div className="bg-[#141414] border border-white/10 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-xs font-bold text-white">تنظیمات سئو و متادیتا (SEO & Social)</h3>
+                </div>
+                <span className="text-[10px] text-zinc-500">اختیاری (در صورت خالی بودن خودکار تکمیل می‌شود)</span>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-gray-300">عنوان سئو (Meta Title)</label>
+                    <span className={`text-[10px] ${metaTitle.length > 70 ? "text-rose-400 font-bold" : "text-zinc-500"}`}>
+                      {metaTitle.length}/۷۰ کاراکتر
+                    </span>
+                  </div>
+                  <Input
+                    value={metaTitle}
+                    onChange={(e) => setMetaTitle(e.target.value)}
+                    placeholder={title ? `${title} — لوکس` : "عنوان اختصاصی برای نمایش در نتایج گوگل..."}
+                    maxLength={70}
+                    className="bg-[#181818] border-white/10 h-10 text-xs text-white rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-gray-300">توضیحات سئو (Meta Description)</label>
+                    <span className={`text-[10px] ${metaDescription.length > 160 ? "text-rose-400 font-bold" : "text-zinc-500"}`}>
+                      {metaDescription.length}/۱۶۰ کاراکتر
+                    </span>
+                  </div>
+                  <textarea
+                    value={metaDescription}
+                    onChange={(e) => setMetaDescription(e.target.value)}
+                    placeholder="توضیح خلاصه و جذاب برای نتایج جستجوی گوگل (حداکثر ۱۶۰ کاراکتر)..."
+                    maxLength={160}
+                    rows={2}
+                    className="w-full bg-[#181818] border border-white/10 text-xs text-white rounded-xl p-3 outline-none resize-none focus:border-amber-400/50"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Actions */}
             <div className="flex gap-3 pt-4 border-t border-white/10">
               <Button
@@ -1998,6 +2080,18 @@ export default function AdminProductsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Product Relations & Complete the Look Modal */}
+      <ProductRelationsManager
+        isOpen={isRelationsModalOpen}
+        onClose={() => {
+          setIsRelationsModalOpen(false);
+          setSelectedProductForRelations(null);
+        }}
+        product={selectedProductForRelations}
+        allProducts={products}
+        onSaved={loadCatalogData}
+      />
     </div>
   );
 }

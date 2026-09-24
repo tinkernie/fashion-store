@@ -36,6 +36,11 @@ interface RelatedProductsSliderProps {
   isLoading?: boolean;
   currentProductId?: string;
   className?: string;
+  title?: string;
+  subtitle?: string;
+  badgeLabel?: string;
+  icon?: React.ReactNode;
+  headingId?: string;
 }
 
 export default function RelatedProductsSlider({
@@ -43,6 +48,11 @@ export default function RelatedProductsSlider({
   isLoading = false,
   currentProductId,
   className = "",
+  title = "محصولات مرتبط و مشابه",
+  subtitle = "پیشنهادات هماهنگ بر اساس سبک، کالکشن و علایق خریداران این محصول",
+  badgeLabel = "مدل",
+  icon,
+  headingId = "related-products-heading",
 }: RelatedProductsSliderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
@@ -199,27 +209,27 @@ export default function RelatedProductsSlider({
   return (
     <section
       className={`border-t border-white/10 pt-12 pb-4 space-y-6 scroll-mt-24 ${className}`}
-      aria-labelledby="related-products-heading"
+      aria-labelledby={headingId}
     >
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
             <span className="p-1.5 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400">
-              <Layers className="w-4 h-4" />
+              {icon || <Layers className="w-4 h-4" />}
             </span>
             <h2
-              id="related-products-heading"
+              id={headingId}
               className="text-xl md:text-2xl font-black text-white tracking-normal"
             >
-              محصولات مرتبط و مشابه
+              {title}
             </h2>
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white/10 text-gray-300">
-              {validProducts.length.toLocaleString("fa-IR")} مدل
+              {validProducts.length.toLocaleString("fa-IR")} {badgeLabel}
             </span>
           </div>
           <p className="text-xs md:text-sm text-gray-400 font-normal">
-            پیشنهادات هماهنگ بر اساس سبک، کالکشن و علایق خریداران این محصول
+            {subtitle}
           </p>
         </div>
 

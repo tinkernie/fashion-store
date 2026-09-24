@@ -132,6 +132,7 @@ export default function ProductDetailPage() {
   const [options, setOptions] = useState<ProductOption[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<RelatedProductItem[]>([]);
+  const [completeLook, setCompleteLook] = useState<RelatedProductItem[]>([]);
   const [isRelatedLoading, setIsRelatedLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -146,6 +147,25 @@ export default function ProductDetailPage() {
   const { addItem: addToCart } = useCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
 
+  // Dynamic SEO metadata & title
+  useEffect(() => {
+    if (product) {
+      const pageTitle = product.meta_title || product.title || product.name;
+      if (pageTitle && typeof document !== "undefined") {
+        document.title = pageTitle;
+      }
+      if (product.meta_description && typeof document !== "undefined") {
+        let metaTag = document.querySelector('meta[name="description"]');
+        if (!metaTag) {
+          metaTag = document.createElement("meta");
+          metaTag.setAttribute("name", "description");
+          document.head.appendChild(metaTag);
+        }
+        metaTag.setAttribute("content", product.meta_description);
+      }
+    }
+  }, [product]);
+
   useEffect(() => {
     const fetchProductFullData = async () => {
       try {
@@ -155,11 +175,14 @@ export default function ProductDetailPage() {
           api.get(`/api/products/${prodIdOrSlug}/options/`),
           api.get(`/api/products/${prodIdOrSlug}/variants/`),
           api.get(`/api/products/${prodIdOrSlug}/reviews/`),
-          api.get(`/api/products/${prodIdOrSlug}/related/?limit=10`),
+          api.get(`/api/products/${prodIdOrSlug}/related/?limit=8`),
         ]);
 
         if (prodRes.status === "fulfilled") {
           setProduct(prodRes.value.data);
+          if (Array.isArray(prodRes.value.data?.complete_look)) {
+            setCompleteLook(prodRes.value.data.complete_look);
+          }
         }
 
         let loadedOptions: ProductOption[] = [];
@@ -458,14 +481,54 @@ export default function ProductDetailPage() {
 
   return (
     <main className="min-h-screen pt-28 pb-36 px-4 md:px-6 max-w-7xl mx-auto text-white" dir="rtl">
-      {/* Back Link */}
-      <Link
-        href="/products"
-        className="inline-flex items-center gap-2 text-xs md:text-sm text-gray-400 hover:text-white transition-colors mb-8"
-      >
-        <ArrowRight className="w-4 h-4" />
-        بازگشت به کاتالوگ لباس‌ها
-      </Link>
+      {/* Schema.org JSON-LD Structured Data */}
+      {product?.seo_schema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(product.seo_schema) }}
+        />
+      )}
+
+      {/* Breadcrumbs & Navigation */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        {product?.breadcrumbs && product.breadcrumbs.length > 0 ? (
+          <nav aria-label="مسیر راهنما" className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+            {product.breadcrumbs.map((bc: { name: string; url: string }, idx: number) => {
+              const localUrl = bc.url ? bc.url.replace(/^https?:\/\/[^\/]+/, "") : "/";
+              return (
+                <span key={bc.url || idx} className="flex items-center gap-2">
+                  <Link
+                    href={localUrl || "/"}
+                    className="hover:text-amber-400 transition-colors"
+                  >
+                    {bc.name}
+                  </Link>
+                  <span className="text-zinc-600">/</span>
+                </span>
+              );
+            })}
+            <span className="text-white font-medium truncate max-w-[200px] md:max-w-xs">
+              {product.title || product.name}
+            </span>
+          </nav>
+        ) : (
+          <Link
+            href="/products"
+            className="inline-flex items-center gap-2 text-xs md:text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowRight className="w-4 h-4" />
+            بازگشت به کاتالوگ لباس‌ها
+          </Link>
+        )}
+
+        <Link
+          href="/products"
+          className="hidden sm:inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+        >
+          <ArrowRight className="w-3.5 h-3.5" />
+          مشاهده همه محصولات
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 mb-16">
         {/* Product Image Gallery Slideshow */}
@@ -722,6 +785,21 @@ export default function ProductDetailPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Complete the Look (تکمیل استایل) */}
+      {completeLook && completeLook.length > 0 && (
+        <RelatedProductsSlider
+          products={completeLook}
+          isLoading={isLoading}
+          currentProductId={product?.id || (params.id as string)}
+          title="تکمیل استایل (ست این لباس)"
+          subtitle="پیشنهاد استایلیست‌ها برای ست کردن و تکمیل این لباس"
+          badgeLabel="آیتم ست"
+          headingId="complete-look-heading"
+          icon={<Sparkles className="w-4 h-4 text-emerald-400" />}
+          className="border-emerald-500/20 bg-emerald-950/5 rounded-2xl p-4 md:p-6"
+        />
+      )}
 
       {/* Related Products Slider Section */}
       <RelatedProductsSlider
