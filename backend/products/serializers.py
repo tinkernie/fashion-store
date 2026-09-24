@@ -176,6 +176,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     canonical_url = serializers.SerializerMethodField()
     breadcrumbs = serializers.SerializerMethodField()
     og_image = serializers.SerializerMethodField()
+    hreflang = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -186,7 +187,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "average_rating", "reviews_count",
             "discount_percent", "discount_price", "discount_expires_at", "is_discount_active",
             "related_products", "complete_look", "seo_schema",
-            "meta_title", "meta_description", "canonical_url", "breadcrumbs", "og_image",
+            "meta_title", "meta_description", "canonical_url", "breadcrumbs", "og_image", "hreflang",
         )
 
     def get_variants(self, product):
@@ -444,6 +445,15 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return f"{base}/products/{product.slug}"
         except Exception:
             return f"/products/{product.slug}"
+
+    def get_hreflang(self, product):
+        try:
+            from django.conf import settings
+            base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+            url = f"{base}/products/{product.slug}"
+            return [{"hreflang": "fa-IR", "href": url}, {"hreflang": "x-default", "href": url}]
+        except Exception:
+            return []
 
     def get_breadcrumbs(self, product):
         try:

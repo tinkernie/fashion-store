@@ -8,6 +8,7 @@ class Category(BaseModel, MPTTModel):
     slug = models.SlugField(unique=True, db_index=True)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="categories/", null=True, blank=True)
+    seo_metadata = models.JSONField(default=dict, blank=True)
     is_active = models.BooleanField(default=True)
     parent = TreeForeignKey(
         "self",

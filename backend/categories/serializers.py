@@ -8,6 +8,7 @@ class CategoryCreateSerializer(serializers.Serializer):
     image = serializers.ImageField(required=False, allow_null=True)
     is_active = serializers.BooleanField(default=True)
     parent_id = serializers.UUIDField(required=False, allow_null=True)
+    seo_metadata = serializers.JSONField(required=False, default=dict)
 
 
 class CategoryUpdateSerializer(serializers.Serializer):
@@ -17,6 +18,7 @@ class CategoryUpdateSerializer(serializers.Serializer):
     image = serializers.ImageField(required=False, allow_null=True)
     is_active = serializers.BooleanField(required=False)
     parent_id = serializers.UUIDField(required=False, allow_null=True)
+    seo_metadata = serializers.JSONField(required=False)
 
 
 class CategoryAdminDetailSerializer(serializers.Serializer):
@@ -29,6 +31,11 @@ class CategoryAdminDetailSerializer(serializers.Serializer):
     is_active = serializers.BooleanField()
     parent_id = serializers.UUIDField(allow_null=True)
     image = serializers.SerializerMethodField()
+    seo_metadata = serializers.JSONField(required=False, default=dict)
+    meta_title = serializers.SerializerMethodField()
+    meta_description = serializers.SerializerMethodField()
+    canonical_url = serializers.SerializerMethodField()
+    hreflang = serializers.SerializerMethodField()
 
     def get_image(self, obj):
         if hasattr(obj, 'image') and obj.image:
@@ -43,6 +50,33 @@ class CategoryAdminDetailSerializer(serializers.Serializer):
                 return None
         return None
 
+    def get_meta_title(self, obj):
+        meta = getattr(obj, "seo_metadata", {}) or {}
+        if meta.get("meta_title"):
+            return meta["meta_title"]
+        return f"{obj.name} — دسته {obj.name} | Luxe"[:70]
+
+    def get_meta_description(self, obj):
+        meta = getattr(obj, "seo_metadata", {}) or {}
+        if meta.get("meta_description"):
+            return meta["meta_description"][:160]
+        desc = (obj.description or "").strip()
+        if len(desc) > 160:
+            desc = desc[:157] + "..."
+        if not desc:
+            return f"خرید {obj.name} از فروشگاه لوکس با بهترین قیمت و ارسال سریع."[:160]
+        return desc
+
+    def get_canonical_url(self, obj):
+        from django.conf import settings
+        base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        return f"{base}/categories/{obj.slug}"
+
+    def get_hreflang(self, obj):
+        from django.conf import settings
+        base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        return [{"hreflang": "fa-IR", "href": f"{base}/categories/{obj.slug}"}, {"hreflang": "x-default", "href": f"{base}/categories/{obj.slug}"}]
+
 
 class CategoryTreeSerializer(serializers.Serializer):
     """Hierarchical tree serializer for public catalog navigation."""
@@ -53,6 +87,10 @@ class CategoryTreeSerializer(serializers.Serializer):
     description = serializers.CharField(allow_blank=True, default="")
     image = serializers.SerializerMethodField()
     children = serializers.SerializerMethodField()
+    meta_title = serializers.SerializerMethodField()
+    meta_description = serializers.SerializerMethodField()
+    canonical_url = serializers.SerializerMethodField()
+    hreflang = serializers.SerializerMethodField()
 
     def get_image(self, obj):
         if hasattr(obj, 'image') and obj.image:
@@ -74,3 +112,30 @@ class CategoryTreeSerializer(serializers.Serializer):
                 children, many=True, context=self.context
             ).data
         return []
+
+    def get_meta_title(self, obj):
+        meta = getattr(obj, "seo_metadata", {}) or {}
+        if meta.get("meta_title"):
+            return meta["meta_title"]
+        return f"{obj.name} — دسته {obj.name} | Luxe"[:70]
+
+    def get_meta_description(self, obj):
+        meta = getattr(obj, "seo_metadata", {}) or {}
+        if meta.get("meta_description"):
+            return meta["meta_description"][:160]
+        desc = (obj.description or "").strip()
+        if len(desc) > 160:
+            desc = desc[:157] + "..."
+        if not desc:
+            return f"خرید {obj.name} از فروشگاه لوکس."[:160]
+        return desc
+
+    def get_canonical_url(self, obj):
+        from django.conf import settings
+        base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        return f"{base}/categories/{obj.slug}"
+
+    def get_hreflang(self, obj):
+        from django.conf import settings
+        base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        return [{"hreflang": "fa-IR", "href": f"{base}/categories/{obj.slug}"}, {"hreflang": "x-default", "href": f"{base}/categories/{obj.slug}"}]

@@ -19,7 +19,7 @@ class PublicProductViewSet(viewsets.GenericViewSet):
     lookup_field = "slug"
 
     @method_decorator(cache_page(300))
-    @method_decorator(vary_on_headers("Accept-Language"))
+    @method_decorator(vary_on_headers("Accept-Language, Accept-Encoding"))
     def list(self, request):
         filters = {}
         if "category" in request.query_params:
@@ -57,7 +57,17 @@ class PublicProductViewSet(viewsets.GenericViewSet):
         if not product:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = ProductDetailSerializer(product, context={"request": request})
-        return Response(serializer.data)
+        response = Response(serializer.data)
+        # SEO: canonical + hreflang headers for paginated search
+        try:
+            from django.conf import settings
+            base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+            response["Link"] = f'<{base}/products/{product.slug}>; rel="canonical"'
+            response["Content-Language"] = "fa-IR"
+            response["Vary"] = "Accept-Language"
+        except Exception:
+            pass
+        return response
 
     @action(detail=True, methods=["get"], url_path="related")
     def related(self, request, slug=None):
