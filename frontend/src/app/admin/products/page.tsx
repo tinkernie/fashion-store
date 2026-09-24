@@ -139,6 +139,8 @@ export default function AdminProductsPage() {
   const [newCatName, setNewCatName] = useState("");
   const [newCatSlug, setNewCatSlug] = useState("");
   const [newCatDesc, setNewCatDesc] = useState("");
+  const [newCatMetaTitle, setNewCatMetaTitle] = useState("");
+  const [newCatMetaDesc, setNewCatMetaDesc] = useState("");
   const [isSubmittingCat, setIsSubmittingCat] = useState(false);
 
   // Category Inline Edit State
@@ -146,6 +148,8 @@ export default function AdminProductsPage() {
   const [editCatName, setEditCatName] = useState("");
   const [editCatSlug, setEditCatSlug] = useState("");
   const [editCatDesc, setEditCatDesc] = useState("");
+  const [editCatMetaTitle, setEditCatMetaTitle] = useState("");
+  const [editCatMetaDesc, setEditCatMetaDesc] = useState("");
 
   useEffect(() => {
     loadCatalogData();
@@ -650,11 +654,17 @@ export default function AdminProductsPage() {
         name: newCatName.trim(),
         slug: newCatSlug.trim() || undefined,
         description: newCatDesc.trim() || undefined,
+        seo_metadata: (newCatMetaTitle || newCatMetaDesc) ? {
+          meta_title: newCatMetaTitle.trim() || undefined,
+          meta_description: newCatMetaDesc.trim() || undefined,
+        } : undefined,
       });
       toast.success(`دسته‌بندی «${created.name}» با موفقیت اضافه شد`);
       setNewCatName("");
       setNewCatSlug("");
       setNewCatDesc("");
+      setNewCatMetaTitle("");
+      setNewCatMetaDesc("");
       const updatedCats = await adminApi.getCategories();
       setCategories(updatedCats);
       if (isModalOpen) {
@@ -672,6 +682,8 @@ export default function AdminProductsPage() {
     setEditCatName(cat.name);
     setEditCatSlug(cat.slug);
     setEditCatDesc(cat.description || "");
+    setEditCatMetaTitle(cat.seo_metadata?.meta_title || cat.meta_title || "");
+    setEditCatMetaDesc(cat.seo_metadata?.meta_description || cat.meta_description || "");
   };
 
   const handleCancelEditCat = () => {
@@ -679,6 +691,8 @@ export default function AdminProductsPage() {
     setEditCatName("");
     setEditCatSlug("");
     setEditCatDesc("");
+    setEditCatMetaTitle("");
+    setEditCatMetaDesc("");
   };
 
   const handleSaveEditCat = async (id: string) => {
@@ -691,6 +705,10 @@ export default function AdminProductsPage() {
         name: editCatName.trim(),
         slug: editCatSlug.trim() || undefined,
         description: editCatDesc.trim() || undefined,
+        seo_metadata: {
+          meta_title: editCatMetaTitle.trim() || undefined,
+          meta_description: editCatMetaDesc.trim() || undefined,
+        },
       });
       toast.success("دسته‌بندی با موفقیت بروزرسانی شد");
       handleCancelEditCat();
@@ -1962,6 +1980,36 @@ export default function AdminProductsPage() {
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-white/5">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-gray-300">عنوان سئو (Meta Title)</label>
+                    <span className="text-[10px] text-gray-500">{newCatMetaTitle.length}/70</span>
+                  </div>
+                  <Input
+                    value={newCatMetaTitle}
+                    onChange={(e) => setNewCatMetaTitle(e.target.value)}
+                    placeholder="مثال: خرید جدیدترین شومیز مجلسی زنانه | Luxe"
+                    maxLength={70}
+                    className="bg-[#1a1a1a] border-white/10 h-10 text-xs text-white rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-gray-300">توضیحات متا (Meta Description)</label>
+                    <span className="text-[10px] text-gray-500">{newCatMetaDesc.length}/160</span>
+                  </div>
+                  <Input
+                    value={newCatMetaDesc}
+                    onChange={(e) => setNewCatMetaDesc(e.target.value)}
+                    placeholder="توضیحات جهت نمایش در گوگل و پیش‌نمایش اشتراک‌گذاری..."
+                    maxLength={160}
+                    className="bg-[#1a1a1a] border-white/10 h-10 text-xs text-white rounded-xl"
+                  />
+                </div>
+              </div>
+
               <Button
                 type="submit"
                 disabled={isSubmittingCat}
@@ -1997,20 +2045,38 @@ export default function AdminProductsPage() {
                   return (
                     <div key={cat.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       {isEditing ? (
-                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <Input
-                            value={editCatName}
-                            onChange={(e) => setEditCatName(e.target.value)}
-                            placeholder="نام دسته‌بندی..."
-                            className="bg-[#222] border-white/20 h-9 text-xs text-white rounded-lg"
-                          />
-                          <Input
-                            value={editCatSlug}
-                            onChange={(e) => setEditCatSlug(e.target.value)}
-                            placeholder="slug..."
-                            className="bg-[#222] border-white/20 h-9 text-xs text-white rounded-lg font-mono"
-                            dir="ltr"
-                          />
+                        <div className="flex-1 space-y-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <Input
+                              value={editCatName}
+                              onChange={(e) => setEditCatName(e.target.value)}
+                              placeholder="نام دسته‌بندی..."
+                              className="bg-[#222] border-white/20 h-9 text-xs text-white rounded-lg"
+                            />
+                            <Input
+                              value={editCatSlug}
+                              onChange={(e) => setEditCatSlug(e.target.value)}
+                              placeholder="slug..."
+                              className="bg-[#222] border-white/20 h-9 text-xs text-white rounded-lg font-mono"
+                              dir="ltr"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <Input
+                              value={editCatMetaTitle}
+                              onChange={(e) => setEditCatMetaTitle(e.target.value)}
+                              placeholder="عنوان سئو (Meta Title)..."
+                              maxLength={70}
+                              className="bg-[#222] border-white/20 h-9 text-xs text-white rounded-lg"
+                            />
+                            <Input
+                              value={editCatMetaDesc}
+                              onChange={(e) => setEditCatMetaDesc(e.target.value)}
+                              placeholder="توضیحات سئو (Meta Description)..."
+                              maxLength={160}
+                              className="bg-[#222] border-white/20 h-9 text-xs text-white rounded-lg"
+                            />
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-1">

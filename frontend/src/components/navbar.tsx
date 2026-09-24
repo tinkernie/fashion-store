@@ -259,7 +259,8 @@ export default function Navbar() {
               >
                 <Link href="/products" className="hover:text-white transition-colors">فروشگاه و کاتالوگ</Link>
                 <Link href="/search?sort=newest" className="hover:text-white transition-colors">جدیدترین‌ها</Link>
-                <Link href="/search?sort=popularity" className="hover:text-white transition-colors">پرفروش‌ترین‌ها</Link>
+                <Link href="/search?sort=best_selling" className="hover:text-white transition-colors">پرفروش‌ترین‌ها</Link>
+                <Link href="/search?sort=trending" className="hover:text-white transition-colors">ترندها</Link>
               </motion.div>
             ) : (
               <motion.form
@@ -515,7 +516,8 @@ export default function Navbar() {
                 <div className="flex flex-col gap-5 py-6 text-base font-medium">
                   <SheetClose asChild><Link href="/products" className="hover:text-gray-300 transition-colors">فروشگاه و کاتالوگ</Link></SheetClose>
                   <SheetClose asChild><Link href="/search?sort=newest" className="hover:text-gray-300 transition-colors">جدیدترین محصولات</Link></SheetClose>
-                  <SheetClose asChild><Link href="/search?sort=popularity" className="hover:text-gray-300 transition-colors">پرفروش‌ترین‌ها</Link></SheetClose>
+                  <SheetClose asChild><Link href="/search?sort=best_selling" className="hover:text-gray-300 transition-colors">پرفروش‌ترین‌ها</Link></SheetClose>
+                  <SheetClose asChild><Link href="/search?sort=trending" className="hover:text-gray-300 transition-colors">ترندها</Link></SheetClose>
                   
                   <div className="border-t border-white/10 pt-5 flex flex-col gap-4">
                     {isLoggedIn ? (

@@ -215,17 +215,26 @@ interface HomeClientProps {
   initialHero?: any;
   initialAnnouncement?: any;
   initialProducts?: any[];
+  initialBestSellers?: any[];
+  initialTrending?: any[];
 }
 
 export default function HomeClient({
   initialHero,
   initialAnnouncement,
   initialProducts,
+  initialBestSellers,
+  initialTrending,
 }: HomeClientProps) {
   const initialList = Array.isArray(initialProducts)
     ? initialProducts
     : (initialProducts as any)?.results || [];
-  const [bestsellers, setBestsellers] = useState<any[]>(() => initialList.slice(0, 8));
+  const initialBestSellersList = Array.isArray(initialBestSellers)
+    ? initialBestSellers
+    : (initialBestSellers as any)?.results || [];
+  const [bestsellers, setBestsellers] = useState<any[]>(() =>
+    initialBestSellersList.length > 0 ? initialBestSellersList.slice(0, 8) : initialList.slice(0, 8)
+  );
 
   const [heroContent, setHeroContent] = useState<any>(() => {
     const unwrapped = initialHero?.hero || initialHero;
@@ -486,11 +495,11 @@ export default function HomeClient({
           </div>
 
           <FlowButton
-            href="/women"
+            href="/search?sort=newest"
             size="sm"
             className="hidden md:inline-flex"
           >
-            مشاهده همه
+            مشاهده همه جدیدترین‌ها
           </FlowButton>
         </div>
 
@@ -590,11 +599,11 @@ export default function HomeClient({
           </div>
 
           <FlowButton
-            href="/women"
+            href="/search?sort=best_selling"
             size="sm"
             className="hidden md:inline-flex"
           >
-            مشاهده همه
+            مشاهده همه پرفروش‌ترین‌ها
           </FlowButton>
         </div>
 

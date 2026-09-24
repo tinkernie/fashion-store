@@ -19,8 +19,17 @@ export default function WomenCategoryPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        let orderingParam = "newest";
+        if (sortBy === "best_selling" || sortBy === "trending" || sortBy === "popularity") {
+          orderingParam = sortBy;
+        } else if (sortBy === "price-low") {
+          orderingParam = "price_asc";
+        } else if (sortBy === "price-high") {
+          orderingParam = "price_desc";
+        }
+
         const [prodRes, catRes] = await Promise.all([
-          api.get('/api/products/'),
+          api.get('/api/products/', { params: { ordering: orderingParam, page_size: 50 } }),
           api.get('/api/categories/flat/')
         ]);
         
@@ -42,7 +51,7 @@ export default function WomenCategoryPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [sortBy]);
 
   // Robust Filter & Sort
   const filteredProducts = useMemo(() => {
@@ -121,6 +130,9 @@ export default function WomenCategoryPage() {
               className="bg-transparent border-none text-white outline-none text-xs md:text-sm font-medium cursor-pointer"
             >
               <option value="newest" className="bg-[#111111]">جدیدترین‌ها</option>
+              <option value="best_selling" className="bg-[#111111]">پرفروش‌ترین‌ها</option>
+              <option value="trending" className="bg-[#111111]">داغ‌ترین ترندها</option>
+              <option value="popularity" className="bg-[#111111]">محبوب‌ترین‌ها</option>
               <option value="price-low" className="bg-[#111111]">ارزان‌ترین</option>
               <option value="price-high" className="bg-[#111111]">گران‌ترین</option>
             </select>

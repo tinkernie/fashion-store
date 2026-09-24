@@ -164,11 +164,20 @@ export const adminApi = {
     const { getCategories } = await import('./categories');
     return getCategories();
   },
-  async createCategory(data: { name: string; slug?: string; description?: string }): Promise<any> {
+  async createCategory(data: {
+    name: string;
+    slug?: string;
+    description?: string;
+    seo_metadata?: {
+      meta_title?: string;
+      meta_description?: string;
+      [key: string]: any;
+    };
+  }): Promise<any> {
     const { createCategory } = await import('./categories');
     return createCategory(data);
   },
-  async updateCategory(id: string, data: { name?: string; slug?: string; description?: string }): Promise<any> {
+  async updateCategory(id: string, data: any): Promise<any> {
     const { updateCategory } = await import('./categories');
     return updateCategory(id, data);
   },

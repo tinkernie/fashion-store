@@ -14,12 +14,16 @@ async function getInitialData() {
   let hero = null;
   let announcement = null;
   let products = [];
+  let bestSellers = [];
+  let trending = [];
 
   try {
-    const [heroRes, announceRes, productsRes] = await Promise.allSettled([
+    const [heroRes, announceRes, productsRes, bestSellersRes, trendingRes] = await Promise.allSettled([
       fetch(`${backendUrl}/api/site-content/hero/`, { cache: "no-store" }),
       fetch(`${backendUrl}/api/site-content/announcement/`, { cache: "no-store" }),
-      fetch(`${backendUrl}/api/products/?page_size=20`, { cache: "no-store" }),
+      fetch(`${backendUrl}/api/products/?page_size=12`, { cache: "no-store" }),
+      fetch(`${backendUrl}/api/products/?ordering=best_selling&page_size=8`, { cache: "no-store" }),
+      fetch(`${backendUrl}/api/products/?ordering=trending&page_size=8`, { cache: "no-store" }),
     ]);
 
     if (heroRes.status === "fulfilled" && heroRes.value.ok) {
@@ -36,21 +40,33 @@ async function getInitialData() {
       const data = await productsRes.value.json();
       products = Array.isArray(data) ? data : data.results || [];
     }
+
+    if (bestSellersRes.status === "fulfilled" && bestSellersRes.value.ok) {
+      const data = await bestSellersRes.value.json();
+      bestSellers = Array.isArray(data) ? data : data.results || [];
+    }
+
+    if (trendingRes.status === "fulfilled" && trendingRes.value.ok) {
+      const data = await trendingRes.value.json();
+      trending = Array.isArray(data) ? data : data.results || [];
+    }
   } catch (error) {
     console.error("Failed to fetch initial home data on server:", error);
   }
 
-  return { hero, announcement, products };
+  return { hero, announcement, products, bestSellers, trending };
 }
 
 export default async function Home() {
-  const { hero, announcement, products } = await getInitialData();
+  const { hero, announcement, products, bestSellers, trending } = await getInitialData();
 
   return (
     <HomeClient
       initialHero={hero}
       initialAnnouncement={announcement}
       initialProducts={products}
+      initialBestSellers={bestSellers}
+      initialTrending={trending}
     />
   );
 }

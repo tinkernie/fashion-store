@@ -119,9 +119,11 @@ const POPULAR_KEYWORDS = [
 
 const SORT_OPTIONS = [
   { label: "جدیدترین‌ها", value: "newest" },
+  { label: "پرفروش‌ترین‌ها", value: "best_selling" },
+  { label: "داغ‌ترین ترندها", value: "trending" },
+  { label: "محبوب‌ترین‌ها", value: "popularity" },
   { label: "ارزان‌ترین", value: "price_asc" },
   { label: "گران‌ترین", value: "price_desc" },
-  { label: "پرفروش‌ترین‌ها", value: "popularity" },
 ];
 
 function SearchContent() {

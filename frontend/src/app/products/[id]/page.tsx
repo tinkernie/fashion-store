@@ -163,6 +163,29 @@ export default function ProductDetailPage() {
         }
         metaTag.setAttribute("content", product.meta_description);
       }
+      if (product.canonical_url && typeof document !== "undefined") {
+        let linkCanonical = document.querySelector('link[rel="canonical"]');
+        if (!linkCanonical) {
+          linkCanonical = document.createElement("link");
+          linkCanonical.setAttribute("rel", "canonical");
+          document.head.appendChild(linkCanonical);
+        }
+        linkCanonical.setAttribute("href", product.canonical_url);
+      }
+      if (Array.isArray(product.hreflang) && typeof document !== "undefined") {
+        product.hreflang.forEach((item: any) => {
+          if (item.hreflang && item.href) {
+            let linkAlt = document.querySelector(`link[rel="alternate"][hreflang="${item.hreflang}"]`);
+            if (!linkAlt) {
+              linkAlt = document.createElement("link");
+              linkAlt.setAttribute("rel", "alternate");
+              linkAlt.setAttribute("hreflang", item.hreflang);
+              document.head.appendChild(linkAlt);
+            }
+            linkAlt.setAttribute("href", item.href);
+          }
+        });
+      }
     }
   }, [product]);
 

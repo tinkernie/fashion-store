@@ -9,6 +9,15 @@ export interface CategoryItem {
   is_active?: boolean;
   parent_id?: string | null;
   product_count?: number;
+  seo_metadata?: {
+    meta_title?: string;
+    meta_description?: string;
+    [key: string]: any;
+  };
+  meta_title?: string;
+  meta_description?: string;
+  canonical_url?: string;
+  hreflang?: Array<{ hreflang: string; href: string }>;
 }
 
 // Initial preset categories matching the products page filter section & backend seed data
@@ -153,6 +162,11 @@ export async function getCategories(): Promise<CategoryItem[]> {
           description: remote.description || existing?.description || "",
           is_active: remote.is_active !== undefined ? remote.is_active : true,
           parent_id: remote.parent_id || null,
+          seo_metadata: remote.seo_metadata || existing?.seo_metadata || {},
+          meta_title: remote.meta_title || existing?.meta_title,
+          meta_description: remote.meta_description || existing?.meta_description,
+          canonical_url: remote.canonical_url || existing?.canonical_url,
+          hreflang: remote.hreflang || existing?.hreflang,
         };
 
         mergedMap.set(id, item);
@@ -185,6 +199,11 @@ export async function createCategory(data: {
   name: string;
   slug?: string;
   description?: string;
+  seo_metadata?: {
+    meta_title?: string;
+    meta_description?: string;
+    [key: string]: any;
+  };
 }): Promise<CategoryItem> {
   const cleanName = data.name.trim();
   const cleanSlug = (data.slug || cleanName)
@@ -199,6 +218,9 @@ export async function createCategory(data: {
     slug: cleanSlug,
     description: data.description || "",
     is_active: true,
+    seo_metadata: data.seo_metadata || {},
+    meta_title: data.seo_metadata?.meta_title || `${cleanName} — دسته ${cleanName} | Luxe`,
+    meta_description: data.seo_metadata?.meta_description || data.description || "",
   };
 
   // Attempt backend persistence
@@ -208,6 +230,7 @@ export async function createCategory(data: {
       slug: cleanSlug,
       description: data.description || "",
       is_active: true,
+      seo_metadata: data.seo_metadata || {},
     });
     if (res?.data && res.data.id) {
       newCat = {
