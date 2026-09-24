@@ -11,7 +11,7 @@ class SearchSerializer(serializers.Serializer):
     # Options passed as JSON string: e.g., '{"Color":["Red","Blue"],"Size":["M"]}'
     options = serializers.JSONField(required=False)
     sort = serializers.ChoiceField(
-        choices=['price_asc', 'price_desc', 'newest', 'name', 'relevance', 'popularity'],
+        choices=['price_asc', 'price_desc', 'newest', 'name', 'relevance', 'popularity', 'best_selling', 'trending'],
         required=False,
     )
     # Frontend also sends ordering=popularity alongside sort, accept as alias
@@ -25,14 +25,11 @@ class SearchSerializer(serializers.Serializer):
             attrs["q"] = attrs.pop("search")
         else:
             attrs.pop("search", None)
-        # Handle ordering=popularity alias from frontend
+        # Handle ordering alias from frontend (sort vs ordering)
         ordering = attrs.pop("ordering", None)
         if ordering and not attrs.get("sort"):
-            if ordering in ['popularity', 'price_asc', 'price_desc', 'newest', 'name', 'relevance']:
+            if ordering in ['popularity', 'best_selling', 'trending', 'price_asc', 'price_desc', 'newest', 'name', 'relevance']:
                 attrs["sort"] = ordering
-            elif ordering == "popularity":
-                attrs["sort"] = "popularity"
-        elif ordering and attrs.get("sort") != ordering and ordering == "popularity":
-            # frontend sends both sort=popularity & ordering=popularity, keep sort
+        elif ordering and attrs.get("sort") != ordering and ordering in ['popularity','best_selling','trending']:
             pass
         return attrs

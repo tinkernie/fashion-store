@@ -73,7 +73,7 @@ class SearchSelector:
                           filter=Q(variants__status=Variant.Status.PUBLISHED, variants__deleted_at__isnull=True)),
         )
 
-        # Sorting - frontend sends popularity via sort and ordering
+        # Sorting - frontend sends popularity via sort and ordering + best_selling/trending
         if sort == 'price_asc':
             qs = qs.order_by('min_price')
         elif sort == 'price_desc':
@@ -83,15 +83,21 @@ class SearchSelector:
         elif sort == 'name':
             qs = qs.order_by('title')
         elif sort == 'popularity':
-            # Popularity = most ordered / most reviewed. Annotate with order count, fallback to newest
-            # Count distinct orders that contain any variant of this product
-            from orders.models import OrderItem
-            # Use subquery count to avoid join duplication
+            qs = qs.annotate(popularity=Count('order_items', distinct=True)).order_by('-popularity', '-created_at')
+        elif sort == 'best_selling':
+            from django.db.models import Sum
             qs = qs.annotate(
-                popularity_count=Count('variants__order_items', distinct=True)
-            ).order_by('-popularity_count', '-created_at')
+                best_selling=Sum('order_items__quantity', filter=Q(order_items__order__status__in=['paid','packing','shipping','delivered'], order_items__order__deleted_at__isnull=True))
+            ).order_by('-best_selling', '-created_at')
+        elif sort == 'trending':
+            from django.db.models import Sum
+            from django.utils import timezone
+            from datetime import timedelta
+            since = timezone.now() - timedelta(days=30)
+            qs = qs.annotate(
+                trending=Sum('order_items__quantity', filter=Q(order_items__order__status__in=['paid','packing','shipping','delivered'], order_items__order__deleted_at__isnull=True, order_items__order__placed_at__gte=since))
+            ).order_by('-trending', '-created_at')
         else:
-            # Default: relevance if query and postgres, else newest
             if has_rank:
                 qs = qs.order_by('-rank')
             else:
