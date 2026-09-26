@@ -184,7 +184,7 @@ export default function ProductGallery({
   return (
     <div className="space-y-4 select-none" ref={containerRef} dir="rtl">
       {/* Main Slide Viewer Container */}
-      <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] max-h-[58vh] sm:max-h-none bg-[#111111] rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-2xl group">
+      <div className="relative w-full aspect-[3/4] sm:aspect-[3/4] max-h-[46vh] sm:max-h-none bg-[#0e0e0e] rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-2xl group">
         {/* Discount Badge on Product Photo */}
         {discountInfo?.hasDiscount && (
           <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5 pointer-events-none">
@@ -245,7 +245,7 @@ export default function ProductGallery({
               <img
                 src={currentImage}
                 alt={`${product?.name || product?.title || "محصول"} - تصویر ${currentIndex + 1}`}
-                className="w-full h-full object-cover object-center pointer-events-none"
+                className="w-full h-full object-cover object-top pointer-events-none"
                 loading="eager"
                 draggable={false}
               />
@@ -256,22 +256,22 @@ export default function ProductGallery({
         {/* PC Desktop Navigation Buttons (Left & Right Sides) */}
         {images.length > 1 && (
           <>
-            {/* Right Arrow Button (Next / Previous in RTL) */}
+            {/* Right Arrow Button (Next / Previous in RTL) - Desktop Only */}
             <button
               type="button"
               onClick={() => paginate(-1)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/50 hover:bg-black/85 text-white border border-white/15 hover:border-amber-400/50 backdrop-blur-md transition-all flex items-center justify-center shadow-xl opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/15 hover:border-amber-400/50 backdrop-blur-md transition-all items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400"
               aria-label="تصویر بعدی"
               title="تصویر بعدی (کلید راست)"
             >
               <ChevronRight className="w-6 h-6 text-white transition-transform group-hover:translate-x-0.5" />
             </button>
 
-            {/* Left Arrow Button */}
+            {/* Left Arrow Button - Desktop Only */}
             <button
               type="button"
               onClick={() => paginate(1)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/50 hover:bg-black/85 text-white border border-white/15 hover:border-amber-400/50 backdrop-blur-md transition-all flex items-center justify-center shadow-xl opacity-80 sm:opacity-0 sm:group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/15 hover:border-amber-400/50 backdrop-blur-md transition-all items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400"
               aria-label="تصویر قبلی"
               title="تصویر قبلی (کلید چپ)"
             >
@@ -320,7 +320,7 @@ export default function ProductGallery({
       {images.length > 1 && (
         <div className="relative">
           <div
-            className="flex items-center gap-2.5 sm:gap-3 overflow-x-auto pb-2 pt-1 px-1 no-scrollbar scroll-smooth snap-x snap-mandatory touch-pan-x"
+            className="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 overflow-x-auto pb-2 pt-1 px-1 no-scrollbar scroll-smooth snap-x snap-mandatory touch-pan-x"
             tabIndex={0}
             role="region"
             aria-label="گالری پیش‌نمایش بندانگشتی تصاویر کالا"
@@ -339,10 +339,10 @@ export default function ProductGallery({
                     setDirection(idx > currentIndex ? 1 : -1);
                     setCurrentIndex(idx);
                   }}
-                  className={`relative shrink-0 w-14 sm:w-20 aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden border transition-all duration-200 snap-center cursor-pointer ${
+                  className={`relative shrink-0 w-14 sm:w-18 aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all duration-200 snap-center cursor-pointer ${
                     isActive
                       ? "border-amber-400 ring-2 ring-amber-400/50 shadow-lg scale-105 opacity-100"
-                      : "border-white/10 opacity-55 hover:opacity-100 hover:border-white/30"
+                      : "border-white/10 opacity-60 hover:opacity-100 hover:border-white/30"
                   }`}
                   aria-label={`انتخاب تصویر ${idx + 1}`}
                   aria-current={isActive ? "true" : undefined}
@@ -350,7 +350,7 @@ export default function ProductGallery({
                   <img
                     src={url}
                     alt={`تصویر بندانگشتی ${idx + 1}`}
-                    className="w-full h-full object-cover object-center"
+                    className="w-full h-full object-cover object-top"
                     loading="lazy"
                   />
                   {isActive && (

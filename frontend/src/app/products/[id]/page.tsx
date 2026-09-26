@@ -564,7 +564,7 @@ export default function ProductDetailPage() {
         </motion.div>
 
         {/* Product Info & Options */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col justify-center space-y-6">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col justify-center space-y-4 sm:space-y-6">
           {/* Header Badges & Rating */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="bg-white/10 text-white px-3 py-1 rounded-full text-[11px] font-bold tracking-wider">
