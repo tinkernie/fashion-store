@@ -13,13 +13,13 @@ export default function LayoutShell({
   const isAdminRoute = pathname?.startsWith("/admin");
 
   if (isAdminRoute) {
-    return <div className="min-h-screen bg-[#0a0a0a] text-white flex-1">{children}</div>;
+    return <div className="min-h-screen bg-[#0a0a0a] text-white flex-1 w-full min-w-0">{children}</div>;
   }
 
   return (
     <>
       <Navbar />
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 w-full min-w-0">{children}</div>
       <Footer />
     </>
   );

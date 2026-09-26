@@ -503,7 +503,7 @@ export default function ProductDetailPage() {
 
 
   return (
-    <main className="min-h-screen pt-24 sm:pt-28 pb-32 sm:pb-36 px-4 md:px-6 max-w-7xl mx-auto text-white" dir="rtl">
+    <main className="min-h-screen w-full max-w-7xl min-w-0 mx-auto pt-24 sm:pt-28 pb-32 sm:pb-36 px-4 md:px-6 text-white overflow-x-hidden" dir="rtl">
       {/* Schema.org JSON-LD Structured Data */}
       {product?.seo_schema && (
         <script
