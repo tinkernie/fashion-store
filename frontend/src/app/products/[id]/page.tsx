@@ -503,7 +503,7 @@ export default function ProductDetailPage() {
 
 
   return (
-    <main className="min-h-screen pt-28 pb-36 px-4 md:px-6 max-w-7xl mx-auto text-white" dir="rtl">
+    <main className="min-h-screen pt-24 sm:pt-28 pb-32 sm:pb-36 px-4 md:px-6 max-w-7xl mx-auto text-white" dir="rtl">
       {/* Schema.org JSON-LD Structured Data */}
       {product?.seo_schema && (
         <script
@@ -513,7 +513,7 @@ export default function ProductDetailPage() {
       )}
 
       {/* Breadcrumbs & Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 sm:mb-8">
         {product?.breadcrumbs && product.breadcrumbs.length > 0 ? (
           <nav aria-label="مسیر راهنما" className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
             {product.breadcrumbs.map((bc: { name: string; url: string }, idx: number) => {
@@ -553,7 +553,7 @@ export default function ProductDetailPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 mb-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-16 mb-12 sm:mb-16">
         {/* Product Image Gallery Slideshow */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
           <ProductGallery
@@ -566,7 +566,7 @@ export default function ProductDetailPage() {
         {/* Product Info & Options */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col justify-center space-y-6">
           {/* Header Badges & Rating */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="bg-white/10 text-white px-3 py-1 rounded-full text-[11px] font-bold tracking-wider">
               {product.category || product.category_name || "پوشاک لوکس"}
             </span>
@@ -617,18 +617,18 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight">
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-black text-white leading-snug sm:leading-tight">
             {product.name || product.title}
           </h1>
 
           {/* Price: Strikethrough original and green discounted price */}
           {discInfo.hasDiscount ? (
             <div className="space-y-2">
-              <div className="flex items-baseline gap-3">
-                <span className="text-base md:text-lg text-gray-500 line-through decoration-rose-500/50 font-medium">
+              <div className="flex items-baseline gap-2.5 sm:gap-3 flex-wrap">
+                <span className="text-sm sm:text-base md:text-lg text-gray-500 line-through decoration-rose-500/50 font-medium">
                   {formatPriceNumber(currentPrice)}
                 </span>
-                <span className="text-2xl md:text-4xl font-black text-emerald-400">
+                <span className="text-xl sm:text-2xl md:text-4xl font-black text-emerald-400">
                   {formatPriceNumber(discInfo.discountPrice)}
                 </span>
                 <span className="text-xs text-emerald-400 font-bold">تومان</span>
@@ -645,8 +645,8 @@ export default function ProductDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl md:text-4xl font-black text-amber-400">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-xl sm:text-2xl md:text-4xl font-black text-amber-400">
                 {formatPriceNumber(currentPrice)}
               </span>
               <span className="text-xs text-gray-400">تومان</span>
@@ -692,9 +692,9 @@ export default function ProductDetailPage() {
                               key={valItem.id || val}
                               onClick={() => handleOptionChange(opt.name, val)}
                               title={val}
-                              className={`relative w-9 h-9 rounded-full border transition-all flex items-center justify-center cursor-pointer ${
+                              className={`relative w-11 h-11 rounded-full border transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
                                 isSelected
-                                  ? "border-amber-400 ring-2 ring-amber-400/50 scale-110"
+                                  ? "border-amber-400 ring-2 ring-amber-400/50 scale-105"
                                   : "border-white/20 hover:border-white/60"
                               }`}
                               style={{ background: colorBg }}
@@ -715,7 +715,7 @@ export default function ProductDetailPage() {
                           <button
                             key={valItem.id || val}
                             onClick={() => handleOptionChange(opt.name, val)}
-                            className={`min-w-12 h-10 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center border cursor-pointer ${
+                            className={`min-w-12 h-11 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center border cursor-pointer active:scale-95 ${
                               isSelected
                                 ? "bg-white text-black border-white shadow-lg"
                                 : "bg-[#141414] text-gray-300 border-white/10 hover:border-white/30"
@@ -753,18 +753,20 @@ export default function ProductDetailPage() {
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     disabled={quantity <= 1}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors"
+                    aria-label="کاهش تعداد"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors cursor-pointer"
                   >
-                    <Minus className="w-3.5 h-3.5" />
+                    <Minus className="w-4 h-4" />
                   </button>
-                  <span className="w-8 text-center text-xs font-bold text-white">
+                  <span className="w-10 text-center text-sm font-bold text-white">
                     {quantity.toLocaleString("fa-IR")}
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                    aria-label="افزایش تعداد"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -940,14 +942,15 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Sticky Mobile Add to Cart Bottom Bar */}
-      <div className="fixed bottom-16 left-0 right-0 p-4 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-white/10 z-40 md:hidden flex items-center gap-3">
+      <div className="fixed bottom-0 left-0 right-0 p-3.5 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#0a0a0a]/90 backdrop-blur-xl border-t border-white/10 z-40 md:hidden flex items-center gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.8)]">
         <Button
           onClick={toggleWishlist}
           variant="outline"
-          className={`w-12 h-12 rounded-xl border transition-colors flex items-center justify-center shrink-0 ${
+          aria-label={isSaved ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"}
+          className={`w-12 h-12 rounded-xl border transition-colors flex items-center justify-center shrink-0 cursor-pointer ${
             isSaved
               ? "border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20"
-              : "border-white/15 bg-transparent text-white"
+              : "border-white/15 bg-transparent text-white hover:bg-white/10"
           }`}
         >
           <Heart className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
@@ -955,7 +958,7 @@ export default function ProductDetailPage() {
         <Button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
-          className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 text-xs font-black transition-all shadow-xl gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-[#1a1a1a] disabled:text-gray-500 disabled:border disabled:border-white/10"
+          className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 text-xs sm:text-sm font-black transition-all shadow-xl gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-[#1a1a1a] disabled:text-gray-500 disabled:border disabled:border-white/10 cursor-pointer"
         >
           <ShoppingBag className="w-4 h-4" />
           {isOutOfStock ? "ناموجود در انبار" : `افزودن به سبد (${formatPrice(currentPrice)})`}

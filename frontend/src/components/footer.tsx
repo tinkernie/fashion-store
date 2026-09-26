@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#050505] border-t border-white/5 pt-20 pb-10 px-6 mt-24">
+    <footer className="bg-[#050505] border-t border-white/5 pt-16 sm:pt-20 pb-28 md:pb-10 px-4 sm:px-6 mt-16 sm:mt-24">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
           
@@ -55,15 +55,15 @@ export default function Footer() {
             <p className="text-gray-400 text-sm">
               برای اطلاع از جدیدترین محصولات و تخفیف‌های ویژه، ایمیل خود را وارد کنید.
             </p>
-            <div className="flex gap-2">
+            <div className="flex items-stretch gap-2">
               <Input 
                 type="email" 
                 placeholder="ایمیل شما..." 
-                className="bg-[#111111] border-white/10 text-white placeholder:text-gray-600 h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-white/30 font-sans"
+                className="bg-[#111111] border-white/10 text-white placeholder:text-gray-600 h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-white/30 font-sans flex-1 min-w-0"
                 dir="ltr"
               />
-              <Button className="h-12 w-12 rounded-xl bg-white text-black hover:bg-gray-200 shrink-0 p-0">
-                <Send className="w-5 h-5" />
+              <Button className="h-12 w-12 rounded-xl bg-white text-black hover:bg-gray-200 shrink-0 p-0 flex items-center justify-center cursor-pointer">
+                <Send className="w-5 h-5 rtl:-scale-x-100" />
               </Button>
             </div>
           </div>

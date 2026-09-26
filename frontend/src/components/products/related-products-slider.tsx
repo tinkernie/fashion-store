@@ -265,7 +265,7 @@ export default function RelatedProductsSlider({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUpOrLeave}
           onMouseLeave={handleMouseUpOrLeave}
-          className={`flex gap-4 md:gap-5 overflow-x-auto pb-4 pt-1 hide-scrollbar snap-x snap-mandatory select-none ${
+          className={`flex gap-3 sm:gap-4 md:gap-5 overflow-x-auto pb-4 pt-1 hide-scrollbar snap-x snap-mandatory select-none touch-pan-x ${
             isDragging ? "cursor-grabbing" : "cursor-grab"
           }`}
           style={{ WebkitOverflowScrolling: "touch" }}

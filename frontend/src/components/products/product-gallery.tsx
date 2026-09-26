@@ -184,7 +184,7 @@ export default function ProductGallery({
   return (
     <div className="space-y-4 select-none" ref={containerRef} dir="rtl">
       {/* Main Slide Viewer Container */}
-      <div className="relative w-full aspect-[3/4] bg-[#111111] rounded-3xl overflow-hidden border border-white/10 shadow-2xl group">
+      <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] max-h-[58vh] sm:max-h-none bg-[#111111] rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-2xl group">
         {/* Discount Badge on Product Photo */}
         {discountInfo?.hasDiscount && (
           <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5 pointer-events-none">
@@ -320,7 +320,7 @@ export default function ProductGallery({
       {images.length > 1 && (
         <div className="relative">
           <div
-            className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 px-1 no-scrollbar scroll-smooth snap-x snap-mandatory"
+            className="flex items-center gap-2.5 sm:gap-3 overflow-x-auto pb-2 pt-1 px-1 no-scrollbar scroll-smooth snap-x snap-mandatory touch-pan-x"
             tabIndex={0}
             role="region"
             aria-label="گالری پیش‌نمایش بندانگشتی تصاویر کالا"
@@ -339,7 +339,7 @@ export default function ProductGallery({
                     setDirection(idx > currentIndex ? 1 : -1);
                     setCurrentIndex(idx);
                   }}
-                  className={`relative shrink-0 w-16 sm:w-20 aspect-[3/4] rounded-2xl overflow-hidden border transition-all duration-200 snap-center cursor-pointer ${
+                  className={`relative shrink-0 w-14 sm:w-20 aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden border transition-all duration-200 snap-center cursor-pointer ${
                     isActive
                       ? "border-amber-400 ring-2 ring-amber-400/50 shadow-lg scale-105 opacity-100"
                       : "border-white/10 opacity-55 hover:opacity-100 hover:border-white/30"
