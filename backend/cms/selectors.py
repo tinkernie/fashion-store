@@ -14,8 +14,21 @@ class PageSelector:
         return Page.objects.filter(status=Page.Status.PUBLISHED, deleted_at__isnull=True)
 
     @staticmethod
-    def list_all_pages() -> list[Page]:
-        return Page.objects.filter(deleted_at__isnull=True)
+    def list_all_pages(filters: dict = None):
+        qs = Page.objects.filter(deleted_at__isnull=True)
+        if filters:
+            if filters.get("status") and filters["status"] != "all":
+                qs = qs.filter(status=filters["status"])
+            search = filters.get("search")
+            if search:
+                if len(search) > 100:
+                    from common.exceptions import BusinessException
+
+                    raise BusinessException("Search query too long (max 100).")
+                from django.db.models import Q
+
+                qs = qs.filter(Q(title__icontains=search) | Q(slug__icontains=search))
+        return qs.order_by("-updated_at")
 
 
 class SiteContentSelector:

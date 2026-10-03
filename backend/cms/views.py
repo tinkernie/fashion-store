@@ -11,7 +11,8 @@ class PublicPageViewSet(viewsets.GenericViewSet):
     lookup_field = 'slug'
 
     def retrieve(self, request, slug=None):
-        result = self.service.get_page_public(slug)
+        preview = str(request.query_params.get("preview", "")).lower() in ("1", "true", "yes")
+        result = self.service.get_page_public(slug, preview=preview, user=request.user)
         return Response(result)
 
     def list(self, request):
@@ -45,8 +46,18 @@ class AdminPageViewSet(viewsets.GenericViewSet):
         return Response(result)
 
     def list(self, request):
-        pages = self.service.list_pages_admin()
-        return Response(pages)
+        # Step 5: paginated + filterable admin list (?status=&search=)
+        filters = {}
+        if "status" in request.query_params:
+            filters["status"] = request.query_params["status"]
+        if "search" in request.query_params:
+            filters["search"] = request.query_params["search"]
+        qs = self.service.list_pages_admin(filters)
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            data = [self.service._serialize_page(p) for p in page]
+            return self.get_paginated_response(data)
+        return Response([self.service._serialize_page(p) for p in qs])
 
     def retrieve(self, request, pk=None):
         # admin can retrieve any page by slug
@@ -70,6 +81,19 @@ class PublicSiteContentViewSet(viewsets.GenericViewSet):
 class AdminSiteContentViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAdminUser]
     service = CMSService()
+
+    def list(self, request):
+        # Step 5: list all site-content keys for admin (homepage, announcement, discount_section...)
+        from .selectors import SiteContentSelector
+
+        keys = SiteContentSelector.get_all_keys()
+        data = []
+        for k in keys:
+            try:
+                data.append(self.service.get_site_content(k))
+            except Exception:
+                continue
+        return Response(data)
 
     def create(self, request):
         serializer = SiteContentSerializer(data=request.data)
