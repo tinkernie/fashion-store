@@ -126,9 +126,6 @@ GRAPH_REPORT.md
 # Impeccable & Taste Design Systems
 .impeccable/
 .taste/
-PRODUCT.md
-DESIGN.md
-SURFACE.md
 
 # Caveman
 .caveman/
@@ -137,8 +134,6 @@ SURFACE.md
 caveman.json
 CLAUDE.md
 CLAUDE.original.md
-AGENTS.md
 *.original.md
 
-GEMINI.md
 AUDIT_FINDINGS.md
