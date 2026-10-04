@@ -389,10 +389,10 @@ export function CoverflowCarousel({
                   aria-label={`${index + 1} of ${count}`}
                   aria-hidden={!isSelected}
                   className={cn(
-                    "absolute left-1/2 top-1/2 aspect-[3/4] w-[var(--cf-card)] overflow-hidden rounded-3xl bg-zinc-900 border border-white/10 shadow-2xl transition-[border-color,box-shadow] duration-300 group cursor-pointer will-change-transform",
+                    "absolute left-1/2 top-1/2 aspect-[3/4] w-[var(--cf-card)] overflow-hidden rounded-3xl bg-white border shadow-xl transition-[border-color,box-shadow] duration-300 group cursor-pointer will-change-transform",
                     isSelected
-                      ? "border-white/60 shadow-2xl shadow-black ring-2 ring-white/40"
-                      : "border-white/10 opacity-75 hover:opacity-95",
+                      ? "border-[#0082CA] shadow-2xl shadow-[#0082CA]/15 ring-2 ring-[#0082CA]/30"
+                      : "border-sky-100 opacity-80 hover:opacity-100 hover:border-sky-200",
                     cardClassName,
                   )}
                 >
@@ -420,13 +420,13 @@ export function CoverflowCarousel({
                         className="h-full w-full select-none object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       />
 
-                      {/* Dark obsidian gradient for high readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+                      {/* Gentle deep Aegean gradient for text readability over photo */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/90 via-[#0B192C]/30 to-transparent pointer-events-none" />
 
                       {/* Top Badge */}
                       {slide.badge && (
                         <div className="absolute top-4 right-4 z-10" dir="rtl">
-                          <span className="px-3 py-1 text-[11px] font-black uppercase tracking-wider rounded-full bg-white text-black shadow-lg">
+                          <span className="px-3 py-1 text-[11px] font-bold rounded-full bg-white/95 text-[#0082CA] border border-sky-100 shadow-md backdrop-blur-md">
                             {slide.badge}
                           </span>
                         </div>
@@ -435,12 +435,12 @@ export function CoverflowCarousel({
                       {/* Card Content Overlay */}
                       <div className="absolute bottom-0 inset-x-0 p-5 z-10 flex flex-col justify-end text-right" dir="rtl">
                         {slide.subtitle && (
-                          <span className="text-[11px] font-semibold text-zinc-400 mb-1 tracking-wide">
+                          <span className="text-[11px] font-semibold text-sky-200 mb-1 tracking-wide">
                             {slide.subtitle}
                           </span>
                         )}
                         {slide.title && (
-                          <h3 className="text-base md:text-lg font-bold text-white leading-snug drop-shadow-md">
+                          <h3 className="text-base md:text-lg font-bold text-white leading-snug drop-shadow-sm">
                             {slide.title}
                           </h3>
                         )}
@@ -450,7 +450,7 @@ export function CoverflowCarousel({
                               {formatPriceNumber(slide.price)} تومان
                             </span>
                             {slide.compareAtPrice && (
-                              <span className="text-xs text-zinc-500 line-through">
+                              <span className="text-xs text-sky-200/70 line-through">
                                 {formatPriceNumber(slide.compareAtPrice)}
                               </span>
                             )}
@@ -473,13 +473,13 @@ export function CoverflowCarousel({
                         className="h-full w-full select-none object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       />
 
-                      {/* Dark obsidian gradient for high readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+                      {/* Gentle deep Aegean gradient for text readability over photo */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/90 via-[#0B192C]/30 to-transparent pointer-events-none" />
 
                       {/* Top Badge */}
                       {slide.badge && (
                         <div className="absolute top-4 right-4 z-10" dir="rtl">
-                          <span className="px-3 py-1 text-[11px] font-black uppercase tracking-wider rounded-full bg-white text-black shadow-lg">
+                          <span className="px-3 py-1 text-[11px] font-bold rounded-full bg-white/95 text-[#0082CA] border border-sky-100 shadow-md backdrop-blur-md">
                             {slide.badge}
                           </span>
                         </div>
@@ -488,12 +488,12 @@ export function CoverflowCarousel({
                       {/* Card Content Overlay */}
                       <div className="absolute bottom-0 inset-x-0 p-5 z-10 flex flex-col justify-end text-right" dir="rtl">
                         {slide.subtitle && (
-                          <span className="text-[11px] font-semibold text-zinc-400 mb-1 tracking-wide">
+                          <span className="text-[11px] font-semibold text-sky-200 mb-1 tracking-wide">
                             {slide.subtitle}
                           </span>
                         )}
                         {slide.title && (
-                          <h3 className="text-base md:text-lg font-bold text-white leading-snug drop-shadow-md">
+                          <h3 className="text-base md:text-lg font-bold text-white leading-snug drop-shadow-sm">
                             {slide.title}
                           </h3>
                         )}
@@ -503,7 +503,7 @@ export function CoverflowCarousel({
                               {formatPriceNumber(slide.price)} تومان
                             </span>
                             {slide.compareAtPrice && (
-                              <span className="text-xs text-zinc-500 line-through">
+                              <span className="text-xs text-sky-200/70 line-through">
                                 {formatPriceNumber(slide.compareAtPrice)}
                               </span>
                             )}
@@ -525,7 +525,7 @@ export function CoverflowCarousel({
               type="button"
               aria-label="Previous slide"
               onClick={() => nudge(-1)}
-              className="absolute left-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-2xl cursor-pointer"
+              className="absolute left-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 border border-sky-200 text-slate-700 flex items-center justify-center backdrop-blur-md hover:bg-[#0082CA] hover:text-white hover:border-[#0082CA] transition-all shadow-xl shadow-sky-950/10 cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -533,7 +533,7 @@ export function CoverflowCarousel({
               type="button"
               aria-label="Next slide"
               onClick={() => nudge(1)}
-              className="absolute right-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition-all shadow-2xl cursor-pointer"
+              className="absolute right-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 border border-sky-200 text-slate-700 flex items-center justify-center backdrop-blur-md hover:bg-[#0082CA] hover:text-white hover:border-[#0082CA] transition-all shadow-xl shadow-sky-950/10 cursor-pointer"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -543,27 +543,27 @@ export function CoverflowCarousel({
 
       {/* Synchronized Specification Drawer Centered Under Selected Card */}
       {showCaption && active && (
-        <div className="w-full max-w-xl mx-auto mt-4 p-6 rounded-3xl bg-zinc-950/85 border border-white/10 backdrop-blur-xl shadow-2xl text-right" dir="rtl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+        <div className="w-full max-w-xl mx-auto mt-4 p-6 rounded-3xl bg-white/95 border border-sky-100 backdrop-blur-xl shadow-xl shadow-sky-950/5 text-right" dir="rtl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-sky-100">
             <div>
               <div className="flex items-center gap-2">
                 {active.badge && (
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white text-black">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-[#0082CA] border border-sky-200">
                     {active.badge}
                   </span>
                 )}
-                <h4 className="text-base md:text-lg font-black text-white">{active.title}</h4>
+                <h4 className="text-base md:text-lg font-black text-[#0B192C]">{active.title}</h4>
               </div>
-              {active.subtitle && <p className="text-xs text-zinc-400 mt-1">{active.subtitle}</p>}
+              {active.subtitle && <p className="text-xs text-slate-500 mt-1">{active.subtitle}</p>}
             </div>
 
             {active.price && (
               <div className="text-left sm:text-left">
-                <div className="text-sm md:text-base font-black text-white">
+                <div className="text-sm md:text-base font-black text-[#0082CA]">
                   {formatPriceNumber(active.price)} تومان
                 </div>
                 {active.compareAtPrice && (
-                  <div className="text-xs text-zinc-500 line-through">
+                  <div className="text-xs text-slate-400 line-through">
                     {formatPriceNumber(active.compareAtPrice)} تومان
                   </div>
                 )}
@@ -575,9 +575,9 @@ export function CoverflowCarousel({
           {active.meta && active.meta.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-4">
               {active.meta.map((m, i) => (
-                <div key={i} className="bg-white/5 rounded-xl p-2.5 border border-white/5">
-                  <div className="text-[10px] text-zinc-400">{m.label}</div>
-                  <div className="text-xs font-bold text-zinc-100 mt-0.5">{m.value}</div>
+                <div key={i} className="bg-sky-50/70 rounded-xl p-2.5 border border-sky-100">
+                  <div className="text-[10px] text-slate-500">{m.label}</div>
+                  <div className="text-xs font-bold text-slate-800 mt-0.5">{m.value}</div>
                 </div>
               ))}
             </div>
@@ -611,8 +611,8 @@ export function CoverflowCarousel({
               className={cn(
                 "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
                 index === selected
-                  ? "w-8 bg-white"
-                  : "w-2 bg-white/20 hover:bg-white/40",
+                  ? "w-8 bg-[#0082CA]"
+                  : "w-2 bg-sky-200 hover:bg-sky-300",
               )}
             />
           ))}

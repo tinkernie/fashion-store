@@ -11,7 +11,7 @@ export interface HoneycombLoaderProps {
 
 export const HoneycombLoader: React.FC<HoneycombLoaderProps> = ({
   className,
-  color = "text-white",
+  color = "text-[#0082CA]",
   size = "default",
   text,
   fullScreen = false,
@@ -34,7 +34,7 @@ export const HoneycombLoader: React.FC<HoneycombLoaderProps> = ({
         <div></div>
       </div>
       {text && (
-        <p className="text-xs md:text-sm font-medium text-zinc-400 animate-pulse tracking-wide mt-2">
+        <p className="text-xs md:text-sm font-medium text-slate-600 animate-pulse tracking-wide mt-2">
           {text}
         </p>
       )}
@@ -43,7 +43,7 @@ export const HoneycombLoader: React.FC<HoneycombLoaderProps> = ({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]/90 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-md">
         {loader}
       </div>
     );

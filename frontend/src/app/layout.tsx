@@ -23,15 +23,15 @@ export default function RootLayout({
     <html
       lang="fa"
       dir="rtl"
-      className={`${vazirmatn.variable} antialiased dark`}
+      className={`${vazirmatn.variable} antialiased`}
     >
-      <body className="min-h-screen flex flex-col bg-[#0a0a0a] text-white font-sans selection:bg-[#0082CA] selection:text-white">
+      <body className="min-h-screen flex flex-col bg-[#FAFCFE] text-[#0B192C] font-sans selection:bg-[#0082CA] selection:text-white">
         <LayoutShell>{children}</LayoutShell>
         <Toaster 
           position="bottom-center" 
           toastOptions={{
-            className: "bg-[#0B1B2F] border border-[#0082CA]/30 text-white shadow-lg shadow-[#0082CA]/10",
-            descriptionClassName: "text-sky-200/70 font-sans"
+            className: "bg-white border border-sky-100 text-[#0B192C] shadow-xl shadow-sky-900/10",
+            descriptionClassName: "text-slate-500 font-sans"
           }} 
         />
       </body>

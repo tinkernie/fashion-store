@@ -26,8 +26,8 @@ export function CollectionsSection() {
 
   return (
     <section className="py-16 px-4 md:px-12 max-w-7xl mx-auto" dir="rtl">
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl md:text-3xl font-black text-white">کالکشن‌های ویژه</h2>
+      <div className="flex items-center justify-between mb-8 border-b border-sky-100 pb-6">
+        <h2 className="text-2xl md:text-3xl font-black text-[#0B192C]">کالکشن‌های ویژه</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {collections.map((collection, index) => {
@@ -43,7 +43,7 @@ export function CollectionsSection() {
             >
               <Link
                 href={`/collections/${collection.slug || collection.id}`}
-                className="block group relative overflow-hidden rounded-3xl bg-[#111111] border border-white/10 hover:border-white/20 aspect-[4/3] transition-all shadow-xl"
+                className="block group relative overflow-hidden rounded-3xl bg-white border border-sky-100 hover:border-[#0082CA]/50 aspect-[4/3] transition-all shadow-md hover:shadow-xl"
               >
                 {/* Background Banner or Fallback Gradient */}
                 {bannerUrl ? (
@@ -56,16 +56,16 @@ export function CollectionsSection() {
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-tr from-stone-950 via-zinc-900 to-[#141414]" />
+                  <div className="w-full h-full bg-gradient-to-tr from-sky-100 via-sky-50 to-white" />
                 )}
 
-                {/* Dark Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 transition-opacity duration-300" />
+                {/* Gentle Aegean Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/85 via-[#0B192C]/25 to-transparent z-10 transition-opacity duration-300" />
 
                 {/* Top Badge: Product Count */}
                 {prodCount > 0 && (
                   <div className="absolute top-4 right-4 z-20">
-                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-black/60 backdrop-blur-md text-amber-300 border border-amber-500/20 shadow-lg">
+                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/95 backdrop-blur-md text-[#0082CA] border border-sky-100 shadow-md">
                       {prodCount.toLocaleString("fa-IR")} محصول
                     </span>
                   </div>
@@ -74,14 +74,14 @@ export function CollectionsSection() {
                 {/* Bottom Card Content */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-20 flex items-end justify-between gap-4">
                   <div className="space-y-1">
-                    <h3 className="text-lg md:text-xl font-black text-white group-hover:text-amber-400 transition-colors">
+                    <h3 className="text-lg md:text-xl font-black text-white group-hover:text-sky-200 transition-colors">
                       {collection.name || collection.title}
                     </h3>
-                    <p className="text-xs text-gray-300 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-sky-100/90 line-clamp-2 leading-relaxed">
                       {collection.description || "مشاهده محصولات و تخفیف‌های این کالکشن"}
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-white/15 border border-white/20 flex items-center justify-center backdrop-blur-md group-hover:bg-white group-hover:text-black transition-all shrink-0 shadow-lg">
+                  <div className="w-10 h-10 rounded-full bg-white/90 border border-sky-100 text-[#0082CA] flex items-center justify-center backdrop-blur-md group-hover:bg-[#0082CA] group-hover:text-white group-hover:border-[#0082CA] transition-all shrink-0 shadow-md">
                     <ChevronLeft className="w-5 h-5" />
                   </div>
                 </div>

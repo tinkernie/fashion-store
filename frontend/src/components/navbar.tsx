@@ -235,13 +235,13 @@ export default function Navbar() {
         layout
         transition={{ type: "spring", stiffness: 350, damping: 30 }}
         className={cn(
-          "w-full bg-[#111111]/85 backdrop-blur-2xl border border-white/10 rounded-full h-16 flex items-center justify-between px-5 md:px-7 text-white shadow-2xl transition-[max-width,border-color] duration-500",
-          isSearchExpanded ? "max-w-4xl border-white/25 shadow-black/80 ring-1 ring-white/20" : "max-w-5xl"
+          "w-full bg-white/90 backdrop-blur-2xl border border-sky-100/90 rounded-full h-16 flex items-center justify-between px-5 md:px-7 text-slate-800 shadow-xl shadow-sky-950/5 transition-[max-width,border-color] duration-500",
+          isSearchExpanded ? "max-w-4xl border-[#0082CA]/40 shadow-sky-900/10 ring-1 ring-[#0082CA]/20" : "max-w-5xl"
         )}
         dir="rtl"
       >
         {/* Right side: Brand Logo */}
-        <Link href="/" className="text-xl font-black tracking-widest uppercase text-white shrink-0 hover:opacity-90 transition-opacity">
+        <Link href="/" className="text-xl font-black tracking-widest uppercase text-[#0082CA] hover:text-[#006CA8] shrink-0 transition-colors">
           فشن استور
         </Link>
 
@@ -255,12 +255,12 @@ export default function Navbar() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300"
+                className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600"
               >
-                <Link href="/products" className="hover:text-white transition-colors">فروشگاه و کاتالوگ</Link>
-                <Link href="/search?sort=newest" className="hover:text-white transition-colors">جدیدترین‌ها</Link>
-                <Link href="/search?sort=best_selling" className="hover:text-white transition-colors">پرفروش‌ترین‌ها</Link>
-                <Link href="/search?sort=trending" className="hover:text-white transition-colors">ترندها</Link>
+                <Link href="/products" className="hover:text-[#0082CA] transition-colors">فروشگاه و کاتالوگ</Link>
+                <Link href="/search?sort=newest" className="hover:text-[#0082CA] transition-colors">جدیدترین‌ها</Link>
+                <Link href="/search?sort=best_selling" className="hover:text-[#0082CA] transition-colors">پرفروش‌ترین‌ها</Link>
+                <Link href="/search?sort=trending" className="hover:text-[#0082CA] transition-colors">ترندها</Link>
               </motion.div>
             ) : (
               <motion.form
@@ -270,20 +270,20 @@ export default function Navbar() {
                 exit={{ opacity: 0, width: "0%", scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 onSubmit={handleSearchSubmit}
-                className="w-full flex items-center bg-white/10 border border-white/20 rounded-full px-4 h-11 shadow-inner focus-within:border-white/40 focus-within:bg-black/60 transition-colors relative"
+                className="w-full flex items-center bg-sky-50/70 border border-sky-200/80 rounded-full px-4 h-11 shadow-inner focus-within:border-[#0082CA] focus-within:bg-white transition-colors relative"
               >
-                <Search className="w-4 h-4 text-zinc-400 shrink-0 ml-2" />
+                <Search className="w-4 h-4 text-[#0082CA] shrink-0 ml-2" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="جستجوی محصول، برند، متریال یا استایل..."
-                  className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-white placeholder:text-zinc-500 font-medium w-full"
+                  className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-slate-800 placeholder:text-slate-400 font-medium w-full"
                 />
                 
                 {isSearching && (
-                  <Loader2 className="w-4 h-4 text-zinc-400 animate-spin shrink-0 mx-2" />
+                  <Loader2 className="w-4 h-4 text-[#0082CA] animate-spin shrink-0 mx-2" />
                 )}
 
                 {searchQuery && (
@@ -293,7 +293,7 @@ export default function Navbar() {
                       setSearchQuery("");
                       setSearchResults([]);
                     }}
-                    className="p-1 text-zinc-400 hover:text-white transition-colors mr-1 cursor-pointer"
+                    className="p-1 text-slate-400 hover:text-slate-700 transition-colors mr-1 cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -302,7 +302,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setIsSearchExpanded(false)}
-                  className="mr-2 text-[11px] font-bold text-zinc-400 hover:text-white px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10 transition-all border border-white/10 shrink-0"
+                  className="mr-2 text-[11px] font-bold text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-all border border-slate-200 shrink-0"
                 >
                   بستن
                 </button>
@@ -312,7 +312,7 @@ export default function Navbar() {
         </div>
 
         {/* Left Side: Actions (Search Trigger, User, Cart Drawer, Mobile Menu) */}
-        <div className="flex items-center gap-3 md:gap-5 text-gray-300 shrink-0">
+        <div className="flex items-center gap-3 md:gap-5 text-slate-600 shrink-0">
           
           {/* Magnifier Search Toggle Button (When Collapsed) */}
           {!isSearchExpanded && (
@@ -320,7 +320,7 @@ export default function Navbar() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.92 }}
               onClick={() => setIsSearchExpanded(true)}
-              className="p-2 text-zinc-300 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-2 text-slate-600 hover:text-[#0082CA] rounded-full hover:bg-sky-50 transition-colors cursor-pointer"
               aria-label="Open search bar"
             >
               <Search className="w-5 h-5" />
@@ -338,43 +338,43 @@ export default function Navbar() {
               <DropdownMenuTrigger asChild>
                 <button 
                   className={cn(
-                    "p-2 hover:text-white rounded-full transition-colors outline-none cursor-pointer flex items-center relative",
-                    isLoggedIn ? "bg-white/10 text-white ring-1 ring-white/20" : "hover:bg-white/10"
+                    "p-2 hover:text-[#0082CA] rounded-full transition-colors outline-none cursor-pointer flex items-center relative",
+                    isLoggedIn ? "bg-sky-50 text-[#0082CA] ring-1 ring-[#0082CA]/30" : "hover:bg-sky-50"
                   )}
                   aria-label="User Account"
                 >
                   <User className="w-5 h-5" />
                   {isLoggedIn && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 absolute top-1.5 right-1.5 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 absolute top-1.5 right-1.5 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-[#111111] border border-white/10 text-white w-52 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
+              <DropdownMenuContent align="end" className="bg-white border border-sky-100 text-slate-800 w-52 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
                 {isLoggedIn ? (
                   <>
-                    <div className="px-3 py-2 border-b border-white/10 mb-1">
-                      <p className="text-[11px] text-gray-400">حساب کاربری</p>
-                      <p className="text-xs font-bold text-white truncate">{userDisplayName}</p>
+                    <div className="px-3 py-2 border-b border-sky-100 mb-1">
+                      <p className="text-[11px] text-slate-400">حساب کاربری</p>
+                      <p className="text-xs font-bold text-slate-800 truncate">{userDisplayName}</p>
                     </div>
-                    <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
+                    <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
                       <Link href="/profile">پروفایل کاربری</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
+                    <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
                       <Link href="/profile">سفارش‌های من</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
+                    <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
                       <Link href="/profile">لیست علاقه‌مندی‌ها</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuSeparator className="bg-sky-100" />
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="focus:bg-rose-500/20 text-rose-400 hover:text-rose-300 cursor-pointer rounded-xl text-right font-bold text-xs"
+                      className="focus:bg-rose-50 text-rose-500 hover:text-rose-600 cursor-pointer rounded-xl text-right font-bold text-xs"
                     >
                       خروج از حساب کاربری
                     </DropdownMenuItem>
                   </>
                 ) : (
-                  <DropdownMenuItem asChild className="focus:bg-white/10 cursor-pointer rounded-xl text-right">
+                  <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
                     <Link href="/auth">ورود / ثبت‌نام</Link>
                   </DropdownMenuItem>
                 )}
@@ -385,42 +385,42 @@ export default function Navbar() {
           {/* Shopping Cart Drawer */}
           <Sheet>
             <SheetTrigger asChild>
-              <button className="relative p-2 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer outline-none flex items-center">
+              <button className="relative p-2 hover:text-[#0082CA] hover:bg-sky-50 rounded-full transition-colors cursor-pointer outline-none flex items-center">
                 <ShoppingBag className="w-5 h-5" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-white text-black font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
+                  <span className="absolute -top-1 -right-1 bg-[#0082CA] text-white font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
                     {itemCount}
                   </span>
                 )}
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="bg-[#0a0a0a] border-r border-white/10 text-white w-full sm:max-w-md flex flex-col p-6 font-sans" dir="rtl">
-              <SheetHeader className="text-right pb-4 border-b border-white/10 flex flex-row items-center justify-between">
-                <SheetTitle className="text-white text-lg font-bold font-sans">سبد خرید ({itemCount})</SheetTitle>
+            <SheetContent side="left" className="bg-white border-r border-sky-100 text-slate-800 w-full sm:max-w-md flex flex-col p-6 font-sans" dir="rtl">
+              <SheetHeader className="text-right pb-4 border-b border-sky-100 flex flex-row items-center justify-between">
+                <SheetTitle className="text-slate-900 text-lg font-bold font-sans">سبد خرید ({itemCount})</SheetTitle>
               </SheetHeader>
               
               <div className="flex-1 overflow-y-auto py-4 space-y-4">
                 {items.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center space-y-4 text-gray-500">
-                    <ShoppingBag className="w-12 h-12 opacity-20" />
-                    <p>سبد خرید شما در حال حاضر خالی است.</p>
+                  <div className="flex flex-col items-center justify-center h-full text-center space-y-4 text-slate-400">
+                    <ShoppingBag className="w-12 h-12 opacity-30 text-[#0082CA]" />
+                    <p className="text-sm font-medium">سبد خرید شما در حال حاضر خالی است.</p>
                   </div>
                 ) : (
                   items.map((item) => (
-                    <div key={item.id} className="flex gap-4 items-center bg-white/5 p-3 rounded-2xl border border-white/5">
-                      <img src={item.imageUrl} alt={item.name} className="w-16 h-20 object-cover rounded-xl border border-white/10" />
+                    <div key={item.id} className="flex gap-4 items-center bg-sky-50/50 p-3 rounded-2xl border border-sky-100">
+                      <img src={item.imageUrl} alt={item.name} className="w-16 h-20 object-cover rounded-xl border border-sky-100 shadow-sm" />
                       <div className="flex-1 space-y-1">
-                        <h4 className="font-bold text-sm text-white line-clamp-1">{item.name}</h4>
+                        <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{item.name}</h4>
                         {item.size && (
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-slate-500">
                             سایز: {item.size}
                           </div>
                         )}
-                        <div className="text-xs text-gray-300 font-medium">
+                        <div className="text-xs text-[#006CA8] font-bold">
                           {formatPriceNumber(item.price)} تومان × {item.quantity}
                         </div>
                       </div>
-                      <button onClick={() => removeItem(item.id, item.size, item.variant_id)} className="text-gray-500 hover:text-rose-400 transition-colors p-2 cursor-pointer">
+                      <button onClick={() => removeItem(item.id, item.size, item.variant_id)} className="text-slate-400 hover:text-rose-500 transition-colors p-2 cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -429,7 +429,7 @@ export default function Navbar() {
               </div>
 
               {items.length > 0 && (
-                <div className="border-t border-white/10 pt-4 space-y-4">
+                <div className="border-t border-sky-100 pt-4 space-y-4">
                   {/* Coupon Box */}
                   <div className="flex gap-2">
                     <Input
@@ -437,7 +437,7 @@ export default function Navbar() {
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value)}
                       disabled={!!coupon}
-                      className="bg-white/5 border-white/10 text-white rounded-xl text-xs h-10"
+                      className="bg-sky-50/60 border-sky-200 text-slate-800 rounded-xl text-xs h-10 placeholder:text-slate-400"
                     />
                     {coupon ? (
                       <Button
@@ -466,7 +466,7 @@ export default function Navbar() {
                         disabled={isApplyingCoupon || !couponInput.trim()}
                         variant="secondary"
                         size="sm"
-                        className="rounded-xl text-xs shrink-0 cursor-pointer"
+                        className="rounded-xl text-xs shrink-0 cursor-pointer bg-sky-100 text-[#006CA8] hover:bg-sky-200 border border-sky-200"
                       >
                         {isApplyingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "اعمال"}
                       </Button>
@@ -474,25 +474,25 @@ export default function Navbar() {
                   </div>
 
                   {/* Summary Details */}
-                  <div className="space-y-1.5 text-xs text-gray-400">
+                  <div className="space-y-1.5 text-xs text-slate-500">
                     <div className="flex justify-between">
                       <span>جمع اقلام:</span>
-                      <span>{formatPrice(getTotal())}</span>
+                      <span className="font-semibold text-slate-700">{formatPrice(getTotal())}</span>
                     </div>
                     {coupon && (
-                      <div className="flex justify-between text-emerald-400 font-medium">
+                      <div className="flex justify-between text-emerald-600 font-medium">
                         <span>تخفیف ({coupon.code}):</span>
                         <span>- {formatPrice(getDiscountAmount())}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-white/10">
+                    <div className="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-sky-100">
                       <span>مبلغ قابل پرداخت:</span>
-                      <span>{formatPrice(getFinalTotal())}</span>
+                      <span className="text-[#0082CA] text-base">{formatPrice(getFinalTotal())}</span>
                     </div>
                   </div>
 
                   <SheetClose asChild>
-                    <Button asChild className="w-full bg-white text-black hover:bg-gray-200 font-bold rounded-2xl h-12 cursor-pointer">
+                    <Button asChild className="w-full bg-[#0082CA] text-white hover:bg-[#006CA8] font-bold rounded-2xl h-12 shadow-lg shadow-[#0082CA]/25 cursor-pointer">
                       <Link href="/checkout">ثبت سفارش و پرداخت</Link>
                     </Button>
                   </SheetClose>
@@ -505,39 +505,39 @@ export default function Navbar() {
           <div className="md:hidden flex items-center">
             <Sheet>
               <SheetTrigger asChild>
-                <button className="p-2 hover:text-white transition-colors cursor-pointer outline-none">
+                <button className="p-2 text-slate-700 hover:text-[#0082CA] transition-colors cursor-pointer outline-none">
                   <Menu className="w-5 h-5" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="right" className="bg-[#0a0a0a] border-l border-white/10 text-white w-[280px] flex flex-col p-6 font-sans" dir="rtl">
-                <SheetHeader className="text-right pb-6 border-b border-white/10">
-                  <SheetTitle className="text-white text-2xl font-black font-sans">منو</SheetTitle>
+              <SheetContent side="right" className="bg-white border-l border-sky-100 text-slate-800 w-[280px] flex flex-col p-6 font-sans" dir="rtl">
+                <SheetHeader className="text-right pb-6 border-b border-sky-100">
+                  <SheetTitle className="text-[#0082CA] text-2xl font-black font-sans">فشن استور</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-5 py-6 text-base font-medium">
-                  <SheetClose asChild><Link href="/products" className="hover:text-gray-300 transition-colors">فروشگاه و کاتالوگ</Link></SheetClose>
-                  <SheetClose asChild><Link href="/search?sort=newest" className="hover:text-gray-300 transition-colors">جدیدترین محصولات</Link></SheetClose>
-                  <SheetClose asChild><Link href="/search?sort=best_selling" className="hover:text-gray-300 transition-colors">پرفروش‌ترین‌ها</Link></SheetClose>
-                  <SheetClose asChild><Link href="/search?sort=trending" className="hover:text-gray-300 transition-colors">ترندها</Link></SheetClose>
+                  <SheetClose asChild><Link href="/products" className="hover:text-[#0082CA] transition-colors text-slate-700">فروشگاه و کاتالوگ</Link></SheetClose>
+                  <SheetClose asChild><Link href="/search?sort=newest" className="hover:text-[#0082CA] transition-colors text-slate-700">جدیدترین محصولات</Link></SheetClose>
+                  <SheetClose asChild><Link href="/search?sort=best_selling" className="hover:text-[#0082CA] transition-colors text-slate-700">پرفروش‌ترین‌ها</Link></SheetClose>
+                  <SheetClose asChild><Link href="/search?sort=trending" className="hover:text-[#0082CA] transition-colors text-slate-700">ترندها</Link></SheetClose>
                   
-                  <div className="border-t border-white/10 pt-5 flex flex-col gap-4">
+                  <div className="border-t border-sky-100 pt-5 flex flex-col gap-4">
                     {isLoggedIn ? (
                       <>
                         <div className="pb-1">
-                          <p className="text-[11px] text-gray-400">کاربر وارد شده:</p>
-                          <p className="text-xs font-bold text-emerald-400 truncate">{userDisplayName}</p>
+                          <p className="text-[11px] text-slate-400">کاربر وارد شده:</p>
+                          <p className="text-xs font-bold text-emerald-600 truncate">{userDisplayName}</p>
                         </div>
-                        <SheetClose asChild><Link href="/profile" className="hover:text-gray-300 transition-colors">پروفایل کاربری</Link></SheetClose>
+                        <SheetClose asChild><Link href="/profile" className="hover:text-[#0082CA] transition-colors text-slate-700">پروفایل کاربری</Link></SheetClose>
                         <SheetClose asChild>
                           <button
                             onClick={handleLogout}
-                            className="text-right text-rose-400 hover:text-rose-300 transition-colors font-bold text-sm cursor-pointer"
+                            className="text-right text-rose-500 hover:text-rose-600 transition-colors font-bold text-sm cursor-pointer"
                           >
                             خروج از حساب کاربری
                           </button>
                         </SheetClose>
                       </>
                     ) : (
-                      <SheetClose asChild><Link href="/auth" className="hover:text-gray-300 transition-colors">ورود / ثبت‌نام</Link></SheetClose>
+                      <SheetClose asChild><Link href="/auth" className="hover:text-[#0082CA] transition-colors text-slate-700 font-bold">ورود / ثبت‌نام</Link></SheetClose>
                     )}
                   </div>
                 </div>
@@ -556,13 +556,13 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="absolute top-20 w-full max-w-3xl bg-[#0f0f0f]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-5 shadow-2xl text-white z-40 overflow-hidden"
+            className="absolute top-20 w-full max-w-3xl bg-white/95 backdrop-blur-2xl border border-sky-100 rounded-3xl p-5 shadow-2xl text-slate-800 z-40 overflow-hidden"
             dir="rtl"
           >
             {/* Quick Popular Keywords */}
-            <div className="flex items-center gap-2 pb-3 mb-3 border-b border-white/10 flex-wrap">
-              <span className="text-xs text-zinc-400 flex items-center gap-1.5 font-bold">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <div className="flex items-center gap-2 pb-3 mb-3 border-b border-sky-100 flex-wrap">
+              <span className="text-xs text-slate-500 flex items-center gap-1.5 font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-[#0082CA]" />
                 پیشنهادهای سریع:
               </span>
               {POPULAR_SEARCH_TAGS.map((tag) => (
@@ -574,7 +574,7 @@ export default function Navbar() {
                     setIsSearchExpanded(false);
                     router.push(`/search?q=${encodeURIComponent(tag)}`);
                   }}
-                  className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/15 hover:border-white/30 transition-all cursor-pointer"
+                  className="text-xs px-3 py-1 rounded-full bg-sky-50 border border-sky-200/60 text-[#006CA8] hover:text-[#0082CA] hover:bg-sky-100 transition-all cursor-pointer font-medium"
                 >
                   {tag}
                 </button>
@@ -584,33 +584,33 @@ export default function Navbar() {
             {/* Live Search Results List */}
             {searchResults.length > 0 ? (
               <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
-                <div className="text-[11px] font-bold text-zinc-400 px-1">نتایج سریع محصولات ({searchResults.length})</div>
+                <div className="text-[11px] font-bold text-slate-500 px-1">نتایج سریع محصولات ({searchResults.length})</div>
                 {searchResults.slice(0, 5).map((product) => (
                   <div
                     key={product.id}
                     onClick={() => handleProductClick(product.id)}
-                    className="flex items-center gap-4 p-2.5 hover:bg-white/10 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-white/10"
+                    className="flex items-center gap-4 p-2.5 hover:bg-sky-50 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-sky-100"
                   >
                     <img
                       src={product.imageUrl || product.image || "/globe.svg"}
                       alt={product.name || product.title}
-                      className="w-12 h-14 object-cover rounded-xl border border-white/10 shrink-0"
+                      className="w-12 h-14 object-cover rounded-xl border border-sky-100 shrink-0 shadow-sm"
                     />
                     <div className="flex flex-col flex-1 min-w-0">
-                      <h4 className="font-bold text-xs md:text-sm text-white truncate">{product.name || product.title}</h4>
-                      <span className="text-[11px] text-zinc-400 mt-0.5 truncate">{product.category}</span>
+                      <h4 className="font-bold text-xs md:text-sm text-slate-800 truncate">{product.name || product.title}</h4>
+                      <span className="text-[11px] text-slate-400 mt-0.5 truncate">{product.category}</span>
                     </div>
-                    <div className="text-xs font-bold text-zinc-200 shrink-0">
+                    <div className="text-xs font-bold text-[#0082CA] shrink-0">
                       {formatPrice(product.price)}
                     </div>
                   </div>
                 ))}
 
-                <div className="pt-2 border-t border-white/10 text-center">
+                <div className="pt-2 border-t border-sky-100 text-center">
                   <button
                     type="button"
                     onClick={() => handleSearchSubmit()}
-                    className="text-xs text-amber-400 hover:text-amber-300 font-bold py-1.5 px-4 transition-colors flex items-center justify-center gap-1.5 mx-auto"
+                    className="text-xs text-[#0082CA] hover:text-[#006CA8] font-bold py-1.5 px-4 transition-colors flex items-center justify-center gap-1.5 mx-auto"
                   >
                     <span>مشاهده تمام نتایج جستجو در کاتالوگ</span>
                     <ArrowLeft className="w-3.5 h-3.5" />
@@ -619,18 +619,18 @@ export default function Navbar() {
               </div>
             ) : searchQuery.trim().length > 0 && !isSearching ? (
               <div className="text-center py-6 space-y-2">
-                <p className="text-xs text-zinc-400">محصولی با این عنوان یافت نشد.</p>
+                <p className="text-xs text-slate-500">محصولی با این عنوان یافت نشد.</p>
                 <Button
                   onClick={() => handleSearchSubmit()}
                   variant="outline"
                   size="sm"
-                  className="text-xs border-white/15 text-white rounded-xl"
+                  className="text-xs border-sky-200 text-[#0082CA] hover:bg-sky-50 rounded-xl"
                 >
                   جستجوی جامع در کاتالوگ
                 </Button>
               </div>
             ) : (
-              <p className="text-center text-zinc-500 py-4 text-xs">
+              <p className="text-center text-slate-400 py-4 text-xs">
                 برای جستجو نام کالا را تایپ کنید یا کلید Enter را فشار دهید...
               </p>
             )}

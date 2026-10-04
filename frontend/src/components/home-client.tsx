@@ -373,13 +373,13 @@ export default function HomeClient({
       {/* Hero Section - Full Bleed Immersive Background */}
       <section className="relative w-full min-h-[90vh] md:min-h-screen flex flex-col justify-between overflow-hidden px-4 md:px-6 pt-28 md:pt-32 pb-16">
         {/* Background Image spanning from the very top behind Navbar */}
-        <div className="absolute inset-0 z-0 bg-[#0a0a0a]">
+        <div className="absolute inset-0 z-0 bg-[#FAFCFE]">
           <img 
             src={heroContent.image_url || DEFAULT_HERO_CONTENT.image_url} 
             alt="Hero Background" 
-            className="w-full h-full object-cover object-top opacity-35"
+            className="w-full h-full object-cover object-top opacity-15 mix-blend-multiply"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-[#0a0a0a]"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-sky-50/80 via-white/60 to-[#FAFCFE]"></div>
         </div>
 
         {/* Dynamic Monochrome Ambient Banner */}
@@ -388,13 +388,13 @@ export default function HomeClient({
             <Banner
               id="top-hero-announcement"
               variant="rainbow"
-              className="rounded-xl sm:rounded-2xl border border-white/15 bg-black/60 shadow-2xl backdrop-blur-xl w-full min-h-[2.5rem] sm:min-h-[2.75rem] md:min-h-[3rem] px-3 sm:px-6"
+              className="rounded-xl sm:rounded-2xl border border-sky-100 bg-white/90 shadow-md shadow-sky-950/5 backdrop-blur-xl w-full min-h-[2.5rem] sm:min-h-[2.75rem] md:min-h-[3rem] px-3 sm:px-6"
             >
               <div className="flex items-center justify-center gap-2 flex-wrap sm:flex-nowrap text-center max-w-full">
-                <span className="bg-white text-black font-black text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                  {announcement.badge || "اطلاعیه"}
+                <span className="bg-[#0082CA] text-white font-bold text-[9px] sm:text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm">
+                  {announcement.badge || "فروش ویژه"}
                 </span>
-                <span className="text-xs sm:text-sm font-medium text-white/90 truncate max-w-[240px] sm:max-w-md md:max-w-xl">
+                <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate max-w-[240px] sm:max-w-md md:max-w-xl">
                   {announcement.text}
                 </span>
               </div>
@@ -408,10 +408,10 @@ export default function HomeClient({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/15 bg-white/5 backdrop-blur-md"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-sky-200 bg-sky-50/80 backdrop-blur-md shadow-sm"
           >
-            <Sparkles className="w-3.5 h-3.5 text-zinc-300" />
-            <span className="text-xs font-semibold tracking-wider text-zinc-300">
+            <Sparkles className="w-3.5 h-3.5 text-[#0082CA]" />
+            <span className="text-xs font-bold tracking-wider text-[#0082CA]">
               {heroContent.badge || "کالکشن جدید ۲۰۲۶"}
             </span>
           </motion.div>
@@ -424,9 +424,9 @@ export default function HomeClient({
           >
             <AnimatedText
               text={heroContent.headline || "شکوه و ظرافت جاودان"}
-              className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.1]"
+              className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[#0B192C] tracking-tight leading-[1.1]"
             />
-            <p className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-zinc-400 font-light leading-relaxed">
+            <p className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-slate-600 font-normal leading-relaxed">
               {heroContent.subtitle || "طراحی‌های خیره‌کننده با مرغوب‌ترین الیاف کشمیر، ابریشم و چرم طبیعی ایتالیا"}
             </p>
           </motion.div>
@@ -441,6 +441,7 @@ export default function HomeClient({
             <FlowButton
               href={heroContent.cta_link || "/women"}
               size="lg"
+              variant="primary"
             >
               {heroContent.cta_label || "مشاهده جدیدترین‌ها"}
             </FlowButton>
@@ -449,6 +450,7 @@ export default function HomeClient({
             <FlowButton
               href="/women"
               size="lg"
+              variant="secondary"
             >
               حراج و فروش ویژه
             </FlowButton>
@@ -456,22 +458,22 @@ export default function HomeClient({
         </div>
 
         {/* Minimalist Trust & Highlights Bar */}
-        <div className="relative z-10 w-full max-w-5xl mx-auto pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div className="relative z-10 w-full max-w-5xl mx-auto pt-8 border-t border-sky-100 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div className="space-y-1">
-            <span className="text-xs md:text-sm font-bold text-white block">ارسال رایگان</span>
-            <span className="text-[10px] md:text-xs text-zinc-500 block">برای خریدهای بالای ۲ میلیون</span>
+            <span className="text-xs md:text-sm font-bold text-[#0B192C] block">ارسال رایگان</span>
+            <span className="text-[10px] md:text-xs text-slate-500 block">برای خریدهای بالای ۲ میلیون</span>
           </div>
           <div className="space-y-1">
-            <span className="text-xs md:text-sm font-bold text-white block">اصالت تضمینی</span>
-            <span className="text-[10px] md:text-xs text-zinc-500 block">متریال وارداتی درجه یک</span>
+            <span className="text-xs md:text-sm font-bold text-[#0B192C] block">اصالت تضمینی</span>
+            <span className="text-[10px] md:text-xs text-slate-500 block">متریال وارداتی درجه یک</span>
           </div>
           <div className="space-y-1">
-            <span className="text-xs md:text-sm font-bold text-white block">ضمانت تعویض</span>
-            <span className="text-[10px] md:text-xs text-zinc-500 block">۷ روز بدون قید و شرط</span>
+            <span className="text-xs md:text-sm font-bold text-[#0B192C] block">ضمانت تعویض</span>
+            <span className="text-[10px] md:text-xs text-slate-500 block">۷ روز بدون قید و شرط</span>
           </div>
           <div className="space-y-1">
-            <span className="text-xs md:text-sm font-bold text-white block">پشتیبانی VIP</span>
-            <span className="text-[10px] md:text-xs text-zinc-500 block">پاسخگویی سریع ۲۴ ساعته</span>
+            <span className="text-xs md:text-sm font-bold text-[#0B192C] block">پشتیبانی VIP</span>
+            <span className="text-[10px] md:text-xs text-slate-500 block">پاسخگویی سریع ۲۴ ساعته</span>
           </div>
         </div>
       </section>
@@ -485,18 +487,19 @@ export default function HomeClient({
         className="relative max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 overflow-hidden"
         dir="rtl"
       >
-        <div className="flex items-end justify-between mb-8 md:mb-12 border-b border-white/10 pb-6">
+        <div className="flex items-end justify-between mb-8 md:mb-12 border-b border-sky-100 pb-6">
           <div>
             <div className="flex items-center gap-2 md:gap-3 mb-2">
-              <Sparkles className="w-4 h-4 text-zinc-300" />
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">جدیدترین‌های فصل</h2>
+              <Sparkles className="w-4 h-4 text-[#0082CA]" />
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#0B192C]">جدیدترین‌های فصل</h2>
             </div>
-            <p className="text-sm text-zinc-400">گزیده‌ای از خاص‌ترین و جدیدترین طراحی‌های مد روز با سبک مدرن مینیمال</p>
+            <p className="text-sm text-slate-600">گزیده‌ای از خاص‌ترین و جدیدترین طراحی‌های مد روز با سبک مدرن مینیمال</p>
           </div>
 
           <FlowButton
             href="/search?sort=newest"
             size="sm"
+            variant="secondary"
             className="hidden md:inline-flex"
           >
             مشاهده همه جدیدترین‌ها
@@ -504,7 +507,7 @@ export default function HomeClient({
         </div>
 
         {/* 3D Coverflow Carousel for New Arrivals */}
-        <div className="bg-[#111111]/40 border border-white/5 rounded-3xl p-4 md:p-8 backdrop-blur-sm shadow-2xl">
+        <div className="bg-sky-50/40 border border-sky-100 rounded-3xl p-4 md:p-8 shadow-sm">
           <CoverflowCarousel
             slides={newArrivalsSlides}
             showCaption={true}
@@ -531,18 +534,19 @@ export default function HomeClient({
         className="relative max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 overflow-hidden"
         dir="rtl"
       >
-        <div className="flex items-end justify-between mb-8 md:mb-12 border-b border-white/10 pb-6">
+        <div className="flex items-end justify-between mb-8 md:mb-12 border-b border-sky-100 pb-6">
           <div>
             <div className="flex items-center gap-2 md:gap-3 mb-2">
-              <Flame className="w-4 h-4 text-zinc-300" />
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">حراج و فروش ویژه</h2>
+              <Flame className="w-4 h-4 text-[#0082CA]" />
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#0B192C]">حراج و فروش ویژه</h2>
             </div>
-            <p className="text-sm text-zinc-400">بهترین موقعیت خرید استایل‌های محبوب با تخفیف‌های استثنایی و محدود</p>
+            <p className="text-sm text-slate-600">بهترین موقعیت خرید استایل‌های محبوب با تخفیف‌های استثنایی و محدود</p>
           </div>
 
           <FlowButton
             href="/women"
             size="sm"
+            variant="secondary"
             className="hidden md:inline-flex"
           >
             مشاهده همه حراج‌ها
@@ -550,7 +554,7 @@ export default function HomeClient({
         </div>
 
         {/* 3D Coverflow Carousel for Special Sales */}
-        <div className="bg-[#111111]/40 border border-white/5 rounded-3xl p-4 md:p-8 backdrop-blur-sm shadow-2xl">
+        <div className="bg-sky-50/40 border border-sky-100 rounded-3xl p-4 md:p-8 shadow-sm">
           <CoverflowCarousel
             slides={specialSaleSlides}
             showCaption={true}
@@ -587,20 +591,21 @@ export default function HomeClient({
         className="relative max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20 z-0 overflow-hidden"
         dir="rtl"
       >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] md:w-[1000px] h-[600px] md:h-[1000px] bg-white/[0.03] rounded-full blur-[120px] pointer-events-none -z-10"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] md:w-[1000px] h-[600px] md:h-[1000px] bg-sky-100/40 rounded-full blur-[120px] pointer-events-none -z-10"></div>
         
-        <div className="flex items-end justify-between mb-8 md:mb-12 relative z-10 border-b border-white/10 pb-6">
+        <div className="flex items-end justify-between mb-8 md:mb-12 relative z-10 border-b border-sky-100 pb-6">
           <div>
             <div className="flex items-center gap-2 md:gap-3 mb-2">
-              <TrendingUp className="w-4 h-4 text-zinc-300" />
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">پرفروش‌ترین‌ها</h2>
+              <TrendingUp className="w-4 h-4 text-[#0082CA]" />
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#0B192C]">پرفروش‌ترین‌ها</h2>
             </div>
-            <p className="text-sm text-zinc-400">محصولاتی که بیشترین رضایت و توجه خریداران را به همراه داشته‌اند</p>
+            <p className="text-sm text-slate-600">محصولاتی که بیشترین رضایت و توجه خریداران را به همراه داشته‌اند</p>
           </div>
 
           <FlowButton
             href="/search?sort=best_selling"
             size="sm"
+            variant="secondary"
             className="hidden md:inline-flex"
           >
             مشاهده همه پرفروش‌ترین‌ها
@@ -619,10 +624,10 @@ export default function HomeClient({
                 transition={{ delay: index * 0.08, duration: 0.5 }}
                 className="group flex flex-col w-[150px] min-w-[150px] max-w-[150px] sm:w-[200px] sm:min-w-[200px] sm:max-w-[200px] md:w-auto md:min-w-0 md:max-w-none shrink-0 snap-start"
               >
-                <Link href={`/products/${product.id}`} className="block relative aspect-[4/5] md:aspect-[3/4] overflow-hidden rounded-2xl md:rounded-3xl bg-[#111111] border border-white/5 mb-2 md:mb-4">
+                <Link href={`/products/${product.id}`} className="block relative aspect-[4/5] md:aspect-[3/4] overflow-hidden rounded-2xl md:rounded-3xl bg-white border border-sky-100 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all mb-2 md:mb-4">
                   {disc.hasDiscount && (
                     <div className="absolute top-2.5 right-2.5 z-20">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-black text-[10px] font-black shadow-[0_2px_10px_rgba(16,185,129,0.5)]">
+                      <span className="px-2 py-0.5 rounded-full bg-[#0082CA] text-white text-[10px] font-bold shadow-md shadow-[#0082CA]/30">
                         ٪{disc.discountPercent} تخفیف
                       </span>
                     </div>
@@ -632,27 +637,27 @@ export default function HomeClient({
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <span className="bg-white text-black px-3 md:px-6 py-2 md:py-3 rounded-full font-bold text-[10px] md:text-sm transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-1 md:gap-2">
-                      <ShoppingBag className="w-3 h-3 md:w-4 md:h-4" />
+                  <div className="absolute inset-0 bg-[#0B192C]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <span className="bg-white text-[#0082CA] px-3 md:px-6 py-2 md:py-3 rounded-full font-bold text-[10px] md:text-sm transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-1 md:gap-2 shadow-lg">
+                      <ShoppingBag className="w-3 h-3 md:w-4 md:h-4 text-[#0082CA]" />
                       مشاهده
                     </span>
                   </div>
                 </Link>
                 <div className="flex flex-col px-1">
-                  <h3 className="text-sm md:text-lg font-bold text-white mb-0.5 md:mb-1 line-clamp-1">{product.name}</h3>
-                  <span className="text-[10px] md:text-sm text-zinc-400 mb-1 md:mb-2">{(product.category || "").split('-')[1]?.trim() || product.category}</span>
+                  <h3 className="text-sm md:text-lg font-bold text-[#0B192C] mb-0.5 md:mb-1 line-clamp-1">{product.name}</h3>
+                  <span className="text-[10px] md:text-sm text-slate-500 mb-1 md:mb-2">{(product.category || "").split('-')[1]?.trim() || product.category}</span>
                   {disc.hasDiscount ? (
                     <div className="flex flex-col">
-                      <span className="text-[10px] md:text-xs text-zinc-500 line-through">
+                      <span className="text-[10px] md:text-xs text-slate-400 line-through">
                         {formatPrice(disc.basePrice)}
                       </span>
-                      <span className="text-emerald-400 font-bold text-xs md:text-base">
+                      <span className="text-[#0082CA] font-bold text-xs md:text-base">
                         {formatPrice(disc.discountPrice)}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-white font-semibold text-xs md:text-base">
+                    <span className="text-[#0B192C] font-bold text-xs md:text-base">
                       {formatPrice(product.price)}
                     </span>
                   )}

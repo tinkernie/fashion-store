@@ -77,8 +77,8 @@ export default function NotificationDropdown() {
         className={cn(
           "p-2 rounded-full transition-all outline-none cursor-pointer flex items-center justify-center relative",
           hasUnread
-            ? "text-amber-400 bg-amber-400/10 border border-amber-400/40 shadow-[0_0_18px_rgba(245,158,11,0.55)] hover:bg-amber-400/20"
-            : "text-zinc-300 hover:text-white hover:bg-white/10"
+            ? "text-[#0082CA] bg-sky-50 border border-sky-300 shadow-sm hover:bg-sky-100"
+            : "text-slate-600 hover:text-[#0082CA] hover:bg-sky-50"
         )}
         aria-label="اعلان‌ها و پیام‌ها"
         aria-expanded={isOpen}
@@ -93,8 +93,8 @@ export default function NotificationDropdown() {
         {/* Pulsing Glowing Badge when unread notifications exist */}
         {hasUnread && (
           <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center pointer-events-none">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-gradient-to-tr from-amber-500 to-yellow-300 text-[9px] font-black text-black items-center justify-center shadow-[0_0_10px_rgba(245,158,11,0.9)]">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0082CA] opacity-75" />
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-[#0082CA] text-[9px] font-black text-white items-center justify-center shadow-md">
               {unreadCount > 9 ? "+۹" : unreadCount.toLocaleString("fa-IR")}
             </span>
           </span>
@@ -109,22 +109,22 @@ export default function NotificationDropdown() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.96 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="absolute left-0 sm:left-auto sm:right-0 mt-3 w-80 sm:w-96 bg-[#111111]/95 backdrop-blur-2xl border border-white/15 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-50 overflow-hidden text-right font-sans"
+            className="absolute left-0 sm:left-auto sm:right-0 mt-3 w-80 sm:w-96 bg-white/95 backdrop-blur-2xl border border-sky-100 rounded-3xl shadow-2xl shadow-sky-950/10 z-50 overflow-hidden text-right font-sans"
           >
             {/* Header */}
-            <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+            <div className="p-4 border-b border-sky-100 flex items-center justify-between bg-sky-50/50">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-400">
+                <div className="w-7 h-7 rounded-xl bg-sky-100 border border-sky-200 flex items-center justify-center text-[#0082CA]">
                   <Bell className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-white">اعلان‌ها و پیام‌ها</h4>
+                  <h4 className="text-xs font-black text-[#0B192C]">اعلان‌ها و پیام‌ها</h4>
                   {hasUnread ? (
-                    <span className="text-[10px] text-amber-400 font-medium">
+                    <span className="text-[10px] text-[#0082CA] font-medium">
                       {unreadCount.toLocaleString("fa-IR")} پیام خوانده‌نشده
                     </span>
                   ) : (
-                    <span className="text-[10px] text-gray-500">همه خوانده شده‌اند</span>
+                    <span className="text-[10px] text-slate-500">همه خوانده شده‌اند</span>
                   )}
                 </div>
               </div>
@@ -133,28 +133,28 @@ export default function NotificationDropdown() {
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="flex items-center gap-1 text-[11px] font-bold text-gray-300 hover:text-white px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-[#0082CA] px-2.5 py-1 rounded-xl bg-white hover:bg-sky-50 border border-sky-200 transition-colors cursor-pointer shadow-sm"
                 >
-                  <CheckCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <CheckCheck className="w-3.5 h-3.5 text-[#0082CA]" />
                   خواندن همه
                 </button>
               )}
             </div>
 
             {/* Notifications Scrollable List */}
-            <div className="max-h-88 overflow-y-auto divide-y divide-white/5 custom-scrollbar">
+            <div className="max-h-88 overflow-y-auto divide-y divide-sky-100 custom-scrollbar">
               {isLoading && notifications.length === 0 ? (
-                <div className="py-12 text-center text-xs text-gray-500 space-y-2">
-                  <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="py-12 text-center text-xs text-slate-500 space-y-2">
+                  <div className="w-5 h-5 border-2 border-[#0082CA] border-t-transparent rounded-full animate-spin mx-auto" />
                   <p>در حال دریافت اعلان‌ها...</p>
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="py-12 px-6 text-center space-y-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 mx-auto">
-                    <Sparkles className="w-5 h-5 text-gray-600" />
+                  <div className="w-10 h-10 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center text-slate-500 mx-auto">
+                    <Sparkles className="w-5 h-5 text-[#0082CA]" />
                   </div>
-                  <p className="text-xs font-bold text-gray-300">هیچ اعلان جدیدی وجود ندارد</p>
-                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                  <p className="text-xs font-bold text-[#0B192C]">هیچ اعلان جدیدی وجود ندارد</p>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
                     پیام‌های تغییر وضعیت سفارش و هشدارهای مهم حساب کاربری در اینجا نمایش داده می‌شوند.
                   </p>
                 </div>
@@ -170,17 +170,17 @@ export default function NotificationDropdown() {
                       }
                     }}
                     className={cn(
-                      "p-4 transition-all hover:bg-white/[0.05] flex items-start gap-3 relative transition-colors",
+                      "p-4 transition-all hover:bg-sky-50/60 flex items-start gap-3 relative transition-colors",
                       notif.productId ? "cursor-pointer group" : "",
-                      notif.is_read ? "opacity-75" : "bg-amber-400/[0.03]"
+                      notif.is_read ? "opacity-75" : "bg-sky-50/30"
                     )}
                   >
                     {/* Unread indicator dot */}
                     <div className="pt-1 shrink-0">
                       {!notif.is_read ? (
-                        <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)] block" />
+                        <span className="w-2 h-2 rounded-full bg-[#0082CA] shadow-[0_0_8px_rgba(0,130,202,0.6)] block" />
                       ) : (
-                        <span className="w-2 h-2 rounded-full bg-white/10 block" />
+                        <span className="w-2 h-2 rounded-full bg-slate-300 block" />
                       )}
                     </div>
 
@@ -194,12 +194,12 @@ export default function NotificationDropdown() {
                               setIsOpen(false);
                               if (!notif.is_read) markAsRead(notif.id);
                             }}
-                            className="text-xs font-bold text-white hover:text-emerald-400 transition-colors leading-tight"
+                            className="text-xs font-bold text-[#0B192C] hover:text-[#0082CA] transition-colors leading-tight"
                           >
                             {notif.title}
                           </Link>
                         ) : (
-                          <span className="text-xs font-bold text-white leading-tight">
+                          <span className="text-xs font-bold text-[#0B192C] leading-tight">
                             {notif.title}
                           </span>
                         )}
@@ -208,26 +208,26 @@ export default function NotificationDropdown() {
                             className={cn(
                               "text-[9px] px-2 py-0.5 rounded-full font-medium border",
                               notif.type === "wishlist_discount" || notif.statusLabel.includes("تخفیف")
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                : "bg-amber-400/10 text-amber-400 border-amber-400/20"
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                : "bg-sky-50 text-[#0082CA] border-sky-200"
                             )}
                           >
                             {notif.statusLabel}
                           </span>
                         )}
                         {notif.typeLabel && !notif.statusLabel && (
-                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/10 text-gray-300 font-medium">
+                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
                             {notif.typeLabel}
                           </span>
                         )}
                       </div>
 
-                      <p className="text-[11px] text-gray-300 leading-relaxed line-clamp-3">
+                      <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-3">
                         {notif.body}
                       </p>
 
                       <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
-                        <span className="text-[10px] text-gray-500 font-sans">
+                        <span className="text-[10px] text-slate-400 font-sans">
                           {formatShamsiDate(notif.created_at, { mode: "full", withTime: true })}
                         </span>
 
@@ -239,7 +239,7 @@ export default function NotificationDropdown() {
                                 setIsOpen(false);
                                 if (!notif.is_read) markAsRead(notif.id);
                               }}
-                              className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 hover:underline bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg transition-colors"
+                              className="text-[10px] text-[#0082CA] hover:text-[#006CA8] font-bold flex items-center gap-1 hover:underline bg-sky-50 border border-sky-200 px-2.5 py-1 rounded-lg transition-colors shadow-sm"
                             >
                               <ShoppingBag className="w-3 h-3" />
                               مشاهده و خرید محصول
@@ -250,7 +250,7 @@ export default function NotificationDropdown() {
                             <Link
                               href="/profile?tab=orders"
                               onClick={() => setIsOpen(false)}
-                              className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 hover:underline"
+                              className="text-[10px] text-sky-700 hover:text-[#0082CA] font-bold flex items-center gap-1 hover:underline"
                             >
                               <Package className="w-3 h-3" />
                               سفارش {notif.orderNumber}
@@ -262,7 +262,7 @@ export default function NotificationDropdown() {
                               type="button"
                               onClick={(e) => handleMarkSingleRead(e, notif.id)}
                               title="خوانده شد"
-                              className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-white/10 transition-colors"
+                              className="text-slate-400 hover:text-[#0082CA] p-1 rounded-md hover:bg-sky-50 transition-colors"
                             >
                               <Check className="w-3 h-3" />
                             </button>
@@ -276,14 +276,14 @@ export default function NotificationDropdown() {
             </div>
 
             {/* Footer */}
-            <div className="p-3 border-t border-white/10 bg-white/[0.02] text-center">
+            <div className="p-3 border-t border-sky-100 bg-sky-50/40 text-center">
               <Link
                 href="/profile?tab=orders"
                 onClick={() => setIsOpen(false)}
-                className="text-xs font-bold text-gray-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
+                className="text-xs font-bold text-slate-600 hover:text-[#0082CA] transition-colors inline-flex items-center gap-1.5"
               >
                 مشاهده پیگیری و تاریخچه سفارشات
-                <ExternalLink className="w-3 h-3 text-gray-500" />
+                <ExternalLink className="w-3 h-3 text-slate-400" />
               </Link>
             </div>
           </motion.div>

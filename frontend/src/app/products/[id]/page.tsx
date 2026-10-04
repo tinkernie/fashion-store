@@ -327,7 +327,7 @@ export default function ProductDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white" dir="rtl">
+      <div className="min-h-screen bg-background flex items-center justify-center text-slate-800" dir="rtl">
         <HoneycombLoader 
           size="default" 
           text="در حال دریافت مشخصات و گالری کالا..." 
@@ -338,11 +338,11 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white px-4" dir="rtl">
+      <div className="min-h-screen bg-background flex items-center justify-center text-slate-800 px-4" dir="rtl">
         <div className="text-center space-y-4">
-          <h1 className="text-3xl font-black">محصول مورد نظر یافت نشد</h1>
-          <p className="text-xs text-gray-400">ممکن است این کالا حذف یا ناموجود شده باشد.</p>
-          <Button asChild className="h-11 px-6 rounded-xl bg-white text-black font-bold text-xs">
+          <h1 className="text-3xl font-black text-[#0B192C]">محصول مورد نظر یافت نشد</h1>
+          <p className="text-xs text-slate-500">ممکن است این کالا حذف یا ناموجود شده باشد.</p>
+          <Button asChild className="h-11 px-6 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#006CA8] shadow-md shadow-[#0082CA]/25">
             <Link href="/products">بازگشت به کاتالوگ فروشگاه</Link>
           </Button>
         </div>
@@ -503,7 +503,7 @@ export default function ProductDetailPage() {
 
 
   return (
-    <main className="min-h-screen w-full max-w-7xl min-w-0 mx-auto pt-24 sm:pt-28 pb-32 sm:pb-36 px-4 md:px-6 text-white overflow-x-hidden" dir="rtl">
+    <main className="min-h-screen w-full max-w-7xl min-w-0 mx-auto pt-24 sm:pt-28 pb-32 sm:pb-36 px-4 md:px-6 text-slate-800 overflow-x-hidden" dir="rtl">
       {/* Schema.org JSON-LD Structured Data */}
       {product?.seo_schema && (
         <script
@@ -515,29 +515,29 @@ export default function ProductDetailPage() {
       {/* Breadcrumbs & Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 sm:mb-8">
         {product?.breadcrumbs && product.breadcrumbs.length > 0 ? (
-          <nav aria-label="مسیر راهنما" className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+          <nav aria-label="مسیر راهنما" className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             {product.breadcrumbs.map((bc: { name: string; url: string }, idx: number) => {
               const localUrl = bc.url ? bc.url.replace(/^https?:\/\/[^\/]+/, "") : "/";
               return (
                 <span key={bc.url || idx} className="flex items-center gap-2">
                   <Link
                     href={localUrl || "/"}
-                    className="hover:text-amber-400 transition-colors"
+                    className="hover:text-[#0082CA] transition-colors"
                   >
                     {bc.name}
                   </Link>
-                  <span className="text-zinc-600">/</span>
+                  <span className="text-slate-300">/</span>
                 </span>
               );
             })}
-            <span className="text-white font-medium truncate max-w-[200px] md:max-w-xs">
+            <span className="text-[#0B192C] font-bold truncate max-w-[200px] md:max-w-xs">
               {product.title || product.name}
             </span>
           </nav>
         ) : (
           <Link
             href="/products"
-            className="inline-flex items-center gap-2 text-xs md:text-sm text-gray-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 text-xs md:text-sm text-slate-500 hover:text-[#0082CA] transition-colors"
           >
             <ArrowRight className="w-4 h-4" />
             بازگشت به کاتالوگ لباس‌ها
@@ -546,7 +546,7 @@ export default function ProductDetailPage() {
 
         <Link
           href="/products"
-          className="hidden sm:inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+          className="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-[#0082CA] transition-colors"
         >
           <ArrowRight className="w-3.5 h-3.5" />
           مشاهده همه محصولات
@@ -567,7 +567,7 @@ export default function ProductDetailPage() {
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col justify-center space-y-4 sm:space-y-6">
           {/* Header Badges & Rating */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <span className="bg-white/10 text-white px-3 py-1 rounded-full text-[11px] font-bold tracking-wider">
+            <span className="bg-sky-50 text-[#0082CA] border border-sky-200 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider">
               {product.category || product.category_name || "پوشاک لوکس"}
             </span>
             {/* Rating or New/No Review Indicator */}
@@ -578,38 +578,38 @@ export default function ProductDetailPage() {
                   const el = document.getElementById("reviews-section");
                   if (el) el.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="flex items-center gap-1.5 text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full text-xs font-bold transition-colors hover:bg-amber-400/20 cursor-pointer"
+                className="flex items-center gap-1.5 text-amber-500 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-bold transition-colors hover:bg-amber-100 cursor-pointer"
                 title={`${ratingStats.count.toLocaleString("fa-IR")} دیدگاه خریداران`}
               >
                 <Star className="w-3.5 h-3.5 fill-current" />
-                <span className="text-amber-300 font-bold">
+                <span className="text-amber-600 font-bold">
                   {ratingStats.average.toLocaleString("fa-IR", {
                     minimumFractionDigits: 1,
                     maximumFractionDigits: 1,
                   })}
                 </span>
-                <span className="text-[10px] text-zinc-400 font-normal">
+                <span className="text-[10px] text-slate-500 font-normal">
                   ({ratingStats.count.toLocaleString("fa-IR")})
                 </span>
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 text-zinc-500 bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full text-xs">
-                <Star className="w-3.5 h-3.5 text-zinc-500" />
-                <span className="text-[11px] text-zinc-400 font-medium">بدون امتیاز</span>
+              <div className="flex items-center gap-1.5 text-slate-400 bg-sky-50/50 border border-sky-100 px-2.5 py-0.5 rounded-full text-xs">
+                <Star className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[11px] text-slate-500 font-medium">بدون امتیاز</span>
               </div>
             )}
             {isOutOfStock ? (
-              <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 ناموجود در انبار
               </span>
             ) : isPreOrder ? (
-              <span className="bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="bg-purple-50 text-purple-600 border border-purple-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 پیش‌سفارش
               </span>
             ) : (
-              <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" />
                 موجود در انبار
               </span>
@@ -617,7 +617,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Title */}
-          <h1 className="text-xl sm:text-2xl md:text-4xl font-black text-white leading-snug sm:leading-tight">
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-black text-[#0B192C] leading-snug sm:leading-tight">
             {product.name || product.title}
           </h1>
 
@@ -625,43 +625,43 @@ export default function ProductDetailPage() {
           {discInfo.hasDiscount ? (
             <div className="space-y-2">
               <div className="flex items-baseline gap-2.5 sm:gap-3 flex-wrap">
-                <span className="text-sm sm:text-base md:text-lg text-gray-500 line-through decoration-rose-500/50 font-medium">
+                <span className="text-sm sm:text-base md:text-lg text-slate-400 line-through decoration-rose-400/50 font-medium">
                   {formatPriceNumber(currentPrice)}
                 </span>
-                <span className="text-xl sm:text-2xl md:text-4xl font-black text-emerald-400">
+                <span className="text-xl sm:text-2xl md:text-4xl font-black text-[#0082CA]">
                   {formatPriceNumber(discInfo.discountPrice)}
                 </span>
-                <span className="text-xs text-emerald-400 font-bold">تومان</span>
+                <span className="text-xs text-[#0082CA] font-bold">تومان</span>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                <span className="px-3 py-1 rounded-full bg-sky-50 text-[#0082CA] border border-sky-200 text-xs font-bold shadow-sm">
                   سود شما از این خرید: {formatPriceNumber(discInfo.savings)} تومان ({discInfo.discountPercent}٪ تخفیف)
                 </span>
                 {discInfo.remainingTime && (
-                  <span className="text-xs text-gray-400">
-                    مهلت باقی‌مانده: <strong className="text-white">{discInfo.remainingTime}</strong>
+                  <span className="text-xs text-slate-500">
+                    مهلت باقی‌مانده: <strong className="text-slate-800">{discInfo.remainingTime}</strong>
                   </span>
                 )}
               </div>
             </div>
           ) : (
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-xl sm:text-2xl md:text-4xl font-black text-amber-400">
+              <span className="text-xl sm:text-2xl md:text-4xl font-black text-[#0B192C]">
                 {formatPriceNumber(currentPrice)}
               </span>
-              <span className="text-xs text-gray-400">تومان</span>
+              <span className="text-xs text-slate-500">تومان</span>
             </div>
           )}
 
           {/* Description */}
-          <p className="text-xs md:text-sm text-gray-400 leading-relaxed">
+          <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
             {product.description ||
               "طراحی اختصاصی با برترین متریال‌های ارگانیک و دوخت سفارشی پریمیوم، مناسب برای استایل‌های روزمره، رسمی و ترند روز."}
           </p>
 
           {/* Dynamic Product Options (Colors, Sizes, etc.) */}
           {options.length > 0 && (
-            <div className="space-y-5 pt-4 border-t border-white/10">
+            <div className="space-y-5 pt-4 border-t border-sky-100">
               {options.map((opt) => {
                 const isColorOption =
                   opt.name.toLowerCase().includes("color") || opt.name.includes("رنگ");
@@ -670,10 +670,10 @@ export default function ProductDetailPage() {
                 return (
                   <div key={opt.id || opt.name} className="space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-xs font-bold text-[#0B192C] flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-[#0082CA]" />
                         {opt.name}:
-                        <span className="text-gray-300 font-normal">
+                        <span className="text-slate-600 font-normal">
                           {currentSelectedVal || "انتخاب نشده"}
                         </span>
                       </span>
@@ -694,8 +694,8 @@ export default function ProductDetailPage() {
                               title={val}
                               className={`relative w-11 h-11 rounded-full border transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
                                 isSelected
-                                  ? "border-amber-400 ring-2 ring-amber-400/50 scale-105"
-                                  : "border-white/20 hover:border-white/60"
+                                  ? "border-[#0082CA] ring-2 ring-[#0082CA]/40 scale-105 shadow-md"
+                                  : "border-slate-200 hover:border-slate-400"
                               }`}
                               style={{ background: colorBg }}
                             >
@@ -717,8 +717,8 @@ export default function ProductDetailPage() {
                             onClick={() => handleOptionChange(opt.name, val)}
                             className={`min-w-12 h-11 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center border cursor-pointer active:scale-95 ${
                               isSelected
-                                ? "bg-white text-black border-white shadow-lg"
-                                : "bg-[#141414] text-gray-300 border-white/10 hover:border-white/30"
+                                ? "bg-[#0082CA] text-white border-[#0082CA] shadow-md"
+                                : "bg-white text-slate-700 border-sky-200 hover:border-[#0082CA] hover:bg-sky-50"
                             }`}
                           >
                             {val}
@@ -733,38 +733,38 @@ export default function ProductDetailPage() {
           )}
 
           {/* Quantity & Stock Control */}
-          <div className="pt-4 border-t border-white/10 space-y-4">
+          <div className="pt-4 border-t border-sky-100 space-y-4">
             {isOutOfStock ? (
-              <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
                 <div className="space-y-0.5 text-right">
-                  <span className="text-xs font-bold text-rose-300 block">
+                  <span className="text-xs font-bold text-rose-700 block">
                     این کالا در حال حاضر در انبار موجود نمی‌باشد
                   </span>
-                  <span className="text-[11px] text-gray-400 block">
+                  <span className="text-[11px] text-slate-500 block">
                     به محض شارژ مجدد کالا در انبار، امکان ثبت سفارش مجدداً فعال خواهد شد.
                   </span>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <span className="text-xs font-bold text-gray-300">تعداد سفارش:</span>
-                <div className="flex items-center gap-3 bg-[#141414] border border-white/10 rounded-xl p-1">
+                <span className="text-xs font-bold text-slate-700">تعداد سفارش:</span>
+                <div className="flex items-center gap-3 bg-sky-50/60 border border-sky-200 rounded-xl p-1">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     disabled={quantity <= 1}
                     aria-label="کاهش تعداد"
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors cursor-pointer"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-[#0082CA] hover:bg-white disabled:opacity-30 transition-colors cursor-pointer"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
-                  <span className="w-10 text-center text-sm font-bold text-white">
+                  <span className="w-10 text-center text-sm font-bold text-[#0B192C]">
                     {quantity.toLocaleString("fa-IR")}
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
                     aria-label="افزایش تعداد"
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-500 hover:text-[#0082CA] hover:bg-white transition-colors cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -777,7 +777,7 @@ export default function ProductDetailPage() {
               <Button
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className="flex-1 h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-sm font-black transition-all shadow-xl gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-[#1a1a1a] disabled:text-gray-500 disabled:border disabled:border-white/10 cursor-pointer"
+                className="flex-1 h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#006CA8] text-sm font-black transition-all shadow-md shadow-[#0082CA]/25 gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer"
               >
                 <ShoppingBag className="w-4 h-4" />
                 {isOutOfStock ? "ناموجود در انبار" : "افزودن به سبد خرید"}
@@ -786,10 +786,10 @@ export default function ProductDetailPage() {
               <Button
                 onClick={toggleWishlist}
                 variant="outline"
-                className={`w-14 h-14 rounded-2xl border transition-colors flex items-center justify-center shrink-0 cursor-pointer ${
+                className={`w-14 h-14 rounded-2xl border transition-colors flex items-center justify-center shrink-0 cursor-pointer shadow-sm ${
                   isSaved
-                    ? "border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20"
-                    : "border-white/15 bg-transparent text-white hover:bg-white/10"
+                    ? "border-rose-300 bg-rose-50 text-rose-600 hover:bg-rose-100"
+                    : "border-sky-200 bg-white text-slate-600 hover:text-[#0082CA] hover:bg-sky-50"
                 }`}
               >
                 <Heart className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
@@ -798,13 +798,13 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Guarantees */}
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10 text-xs text-gray-400">
+          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-sky-100 text-xs text-slate-500">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-[#0082CA]" />
               <span>ضمانت اصالت و سلامت فیزیکی</span>
             </div>
             <div className="flex items-center gap-2">
-              <Truck className="w-4 h-4 text-amber-400" />
+              <Truck className="w-4 h-4 text-[#0082CA]" />
               <span>ارسال اکسپرس پستی در سراسر کشور</span>
             </div>
           </div>
@@ -821,8 +821,8 @@ export default function ProductDetailPage() {
           subtitle="پیشنهاد استایلیست‌ها برای ست کردن و تکمیل این لباس"
           badgeLabel="آیتم ست"
           headingId="complete-look-heading"
-          icon={<Sparkles className="w-4 h-4 text-emerald-400" />}
-          className="border-emerald-500/20 bg-emerald-950/5 rounded-2xl p-4 md:p-6"
+          icon={<Sparkles className="w-4 h-4 text-[#0082CA]" />}
+          className="border-sky-100 bg-sky-50/40 rounded-2xl p-4 md:p-6"
         />
       )}
 
@@ -834,25 +834,25 @@ export default function ProductDetailPage() {
       />
 
       {/* Reviews & Social Proof */}
-      <div id="reviews-section" className="border-t border-white/10 pt-12 space-y-8 scroll-mt-24">
+      <div id="reviews-section" className="border-t border-sky-100 pt-12 space-y-8 scroll-mt-24">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-3">
-            <MessageSquare className="w-6 h-6 text-amber-400" />
+          <h2 className="text-xl md:text-2xl font-black text-[#0B192C] flex items-center gap-3">
+            <MessageSquare className="w-6 h-6 text-[#0082CA]" />
             دیدگاه‌ها و نظرات خریداران ({ratingStats.count.toLocaleString("fa-IR")})
           </h2>
           {ratingStats.average !== null && (
-            <div className="flex items-center gap-2 bg-[#161616] border border-white/10 px-3.5 py-1.5 rounded-2xl self-start sm:self-auto">
+            <div className="flex items-center gap-2 bg-white border border-sky-200 px-3.5 py-1.5 rounded-2xl self-start sm:self-auto shadow-sm">
               <div className="flex items-center gap-1 text-amber-400">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <Star
                     key={i}
                     className={`w-3.5 h-3.5 ${
-                      i <= Math.round(ratingStats.average!) ? "fill-current text-amber-400" : "text-gray-700"
+                      i <= Math.round(ratingStats.average!) ? "fill-current text-amber-400" : "text-slate-300"
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-xs font-black text-white">
+              <span className="text-xs font-black text-[#0B192C]">
                 {ratingStats.average.toLocaleString("fa-IR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} از ۵
               </span>
             </div>
@@ -863,8 +863,8 @@ export default function ProductDetailPage() {
           {/* Review List */}
           <div className="lg:col-span-7 space-y-4">
             {reviews.length === 0 ? (
-              <div className="bg-[#111111] border border-white/10 rounded-3xl p-8 text-center space-y-2">
-                <p className="text-gray-400 text-xs md:text-sm">
+              <div className="bg-white border border-sky-100 rounded-3xl p-8 text-center space-y-2 shadow-sm">
+                <p className="text-slate-500 text-xs md:text-sm">
                   هنوز نظری برای این محصول ثبت نشده است. اولین نفری باشید که نظر خود را ثبت می‌کند!
                 </p>
               </div>
@@ -872,10 +872,10 @@ export default function ProductDetailPage() {
               reviews.map((r) => (
                 <div
                   key={r.id}
-                  className="bg-[#111111] border border-white/10 rounded-2xl p-5 space-y-3 shadow-lg"
+                  className="bg-white border border-sky-100 rounded-2xl p-5 space-y-3 shadow-sm"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">
+                    <span className="text-xs font-bold text-[#0B192C]">
                       {r.user_name || "کاربر خریدار"}
                     </span>
                     <div className="flex items-center gap-1 text-amber-400">
@@ -883,13 +883,13 @@ export default function ProductDetailPage() {
                         <Star
                           key={i}
                           className={`w-3.5 h-3.5 ${
-                            i < (r.rating || 5) ? "fill-current text-amber-400" : "text-gray-700"
+                            i < (r.rating || 5) ? "fill-current text-amber-400" : "text-slate-300"
                           }`}
                         />
                       ))}
                     </div>
                   </div>
-                  <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-line">
+                  <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
                     {r.text}
                   </p>
                 </div>
@@ -898,18 +898,18 @@ export default function ProductDetailPage() {
           </div>
 
           {/* New Review Form */}
-          <div className="lg:col-span-5 bg-[#111111] border border-white/10 rounded-3xl p-6 space-y-4 shadow-xl sticky top-28">
-            <h3 className="text-sm font-black text-white">ثبت تجربه خرید شما</h3>
+          <div className="lg:col-span-5 bg-white border border-sky-100 rounded-3xl p-6 space-y-4 shadow-sm sticky top-28">
+            <h3 className="text-sm font-black text-[#0B192C]">ثبت تجربه خرید شما</h3>
             <form onSubmit={handleReviewSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">امتیاز به کیفیت لباس</label>
+                <label className="text-xs font-medium text-slate-700">امتیاز به کیفیت لباس</label>
                 <div className="flex items-center gap-1 cursor-pointer">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
                       onClick={() => setRating(star)}
                       className={`w-5 h-5 transition-colors ${
-                        star <= rating ? "text-amber-400 fill-current" : "text-gray-600 hover:text-amber-400"
+                        star <= rating ? "text-amber-400 fill-current" : "text-slate-300 hover:text-amber-400"
                       }`}
                     />
                   ))}
@@ -917,21 +917,21 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">متن دیدگاه</label>
+                <label className="text-xs font-medium text-slate-700">متن دیدگاه</label>
                 <textarea
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                   placeholder="کیفیت دوخت، رنگ و تن‌خور لباس چگونه بود؟"
                   rows={4}
                   required
-                  className="w-full bg-[#181818] border border-white/10 rounded-xl p-3 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-amber-400/50 resize-none"
+                  className="w-full bg-sky-50/60 border border-sky-200 rounded-xl p-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0082CA] resize-none"
                 />
               </div>
 
               <Button
                 type="submit"
                 disabled={isSubmittingReview}
-                className="w-full h-11 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs flex items-center justify-center gap-2"
+                className="w-full h-11 rounded-xl bg-[#0082CA] text-white hover:bg-[#006CA8] font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#0082CA]/25 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 {isSubmittingReview ? "در حال ثبت..." : "ارسال دیدگاه"}
@@ -942,15 +942,15 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Sticky Mobile Add to Cart Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-3.5 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#0a0a0a]/90 backdrop-blur-xl border-t border-white/10 z-40 md:hidden flex items-center gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.8)]">
+      <div className="fixed bottom-0 left-0 right-0 p-3.5 sm:p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-xl border-t border-sky-100 z-40 md:hidden flex items-center gap-3 shadow-[0_-8px_30px_rgba(0,130,202,0.08)]">
         <Button
           onClick={toggleWishlist}
           variant="outline"
           aria-label={isSaved ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"}
-          className={`w-12 h-12 rounded-xl border transition-colors flex items-center justify-center shrink-0 cursor-pointer ${
+          className={`w-12 h-12 rounded-xl border transition-colors flex items-center justify-center shrink-0 cursor-pointer shadow-sm ${
             isSaved
-              ? "border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20"
-              : "border-white/15 bg-transparent text-white hover:bg-white/10"
+              ? "border-rose-300 bg-rose-50 text-rose-600 hover:bg-rose-100"
+              : "border-sky-200 bg-white text-slate-700 hover:text-[#0082CA] hover:bg-sky-50"
           }`}
         >
           <Heart className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
@@ -958,7 +958,7 @@ export default function ProductDetailPage() {
         <Button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
-          className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 text-xs sm:text-sm font-black transition-all shadow-xl gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-[#1a1a1a] disabled:text-gray-500 disabled:border disabled:border-white/10 cursor-pointer"
+          className="flex-1 h-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#006CA8] text-xs sm:text-sm font-black transition-all shadow-md shadow-[#0082CA]/25 gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer"
         >
           <ShoppingBag className="w-4 h-4" />
           {isOutOfStock ? "ناموجود در انبار" : `افزودن به سبد (${formatPrice(currentPrice)})`}

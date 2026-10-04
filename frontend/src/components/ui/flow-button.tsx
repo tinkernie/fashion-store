@@ -11,6 +11,7 @@ export interface FlowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   icon?: React.ReactNode;
   className?: string;
   size?: "sm" | "default" | "lg";
+  variant?: "primary" | "secondary" | "outline";
 }
 
 export const FlowButton = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, FlowButtonProps>(
@@ -22,6 +23,7 @@ export const FlowButton = React.forwardRef<HTMLButtonElement | HTMLAnchorElement
       icon,
       className,
       size = "default",
+      variant = "primary",
       ...props
     },
     ref,
@@ -30,6 +32,15 @@ export const FlowButton = React.forwardRef<HTMLButtonElement | HTMLAnchorElement
       sm: "h-9 px-4 text-xs gap-0 rounded-full",
       default: "h-12 px-6 text-sm md:text-base gap-0 rounded-full",
       lg: "h-14 px-8 text-base md:text-lg gap-0 rounded-full",
+    };
+
+    const variantClasses = {
+      primary:
+        "border-[#0082CA] bg-[#0082CA] text-white shadow-md shadow-[#0082CA]/20 hover:bg-[#006CA8] hover:border-[#006CA8] hover:shadow-lg hover:shadow-[#0082CA]/30",
+      secondary:
+        "border-sky-200 bg-white text-[#0B192C] shadow-sm hover:border-[#0082CA] hover:text-[#0082CA] hover:bg-sky-50/70",
+      outline:
+        "border-sky-200 bg-transparent text-[#0082CA] hover:bg-sky-50 hover:border-[#0082CA]",
     };
 
     const ArrowIcon =
@@ -60,8 +71,9 @@ export const FlowButton = React.forwardRef<HTMLButtonElement | HTMLAnchorElement
     );
 
     const baseClasses = cn(
-      "group relative inline-flex items-center justify-center select-none overflow-hidden border border-white/20 bg-[#0a0a0a] text-white shadow-md transition-all duration-300 ease-out hover:border-white hover:bg-white hover:text-black hover:shadow-2xl hover:shadow-white/10 active:scale-[0.98] cursor-pointer",
+      "group relative inline-flex items-center justify-center select-none overflow-hidden border transition-all duration-300 ease-out active:scale-[0.98] cursor-pointer",
       sizeClasses[size],
+      variantClasses[variant],
       className,
     );
 
