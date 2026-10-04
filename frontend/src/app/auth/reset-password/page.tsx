@@ -45,19 +45,19 @@ function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-300">رمز عبور جدید</label>
+        <label className="text-sm font-medium text-slate-700">رمز عبور جدید</label>
         <div className="relative">
           <Input 
             name="password" 
             type={showPassword ? "text" : "password"} 
             required 
-            className="bg-[#0a0a0a] border-white/10 h-12 text-white pr-4 pl-11" 
+            className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 pr-4 pl-11 focus-visible:ring-2 focus-visible:ring-[#0082CA]" 
             dir="ltr" 
           />
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none transition-colors p-1"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1"
             tabIndex={-1}
             aria-label={showPassword ? "پنهان کردن رمز" : "نمایش رمز"}
           >
@@ -69,7 +69,7 @@ function ResetPasswordForm() {
           </button>
         </div>
       </div>
-      <Button disabled={isLoading} type="submit" className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all">
+      <Button disabled={isLoading} type="submit" className="w-full h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#0072B5] text-base font-bold shadow-md shadow-[#0082CA]/20 transition-all">
         {isLoading ? "در حال پردازش..." : "ثبت رمز عبور جدید"}
       </Button>
     </form>
@@ -78,14 +78,14 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <main className="min-h-screen pt-32 pb-24 px-6 flex items-center justify-center">
+    <main className="min-h-screen bg-background text-foreground pt-32 pb-24 px-6 flex items-center justify-center">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-        <div className="bg-[#111111] border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-white border border-sky-100 rounded-3xl p-8 shadow-xl shadow-sky-950/5">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-black text-white mb-2">ثبت رمز عبور جدید</h1>
-            <p className="text-gray-400 text-sm">رمز عبور جدید خود را وارد کنید</p>
+            <h1 className="text-2xl font-black text-slate-900 mb-2">ثبت رمز عبور جدید</h1>
+            <p className="text-slate-500 text-sm">رمز عبور جدید خود را وارد کنید</p>
           </div>
-          <Suspense fallback={<div className="text-white text-center">در حال بارگذاری...</div>}>
+          <Suspense fallback={<div className="text-slate-500 text-center">در حال بارگذاری...</div>}>
             <ResetPasswordForm />
           </Suspense>
         </div>

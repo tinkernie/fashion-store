@@ -53,11 +53,11 @@ function VerifyEmailContent() {
       {status === "success" && (
         <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="space-y-4">
           <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto" />
-          <p className="text-white font-bold text-lg">حساب کاربری شما با موفقیت فعال شد.</p>
-          <p className="text-gray-400 text-xs">اکنون می‌توانید با ایمیل و رمز عبور خود وارد شوید.</p>
+          <p className="text-slate-900 font-bold text-lg">حساب کاربری شما با موفقیت فعال شد.</p>
+          <p className="text-slate-500 text-xs">اکنون می‌توانید با ایمیل و رمز عبور خود وارد شوید.</p>
           <Button
             onClick={() => router.push("/auth")}
-            className="w-full mt-4 h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-bold"
+            className="w-full mt-4 h-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold shadow-md shadow-[#0082CA]/20"
           >
             ورود به حساب کاربری
           </Button>
@@ -67,19 +67,19 @@ function VerifyEmailContent() {
       {status === "error" && (
         <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="space-y-4">
           <XCircle className="w-16 h-16 text-rose-500 mx-auto" />
-          <p className="text-white font-bold text-lg">تایید ایمیل با خطا مواجه شد</p>
-          <p className="text-rose-400 text-xs">{errorMessage || "لینک تایید منقضی یا نامعتبر است."}</p>
+          <p className="text-slate-900 font-bold text-lg">تایید ایمیل با خطا مواجه شد</p>
+          <p className="text-rose-500 text-xs">{errorMessage || "لینک تایید منقضی یا نامعتبر است."}</p>
           <div className="pt-2 flex flex-col gap-2">
             <Button
               onClick={() => router.push("/auth")}
-              className="w-full h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-bold"
+              className="w-full h-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold shadow-md shadow-[#0082CA]/20"
             >
               درخواست مجدد لینک تایید / ورود
             </Button>
             <Button
               onClick={() => router.push("/")}
               variant="outline"
-              className="w-full h-12 rounded-xl border-white/20 text-white hover:bg-white hover:text-black"
+              className="w-full h-12 rounded-xl border-sky-200 text-slate-700 bg-white hover:bg-sky-50 shadow-sm font-bold"
             >
               بازگشت به صفحه اصلی
             </Button>
@@ -92,13 +92,13 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <main className="min-h-screen pt-32 pb-24 px-6 flex items-center justify-center">
+    <main className="min-h-screen bg-background text-foreground pt-32 pb-24 px-6 flex items-center justify-center">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-        <div className="bg-[#111111] border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-white border border-sky-100 rounded-3xl p-8 shadow-xl shadow-sky-950/5">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-black text-white mb-2">تایید ایمیل</h1>
+            <h1 className="text-2xl font-black text-slate-900 mb-2">تایید ایمیل</h1>
           </div>
-          <Suspense fallback={<div className="text-white text-center">در حال پردازش...</div>}>
+          <Suspense fallback={<div className="text-slate-500 text-center">در حال پردازش...</div>}>
             <VerifyEmailContent />
           </Suspense>
         </div>

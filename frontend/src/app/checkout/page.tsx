@@ -239,14 +239,14 @@ export default function CheckoutPage() {
         className="min-h-screen pt-32 pb-24 px-6 flex flex-col items-center justify-center text-white text-center"
         dir="rtl"
       >
-        <div className="w-20 h-20 bg-white/5 border border-white/10 rounded-full flex items-center justify-center mb-6">
-          <Truck className="w-8 h-8 text-gray-400" />
+        <div className="w-20 h-20 bg-sky-50 border border-sky-100 rounded-full flex items-center justify-center mb-6 text-[#0082CA]">
+          <Truck className="w-8 h-8 text-[#0082CA]" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-black text-white mb-2">سبد خرید شما خالی است</h1>
-        <p className="text-xs md:text-sm text-gray-400 max-w-sm mb-8">
+        <h1 className="text-2xl md:text-3xl font-black text-[#0B192C] mb-2">سبد خرید شما خالی است</h1>
+        <p className="text-xs md:text-sm text-slate-500 max-w-sm mb-8">
           برای تکمیل فرآیند تسویه حساب، ابتدا باید محصولاتی را به سبد خرید خود اضافه کنید.
         </p>
-        <Button asChild className="h-12 px-8 rounded-2xl bg-white text-black font-bold hover:bg-gray-200">
+        <Button asChild className="h-12 px-8 rounded-2xl bg-[#0082CA] text-white font-bold hover:bg-[#006CA8] shadow-md shadow-[#0082CA]/25">
           <Link href="/products">مشاهده کاتالوگ فروشگاه</Link>
         </Button>
       </main>
@@ -254,11 +254,11 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen pt-28 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-white" dir="rtl">
+    <main className="min-h-screen pt-28 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-slate-800" dir="rtl">
       {/* Back Link */}
       <Link
         href="/products"
-        className="inline-flex items-center gap-2 text-xs md:text-sm text-gray-400 hover:text-white transition-colors mb-8"
+        className="inline-flex items-center gap-2 text-xs md:text-sm text-slate-500 hover:text-[#0082CA] transition-colors mb-8"
       >
         <ArrowRight className="w-4 h-4" />
         ادامه خرید و بازگشت به کاتالوگ
@@ -272,120 +272,120 @@ export default function CheckoutPage() {
           className="lg:col-span-8 space-y-8"
         >
           {/* Shipping Details Card */}
-          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl">
-            <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4">
-              <MapPin className="w-6 h-6 text-amber-400" />
+          <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 border-b border-sky-100 pb-4">
+              <MapPin className="w-6 h-6 text-[#0082CA]" />
               <div>
-                <h2 className="text-xl md:text-2xl font-black text-white">آدرس و اطلاعات تحویل‌گیرنده</h2>
-                <p className="text-xs text-gray-400 mt-0.5">مشخصات ارسال مرسوله پستی را با دقت وارد نمایید</p>
+                <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">آدرس و اطلاعات تحویل‌گیرنده</h2>
+                <p className="text-xs text-slate-500 mt-0.5">مشخصات ارسال مرسوله پستی را با دقت وارد نمایید</p>
               </div>
             </div>
 
             <form id="checkout-form" onSubmit={handleSubmit(onCheckout)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-gray-400" />
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-slate-400" />
                     نام و نام خانوادگی تحویل‌گیرنده
                   </label>
                   <Input
                     {...register("fullName")}
                     placeholder="مثال: علی رضایی"
-                    className="bg-[#181818] border-white/10 h-12 text-sm text-white rounded-xl focus-visible:ring-1 focus-visible:ring-amber-400/50"
+                    className="bg-sky-50/60 border-sky-200 h-12 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                   />
-                  {errors.fullName && <p className="text-rose-400 text-xs mt-1">{errors.fullName.message}</p>}
+                  {errors.fullName && <p className="text-rose-500 text-xs mt-1">{errors.fullName.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-gray-400" />
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-slate-400" />
                     شماره موبایل
                   </label>
                   <Input
                     {...register("phone")}
                     placeholder="09123456789"
-                    className="bg-[#181818] border-white/10 h-12 text-sm text-white rounded-xl focus-visible:ring-1 focus-visible:ring-amber-400/50 font-sans text-left"
+                    className="bg-sky-50/60 border-sky-200 h-12 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA] font-sans text-left"
                     dir="ltr"
                   />
-                  {errors.phone && <p className="text-rose-400 text-xs mt-1">{errors.phone.message}</p>}
+                  {errors.phone && <p className="text-rose-500 text-xs mt-1">{errors.phone.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                    <Building className="w-3.5 h-3.5 text-gray-400" />
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-slate-400" />
                     استان
                   </label>
                   <Input
                     {...register("province")}
                     placeholder="مثال: تهران"
-                    className="bg-[#181818] border-white/10 h-12 text-sm text-white rounded-xl focus-visible:ring-1 focus-visible:ring-amber-400/50"
+                    className="bg-sky-50/60 border-sky-200 h-12 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                   />
-                  {errors.province && <p className="text-rose-400 text-xs mt-1">{errors.province.message}</p>}
+                  {errors.province && <p className="text-rose-500 text-xs mt-1">{errors.province.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                    <Building className="w-3.5 h-3.5 text-gray-400" />
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-slate-400" />
                     شهر
                   </label>
                   <Input
                     {...register("city")}
                     placeholder="مثال: تهران"
-                    className="bg-[#181818] border-white/10 h-12 text-sm text-white rounded-xl focus-visible:ring-1 focus-visible:ring-amber-400/50"
+                    className="bg-sky-50/60 border-sky-200 h-12 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                   />
-                  {errors.city && <p className="text-rose-400 text-xs mt-1">{errors.city.message}</p>}
+                  {errors.city && <p className="text-rose-500 text-xs mt-1">{errors.city.message}</p>}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300">نشانی پستی دقیق</label>
+                <label className="text-xs font-bold text-slate-700">نشانی پستی دقیق</label>
                 <Input
                   {...register("address")}
                   placeholder="خیابان، کوچه، پلاک، طبقه، واحد..."
-                  className="bg-[#181818] border-white/10 h-12 text-sm text-white rounded-xl focus-visible:ring-1 focus-visible:ring-amber-400/50"
+                  className="bg-sky-50/60 border-sky-200 h-12 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                 />
-                {errors.address && <p className="text-rose-400 text-xs mt-1">{errors.address.message}</p>}
+                {errors.address && <p className="text-rose-500 text-xs mt-1">{errors.address.message}</p>}
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300">کد پستی (۱۰ رقمی)</label>
+                <label className="text-xs font-bold text-slate-700">کد پستی (۱۰ رقمی)</label>
                 <Input
                   {...register("postalCode")}
                   placeholder="1234567890"
-                  className="bg-[#181818] border-white/10 h-12 text-sm text-white rounded-xl focus-visible:ring-1 focus-visible:ring-amber-400/50 font-sans text-left"
+                  className="bg-sky-50/60 border-sky-200 h-12 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA] font-sans text-left"
                   dir="ltr"
                 />
-                {errors.postalCode && <p className="text-rose-400 text-xs mt-1">{errors.postalCode.message}</p>}
+                {errors.postalCode && <p className="text-rose-500 text-xs mt-1">{errors.postalCode.message}</p>}
               </div>
             </form>
           </div>
 
           {/* Shipping Method & Weight Info */}
-          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-4">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-              <Truck className="w-6 h-6 text-amber-400" />
+          <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-4">
+            <div className="flex items-center gap-3 border-b border-sky-100 pb-4">
+              <Truck className="w-6 h-6 text-[#0082CA]" />
               <div>
-                <h2 className="text-xl md:text-2xl font-black text-white">روش و هزینه ارسال</h2>
-                <p className="text-xs text-gray-400 mt-0.5">محاسبه دقیق تعرفه پستی بر پایه وزن محصولات سفارش</p>
+                <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">روش و هزینه ارسال</h2>
+                <p className="text-xs text-slate-500 mt-0.5">محاسبه دقیق تعرفه پستی بر پایه وزن محصولات سفارش</p>
               </div>
             </div>
 
-            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-4 bg-sky-50/60 border border-sky-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white">پست پیشتاز سراسری</span>
-                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                  <span className="text-sm font-bold text-[#0B192C]">پست پیشتاز سراسری</span>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-sky-100 text-[#0082CA] border border-sky-200 font-bold">
                     وزن کل: {totalWeight.toLocaleString("fa-IR")} گرم
                   </span>
                 </div>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-slate-500">
                   فرمول محاسبه: {formatPriceNumber(BASE_SHIPPING_AMOUNT)} تومان پایه + ({totalWeight.toLocaleString("fa-IR")} گرم × ۱.۶)
                 </p>
               </div>
 
               <div className="text-right">
-                <span className="text-[11px] text-gray-400 block">هزینه ارسال:</span>
-                <span className="text-base font-black text-amber-400">
+                <span className="text-[11px] text-slate-500 block">هزینه ارسال:</span>
+                <span className="text-base font-black text-[#0082CA]">
                   {formatPrice(shippingCost)}
                 </span>
               </div>
@@ -393,12 +393,12 @@ export default function CheckoutPage() {
           </div>
 
           {/* Payment Method Selector */}
-          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl">
-            <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4">
-              <CreditCard className="w-6 h-6 text-amber-400" />
+          <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 border-b border-sky-100 pb-4">
+              <CreditCard className="w-6 h-6 text-[#0082CA]" />
               <div>
-                <h2 className="text-xl md:text-2xl font-black text-white">انتخاب درگاه پرداخت</h2>
-                <p className="text-xs text-gray-400 mt-0.5">کلیه تراکنش‌ها از طریق بستر رمزنگاری شده SSL انجام می‌پذیرد</p>
+                <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">انتخاب درگاه پرداخت</h2>
+                <p className="text-xs text-slate-500 mt-0.5">کلیه تراکنش‌ها از طریق بستر رمزنگاری شده SSL انجام می‌پذیرد</p>
               </div>
             </div>
 
@@ -408,16 +408,16 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentGateway("dummy")}
                 className={`p-5 rounded-2xl border text-right transition-all flex items-center justify-between cursor-pointer ${
                   paymentGateway === "dummy"
-                    ? "bg-amber-400/10 border-amber-400 shadow-md ring-1 ring-amber-400/30"
-                    : "bg-[#181818] border-white/10 hover:border-white/20"
+                    ? "bg-sky-50 border-[#0082CA] shadow-sm ring-1 ring-[#0082CA]/30"
+                    : "bg-white border-sky-200 hover:border-sky-300"
                 }`}
               >
                 <div className="space-y-1">
-                  <span className="text-sm font-bold text-white block">درگاه شبیه‌ساز تستی (آنلاین)</span>
-                  <span className="text-xs text-gray-400">تراکنش فوری و امن جهت تست تسویه</span>
+                  <span className="text-sm font-bold text-[#0B192C] block">درگاه شبیه‌ساز تستی (آنلاین)</span>
+                  <span className="text-xs text-slate-500">تراکنش فوری و امن جهت تست تسویه</span>
                 </div>
-                <div className="w-5 h-5 rounded-full border-2 border-white/40 flex items-center justify-center shrink-0">
-                  {paymentGateway === "dummy" && <div className="w-2.5 h-2.5 bg-amber-400 rounded-full" />}
+                <div className="w-5 h-5 rounded-full border-2 border-sky-300 flex items-center justify-center shrink-0">
+                  {paymentGateway === "dummy" && <div className="w-2.5 h-2.5 bg-[#0082CA] rounded-full" />}
                 </div>
               </button>
 
@@ -426,16 +426,16 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentGateway("zarinpal")}
                 className={`p-5 rounded-2xl border text-right transition-all flex items-center justify-between cursor-pointer ${
                   paymentGateway === "zarinpal"
-                    ? "bg-amber-400/10 border-amber-400 shadow-md ring-1 ring-amber-400/30"
-                    : "bg-[#181818] border-white/10 hover:border-white/20"
+                    ? "bg-sky-50 border-[#0082CA] shadow-sm ring-1 ring-[#0082CA]/30"
+                    : "bg-white border-sky-200 hover:border-sky-300"
                 }`}
               >
                 <div className="space-y-1">
-                  <span className="text-sm font-bold text-white block">درگاه پرداخت زرین‌پال / بانکی</span>
-                  <span className="text-xs text-gray-400">پشتیبانی از تمامی کارت‌های عضو شتاب</span>
+                  <span className="text-sm font-bold text-[#0B192C] block">درگاه پرداخت زرین‌پال / بانکی</span>
+                  <span className="text-xs text-slate-500">پشتیبانی از تمامی کارت‌های عضو شتاب</span>
                 </div>
-                <div className="w-5 h-5 rounded-full border-2 border-white/40 flex items-center justify-center shrink-0">
-                  {paymentGateway === "zarinpal" && <div className="w-2.5 h-2.5 bg-amber-400 rounded-full" />}
+                <div className="w-5 h-5 rounded-full border-2 border-sky-300 flex items-center justify-center shrink-0">
+                  {paymentGateway === "zarinpal" && <div className="w-2.5 h-2.5 bg-[#0082CA] rounded-full" />}
                 </div>
               </button>
             </div>
@@ -449,8 +449,8 @@ export default function CheckoutPage() {
           transition={{ delay: 0.1 }}
           className="lg:col-span-4"
         >
-          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 sticky top-28 shadow-2xl space-y-6">
-            <h2 className="text-lg md:text-xl font-black text-white border-b border-white/10 pb-4">
+          <div className="bg-white border border-sky-100 rounded-3xl p-6 sticky top-28 shadow-sm space-y-6">
+            <h2 className="text-lg md:text-xl font-black text-[#0B192C] border-b border-sky-100 pb-4">
               خلاصه سفارش ({items.length} کالا)
             </h2>
 
@@ -459,19 +459,19 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <div
                   key={`${item.id}-${item.size}`}
-                  className="flex gap-3 items-center bg-white/5 p-2.5 rounded-2xl border border-white/5"
+                  className="flex gap-3 items-center bg-sky-50/50 p-2.5 rounded-2xl border border-sky-100"
                 >
                   <img
                     src={item.imageUrl || "/globe.svg"}
                     alt={item.name}
-                    className="w-14 h-16 object-cover rounded-xl shrink-0 border border-white/10"
+                    className="w-14 h-16 object-cover rounded-xl shrink-0 border border-sky-100"
                   />
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-white truncate">{item.name}</h4>
-                    <span className="text-[10px] text-gray-400 block mt-0.5">
+                    <h4 className="text-xs font-bold text-[#0B192C] truncate">{item.name}</h4>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">
                       سایز: {item.size || "Free"} | تعداد: {item.quantity.toLocaleString("fa-IR")} | وزن: {((item.weight || 500) * item.quantity).toLocaleString("fa-IR")} گرم
                     </span>
-                    <p className="text-xs font-bold text-gray-200 mt-1">
+                    <p className="text-xs font-bold text-slate-800 mt-1">
                       {formatPrice(parsePrice(item.price) * item.quantity)}
                     </p>
                   </div>
@@ -482,14 +482,14 @@ export default function CheckoutPage() {
             {/* Coupon Code Input */}
             <div className="pt-2">
               {coupon ? (
-                <div className="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-400">
+                <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700">
                   <div className="flex items-center gap-2 text-xs font-bold">
                     <Tag className="w-4 h-4" />
                     <span>کد «{coupon.code}» اعمال شد</span>
                   </div>
                   <button
                     onClick={() => removeCoupon()}
-                    className="text-xs text-rose-400 hover:text-rose-300 cursor-pointer p-1"
+                    className="text-xs text-rose-500 hover:text-rose-600 cursor-pointer p-1"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -500,13 +500,13 @@ export default function CheckoutPage() {
                     placeholder="کد تخفیف دارید؟"
                     value={couponCodeInput}
                     onChange={(e) => setCouponCodeInput(e.target.value)}
-                    className="bg-[#181818] border-white/10 h-10 text-xs rounded-xl text-white placeholder:text-gray-500"
+                    className="bg-sky-50/60 border-sky-200 h-10 text-xs rounded-xl text-slate-800 placeholder:text-slate-400"
                   />
                   <Button
                     type="submit"
                     disabled={isApplyingCoupon}
                     variant="outline"
-                    className="h-10 px-4 text-xs font-bold border-white/10 bg-white/5 hover:bg-white/10 text-white rounded-xl shrink-0"
+                    className="h-10 px-4 text-xs font-bold border-sky-200 bg-sky-50 hover:bg-sky-100 text-[#0082CA] rounded-xl shrink-0 cursor-pointer"
                   >
                     {isApplyingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "اعمال"}
                   </Button>
@@ -515,34 +515,34 @@ export default function CheckoutPage() {
             </div>
 
             {/* Cost Breakdown */}
-            <div className="border-t border-white/10 pt-4 space-y-3 text-xs">
-              <div className="flex justify-between text-gray-400">
+            <div className="border-t border-sky-100 pt-4 space-y-3 text-xs">
+              <div className="flex justify-between text-slate-500">
                 <span>مجموع سبد خرید:</span>
                 <span>{formatPrice(cartTotal)}</span>
               </div>
 
               {discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-400 font-bold">
+                <div className="flex justify-between text-emerald-600 font-bold">
                   <span>تخفیف کوپن:</span>
                   <span>- {formatPrice(discountAmount)}</span>
                 </div>
               )}
 
-              <div className="flex justify-between items-start text-gray-400">
+              <div className="flex justify-between items-start text-slate-500">
                 <div className="flex flex-col">
-                  <span className="text-white font-medium">هزینه ارسال:</span>
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-[#0B192C] font-medium">هزینه ارسال:</span>
+                  <span className="text-[10px] text-slate-400">
                     پست پیشتاز ({totalWeight.toLocaleString("fa-IR")} گرم)
                   </span>
                 </div>
-                <span className="font-bold text-white text-sm">
+                <span className="font-bold text-[#0B192C] text-sm">
                   {formatPrice(shippingCost)}
                 </span>
               </div>
 
-              <div className="flex justify-between text-base font-black text-white pt-3 border-t border-white/10">
+              <div className="flex justify-between text-base font-black text-[#0B192C] pt-3 border-t border-sky-100">
                 <span>مبلغ نهایی پرداخت:</span>
-                <span className="text-amber-400">{formatPrice(finalPayable)}</span>
+                <span className="text-[#0082CA]">{formatPrice(finalPayable)}</span>
               </div>
             </div>
 
@@ -551,7 +551,7 @@ export default function CheckoutPage() {
               type="submit"
               form="checkout-form"
               disabled={isLoading}
-              className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-sm md:text-base font-black transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#006CA8] text-sm md:text-base font-black transition-all shadow-md shadow-[#0082CA]/25 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <>
@@ -560,7 +560,7 @@ export default function CheckoutPage() {
                 </>
               ) : (
                 <>
-                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <ShieldCheck className="w-5 h-5 text-white" />
                   پرداخت و ثبت نهایی سفارش
                 </>
               )}

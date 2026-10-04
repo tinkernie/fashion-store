@@ -251,17 +251,17 @@ export default function AuthPage() {
     <div className="mt-6">
       <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-white/10" />
+          <span className="w-full border-t border-sky-100" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-[#111111] px-4 text-gray-500 font-medium">یا</span>
+          <span className="bg-white px-4 text-slate-400 font-medium">یا</span>
         </div>
       </div>
       <Button
         type="button"
         onClick={handleGoogleAuth}
         disabled={isLoading}
-        className="w-full h-14 rounded-2xl border border-white/10 bg-transparent text-white hover:bg-white/5 text-base font-bold transition-all flex items-center justify-center gap-3"
+        className="w-full h-14 rounded-2xl border border-sky-200 bg-white text-slate-700 hover:bg-sky-50 text-base font-bold transition-all shadow-sm flex items-center justify-center gap-3"
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5">
           <path
@@ -287,18 +287,18 @@ export default function AuthPage() {
   );
 
   return (
-    <main className="min-h-screen pt-32 pb-24 px-6 flex items-center justify-center">
+    <main className="min-h-screen bg-background text-foreground pt-32 pb-24 px-6 flex items-center justify-center">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="bg-[#111111] border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-white border border-sky-100 rounded-3xl p-8 shadow-xl shadow-sky-950/5">
           {view === "auth" && (
             <>
               <div className="text-center mb-8">
-                <h1 className="text-3xl font-black text-white mb-2">خوش آمدید</h1>
-                <p className="text-gray-400 text-sm">برای ادامه وارد حساب کاربری خود شوید</p>
+                <h1 className="text-3xl font-black text-slate-900 mb-2">خوش آمدید</h1>
+                <p className="text-slate-500 text-sm">برای ادامه وارد حساب کاربری خود شوید</p>
               </div>
 
               <Tabs
@@ -307,16 +307,16 @@ export default function AuthPage() {
                 className="w-full"
                 dir="rtl"
               >
-                <TabsList className="grid w-full grid-cols-2 bg-[#0a0a0a] border border-white/5 p-1 rounded-xl mb-8">
+                <TabsList className="grid w-full grid-cols-2 bg-sky-50 border border-sky-100 p-1 rounded-xl mb-8">
                   <TabsTrigger
                     value="login"
-                    className="rounded-lg data-[state=active]:bg-[#1a1a1a] data-[state=active]:text-white text-gray-500 transition-all"
+                    className="rounded-lg data-[state=active]:bg-[#0082CA] data-[state=active]:text-white text-slate-600 transition-all font-bold"
                   >
                     ورود
                   </TabsTrigger>
                   <TabsTrigger
                     value="register"
-                    className="rounded-lg data-[state=active]:bg-[#1a1a1a] data-[state=active]:text-white text-gray-500 transition-all"
+                    className="rounded-lg data-[state=active]:bg-[#0082CA] data-[state=active]:text-white text-slate-600 transition-all font-bold"
                   >
                     ثبت نام
                   </TabsTrigger>
@@ -326,28 +326,28 @@ export default function AuthPage() {
                 <TabsContent value="login" className="mt-0">
                   <form onSubmit={handleLoginSubmit(onLogin)} className="space-y-5">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">
+                      <label className="text-sm font-medium text-slate-700">
                         ایمیل یا شماره موبایل
                       </label>
                       <Input
                         {...registerLogin("identifier")}
                         placeholder="example@email.com"
-                        className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30"
+                        className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                         dir="ltr"
                       />
                       {loginErrors.identifier && (
-                        <p className="text-red-500 text-xs mt-1">
+                        <p className="text-rose-500 text-xs mt-1">
                           {loginErrors.identifier.message}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <label className="text-sm font-medium text-gray-300">رمز عبور</label>
+                        <label className="text-sm font-medium text-slate-700">رمز عبور</label>
                         <button
                           type="button"
                           onClick={() => setView("forgotPassword")}
-                          className="text-xs text-gray-500 hover:text-white transition-colors"
+                          className="text-xs text-[#0082CA] hover:text-[#0072B5] font-medium transition-colors"
                         >
                           فراموشی رمز؟
                         </button>
@@ -357,13 +357,13 @@ export default function AuthPage() {
                           {...registerLogin("password")}
                           type={showLoginPassword ? "text" : "password"}
                           placeholder="••••••••"
-                          className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30 pr-4 pl-11"
+                          className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#0082CA] pr-4 pl-11"
                           dir="ltr"
                         />
                         <button
                           type="button"
                           onClick={() => setShowLoginPassword((prev) => !prev)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none transition-colors p-1"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1"
                           tabIndex={-1}
                           aria-label={showLoginPassword ? "پنهان کردن رمز" : "نمایش رمز"}
                         >
@@ -375,7 +375,7 @@ export default function AuthPage() {
                         </button>
                       </div>
                       {loginErrors.password && (
-                        <p className="text-red-500 text-xs mt-1">
+                        <p className="text-rose-500 text-xs mt-1">
                           {loginErrors.password.message}
                         </p>
                       )}
@@ -383,7 +383,7 @@ export default function AuthPage() {
                     <Button
                       disabled={isLoading}
                       type="submit"
-                      className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all mt-4"
+                      className="w-full h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#0072B5] text-base font-bold shadow-md shadow-[#0082CA]/20 transition-all mt-4"
                     >
                       {isLoading ? "در حال ورود..." : "ورود به حساب"}
                     </Button>
@@ -392,7 +392,7 @@ export default function AuthPage() {
                     <button
                       type="button"
                       onClick={() => setView("resendVerification")}
-                      className="text-xs text-gray-400 hover:text-white transition-colors"
+                      className="text-xs text-slate-500 hover:text-[#0082CA] transition-colors font-medium"
                     >
                       ایمیل فعال‌سازی را دریافت نکرده‌اید؟ ارسال مجدد
                     </button>
@@ -404,38 +404,38 @@ export default function AuthPage() {
                 <TabsContent value="register" className="mt-0">
                   <form onSubmit={handleRegisterSubmit(onRegister)} className="space-y-5">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">
+                      <label className="text-sm font-medium text-slate-700">
                         نام و نام خانوادگی
                       </label>
                       <Input
                         {...registerSignup("fullName")}
                         placeholder="مثال: علی رضایی"
-                        className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30"
+                        className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                       />
                       {registerErrors.fullName && (
-                        <p className="text-red-500 text-xs mt-1">
+                        <p className="text-rose-500 text-xs mt-1">
                           {registerErrors.fullName.message}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">ایمیل</label>
+                      <label className="text-sm font-medium text-slate-700">ایمیل</label>
                       <Input
                         {...registerSignup("identifier")}
                         placeholder="example@email.com"
-                        className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30"
+                        className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                         dir="ltr"
                       />
                       {registerErrors.identifier && (
-                        <p className="text-red-500 text-xs mt-1">
+                        <p className="text-rose-500 text-xs mt-1">
                           {registerErrors.identifier.message}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <label className="text-sm font-medium text-gray-300">رمز عبور</label>
-                        <span className="text-[11px] text-gray-500">
+                        <label className="text-sm font-medium text-slate-700">رمز عبور</label>
+                        <span className="text-[11px] text-slate-500">
                           حداقل ۱۰ کاراکتر + حروف بزرگ، عدد و نماد
                         </span>
                       </div>
@@ -444,13 +444,13 @@ export default function AuthPage() {
                           {...registerSignup("password")}
                           type={showRegisterPassword ? "text" : "password"}
                           placeholder="••••••••••"
-                          className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30 pr-4 pl-11"
+                          className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#0082CA] pr-4 pl-11"
                           dir="ltr"
                         />
                         <button
                           type="button"
                           onClick={() => setShowRegisterPassword((prev) => !prev)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none transition-colors p-1"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1"
                           tabIndex={-1}
                           aria-label={showRegisterPassword ? "پنهان کردن رمز" : "نمایش رمز"}
                         >
@@ -462,7 +462,7 @@ export default function AuthPage() {
                         </button>
                       </div>
                       {registerErrors.password && (
-                        <p className="text-red-500 text-xs mt-1">
+                        <p className="text-rose-500 text-xs mt-1">
                           {registerErrors.password.message}
                         </p>
                       )}
@@ -470,7 +470,7 @@ export default function AuthPage() {
                     <Button
                       disabled={isLoading}
                       type="submit"
-                      className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all mt-4"
+                      className="w-full h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#0072B5] text-base font-bold shadow-md shadow-[#0082CA]/20 transition-all mt-4"
                     >
                       {isLoading ? "در حال ایجاد حساب..." : "ایجاد حساب کاربری"}
                     </Button>
@@ -484,23 +484,23 @@ export default function AuthPage() {
           {/* Verification Pending Screen */}
           {view === "verifyPending" && (
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-6">
-              <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mx-auto text-blue-400 shadow-lg shadow-blue-500/10">
+              <div className="w-16 h-16 bg-sky-50 border border-sky-200 rounded-2xl flex items-center justify-center mx-auto text-[#0082CA] shadow-lg shadow-sky-500/10">
                 <Mail className="w-8 h-8" />
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-2xl font-black text-white">تایید آدرس ایمیل</h2>
-                <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto">
+                <h2 className="text-2xl font-black text-slate-900">تایید آدرس ایمیل</h2>
+                <p className="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">
                   لینک فعال‌سازی حساب کاربری به آدرس زیر ارسال شد:
                 </p>
                 {pendingEmail && (
-                  <div className="inline-block bg-[#1a1a1a] border border-white/10 px-4 py-1.5 rounded-full text-xs font-mono text-white mt-2" dir="ltr">
+                  <div className="inline-block bg-sky-50 border border-sky-200 px-4 py-1.5 rounded-full text-xs font-mono text-[#0082CA] font-bold mt-2" dir="ltr">
                     {pendingEmail}
                   </div>
                 )}
               </div>
 
-              <div className="bg-[#161616] border border-white/5 p-4 rounded-2xl text-xs text-gray-400 text-right leading-5">
+              <div className="bg-sky-50/60 border border-sky-100 p-4 rounded-2xl text-xs text-slate-600 text-right leading-5">
                 لطفاً صندوق ورودی (Inbox) یا پوشه هرزنامه (Spam) ایمیل خود را بررسی کنید و جهت تکمیل فرآیند روی لینک فعال‌سازی کلیک نمایید.
               </div>
 
@@ -509,7 +509,7 @@ export default function AuthPage() {
                   disabled={isLoading || resendCooldown > 0}
                   onClick={() => handleSendVerification(pendingEmail)}
                   variant="outline"
-                  className="w-full h-12 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-medium text-sm flex items-center justify-center gap-2"
+                  className="w-full h-12 rounded-xl border-sky-200 bg-white hover:bg-sky-50 text-slate-700 font-medium text-sm flex items-center justify-center gap-2 shadow-sm"
                 >
                   <RotateCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
                   {resendCooldown > 0 ? `ارسال مجدد تا (${resendCooldown}) ثانیه` : "ارسال مجدد ایمیل فعال‌سازی"}
@@ -521,7 +521,7 @@ export default function AuthPage() {
                     setActiveTab("login");
                     setView("auth");
                   }}
-                  className="w-full h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-sm"
+                  className="w-full h-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold text-sm shadow-md shadow-[#0082CA]/20"
                 >
                   ورود به حساب کاربری
                 </Button>
@@ -533,8 +533,8 @@ export default function AuthPage() {
           {view === "resendVerification" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-black text-white mb-2">ارسال مجدد لینک فعال‌سازی</h2>
-                <p className="text-gray-400 text-sm">ایمیل ثبت‌نامی خود را وارد نمایید</p>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">ارسال مجدد لینک فعال‌سازی</h2>
+                <p className="text-slate-500 text-sm">ایمیل ثبت‌نامی خود را وارد نمایید</p>
               </div>
               <form
                 onSubmit={handleResendSubmit((data) => {
@@ -548,18 +548,18 @@ export default function AuthPage() {
                   <Input
                     {...registerResend("email")}
                     placeholder="example@email.com"
-                    className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30"
+                    className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                     dir="ltr"
                   />
                   {resendErrors.email && (
-                    <p className="text-red-500 text-xs mt-1">{resendErrors.email.message}</p>
+                    <p className="text-rose-500 text-xs mt-1">{resendErrors.email.message}</p>
                   )}
                 </div>
                 <div className="flex flex-col gap-3 mt-6">
                   <Button
                     disabled={isLoading}
                     type="submit"
-                    className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all"
+                    className="w-full h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#0072B5] text-base font-bold shadow-md shadow-[#0082CA]/20 transition-all"
                   >
                     {isLoading ? "در حال ارسال..." : "ارسال لینک فعال‌سازی"}
                   </Button>
@@ -567,7 +567,7 @@ export default function AuthPage() {
                     type="button"
                     onClick={() => setView("auth")}
                     variant="ghost"
-                    className="w-full h-14 rounded-2xl text-gray-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
+                    className="w-full h-14 rounded-2xl text-slate-500 hover:text-slate-900 hover:bg-sky-50 text-sm font-medium transition-all"
                   >
                     بازگشت به صفحه ورود
                   </Button>
@@ -580,19 +580,19 @@ export default function AuthPage() {
           {view === "forgotPassword" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-black text-white mb-2">بازیابی رمز عبور</h2>
-                <p className="text-gray-400 text-sm">ایمیل خود را وارد کنید</p>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">بازیابی رمز عبور</h2>
+                <p className="text-slate-500 text-sm">ایمیل خود را وارد کنید</p>
               </div>
               <form onSubmit={handleForgotSubmit(onForgotPassword)} className="space-y-5">
                 <div className="space-y-2">
                   <Input
                     {...registerForgot("identifier")}
                     placeholder="example@email.com"
-                    className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-white/30"
+                    className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                     dir="ltr"
                   />
                   {forgotErrors.identifier && (
-                    <p className="text-red-500 text-xs mt-1">
+                    <p className="text-rose-500 text-xs mt-1">
                       {forgotErrors.identifier.message}
                     </p>
                   )}
@@ -601,7 +601,7 @@ export default function AuthPage() {
                   <Button
                     disabled={isLoading}
                     type="submit"
-                    className="w-full h-14 rounded-2xl bg-white text-black hover:bg-gray-200 text-base font-bold transition-all"
+                    className="w-full h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#0072B5] text-base font-bold shadow-md shadow-[#0082CA]/20 transition-all"
                   >
                     {isLoading ? "در حال ارسال..." : "ارسال لینک بازیابی"}
                   </Button>
@@ -609,7 +609,7 @@ export default function AuthPage() {
                     type="button"
                     onClick={() => setView("auth")}
                     variant="ghost"
-                    className="w-full h-14 rounded-2xl text-gray-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
+                    className="w-full h-14 rounded-2xl text-slate-500 hover:text-slate-900 hover:bg-sky-50 text-sm font-medium transition-all"
                   >
                     بازگشت به صفحه ورود
                   </Button>

@@ -184,16 +184,16 @@ export default function ProductGallery({
   return (
     <div className="space-y-4 select-none" ref={containerRef} dir="rtl">
       {/* Main Slide Viewer Container */}
-      <div className="relative w-full aspect-[3/4] sm:aspect-[3/4] max-h-[46vh] sm:max-h-none bg-[#0e0e0e] rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-2xl group">
+      <div className="relative w-full aspect-[3/4] sm:aspect-[3/4] max-h-[46vh] sm:max-h-none bg-sky-50/40 rounded-2xl sm:rounded-3xl overflow-hidden border border-sky-100 shadow-xl shadow-sky-950/5 group">
         {/* Discount Badge on Product Photo */}
         {discountInfo?.hasDiscount && (
           <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5 pointer-events-none">
-            <span className="px-3.5 py-1.5 rounded-full bg-emerald-500 text-black text-xs font-black shadow-[0_4px_15px_rgba(16,185,129,0.5)] flex items-center gap-1">
+            <span className="px-3.5 py-1.5 rounded-full bg-rose-500 text-white text-xs font-black shadow-md flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5" />
               ٪{discountInfo.discountPercent} تخفیف
             </span>
             {discountInfo.remainingTime && (
-              <span className="px-2.5 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+              <span className="px-2.5 py-0.5 rounded-full bg-white/95 backdrop-blur-md text-rose-600 text-[10px] font-bold border border-rose-200 shadow-sm">
                 مهلت: {discountInfo.remainingTime}
               </span>
             )}
@@ -204,10 +204,10 @@ export default function ProductGallery({
         {images.length > 1 && (
           <div className="absolute top-4 left-4 z-20 pointer-events-none">
             <span
-              className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white/90 text-xs font-mono font-bold border border-white/15 flex items-center gap-1.5 shadow-lg"
+              className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-slate-800 text-xs font-mono font-bold border border-sky-100 flex items-center gap-1.5 shadow-md"
               dir="ltr"
             >
-              <Layers className="w-3.5 h-3.5 text-amber-400" />
+              <Layers className="w-3.5 h-3.5 text-[#0082CA]" />
               <span>
                 {currentIndex + 1} / {images.length}
               </span>
@@ -219,7 +219,7 @@ export default function ProductGallery({
         <button
           type="button"
           onClick={() => setIsFullscreen(true)}
-          className="absolute top-4 left-24 z-20 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white/80 hover:text-white backdrop-blur-md border border-white/15 transition-all opacity-0 group-hover:opacity-100 hidden sm:flex items-center justify-center shadow-lg hover:scale-105"
+          className="absolute top-4 left-24 z-20 p-2 rounded-full bg-white/90 hover:bg-white text-slate-700 hover:text-[#0082CA] backdrop-blur-md border border-sky-100 transition-all opacity-0 group-hover:opacity-100 hidden sm:flex items-center justify-center shadow-md hover:scale-105"
           title="مشاهده تمام صفحه تصویر"
           aria-label="تمام صفحه"
         >
@@ -260,22 +260,22 @@ export default function ProductGallery({
             <button
               type="button"
               onClick={() => paginate(-1)}
-              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/15 hover:border-amber-400/50 backdrop-blur-md transition-all items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-800 border border-sky-200 hover:border-[#0082CA] backdrop-blur-md transition-all items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0082CA]"
               aria-label="تصویر بعدی"
               title="تصویر بعدی (کلید راست)"
             >
-              <ChevronRight className="w-6 h-6 text-white transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="w-6 h-6 text-slate-800 group-hover:text-[#0082CA] transition-transform group-hover:translate-x-0.5" />
             </button>
 
             {/* Left Arrow Button - Desktop Only */}
             <button
               type="button"
               onClick={() => paginate(1)}
-              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/15 hover:border-amber-400/50 backdrop-blur-md transition-all items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-800 border border-sky-200 hover:border-[#0082CA] backdrop-blur-md transition-all items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0082CA]"
               aria-label="تصویر قبلی"
               title="تصویر قبلی (کلید چپ)"
             >
-              <ChevronLeft className="w-6 h-6 text-white transition-transform group-hover:-translate-x-0.5" />
+              <ChevronLeft className="w-6 h-6 text-slate-800 group-hover:text-[#0082CA] transition-transform group-hover:-translate-x-0.5" />
             </button>
           </>
         )}
@@ -283,7 +283,7 @@ export default function ProductGallery({
         {/* SKU Badge (Bottom Left - desktop only to ensure clean mobile breathing room) */}
         {matchedVariant?.sku && (
           <span
-            className="absolute bottom-4 left-4 z-20 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-mono text-gray-300 border border-white/10 hidden sm:inline-block max-w-[160px] truncate"
+            className="absolute bottom-4 left-4 z-20 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-mono text-slate-600 border border-sky-100 hidden sm:inline-block max-w-[160px] truncate shadow-sm"
             dir="ltr"
           >
             SKU: {matchedVariant.sku}
@@ -294,7 +294,7 @@ export default function ProductGallery({
         {images.length > 1 && (
           <div className="absolute bottom-4 inset-x-0 z-20 flex flex-col items-center gap-1.5 pointer-events-none">
             {/* Pagination Dots */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 pointer-events-auto">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-sky-100 shadow-md pointer-events-auto">
               {images.map((_, idx) => (
                 <button
                   key={`dot-${idx}`}
@@ -305,8 +305,8 @@ export default function ProductGallery({
                   }}
                   className={`transition-all duration-300 rounded-full ${
                     idx === currentIndex
-                      ? "w-6 h-1.5 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
-                      : "w-1.5 h-1.5 bg-white/40 hover:bg-white/80"
+                      ? "w-6 h-1.5 bg-[#0082CA] shadow-sm"
+                      : "w-1.5 h-1.5 bg-sky-200 hover:bg-sky-400"
                   }`}
                   aria-label={`رفتن به تصویر ${idx + 1}`}
                 />
@@ -341,8 +341,8 @@ export default function ProductGallery({
                   }}
                   className={`relative shrink-0 w-14 sm:w-18 aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all duration-200 snap-center cursor-pointer ${
                     isActive
-                      ? "border-amber-400 ring-2 ring-amber-400/50 shadow-lg scale-105 opacity-100"
-                      : "border-white/10 opacity-60 hover:opacity-100 hover:border-white/30"
+                      ? "border-[#0082CA] ring-2 ring-[#0082CA]/30 shadow-md scale-105 opacity-100"
+                      : "border-sky-100 opacity-70 hover:opacity-100 hover:border-sky-300"
                   }`}
                   aria-label={`انتخاب تصویر ${idx + 1}`}
                   aria-current={isActive ? "true" : undefined}
@@ -354,7 +354,7 @@ export default function ProductGallery({
                     loading="lazy"
                   />
                   {isActive && (
-                    <div className="absolute inset-0 bg-amber-400/10 pointer-events-none" />
+                    <div className="absolute inset-0 bg-[#0082CA]/10 pointer-events-none" />
                   )}
                 </button>
               );

@@ -171,29 +171,29 @@ export default function RelatedProductsSlider({
   if (isLoading) {
     return (
       <section
-        className={`border-t border-white/10 pt-12 pb-6 space-y-6 ${className}`}
+        className={`border-t border-sky-100 pt-12 pb-6 space-y-6 ${className}`}
         aria-label="در حال بارگذاری محصولات مرتبط"
       >
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <div className="h-6 w-48 bg-white/10 rounded-lg animate-pulse" />
-            <div className="h-4 w-72 bg-white/5 rounded-lg animate-pulse" />
+            <div className="h-6 w-48 bg-sky-100 rounded-lg animate-pulse" />
+            <div className="h-4 w-72 bg-sky-50 rounded-lg animate-pulse" />
           </div>
           <div className="flex gap-2">
-            <div className="w-10 h-10 rounded-xl bg-white/5 animate-pulse" />
-            <div className="w-10 h-10 rounded-xl bg-white/5 animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-sky-50 animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-sky-50 animate-pulse" />
           </div>
         </div>
         <div className="flex gap-4 overflow-hidden py-2">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="w-[260px] md:w-[280px] shrink-0 bg-[#111111] border border-white/5 rounded-2xl p-3 space-y-3"
+              className="w-[260px] md:w-[280px] shrink-0 bg-white border border-sky-100 rounded-2xl p-3 space-y-3 shadow-sm"
             >
-              <div className="aspect-[3/4] w-full rounded-xl bg-white/5 animate-pulse" />
-              <div className="h-3 w-20 bg-white/5 rounded animate-pulse" />
-              <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse" />
-              <div className="h-4 w-1/2 bg-white/5 rounded animate-pulse" />
+              <div className="aspect-[3/4] w-full rounded-xl bg-sky-50 animate-pulse" />
+              <div className="h-3 w-20 bg-sky-100 rounded animate-pulse" />
+              <div className="h-4 w-3/4 bg-sky-100 rounded animate-pulse" />
+              <div className="h-4 w-1/2 bg-sky-50 rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -208,27 +208,27 @@ export default function RelatedProductsSlider({
 
   return (
     <section
-      className={`border-t border-white/10 pt-12 pb-4 space-y-6 scroll-mt-24 ${className}`}
+      className={`border-t border-sky-100 pt-12 pb-4 space-y-6 scroll-mt-24 ${className}`}
       aria-labelledby={headingId}
     >
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
-            <span className="p-1.5 rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400">
+            <span className="p-1.5 rounded-lg bg-sky-50 border border-sky-200 text-[#0082CA] shadow-sm">
               {icon || <Layers className="w-4 h-4" />}
             </span>
             <h2
               id={headingId}
-              className="text-xl md:text-2xl font-black text-white tracking-normal"
+              className="text-xl md:text-2xl font-black text-slate-900 tracking-normal"
             >
               {title}
             </h2>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white/10 text-gray-300">
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-[#0082CA] border border-sky-200">
               {validProducts.length.toLocaleString("fa-IR")} {badgeLabel}
             </span>
           </div>
-          <p className="text-xs md:text-sm text-gray-400 font-normal">
+          <p className="text-xs md:text-sm text-slate-500 font-normal">
             {subtitle}
           </p>
         </div>
@@ -240,7 +240,7 @@ export default function RelatedProductsSlider({
             onClick={() => handleScroll("prev")}
             disabled={!canScrollPrev}
             aria-label="محصولات قبلی"
-            className="w-11 h-11 rounded-xl bg-[#141414] border border-white/10 text-white flex items-center justify-center transition-all hover:bg-white hover:text-black hover:border-white active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#141414] disabled:hover:text-white disabled:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
+            className="w-11 h-11 rounded-xl bg-white border border-sky-200 text-slate-700 flex items-center justify-center transition-all hover:bg-[#0082CA] hover:text-white hover:border-[#0082CA] active:scale-95 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 disabled:hover:border-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0082CA]"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -249,7 +249,7 @@ export default function RelatedProductsSlider({
             onClick={() => handleScroll("next")}
             disabled={!canScrollNext}
             aria-label="محصولات بعدی"
-            className="w-11 h-11 rounded-xl bg-[#141414] border border-white/10 text-white flex items-center justify-center transition-all hover:bg-white hover:text-black hover:border-white active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#141414] disabled:hover:text-white disabled:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]"
+            className="w-11 h-11 rounded-xl bg-white border border-sky-200 text-slate-700 flex items-center justify-center transition-all hover:bg-[#0082CA] hover:text-white hover:border-[#0082CA] active:scale-95 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 disabled:hover:border-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0082CA]"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -292,11 +292,11 @@ export default function RelatedProductsSlider({
                 <Link
                   href={`/products/${item.slug || item.id}`}
                   onClick={handleCardClick}
-                  className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] rounded-2xl"
+                  className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0082CA] rounded-2xl"
                 >
-                  <div className="bg-[#111111] border border-white/10 rounded-2xl p-3 transition-all duration-300 hover:border-amber-400/40 hover:bg-[#151515] hover:shadow-[0_8px_30px_rgba(0,0,0,0.6)] flex flex-col h-full">
+                  <div className="bg-white border border-sky-100 rounded-2xl p-3 transition-all duration-300 hover:border-sky-300 hover:shadow-lg hover:shadow-sky-950/5 flex flex-col h-full">
                     {/* Card Image Container */}
-                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-neutral-900 border border-white/5">
+                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-sky-50 border border-sky-100">
                       <img
                         src={imageSrc}
                         alt={item.title}
@@ -304,18 +304,15 @@ export default function RelatedProductsSlider({
                         className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
                       />
 
-                      {/* Dark gradient overlay on bottom for contrast */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-
                       {/* Top Badges */}
                       <div className="absolute top-2.5 right-2.5 left-2.5 flex items-center justify-between gap-1 z-10">
                         {item.is_manual_pin ? (
-                          <span className="px-2 py-0.5 rounded-md bg-amber-400/20 border border-amber-400/30 text-amber-300 text-[10px] font-bold flex items-center gap-1 backdrop-blur-md shadow-sm">
-                            <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                          <span className="px-2 py-0.5 rounded-md bg-sky-50/90 border border-sky-200 text-[#0082CA] text-[10px] font-bold flex items-center gap-1 backdrop-blur-md shadow-sm">
+                            <Sparkles className="w-2.5 h-2.5 text-[#0082CA]" />
                             پیشنهاد استایلیست
                           </span>
                         ) : disc.hasDiscount ? (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-black backdrop-blur-md shadow-sm">
+                          <span className="px-2 py-0.5 rounded-md bg-rose-50/90 border border-rose-200 text-rose-600 text-[10px] font-black backdrop-blur-md shadow-sm">
                             ٪{disc.discountPercent} تخفیف
                           </span>
                         ) : (
@@ -323,7 +320,7 @@ export default function RelatedProductsSlider({
                         )}
 
                         {item.category && (
-                          <span className="text-[10px] font-medium text-gray-300 bg-black/60 border border-white/10 backdrop-blur-md px-2 py-0.5 rounded-md">
+                          <span className="text-[10px] font-medium text-slate-700 bg-white/90 border border-sky-100 backdrop-blur-md px-2 py-0.5 rounded-md shadow-sm">
                             {item.category}
                           </span>
                         )}
@@ -331,7 +328,7 @@ export default function RelatedProductsSlider({
 
                       {/* Bottom Quick Action on Hover */}
                       <div className="absolute bottom-2.5 inset-x-2.5 z-10 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="w-full h-9 rounded-lg bg-white/95 text-black text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg backdrop-blur-sm">
+                        <div className="w-full h-9 rounded-lg bg-[#0082CA] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-[#0082CA]/20 backdrop-blur-sm">
                           <ShoppingBag className="w-3.5 h-3.5" />
                           <span>مشاهده و انتخاب</span>
                         </div>
@@ -341,14 +338,14 @@ export default function RelatedProductsSlider({
                     {/* Card Content Details */}
                     <div className="mt-3 flex flex-col flex-1 justify-between space-y-2 px-1">
                       <div className="space-y-1">
-                        <h3 className="text-xs md:text-sm font-bold text-white line-clamp-1 group-hover:text-amber-300 transition-colors">
+                        <h3 className="text-xs md:text-sm font-bold text-slate-900 line-clamp-1 group-hover:text-[#0082CA] transition-colors">
                           {item.title}
                         </h3>
 
                         {/* Rating (if present) */}
                         {item.average_rating != null && (
-                          <div className="flex items-center gap-1 text-amber-400 text-[11px]">
-                            <Star className="w-3 h-3 fill-current text-amber-400" />
+                          <div className="flex items-center gap-1 text-amber-500 text-[11px]">
+                            <Star className="w-3 h-3 fill-current text-amber-500" />
                             <span className="font-bold">
                               {Number(item.average_rating).toLocaleString("fa-IR", {
                                 minimumFractionDigits: 1,
@@ -356,7 +353,7 @@ export default function RelatedProductsSlider({
                               })}
                             </span>
                             {Boolean(item.reviews_count) && (
-                              <span className="text-gray-500 text-[10px]">
+                              <span className="text-slate-400 text-[10px]">
                                 ({Number(item.reviews_count).toLocaleString("fa-IR")})
                               </span>
                             )}
@@ -365,23 +362,23 @@ export default function RelatedProductsSlider({
                       </div>
 
                       {/* Price Section */}
-                      <div className="pt-1 border-t border-white/5 flex items-baseline justify-between gap-2">
+                      <div className="pt-1 border-t border-sky-100 flex items-baseline justify-between gap-2">
                         {disc.hasDiscount ? (
                           <div className="flex flex-col">
-                            <span className="text-[11px] text-gray-400 line-through">
+                            <span className="text-[11px] text-slate-400 line-through">
                               {formatPrice(disc.basePrice)}
                             </span>
-                            <span className="text-xs md:text-sm font-black text-emerald-400">
+                            <span className="text-xs md:text-sm font-black text-[#0082CA]">
                               {formatPrice(disc.discountPrice)}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs md:text-sm font-bold text-white">
+                          <span className="text-xs md:text-sm font-black text-[#0082CA]">
                             {formatPrice(item.price)}
                           </span>
                         )}
 
-                        <span className="text-gray-500 group-hover:text-amber-400 transition-colors">
+                        <span className="text-slate-400 group-hover:text-[#0082CA] transition-colors">
                           <ArrowLeft className="w-3.5 h-3.5" />
                         </span>
                       </div>
@@ -395,7 +392,7 @@ export default function RelatedProductsSlider({
 
         {/* Mobile Swipe Hint and Dots Progress */}
         <div className="mt-3 flex items-center justify-between px-1">
-          <span className="text-[11px] text-gray-500 sm:hidden">
+          <span className="text-[11px] text-slate-400 sm:hidden">
             برای مشاهده موارد بیشتر بکشید ←
           </span>
 
@@ -410,8 +407,8 @@ export default function RelatedProductsSlider({
                   aria-label={`رفتن به اسلاید ${i + 1}`}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     i === activeIndex
-                      ? "w-6 bg-amber-400"
-                      : "w-1.5 bg-white/20 hover:bg-white/40"
+                      ? "w-6 bg-[#0082CA]"
+                      : "w-1.5 bg-sky-200 hover:bg-sky-300"
                   }`}
                 />
               ))}

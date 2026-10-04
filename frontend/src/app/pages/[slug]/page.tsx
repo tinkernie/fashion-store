@@ -49,7 +49,7 @@ export default function DynamicCMSPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen pt-32 pb-24 px-4 flex items-center justify-center bg-[#0a0a0a]" dir="rtl">
+      <main className="min-h-screen pt-32 pb-24 px-4 flex items-center justify-center bg-background" dir="rtl">
         <HoneycombLoader 
           size="default" 
           text="در حال بارگذاری برگه..." 
@@ -60,12 +60,12 @@ export default function DynamicCMSPage() {
 
   if (!page) {
     return (
-      <main className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center space-y-4">
-        <h1 className="text-2xl md:text-4xl font-black text-white">برگه مورد نظر یافت نشد</h1>
-        <p className="text-gray-400 text-xs md:text-sm max-w-md">برگه‌ای با این آدرس وجود ندارد یا توسط مدیر سایت منتشر نشده است.</p>
+      <main className="min-h-screen pt-32 pb-24 px-4 flex flex-col items-center justify-center text-center space-y-4 bg-background" dir="rtl">
+        <h1 className="text-2xl md:text-4xl font-black text-slate-900">برگه مورد نظر یافت نشد</h1>
+        <p className="text-slate-500 text-xs md:text-sm max-w-md">برگه‌ای با این آدرس وجود ندارد یا توسط مدیر سایت منتشر نشده است.</p>
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-black hover:bg-gray-200 font-bold text-sm transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold text-sm transition-all shadow-md shadow-[#0082CA]/20"
         >
           <span>بازگشت به صفحه اصلی</span>
           <ArrowRight className="w-4 h-4" />
@@ -75,45 +75,45 @@ export default function DynamicCMSPage() {
   }
 
   return (
-    <main className="min-h-screen pt-32 pb-24 px-4 md:px-12 max-w-4xl mx-auto" dir="rtl">
+    <main className="min-h-screen bg-background text-foreground pt-32 pb-24 px-4 md:px-12 max-w-4xl mx-auto" dir="rtl">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-gray-500 mb-8">
-        <Link href="/" className="hover:text-white transition-colors">
+      <div className="flex items-center gap-2 text-xs text-slate-400 mb-8">
+        <Link href="/" className="hover:text-[#0082CA] transition-colors">
           صفحه نخست
         </Link>
         <ChevronLeft className="w-3.5 h-3.5" />
-        <span className="text-gray-400">برگه‌های سایت</span>
+        <span className="text-slate-500">برگه‌های سایت</span>
         <ChevronLeft className="w-3.5 h-3.5" />
-        <span className="text-white font-bold">{page?.title}</span>
+        <span className="text-slate-900 font-bold">{page?.title}</span>
       </div>
 
       {/* Page Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-4 border-b border-white/10 pb-8 mb-10"
+        className="space-y-4 border-b border-sky-100 pb-8 mb-10"
       >
         <div className="flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-gray-300 text-xs font-bold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 text-[#0082CA] border border-sky-200 text-xs font-bold shadow-sm">
             <FileText className="w-3.5 h-3.5" />
             اطلاعات و راهنمای فروشگاه
           </div>
 
           <button
             onClick={handleShare}
-            className="p-2.5 rounded-xl border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-2.5 rounded-xl border border-sky-200 bg-white text-slate-600 hover:text-[#0082CA] hover:bg-sky-50 transition-colors shadow-sm"
             title="اشتراک‌گذاری برگه"
           >
             <Share2 className="w-4 h-4" />
           </button>
         </div>
 
-        <h1 className="text-3xl md:text-5xl font-black text-white leading-tight">
+        <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
           {page?.title}
         </h1>
 
         {page?.updated_at && (
-          <div className="flex items-center gap-2 text-xs text-gray-500 font-sans">
+          <div className="flex items-center gap-2 text-xs text-slate-400 font-sans">
             <Clock className="w-3.5 h-3.5" />
             <span>آخرین بروزرسانی: {new Date(page.updated_at).toLocaleDateString("fa-IR")}</span>
           </div>
@@ -125,28 +125,28 @@ export default function DynamicCMSPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
-        className="space-y-8 text-gray-300 leading-relaxed text-sm md:text-base font-sans"
+        className="space-y-8 text-slate-700 leading-relaxed text-sm md:text-base font-sans"
       >
         {page?.content && Array.isArray(page.content) && page.content.length > 0 ? (
           page.content.map((block: any, idx: number) => (
             <div
               key={idx}
-              className="bg-[#111111] border border-white/5 rounded-3xl p-6 md:p-8 space-y-4 shadow-xl"
+              className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 space-y-4 shadow-xl shadow-sky-950/5"
             >
               {block.heading && (
-                <h2 className="text-xl md:text-2xl font-black text-white border-r-4 border-white pr-3">
+                <h2 className="text-xl md:text-2xl font-black text-slate-900 border-r-4 border-[#0082CA] pr-3">
                   {block.heading}
                 </h2>
               )}
               {block.body && (
-                <p className="text-gray-300 leading-relaxed whitespace-pre-line text-sm md:text-base">
+                <p className="text-slate-600 leading-relaxed whitespace-pre-line text-sm md:text-base">
                   {block.body}
                 </p>
               )}
             </div>
           ))
         ) : (
-          <div className="bg-[#111111] border border-white/5 rounded-3xl p-8 text-center text-gray-400">
+          <div className="bg-white border border-sky-100 rounded-3xl p-8 text-center text-slate-400 shadow-sm">
             محتوایی برای این برگه ثبت نشده است.
           </div>
         )}
@@ -155,7 +155,7 @@ export default function DynamicCMSPage() {
         <div className="pt-8 flex justify-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-black hover:bg-gray-200 font-bold text-sm transition-all shadow-xl"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold text-sm transition-all shadow-md shadow-[#0082CA]/20"
           >
             <span>بازگشت به صفحه اصلی فروشگاه</span>
             <ArrowRight className="w-4 h-4" />

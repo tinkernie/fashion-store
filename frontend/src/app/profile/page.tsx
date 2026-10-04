@@ -84,23 +84,23 @@ const getProfileStatusBadge = (status: string) => {
   const s = (status || "").toLowerCase();
   switch (s) {
     case "delivered":
-      return { label: "تحویل داده شده", bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" };
+      return { label: "تحویل داده شده", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" };
     case "shipping":
     case "shipped":
-      return { label: "تحویل به پست", bg: "bg-blue-500/10 text-blue-400 border-blue-500/20" };
+      return { label: "تحویل به پست", bg: "bg-sky-50 text-sky-700 border-sky-200" };
     case "packing":
     case "processing":
-      return { label: "در حال بسته‌بندی", bg: "bg-purple-500/10 text-purple-400 border-purple-500/20" };
+      return { label: "در حال بسته‌بندی", bg: "bg-blue-50 text-[#0082CA] border-sky-200" };
     case "paid":
-      return { label: "پرداخت شده", bg: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" };
+      return { label: "پرداخت شده", bg: "bg-sky-50 text-[#0082CA] border-sky-200" };
     case "cancelled":
-      return { label: "لغو شده", bg: "bg-rose-500/10 text-rose-400 border-rose-500/20" };
+      return { label: "لغو شده", bg: "bg-rose-50 text-rose-700 border-rose-200" };
     case "returned":
-      return { label: "مرجوع شده", bg: "bg-orange-500/10 text-orange-400 border-orange-500/20" };
+      return { label: "مرجوع شده", bg: "bg-amber-50 text-amber-700 border-amber-200" };
     case "refunded":
-      return { label: "مسترد شده", bg: "bg-teal-500/10 text-teal-400 border-teal-500/20" };
+      return { label: "مسترد شده", bg: "bg-teal-50 text-teal-700 border-teal-200" };
     default:
-      return { label: "در انتظار پرداخت", bg: "bg-amber-400/10 text-amber-400 border-amber-400/20" };
+      return { label: "در انتظار پرداخت", bg: "bg-amber-50 text-amber-700 border-amber-200" };
   }
 };
 
@@ -470,7 +470,7 @@ export default function ProfilePage() {
   if (!mounted) return null;
 
   return (
-    <main className="min-h-screen pt-28 pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-white" dir="rtl">
+    <main className="min-h-screen pt-28 pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-slate-800 bg-background" dir="rtl">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
         
         {/* Left Column: User Summary Card */}
@@ -479,40 +479,40 @@ export default function ProfilePage() {
           animate={{ opacity: 1, x: 0 }}
           className="lg:col-span-4 space-y-6"
         >
-          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 text-center shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-amber-400 via-white to-amber-400" />
+          <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 text-center shadow-xl shadow-sky-950/5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-sky-400 via-[#0082CA] to-sky-400" />
 
-            <div className="w-24 h-24 bg-gradient-to-tr from-amber-400/20 to-white/10 rounded-full mx-auto mb-4 border-2 border-white/20 flex items-center justify-center shadow-xl">
-              <User className="w-10 h-10 text-amber-400" />
+            <div className="w-24 h-24 bg-sky-50 rounded-full mx-auto mb-4 border-2 border-sky-200 flex items-center justify-center shadow-lg shadow-sky-500/10">
+              <User className="w-10 h-10 text-[#0082CA]" />
             </div>
 
-            <h2 className="text-xl font-black text-white mb-1">
+            <h2 className="text-xl font-black text-slate-900 mb-1">
               {displayName}
             </h2>
-            <p className="text-xs text-gray-400 font-sans mb-6" dir="ltr">
+            <p className="text-xs text-slate-500 font-sans mb-6" dir="ltr">
               {userProfile?.email || ""}
             </p>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-3 gap-2 py-4 border-y border-white/10 mb-6 text-center">
+            <div className="grid grid-cols-3 gap-2 py-4 border-y border-sky-100 mb-6 text-center">
               <div>
-                <span className="text-base font-black text-white">{orders.length.toLocaleString("fa-IR")}</span>
-                <span className="text-[10px] text-gray-500 block">سفارش‌ها</span>
+                <span className="text-base font-black text-slate-900">{orders.length.toLocaleString("fa-IR")}</span>
+                <span className="text-[10px] text-slate-400 block">سفارش‌ها</span>
               </div>
               <div>
-                <span className="text-base font-black text-white">{wishlistItems.length.toLocaleString("fa-IR")}</span>
-                <span className="text-[10px] text-gray-500 block">علاقه‌مندی</span>
+                <span className="text-base font-black text-slate-900">{wishlistItems.length.toLocaleString("fa-IR")}</span>
+                <span className="text-[10px] text-slate-400 block">علاقه‌مندی</span>
               </div>
               <div>
-                <span className="text-base font-black text-white">{addresses.length.toLocaleString("fa-IR")}</span>
-                <span className="text-[10px] text-gray-500 block">آدرس‌ها</span>
+                <span className="text-base font-black text-slate-900">{addresses.length.toLocaleString("fa-IR")}</span>
+                <span className="text-[10px] text-slate-400 block">آدرس‌ها</span>
               </div>
             </div>
 
             <Button
               onClick={handleLogout}
               variant="outline"
-              className="w-full text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border-rose-500/20 h-11 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all"
+              className="w-full text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 bg-white h-11 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-sm"
             >
               <LogOut className="w-4 h-4" />
               خروج از حساب کاربری
@@ -563,16 +563,16 @@ export default function ProfilePage() {
             <TabsContent value="orders" className="space-y-6 outline-none mt-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-black text-white">پیگیری و تاریخچه سفارشات</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">وضعیت آماده‌سازی، کد رهگیری پستی و جزئیات سفارش‌ها</p>
+                  <h3 className="text-lg font-black text-slate-900">پیگیری و تاریخچه سفارشات</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">وضعیت آماده‌سازی، کد رهگیری پستی و جزئیات سفارش‌ها</p>
                 </div>
 
                 {/* Sub-filters */}
-                <div className="flex items-center gap-1.5 bg-[#181818] p-1 rounded-xl border border-white/10">
+                <div className="flex items-center gap-1.5 bg-sky-50 p-1 rounded-xl border border-sky-100">
                   <button
                     onClick={() => setOrderFilter("all")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      orderFilter === "all" ? "bg-white text-black" : "text-gray-400 hover:text-white"
+                      orderFilter === "all" ? "bg-[#0082CA] text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     همه
@@ -580,7 +580,7 @@ export default function ProfilePage() {
                   <button
                     onClick={() => setOrderFilter("active")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      orderFilter === "active" ? "bg-white text-black" : "text-gray-400 hover:text-white"
+                      orderFilter === "active" ? "bg-[#0082CA] text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     جاری
@@ -588,7 +588,7 @@ export default function ProfilePage() {
                   <button
                     onClick={() => setOrderFilter("delivered")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      orderFilter === "delivered" ? "bg-white text-black" : "text-gray-400 hover:text-white"
+                      orderFilter === "delivered" ? "bg-[#0082CA] text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     تحویل شده
@@ -597,10 +597,10 @@ export default function ProfilePage() {
               </div>
 
               {filteredOrders.length === 0 ? (
-                <div className="text-center py-16 bg-[#111111] border border-white/10 rounded-3xl space-y-4">
-                  <Package className="w-12 h-12 text-gray-600 mx-auto" />
-                  <p className="text-sm text-gray-400">سفارشی در این بخش یافت نشد.</p>
-                  <Button asChild className="h-10 px-6 rounded-xl bg-white text-black font-bold text-xs">
+                <div className="text-center py-16 bg-white border border-sky-100 rounded-3xl space-y-4 shadow-sm">
+                  <Package className="w-12 h-12 text-slate-300 mx-auto" />
+                  <p className="text-sm text-slate-500">سفارشی در این بخش یافت نشد.</p>
+                  <Button asChild className="h-10 px-6 rounded-xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold text-xs shadow-md shadow-[#0082CA]/20">
                     <Link href="/products">مشاهده و خرید محصولات</Link>
                   </Button>
                 </div>
@@ -616,19 +616,19 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={orderId}
-                        className="bg-[#111111] border border-white/10 hover:border-white/20 rounded-3xl p-6 space-y-6 transition-all shadow-xl"
+                        className="bg-white border border-sky-100 hover:border-sky-300 rounded-3xl p-6 space-y-6 transition-all shadow-md shadow-sky-950/5"
                       >
                         {/* Order Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-sky-100">
                           <div className="space-y-1">
                             <div className="flex items-center gap-3">
-                              <span className="text-sm font-black text-white font-mono">{orderId}</span>
-                              <span className="text-xs text-gray-400 font-sans">
+                              <span className="text-sm font-black text-slate-900 font-mono">{orderId}</span>
+                              <span className="text-xs text-slate-500 font-sans">
                                 {formatShamsiDate(order.placed_at || order.created_at, { mode: "full", withTime: true })}
                               </span>
                             </div>
-                            <span className="text-xs text-gray-400">
-                              مبلغ کل: <strong className="text-white">{formatPrice(orderTotal)}</strong>
+                            <span className="text-xs text-slate-500">
+                              مبلغ کل: <strong className="text-slate-900">{formatPrice(orderTotal)}</strong>
                             </span>
                           </div>
 
@@ -643,7 +643,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={() => fetchOrderDetails(orderId)}
                               variant="outline"
-                              className="h-9 px-4 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white hover:text-black font-bold text-xs"
+                              className="h-9 px-4 rounded-xl border-sky-200 bg-white text-slate-700 hover:bg-sky-50 font-bold text-xs shadow-sm"
                             >
                               جزئیات سفارش
                               <ChevronLeft className="w-3.5 h-3.5 mr-1" />
@@ -664,8 +664,8 @@ export default function ProfilePage() {
                                     <div
                                       className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
                                         isPassed
-                                          ? "bg-emerald-500 border-emerald-400 text-black shadow-lg shadow-emerald-500/20"
-                                          : "bg-[#181818] border-white/10 text-gray-600"
+                                          ? "bg-[#0082CA] border-[#0082CA] text-white shadow-md shadow-[#0082CA]/20"
+                                          : "bg-sky-50 border-sky-200 text-slate-400"
                                       }`}
                                     >
                                       {isPassed ? (
@@ -676,7 +676,7 @@ export default function ProfilePage() {
                                     </div>
                                     <span
                                       className={`text-[11px] font-bold ${
-                                        isCurrent ? "text-amber-400 font-black" : isPassed ? "text-white" : "text-gray-500"
+                                        isCurrent ? "text-[#0082CA] font-black" : isPassed ? "text-slate-800" : "text-slate-400"
                                       }`}
                                     >
                                       {step.label}
@@ -687,7 +687,7 @@ export default function ProfilePage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+                          <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
                             <XCircle className="w-4 h-4 shrink-0" />
                             <span>این سفارش لغو گردیده است. در صورت نیاز با پشتیبانی تماس بگیرید.</span>
                           </div>
@@ -701,11 +701,11 @@ export default function ProfilePage() {
 
             {/* --- 2. Wishlist Tab --- */}
             <TabsContent value="wishlist" className="space-y-6 outline-none mt-0">
-              <h3 className="text-lg font-black text-white">لیست کالاهای مورد علاقه</h3>
+              <h3 className="text-lg font-black text-slate-900">لیست کالاهای مورد علاقه</h3>
               {wishlistItems.length === 0 ? (
-                <div className="text-center py-16 bg-[#111111] border border-white/10 rounded-3xl space-y-4">
-                  <Heart className="w-12 h-12 text-gray-600 mx-auto" />
-                  <p className="text-sm text-gray-400">هیچ محصولی در لیست علاقه‌مندی‌های شما قرار ندارد.</p>
+                <div className="text-center py-16 bg-white border border-sky-100 rounded-3xl space-y-4 shadow-sm">
+                  <Heart className="w-12 h-12 text-slate-300 mx-auto" />
+                  <p className="text-sm text-slate-500">هیچ محصولی در لیست علاقه‌مندی‌های شما قرار ندارد.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -714,38 +714,38 @@ export default function ProfilePage() {
                     return (
                       <div
                         key={item.id}
-                        className="bg-[#111111] border border-white/10 hover:border-white/20 rounded-3xl p-4 flex items-center gap-4 transition-all shadow-lg relative overflow-hidden"
+                        className="bg-white border border-sky-100 hover:border-sky-300 rounded-3xl p-4 flex items-center gap-4 transition-all shadow-sm hover:shadow-md relative overflow-hidden"
                       >
                         <div className="relative shrink-0">
                           <img
                             src={item.imageUrl || "/globe.svg"}
                             alt={item.name}
-                            className="w-20 h-24 object-cover rounded-2xl border border-white/10"
+                            className="w-20 h-24 object-cover rounded-2xl border border-sky-100 bg-sky-50"
                           />
                           {disc.hasDiscount && (
-                            <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-emerald-500 text-black text-[9px] font-black shadow-md">
+                            <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-rose-500 text-white text-[9px] font-black shadow-md">
                               ٪{disc.discountPercent}
                             </span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0 space-y-1">
                           <Link href={`/products/${item.id}`} className="block">
-                            <h4 className="text-sm font-bold text-white hover:text-amber-400 transition-colors truncate">
+                            <h4 className="text-sm font-bold text-slate-900 hover:text-[#0082CA] transition-colors truncate">
                               {item.name}
                             </h4>
                           </Link>
-                          <span className="text-xs text-gray-500 block">{item.category || "پوشاک"}</span>
+                          <span className="text-xs text-slate-400 block">{item.category || "پوشاک"}</span>
                           {disc.hasDiscount ? (
                             <div className="flex flex-col pt-1">
-                              <span className="text-[10px] text-gray-500 line-through">
+                              <span className="text-[10px] text-slate-400 line-through">
                                 {formatPrice(disc.basePrice)}
                               </span>
-                              <span className="text-xs font-black text-emerald-400">
+                              <span className="text-xs font-black text-[#0082CA]">
                                 {formatPrice(disc.discountPrice)}
                               </span>
                             </div>
                           ) : (
-                            <p className="text-xs font-black text-gray-200 pt-1">
+                            <p className="text-xs font-black text-[#0082CA] pt-1">
                               {formatPrice(item.price)}
                             </p>
                           )}
@@ -755,7 +755,7 @@ export default function ProfilePage() {
                             removeWishlistItem(item.id);
                             toast.info("از علاقه‌مندی‌ها حذف شد");
                           }}
-                          className="p-2.5 text-gray-500 hover:text-rose-400 transition-colors rounded-xl hover:bg-white/5 cursor-pointer"
+                          className="p-2.5 text-slate-400 hover:text-rose-500 transition-colors rounded-xl hover:bg-rose-50 cursor-pointer"
                           title="حذف"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -771,12 +771,12 @@ export default function ProfilePage() {
             <TabsContent value="addresses" className="space-y-6 outline-none mt-0">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-black text-white">دفترچه آدرس‌ها</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">آدرس‌های ارسال سفارش‌های خود را مدیریت کنید</p>
+                  <h3 className="text-lg font-black text-slate-900">دفترچه آدرس‌ها</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">آدرس‌های ارسال سفارش‌های خود را مدیریت کنید</p>
                 </div>
                 <Button
                   onClick={handleOpenAddAddress}
-                  className="h-10 px-4 rounded-xl bg-white text-black font-bold text-xs flex items-center gap-1.5 hover:bg-gray-200"
+                  className="h-10 px-4 rounded-xl bg-[#0082CA] text-white font-bold text-xs flex items-center gap-1.5 hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20"
                 >
                   <Plus className="w-4 h-4" />
                   افزودن آدرس جدید
@@ -784,10 +784,10 @@ export default function ProfilePage() {
               </div>
 
               {addresses.length === 0 ? (
-                <div className="text-center py-16 bg-[#111111] border border-white/10 rounded-3xl space-y-4">
-                  <MapPin className="w-12 h-12 text-gray-600 mx-auto" />
-                  <p className="text-sm text-gray-400">هنوز آدرسی در حساب کاربری شما ثبت نشده است.</p>
-                  <Button onClick={handleOpenAddAddress} className="h-10 px-6 rounded-xl bg-white text-black font-bold text-xs">
+                <div className="text-center py-16 bg-white border border-sky-100 rounded-3xl space-y-4 shadow-sm">
+                  <MapPin className="w-12 h-12 text-slate-300 mx-auto" />
+                  <p className="text-sm text-slate-500">هنوز آدرسی در حساب کاربری شما ثبت نشده است.</p>
+                  <Button onClick={handleOpenAddAddress} className="h-10 px-6 rounded-xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold text-xs shadow-md shadow-[#0082CA]/20">
                     ثبت اولین آدرس
                   </Button>
                 </div>
@@ -796,49 +796,49 @@ export default function ProfilePage() {
                   {addresses.map((addr) => (
                     <div
                       key={addr.id}
-                      className="bg-[#111111] border border-white/10 hover:border-white/20 rounded-3xl p-6 flex flex-col justify-between space-y-4 transition-all shadow-lg"
+                      className="bg-white border border-sky-100 hover:border-sky-300 rounded-3xl p-6 flex flex-col justify-between space-y-4 transition-all shadow-sm"
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-white flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-amber-400" />
+                          <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-[#0082CA]" />
                             {addr.title || "آدرس من"}
                           </span>
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleOpenEditAddress(addr)}
-                              className="p-1.5 text-gray-400 hover:text-white transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
                               title="ویرایش"
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteAddress(addr.id)}
-                              className="p-1.5 text-gray-400 hover:text-rose-400 transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors"
                               title="حذف"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-300 leading-relaxed">{addr.address}</p>
+                        <p className="text-xs text-slate-600 leading-relaxed">{addr.address}</p>
                         {(addr.province || addr.city) && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-slate-400">
                             استان {addr.province} - شهر {addr.city}
                           </p>
                         )}
                         {addr.fullName && (
-                          <p className="text-xs text-gray-400">
-                            تحویل‌گیرنده: <strong className="text-gray-200">{addr.fullName}</strong>{" "}
+                          <p className="text-xs text-slate-500">
+                            تحویل‌گیرنده: <strong className="text-slate-800">{addr.fullName}</strong>{" "}
                             {addr.phone && `(${addr.phone})`}
                           </p>
                         )}
                       </div>
 
                       {addr.postalCode && (
-                        <div className="pt-3 border-t border-white/5 text-[11px] text-gray-500 flex justify-between">
+                        <div className="pt-3 border-t border-sky-100 text-[11px] text-slate-400 flex justify-between">
                           <span>کد پستی:</span>
-                          <span className="font-mono text-gray-300" dir="ltr">
+                          <span className="font-mono text-slate-700" dir="ltr">
                             {addr.postalCode}
                           </span>
                         </div>
@@ -853,19 +853,19 @@ export default function ProfilePage() {
             <TabsContent value="settings" className="space-y-8 outline-none mt-0">
               {/* Basic Profile Name */}
               <div>
-                <h3 className="text-lg font-black text-white mb-4">ویرایش مشخصات حساب</h3>
-                <form onSubmit={handleSaveSettings} className="bg-[#111111] border border-white/10 rounded-3xl p-6 space-y-4 max-w-xl shadow-xl">
+                <h3 className="text-lg font-black text-slate-900 mb-4">ویرایش مشخصات حساب</h3>
+                <form onSubmit={handleSaveSettings} className="bg-white border border-sky-100 rounded-3xl p-6 space-y-4 max-w-xl shadow-sm">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-300">نام و نام خانوادگی</label>
+                    <label className="text-xs font-bold text-slate-700">نام و نام خانوادگی</label>
                     <Input
                       key={userProfile?.id || userProfile?.email || "profile-name"}
                       name="fullName"
                       defaultValue={profileFullName}
                       placeholder="مثال: علی رضایی"
-                      className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl"
+                      className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                     />
                   </div>
-                  <Button disabled={isLoading} type="submit" className="w-full h-12 rounded-xl bg-white text-black font-bold text-xs hover:bg-gray-200">
+                  <Button disabled={isLoading} type="submit" className="w-full h-12 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20">
                     {isLoading ? "در حال ذخیره..." : "ذخیره تغییرات مشخصات"}
                   </Button>
                 </form>
@@ -873,58 +873,58 @@ export default function ProfilePage() {
 
               {/* Change Email */}
               <div>
-                <h3 className="text-lg font-black text-white mb-4">تغییر آدرس ایمیل</h3>
-                <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 max-w-xl shadow-xl space-y-4">
+                <h3 className="text-lg font-black text-slate-900 mb-4">تغییر آدرس ایمیل</h3>
+                <div className="bg-white border border-sky-100 rounded-3xl p-6 max-w-xl shadow-sm space-y-4">
                   {!isEmailChangeStepTwo ? (
                     <form onSubmit={handleChangeEmailRequest} className="space-y-4">
-                      <p className="text-xs text-gray-400">
-                        ایمیل فعلی شما: <strong className="text-white font-mono" dir="ltr">{userProfile?.email || ""}</strong>
+                      <p className="text-xs text-slate-500">
+                        ایمیل فعلی شما: <strong className="text-slate-900 font-mono" dir="ltr">{userProfile?.email || ""}</strong>
                       </p>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-300">ایمیل جدید</label>
+                        <label className="text-xs font-bold text-slate-700">ایمیل جدید</label>
                         <Input
                           type="email"
                           required
                           value={newEmailInput}
                           onChange={(e) => setNewEmailInput(e.target.value)}
                           placeholder="new-email@example.com"
-                          className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl"
+                          className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                           dir="ltr"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-300">رمز عبور فعلی برای تایید هویت</label>
+                        <label className="text-xs font-bold text-slate-700">رمز عبور فعلی برای تایید هویت</label>
                         <Input
                           type="password"
                           required
                           value={emailChangePassword}
                           onChange={(e) => setEmailChangePassword(e.target.value)}
                           placeholder="••••••••"
-                          className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl"
+                          className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                           dir="ltr"
                         />
                       </div>
                       <Button
                         type="submit"
                         disabled={isSubmittingEmailChange}
-                        className="w-full h-12 rounded-xl bg-white text-black font-bold text-xs hover:bg-gray-200"
+                        className="w-full h-12 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20"
                       >
                         {isSubmittingEmailChange ? "در حال ارسال کد..." : "ارسال کد تایید به ایمیل جدید"}
                       </Button>
                     </form>
                   ) : (
                     <form onSubmit={handleConfirmEmailChange} className="space-y-4">
-                      <p className="text-xs text-amber-400">
+                      <p className="text-xs text-[#0082CA] font-bold">
                         کد تایید ارسال شده به ایمیل جدید «{newEmailInput}» را وارد کنید:
                       </p>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-300">کد / توکن تایید</label>
+                        <label className="text-xs font-bold text-slate-700">کد / توکن تایید</label>
                         <Input
                           required
                           value={emailChangeToken}
                           onChange={(e) => setEmailChangeToken(e.target.value)}
                           placeholder="کد تایید را وارد کنید"
-                          className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl font-mono text-center"
+                          className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl font-mono text-center focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                           dir="ltr"
                         />
                       </div>
@@ -932,7 +932,7 @@ export default function ProfilePage() {
                         <Button
                           type="submit"
                           disabled={isSubmittingEmailChange}
-                          className="flex-1 h-12 rounded-xl bg-white text-black font-bold text-xs hover:bg-gray-200"
+                          className="flex-1 h-12 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20"
                         >
                           {isSubmittingEmailChange ? "در حال تایید..." : "تایید نهایی ایمیل جدید"}
                         </Button>
@@ -940,7 +940,7 @@ export default function ProfilePage() {
                           type="button"
                           variant="ghost"
                           onClick={() => setIsEmailChangeStepTwo(false)}
-                          className="h-12 text-xs text-gray-400 hover:text-white"
+                          className="h-12 text-xs text-slate-500 hover:text-slate-900"
                         >
                           انصراف
                         </Button>
@@ -952,22 +952,22 @@ export default function ProfilePage() {
 
               {/* Change Password */}
               <div>
-                <h3 className="text-lg font-black text-white mb-4">تغییر کلمه عبور</h3>
-                <form onSubmit={handleChangePassword} className="bg-[#111111] border border-white/10 rounded-3xl p-6 space-y-4 max-w-xl shadow-xl">
+                <h3 className="text-lg font-black text-slate-900 mb-4">تغییر کلمه عبور</h3>
+                <form onSubmit={handleChangePassword} className="bg-white border border-sky-100 rounded-3xl p-6 space-y-4 max-w-xl shadow-sm">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-300">رمز عبور فعلی</label>
+                    <label className="text-xs font-bold text-slate-700">رمز عبور فعلی</label>
                     <div className="relative">
                       <Input
                         name="oldPassword"
                         type={showOldPassword ? "text" : "password"}
                         required
-                        className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl pr-4 pl-11"
+                        className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl pr-4 pl-11 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                         dir="ltr"
                       />
                       <button
                         type="button"
                         onClick={() => setShowOldPassword(!showOldPassword)}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                       >
                         {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -975,67 +975,67 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-300">رمز عبور جدید</label>
+                    <label className="text-xs font-bold text-slate-700">رمز عبور جدید</label>
                     <div className="relative">
                       <Input
                         name="newPassword"
                         type={showNewPassword ? "text" : "password"}
                         required
-                        className="bg-[#181818] border-white/10 h-12 text-white text-sm rounded-xl pr-4 pl-11"
+                        className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl pr-4 pl-11 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                         dir="ltr"
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                       >
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
-                  <Button disabled={isLoading} type="submit" className="w-full h-12 rounded-xl bg-white text-black font-bold text-xs hover:bg-gray-200">
+                  <Button disabled={isLoading} type="submit" className="w-full h-12 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20">
                     {isLoading ? "در حال ذخیره..." : "تغییر کلمه عبور"}
                   </Button>
                 </form>
               </div>
 
               {/* Notification Preferences Sub-Panel */}
-              <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 space-y-4 max-w-xl shadow-xl">
-                <h4 className="text-sm font-black text-white flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-amber-400" />
+              <div className="bg-white border border-sky-100 rounded-3xl p-6 space-y-4 max-w-xl shadow-sm">
+                <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-[#0082CA]" />
                   تنظیمات دریافت اعلان‌ها و پیامک‌ها
                 </h4>
-                <p className="text-xs text-gray-400">کانال‌های اطلاع‌رسانی دلخواه خود را فعال یا غیرفعال کنید</p>
+                <p className="text-xs text-slate-500">کانال‌های اطلاع‌رسانی دلخواه خود را فعال یا غیرفعال کنید</p>
 
                 <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
-                    <span className="text-xs font-bold text-white">ایمیل‌های تغییر وضعیت سفارش</span>
+                  <div className="flex items-center justify-between p-3 bg-sky-50/60 rounded-2xl">
+                    <span className="text-xs font-bold text-slate-800">ایمیل‌های تغییر وضعیت سفارش</span>
                     <input
                       type="checkbox"
                       checked={!!preferences.email_order_updates}
                       onChange={(e) => handleTogglePreference("email_order_updates", e.target.checked)}
-                      className="w-4 h-4 accent-amber-400 cursor-pointer"
+                      className="w-4 h-4 accent-[#0082CA] cursor-pointer"
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
-                    <span className="text-xs font-bold text-white">ایمیل‌های تخفیف‌ها و پیشنهادات شگفت‌انگیز</span>
+                  <div className="flex items-center justify-between p-3 bg-sky-50/60 rounded-2xl">
+                    <span className="text-xs font-bold text-slate-800">ایمیل‌های تخفیف‌ها و پیشنهادات شگفت‌انگیز</span>
                     <input
                       type="checkbox"
                       checked={!!preferences.email_promotions}
                       onChange={(e) => handleTogglePreference("email_promotions", e.target.checked)}
-                      className="w-4 h-4 accent-amber-400 cursor-pointer"
+                      className="w-4 h-4 accent-[#0082CA] cursor-pointer"
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-2xl">
-                    <span className="text-xs font-bold text-white">اعلان‌های درون‌برنامه‌ای سفارش‌ها</span>
+                  <div className="flex items-center justify-between p-3 bg-sky-50/60 rounded-2xl">
+                    <span className="text-xs font-bold text-slate-800">اعلان‌های درون‌برنامه‌ای سفارش‌ها</span>
                     <input
                       type="checkbox"
                       checked={!!preferences.in_app_order_updates}
                       onChange={(e) => handleTogglePreference("in_app_order_updates", e.target.checked)}
-                      className="w-4 h-4 accent-amber-400 cursor-pointer"
+                      className="w-4 h-4 accent-[#0082CA] cursor-pointer"
                     />
                   </div>
                 </div>
@@ -1048,10 +1048,10 @@ export default function ProfilePage() {
 
       {/* --- Detailed Order Modal --- */}
       <Dialog open={isOrderModalOpen} onOpenChange={setIsOrderModalOpen}>
-        <DialogContent className="bg-[#0a0a0a] border border-white/10 text-white sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="bg-white border border-sky-100 text-slate-900 sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-2xl" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-2">
-              <Package className="w-5 h-5 text-amber-400" />
+              <Package className="w-5 h-5 text-[#0082CA]" />
               جزئیات کامل سفارش
             </DialogTitle>
           </DialogHeader>
@@ -1059,10 +1059,10 @@ export default function ProfilePage() {
           {selectedOrder ? (
             <div className="space-y-6 mt-4">
               {/* Reference Banner */}
-              <div className="bg-[#181818] border border-white/10 rounded-2xl p-4 flex items-center justify-between text-xs">
+              <div className="bg-sky-50/60 border border-sky-100 rounded-2xl p-4 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-gray-400 block">شماره سفارش:</span>
-                  <span className="font-mono font-bold text-white text-sm">{selectedOrder.order_number || selectedOrder.id}</span>
+                  <span className="text-slate-500 block">شماره سفارش:</span>
+                  <span className="font-mono font-bold text-slate-900 text-sm">{selectedOrder.order_number || selectedOrder.id}</span>
                 </div>
                 <button
                   onClick={() => {
@@ -1071,16 +1071,16 @@ export default function ProfilePage() {
                     toast.success("شماره سفارش کپی شد");
                     setTimeout(() => setCopiedCode(false), 2000);
                   }}
-                  className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-300 transition-colors flex items-center gap-1"
+                  className="p-2 bg-white hover:bg-sky-50 border border-sky-200 rounded-xl text-slate-700 transition-colors flex items-center gap-1 shadow-sm"
                 >
-                  {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {copiedCode ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                   <span>کپی</span>
                 </button>
               </div>
 
               {/* Items List */}
               <div className="space-y-3">
-                <h4 className="text-xs font-black uppercase text-gray-400">اقلام سفارش</h4>
+                <h4 className="text-xs font-black uppercase text-slate-500">اقلام سفارش</h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {selectedOrder.items?.map((it: any) => {
                     const snap = it.product_snapshot || {};
@@ -1098,26 +1098,26 @@ export default function ProfilePage() {
                     }
 
                     return (
-                      <div key={it.id} className="flex gap-3 bg-white/5 p-3 rounded-2xl border border-white/5 items-center">
+                      <div key={it.id} className="flex gap-3 bg-sky-50/50 p-3 rounded-2xl border border-sky-100 items-center">
                         <img
                           src={finalImage}
                           alt={itemTitle}
-                          className="w-16 h-18 object-cover rounded-xl shrink-0 border border-white/10 bg-[#181818]"
+                          className="w-16 h-18 object-cover rounded-xl shrink-0 border border-sky-200 bg-white"
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src = "/globe.svg";
                           }}
                         />
                         <div className="flex-1 min-w-0">
-                          <h5 className="text-xs font-bold text-white truncate">{itemTitle}</h5>
+                          <h5 className="text-xs font-bold text-slate-900 truncate">{itemTitle}</h5>
                           {itemOptions && (
-                            <span className="text-[11px] text-amber-400/90 block mt-0.5 truncate">
+                            <span className="text-[11px] text-[#0082CA] block mt-0.5 truncate font-medium">
                               {itemOptions}
                             </span>
                           )}
-                          <span className="text-[11px] text-gray-400 block mt-0.5">
+                          <span className="text-[11px] text-slate-500 block mt-0.5">
                             تعداد: {it.quantity} | قیمت واحد: {formatPrice(it.price)}
                           </span>
-                          <p className="text-xs font-black text-amber-400 mt-1">
+                          <p className="text-xs font-black text-[#0082CA] mt-1">
                             {formatPrice(parsePrice(it.price) * (it.quantity || 1))}
                           </p>
                         </div>
@@ -1129,21 +1129,21 @@ export default function ProfilePage() {
 
               {/* Shipping Address Box */}
               {selectedOrder.shipping_address && (
-                <div className="bg-[#181818] border border-white/10 rounded-2xl p-4 space-y-2 text-xs">
-                  <span className="font-bold text-gray-300 block">نشانی تحویل گیرنده:</span>
-                  <p className="text-gray-400 leading-relaxed">
+                <div className="bg-sky-50/60 border border-sky-100 rounded-2xl p-4 space-y-2 text-xs">
+                  <span className="font-bold text-slate-700 block">نشانی تحویل گیرنده:</span>
+                  <p className="text-slate-600 leading-relaxed">
                     {selectedOrder.shipping_address.province} - {selectedOrder.shipping_address.city}،{" "}
                     {selectedOrder.shipping_address.address}
                   </p>
-                  <p className="text-gray-500">
+                  <p className="text-slate-500">
                     تحویل‌گیرنده: {selectedOrder.shipping_address.full_name} ({selectedOrder.shipping_address.phone})
                   </p>
                 </div>
               )}
 
               {/* Financial Totals */}
-              <div className="border-t border-white/10 pt-4 space-y-3 text-xs">
-                <div className="flex justify-between items-center text-gray-400">
+              <div className="border-t border-sky-100 pt-4 space-y-3 text-xs">
+                <div className="flex justify-between items-center text-slate-500">
                   <span>وضعیت سفارش:</span>
                   <span
                     className={cn(
@@ -1154,23 +1154,23 @@ export default function ProfilePage() {
                     {getProfileStatusBadge(selectedOrder.status).label}
                   </span>
                 </div>
-                <div className="flex justify-between items-center text-base font-black text-white pt-2 border-t border-white/5">
+                <div className="flex justify-between items-center text-base font-black text-slate-900 pt-2 border-t border-sky-100">
                   <span>مبلغ کل پرداختی:</span>
-                  <span className="text-emerald-400 font-mono">
+                  <span className="text-[#0082CA] font-mono font-black">
                     {formatPrice(selectedOrder.total || selectedOrder.total_amount)}
                   </span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500 text-xs">در حال دریافت اطلاعات...</div>
+            <div className="text-center py-8 text-slate-400 text-xs">در حال دریافت اطلاعات...</div>
           )}
         </DialogContent>
       </Dialog>
 
       {/* --- Address Edit/Create Modal --- */}
       <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
-        <DialogContent className="bg-[#0a0a0a] border border-white/10 text-white sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="bg-white border border-sky-100 text-slate-900 sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-2xl" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black">
               {editingAddress ? "ویرایش آدرس" : "افزودن آدرس جدید"}
@@ -1178,83 +1178,83 @@ export default function ProfilePage() {
           </DialogHeader>
           <form onSubmit={handleSaveAddress} className="space-y-4 mt-4">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-300">عنوان آدرس (خانه، محل کار)</label>
+              <label className="text-xs font-bold text-slate-700">عنوان آدرس (خانه، محل کار)</label>
               <Input
                 name="title"
                 defaultValue={editingAddress?.title || "خانه"}
                 required
-                className="bg-[#181818] border-white/10 h-11 text-white text-sm rounded-xl"
+                className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300">نام تحویل‌گیرنده</label>
+                <label className="text-xs font-bold text-slate-700">نام تحویل‌گیرنده</label>
                 <Input
                   name="fullName"
                   defaultValue={
                     editingAddress?.fullName ||
                     (userProfile ? `${userProfile?.first_name || ""} ${userProfile?.last_name || ""}`.trim() : "")
                   }
-                  className="bg-[#181818] border-white/10 h-11 text-white text-sm rounded-xl"
+                  className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300">شماره موبایل</label>
+                <label className="text-xs font-bold text-slate-700">شماره موبایل</label>
                 <Input
                   name="phone"
                   defaultValue={editingAddress?.phone || ""}
-                  className="bg-[#181818] border-white/10 h-11 text-white text-sm rounded-xl font-sans text-left"
+                  className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl font-sans text-left focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                   dir="ltr"
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300">استان</label>
+                <label className="text-xs font-bold text-slate-700">استان</label>
                 <Input
                   name="province"
                   defaultValue={editingAddress?.province || ""}
                   required
-                  className="bg-[#181818] border-white/10 h-11 text-white text-sm rounded-xl"
+                  className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300">شهر</label>
+                <label className="text-xs font-bold text-slate-700">شهر</label>
                 <Input
                   name="city"
                   defaultValue={editingAddress?.city || ""}
                   required
-                  className="bg-[#181818] border-white/10 h-11 text-white text-sm rounded-xl"
+                  className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-300">آدرس پستی کامل</label>
+              <label className="text-xs font-bold text-slate-700">آدرس پستی کامل</label>
               <Input
                 name="address"
                 defaultValue={editingAddress?.address || ""}
                 required
-                className="bg-[#181818] border-white/10 h-11 text-white text-sm rounded-xl"
+                className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-300">کد پستی (۱۰ رقمی)</label>
+              <label className="text-xs font-bold text-slate-700">کد پستی (۱۰ رقمی)</label>
               <Input
                 name="postalCode"
                 defaultValue={editingAddress?.postalCode || ""}
-                className="bg-[#181818] border-white/10 h-11 text-white text-sm rounded-xl font-sans text-left"
+                className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl font-sans text-left focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                 dir="ltr"
               />
             </div>
             <div className="flex gap-3 pt-4">
-              <Button type="submit" className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs">
+              <Button type="submit" className="flex-1 h-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold text-xs shadow-md shadow-[#0082CA]/20">
                 {editingAddress ? "ذخیره تغییرات آدرس" : "ثبت آدرس جدید"}
               </Button>
               <Button
                 type="button"
                 onClick={() => setIsAddressModalOpen(false)}
                 variant="ghost"
-                className="h-12 rounded-xl text-gray-400 hover:text-white text-xs"
+                className="h-12 rounded-xl text-slate-500 hover:text-slate-900 text-xs"
               >
                 انصراف
               </Button>
