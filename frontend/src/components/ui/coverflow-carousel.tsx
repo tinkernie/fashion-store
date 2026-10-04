@@ -525,17 +525,17 @@ export function CoverflowCarousel({
               type="button"
               aria-label="Previous slide"
               onClick={() => nudge(-1)}
-              className="absolute left-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 border border-sky-200 text-slate-700 flex items-center justify-center backdrop-blur-md hover:bg-[#0082CA] hover:text-white hover:border-[#0082CA] transition-all shadow-xl shadow-sky-950/10 cursor-pointer"
+              className="absolute left-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-[#0082CA] border border-sky-400/40 text-white flex items-center justify-center backdrop-blur-md hover:bg-[#006CA8] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-[#0082CA]/35 cursor-pointer"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5 text-white" />
             </button>
             <button
               type="button"
               aria-label="Next slide"
               onClick={() => nudge(1)}
-              className="absolute right-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 border border-sky-200 text-slate-700 flex items-center justify-center backdrop-blur-md hover:bg-[#0082CA] hover:text-white hover:border-[#0082CA] transition-all shadow-xl shadow-sky-950/10 cursor-pointer"
+              className="absolute right-4 top-1/2 z-[200] -translate-y-1/2 w-11 h-11 rounded-full bg-[#0082CA] border border-sky-400/40 text-white flex items-center justify-center backdrop-blur-md hover:bg-[#006CA8] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-[#0082CA]/35 cursor-pointer"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5 text-white" />
             </button>
           </>
         )}
@@ -609,10 +609,10 @@ export function CoverflowCarousel({
               aria-label={`Slide ${index + 1}`}
               onClick={() => goTo(index)}
               className={cn(
-                "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
+                "h-2 rounded-full transition-all duration-300 cursor-pointer",
                 index === selected
-                  ? "w-8 bg-[#0082CA]"
-                  : "w-2 bg-sky-200 hover:bg-sky-300",
+                  ? "w-8 bg-[#0082CA] shadow-md shadow-[#0082CA]/40"
+                  : "w-2.5 bg-sky-300/70 hover:bg-[#0082CA]/50",
               )}
             />
           ))}

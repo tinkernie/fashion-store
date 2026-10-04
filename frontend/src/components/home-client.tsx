@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingBag, TrendingUp, Sparkles, Flame, Tag } from "lucide-react";
+import { ArrowLeft, ShoppingBag, TrendingUp, Sparkles, Flame, Tag, Truck, ShieldCheck, RefreshCw, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { CollectionsSection } from "@/components/collections-section";
@@ -388,13 +388,13 @@ export default function HomeClient({
             <Banner
               id="top-hero-announcement"
               variant="rainbow"
-              className="rounded-xl sm:rounded-2xl border border-sky-100 bg-white/90 shadow-md shadow-sky-950/5 backdrop-blur-xl w-full min-h-[2.5rem] sm:min-h-[2.75rem] md:min-h-[3rem] px-3 sm:px-6"
+              className="rounded-xl sm:rounded-2xl border border-sky-200/80 bg-sky-50/90 shadow-md shadow-[#0082CA]/10 backdrop-blur-xl w-full min-h-[2.5rem] sm:min-h-[2.75rem] md:min-h-[3rem] px-3 sm:px-6"
             >
               <div className="flex items-center justify-center gap-2 flex-wrap sm:flex-nowrap text-center max-w-full">
-                <span className="bg-[#0082CA] text-white font-bold text-[9px] sm:text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm">
+                <span className="bg-[#0082CA] text-white font-bold text-[9px] sm:text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm shadow-[#0082CA]/25">
                   {announcement.badge || "فروش ویژه"}
                 </span>
-                <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate max-w-[240px] sm:max-w-md md:max-w-xl">
+                <span className="text-xs sm:text-sm font-bold text-[#0072B3] truncate max-w-[240px] sm:max-w-md md:max-w-xl">
                   {announcement.text}
                 </span>
               </div>
@@ -408,10 +408,10 @@ export default function HomeClient({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-sky-200 bg-sky-50/80 backdrop-blur-md shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0082CA]/30 bg-sky-100/90 text-[#0072B3] backdrop-blur-md shadow-sm"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#0082CA]" />
-            <span className="text-xs font-bold tracking-wider text-[#0082CA]">
+            <span className="text-xs font-black tracking-wider text-[#0082CA]">
               {heroContent.badge || "کالکشن جدید ۲۰۲۶"}
             </span>
           </motion.div>
@@ -458,22 +458,42 @@ export default function HomeClient({
         </div>
 
         {/* Minimalist Trust & Highlights Bar */}
-        <div className="relative z-10 w-full max-w-5xl mx-auto pt-8 border-t border-sky-100 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div className="space-y-1">
-            <span className="text-xs md:text-sm font-bold text-[#0B192C] block">ارسال رایگان</span>
-            <span className="text-[10px] md:text-xs text-slate-500 block">برای خریدهای بالای ۲ میلیون</span>
+        <div className="relative z-10 w-full max-w-5xl mx-auto pt-8 border-t border-sky-200/60 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center">
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/90 border border-sky-100 shadow-sm backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-xl bg-sky-100 text-[#0082CA] flex items-center justify-center shrink-0 shadow-sm">
+              <Truck className="w-5 h-5 text-[#0082CA]" />
+            </div>
+            <div className="text-right">
+              <span className="text-xs md:text-sm font-bold text-[#0B192C] block">ارسال رایگان</span>
+              <span className="text-[10px] md:text-xs text-slate-500 block">برای خریدهای بالای ۲ میلیون</span>
+            </div>
           </div>
-          <div className="space-y-1">
-            <span className="text-xs md:text-sm font-bold text-[#0B192C] block">اصالت تضمینی</span>
-            <span className="text-[10px] md:text-xs text-slate-500 block">متریال وارداتی درجه یک</span>
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/90 border border-sky-100 shadow-sm backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-xl bg-sky-100 text-[#0082CA] flex items-center justify-center shrink-0 shadow-sm">
+              <ShieldCheck className="w-5 h-5 text-[#0082CA]" />
+            </div>
+            <div className="text-right">
+              <span className="text-xs md:text-sm font-bold text-[#0B192C] block">اصالت تضمینی</span>
+              <span className="text-[10px] md:text-xs text-slate-500 block">متریال وارداتی درجه یک</span>
+            </div>
           </div>
-          <div className="space-y-1">
-            <span className="text-xs md:text-sm font-bold text-[#0B192C] block">ضمانت تعویض</span>
-            <span className="text-[10px] md:text-xs text-slate-500 block">۷ روز بدون قید و شرط</span>
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/90 border border-sky-100 shadow-sm backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-xl bg-sky-100 text-[#0082CA] flex items-center justify-center shrink-0 shadow-sm">
+              <RefreshCw className="w-5 h-5 text-[#0082CA]" />
+            </div>
+            <div className="text-right">
+              <span className="text-xs md:text-sm font-bold text-[#0B192C] block">ضمانت تعویض</span>
+              <span className="text-[10px] md:text-xs text-slate-500 block">۷ روز بدون قید و شرط</span>
+            </div>
           </div>
-          <div className="space-y-1">
-            <span className="text-xs md:text-sm font-bold text-[#0B192C] block">پشتیبانی VIP</span>
-            <span className="text-[10px] md:text-xs text-slate-500 block">پاسخگویی سریع ۲۴ ساعته</span>
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/90 border border-sky-100 shadow-sm backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-xl bg-sky-100 text-[#0082CA] flex items-center justify-center shrink-0 shadow-sm">
+              <Headphones className="w-5 h-5 text-[#0082CA]" />
+            </div>
+            <div className="text-right">
+              <span className="text-xs md:text-sm font-bold text-[#0B192C] block">پشتیبانی VIP</span>
+              <span className="text-[10px] md:text-xs text-slate-500 block">پاسخگویی سریع ۲۴ ساعته</span>
+            </div>
           </div>
         </div>
       </section>
@@ -489,8 +509,10 @@ export default function HomeClient({
       >
         <div className="flex items-end justify-between mb-8 md:mb-12 border-b border-sky-100 pb-6">
           <div>
-            <div className="flex items-center gap-2 md:gap-3 mb-2">
-              <Sparkles className="w-4 h-4 text-[#0082CA]" />
+            <div className="flex items-center gap-2.5 md:gap-3 mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
+                <Sparkles className="w-4 h-4" />
+              </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#0B192C]">جدیدترین‌های فصل</h2>
             </div>
             <p className="text-sm text-slate-600">گزیده‌ای از خاص‌ترین و جدیدترین طراحی‌های مد روز با سبک مدرن مینیمال</p>
@@ -536,8 +558,10 @@ export default function HomeClient({
       >
         <div className="flex items-end justify-between mb-8 md:mb-12 border-b border-sky-100 pb-6">
           <div>
-            <div className="flex items-center gap-2 md:gap-3 mb-2">
-              <Flame className="w-4 h-4 text-[#0082CA]" />
+            <div className="flex items-center gap-2.5 md:gap-3 mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
+                <Flame className="w-4 h-4" />
+              </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#0B192C]">حراج و فروش ویژه</h2>
             </div>
             <p className="text-sm text-slate-600">بهترین موقعیت خرید استایل‌های محبوب با تخفیف‌های استثنایی و محدود</p>
@@ -595,8 +619,10 @@ export default function HomeClient({
         
         <div className="flex items-end justify-between mb-8 md:mb-12 relative z-10 border-b border-sky-100 pb-6">
           <div>
-            <div className="flex items-center gap-2 md:gap-3 mb-2">
-              <TrendingUp className="w-4 h-4 text-[#0082CA]" />
+            <div className="flex items-center gap-2.5 md:gap-3 mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
+                <TrendingUp className="w-4 h-4" />
+              </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#0B192C]">پرفروش‌ترین‌ها</h2>
             </div>
             <p className="text-sm text-slate-600">محصولاتی که بیشترین رضایت و توجه خریداران را به همراه داشته‌اند</p>

@@ -75,10 +75,10 @@ export default function NotificationDropdown() {
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen((prev) => !prev)}
         className={cn(
-          "p-2 rounded-full transition-all outline-none cursor-pointer flex items-center justify-center relative",
-          hasUnread
-            ? "text-[#0082CA] bg-sky-50 border border-sky-300 shadow-sm hover:bg-sky-100"
-            : "text-slate-600 hover:text-[#0082CA] hover:bg-sky-50"
+          "p-2 rounded-full transition-all outline-none cursor-pointer flex items-center justify-center relative text-white",
+          isOpen
+            ? "bg-white/25 ring-1 ring-white/40"
+            : "hover:bg-white/20"
         )}
         aria-label="اعلان‌ها و پیام‌ها"
         aria-expanded={isOpen}
@@ -93,8 +93,8 @@ export default function NotificationDropdown() {
         {/* Pulsing Glowing Badge when unread notifications exist */}
         {hasUnread && (
           <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center pointer-events-none">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0082CA] opacity-75" />
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-[#0082CA] text-[9px] font-black text-white items-center justify-center shadow-md">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-white text-[9px] font-black text-[#0082CA] items-center justify-center shadow-md">
               {unreadCount > 9 ? "+۹" : unreadCount.toLocaleString("fa-IR")}
             </span>
           </span>

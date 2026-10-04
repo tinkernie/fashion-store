@@ -837,7 +837,9 @@ export default function ProductDetailPage() {
       <div id="reviews-section" className="border-t border-sky-100 pt-12 space-y-8 scroll-mt-24">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-xl md:text-2xl font-black text-[#0B192C] flex items-center gap-3">
-            <MessageSquare className="w-6 h-6 text-[#0082CA]" />
+            <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
+              <MessageSquare className="w-4 h-4 text-white" />
+            </div>
             دیدگاه‌ها و نظرات خریداران ({ratingStats.count.toLocaleString("fa-IR")})
           </h2>
           {ratingStats.average !== null && (

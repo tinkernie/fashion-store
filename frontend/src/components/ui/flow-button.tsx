@@ -36,11 +36,11 @@ export const FlowButton = React.forwardRef<HTMLButtonElement | HTMLAnchorElement
 
     const variantClasses = {
       primary:
-        "border-[#0082CA] bg-[#0082CA] text-white shadow-md shadow-[#0082CA]/20 hover:bg-[#006CA8] hover:border-[#006CA8] hover:shadow-lg hover:shadow-[#0082CA]/30",
+        "border-[#0082CA] bg-[#0082CA] text-white shadow-md shadow-[#0082CA]/25 hover:bg-[#006CA8] hover:border-[#006CA8] hover:shadow-lg hover:shadow-[#0082CA]/35",
       secondary:
-        "border-sky-200 bg-white text-[#0B192C] shadow-sm hover:border-[#0082CA] hover:text-[#0082CA] hover:bg-sky-50/70",
+        "border-2 border-[#0082CA]/40 bg-sky-50 text-[#0072B3] font-bold shadow-sm hover:border-[#0082CA] hover:bg-[#0082CA] hover:text-white hover:shadow-md hover:shadow-[#0082CA]/25",
       outline:
-        "border-sky-200 bg-transparent text-[#0082CA] hover:bg-sky-50 hover:border-[#0082CA]",
+        "border-2 border-[#0082CA] bg-transparent text-[#0082CA] font-bold hover:bg-[#0082CA] hover:text-white hover:shadow-md hover:shadow-[#0082CA]/25",
     };
 
     const ArrowIcon =

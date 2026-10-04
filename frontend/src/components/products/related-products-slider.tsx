@@ -215,8 +215,8 @@ export default function RelatedProductsSlider({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
-            <span className="p-1.5 rounded-lg bg-sky-50 border border-sky-200 text-[#0082CA] shadow-sm">
-              {icon || <Layers className="w-4 h-4" />}
+            <span className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
+              {icon || <Layers className="w-4 h-4 text-white" />}
             </span>
             <h2
               id={headingId}
@@ -224,7 +224,7 @@ export default function RelatedProductsSlider({
             >
               {title}
             </h2>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-[#0082CA] border border-sky-200">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#0082CA] text-white shadow-sm shadow-[#0082CA]/20">
               {validProducts.length.toLocaleString("fa-IR")} {badgeLabel}
             </span>
           </div>
@@ -240,18 +240,18 @@ export default function RelatedProductsSlider({
             onClick={() => handleScroll("prev")}
             disabled={!canScrollPrev}
             aria-label="محصولات قبلی"
-            className="w-11 h-11 rounded-xl bg-white border border-sky-200 text-slate-700 flex items-center justify-center transition-all hover:bg-[#0082CA] hover:text-white hover:border-[#0082CA] active:scale-95 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 disabled:hover:border-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0082CA]"
+            className="w-11 h-11 rounded-xl bg-[#0082CA] border border-sky-400/30 text-white flex items-center justify-center transition-all hover:bg-[#006CA8] active:scale-95 shadow-md shadow-[#0082CA]/20 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#0082CA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0082CA]"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5 text-white" />
           </button>
           <button
             type="button"
             onClick={() => handleScroll("next")}
             disabled={!canScrollNext}
             aria-label="محصولات بعدی"
-            className="w-11 h-11 rounded-xl bg-white border border-sky-200 text-slate-700 flex items-center justify-center transition-all hover:bg-[#0082CA] hover:text-white hover:border-[#0082CA] active:scale-95 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 disabled:hover:border-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0082CA]"
+            className="w-11 h-11 rounded-xl bg-[#0082CA] border border-sky-400/30 text-white flex items-center justify-center transition-all hover:bg-[#006CA8] active:scale-95 shadow-md shadow-[#0082CA]/20 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#0082CA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0082CA]"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5 text-white" />
           </button>
         </div>
       </div>

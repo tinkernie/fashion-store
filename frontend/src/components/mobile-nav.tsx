@@ -11,12 +11,12 @@ export default function MobileNav() {
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-sky-100 shadow-[0_-4px_20px_rgba(0,130,202,0.06)] pb-safe">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0082CA] backdrop-blur-2xl border-t border-white/20 shadow-2xl shadow-[#0082CA]/30 pb-safe text-white">
       <div className="flex items-center justify-around h-16 px-4">
         
         <Link 
           href="/" 
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === "/" ? "text-[#0082CA] font-bold" : "text-slate-500 hover:text-[#0082CA]"}`}
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-all ${pathname === "/" ? "text-white font-bold bg-white/15 rounded-xl py-1" : "text-white/75 hover:text-white"}`}
         >
           <Home className="w-5 h-5" />
           <span className="text-[10px]">خانه</span>
@@ -24,7 +24,7 @@ export default function MobileNav() {
 
         <Link 
           href="/products" 
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === "/products" || pathname === "/search" ? "text-[#0082CA] font-bold" : "text-slate-500 hover:text-[#0082CA]"}`}
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-all ${pathname === "/products" || pathname === "/search" ? "text-white font-bold bg-white/15 rounded-xl py-1" : "text-white/75 hover:text-white"}`}
         >
           <LayoutGrid className="w-5 h-5" />
           <span className="text-[10px]">فروشگاه</span>
@@ -32,12 +32,12 @@ export default function MobileNav() {
 
         <Link 
           href="/checkout" 
-          className={`relative flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === "/checkout" ? "text-[#0082CA] font-bold" : "text-slate-500 hover:text-[#0082CA]"}`}
+          className={`relative flex flex-col items-center justify-center w-full h-full space-y-1 transition-all ${pathname === "/checkout" ? "text-white font-bold bg-white/15 rounded-xl py-1" : "text-white/75 hover:text-white"}`}
         >
           <div className="relative">
             <ShoppingBag className="w-5 h-5" />
             {itemCount > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-[#0082CA] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
+              <span className="absolute -top-1.5 -right-2 bg-white text-[#0082CA] text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-black shadow-md">
                 {itemCount}
               </span>
             )}
@@ -47,7 +47,7 @@ export default function MobileNav() {
 
         <Link 
           href="/profile" 
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${pathname === "/profile" ? "text-[#0082CA] font-bold" : "text-slate-500 hover:text-[#0082CA]"}`}
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-all ${pathname === "/profile" ? "text-white font-bold bg-white/15 rounded-xl py-1" : "text-white/75 hover:text-white"}`}
         >
           <User className="w-5 h-5" />
           <span className="text-[10px]">پروفایل</span>

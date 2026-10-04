@@ -274,7 +274,9 @@ export default function CheckoutPage() {
           {/* Shipping Details Card */}
           <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6 border-b border-sky-100 pb-4">
-              <MapPin className="w-6 h-6 text-[#0082CA]" />
+              <div className="w-10 h-10 rounded-2xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25 shrink-0">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
               <div>
                 <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">آدرس و اطلاعات تحویل‌گیرنده</h2>
                 <p className="text-xs text-slate-500 mt-0.5">مشخصات ارسال مرسوله پستی را با دقت وارد نمایید</p>
@@ -395,7 +397,9 @@ export default function CheckoutPage() {
           {/* Payment Method Selector */}
           <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6 border-b border-sky-100 pb-4">
-              <CreditCard className="w-6 h-6 text-[#0082CA]" />
+              <div className="w-10 h-10 rounded-2xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25 shrink-0">
+                <CreditCard className="w-5 h-5 text-white" />
+              </div>
               <div>
                 <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">انتخاب درگاه پرداخت</h2>
                 <p className="text-xs text-slate-500 mt-0.5">کلیه تراکنش‌ها از طریق بستر رمزنگاری شده SSL انجام می‌پذیرد</p>

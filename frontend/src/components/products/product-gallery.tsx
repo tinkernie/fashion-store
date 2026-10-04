@@ -204,10 +204,10 @@ export default function ProductGallery({
         {images.length > 1 && (
           <div className="absolute top-4 left-4 z-20 pointer-events-none">
             <span
-              className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-slate-800 text-xs font-mono font-bold border border-sky-100 flex items-center gap-1.5 shadow-md"
+              className="px-3 py-1 rounded-full bg-[#0082CA] text-white text-xs font-mono font-bold flex items-center gap-1.5 shadow-md shadow-[#0082CA]/25"
               dir="ltr"
             >
-              <Layers className="w-3.5 h-3.5 text-[#0082CA]" />
+              <Layers className="w-3.5 h-3.5 text-white" />
               <span>
                 {currentIndex + 1} / {images.length}
               </span>
@@ -219,7 +219,7 @@ export default function ProductGallery({
         <button
           type="button"
           onClick={() => setIsFullscreen(true)}
-          className="absolute top-4 left-24 z-20 p-2 rounded-full bg-white/90 hover:bg-white text-slate-700 hover:text-[#0082CA] backdrop-blur-md border border-sky-100 transition-all opacity-0 group-hover:opacity-100 hidden sm:flex items-center justify-center shadow-md hover:scale-105"
+          className="absolute top-4 left-24 z-20 p-2 rounded-full bg-white/90 hover:bg-[#0082CA] text-slate-700 hover:text-white backdrop-blur-md border border-sky-100 transition-all opacity-0 group-hover:opacity-100 hidden sm:flex items-center justify-center shadow-md hover:scale-105"
           title="مشاهده تمام صفحه تصویر"
           aria-label="تمام صفحه"
         >
@@ -260,22 +260,22 @@ export default function ProductGallery({
             <button
               type="button"
               onClick={() => paginate(-1)}
-              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-800 border border-sky-200 hover:border-[#0082CA] backdrop-blur-md transition-all items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0082CA]"
+              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-[#0082CA] hover:bg-[#006CA8] text-white border border-sky-300/30 backdrop-blur-md transition-all items-center justify-center shadow-xl shadow-[#0082CA]/30 opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-200"
               aria-label="تصویر بعدی"
               title="تصویر بعدی (کلید راست)"
             >
-              <ChevronRight className="w-6 h-6 text-slate-800 group-hover:text-[#0082CA] transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="w-6 h-6 text-white transition-transform group-hover:translate-x-0.5" />
             </button>
 
             {/* Left Arrow Button - Desktop Only */}
             <button
               type="button"
               onClick={() => paginate(1)}
-              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-800 border border-sky-200 hover:border-[#0082CA] backdrop-blur-md transition-all items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0082CA]"
+              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-[#0082CA] hover:bg-[#006CA8] text-white border border-sky-300/30 backdrop-blur-md transition-all items-center justify-center shadow-xl shadow-[#0082CA]/30 opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-200"
               aria-label="تصویر قبلی"
               title="تصویر قبلی (کلید چپ)"
             >
-              <ChevronLeft className="w-6 h-6 text-slate-800 group-hover:text-[#0082CA] transition-transform group-hover:-translate-x-0.5" />
+              <ChevronLeft className="w-6 h-6 text-white transition-transform group-hover:-translate-x-0.5" />
             </button>
           </>
         )}

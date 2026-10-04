@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Layers } from "lucide-react";
 
 export function CollectionsSection() {
   const [collections, setCollections] = useState<any[]>([]);
@@ -27,7 +27,12 @@ export function CollectionsSection() {
   return (
     <section className="py-16 px-4 md:px-12 max-w-7xl mx-auto" dir="rtl">
       <div className="flex items-center justify-between mb-8 border-b border-sky-100 pb-6">
-        <h2 className="text-2xl md:text-3xl font-black text-[#0B192C]">کالکشن‌های ویژه</h2>
+        <div className="flex items-center gap-2.5 md:gap-3">
+          <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
+            <Layers className="w-4 h-4" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-black text-[#0B192C]">کالکشن‌های ویژه</h2>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {collections.map((collection, index) => {
@@ -43,7 +48,7 @@ export function CollectionsSection() {
             >
               <Link
                 href={`/collections/${collection.slug || collection.id}`}
-                className="block group relative overflow-hidden rounded-3xl bg-white border border-sky-100 hover:border-[#0082CA]/50 aspect-[4/3] transition-all shadow-md hover:shadow-xl"
+                className="block group relative overflow-hidden rounded-3xl bg-white border border-sky-100 hover:border-[#0082CA] aspect-[4/3] transition-all shadow-md hover:shadow-xl"
               >
                 {/* Background Banner or Fallback Gradient */}
                 {bannerUrl ? (
@@ -65,7 +70,7 @@ export function CollectionsSection() {
                 {/* Top Badge: Product Count */}
                 {prodCount > 0 && (
                   <div className="absolute top-4 right-4 z-20">
-                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/95 backdrop-blur-md text-[#0082CA] border border-sky-100 shadow-md">
+                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#0082CA] text-white shadow-md shadow-[#0082CA]/25">
                       {prodCount.toLocaleString("fa-IR")} محصول
                     </span>
                   </div>
@@ -81,8 +86,8 @@ export function CollectionsSection() {
                       {collection.description || "مشاهده محصولات و تخفیف‌های این کالکشن"}
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-white/90 border border-sky-100 text-[#0082CA] flex items-center justify-center backdrop-blur-md group-hover:bg-[#0082CA] group-hover:text-white group-hover:border-[#0082CA] transition-all shrink-0 shadow-md">
-                    <ChevronLeft className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-full bg-[#0082CA] border border-sky-300/40 text-white flex items-center justify-center backdrop-blur-md group-hover:bg-[#006CA8] group-hover:scale-110 transition-all shrink-0 shadow-lg shadow-[#0082CA]/30">
+                    <ChevronLeft className="w-5 h-5 text-white" />
                   </div>
                 </div>
               </Link>

@@ -115,7 +115,7 @@ export default function WomenCategoryPage() {
           {/* Mobile Filter Button */}
           <button 
             onClick={() => setIsMobileFilterOpen(true)}
-            className="lg:hidden flex items-center gap-2 bg-white border border-sky-100 rounded-xl px-4 py-3 text-slate-700 text-sm shrink-0 shadow-sm"
+            className="lg:hidden flex items-center gap-2 bg-sky-50 border-2 border-[#0082CA]/40 rounded-xl px-4 py-3 text-[#0072B3] font-bold text-sm shrink-0 shadow-sm hover:bg-[#0082CA] hover:text-white transition-all"
           >
             <Filter className="w-4 h-4 text-[#0082CA]" />
             فیلترها {selectedCategory !== "all" && "(۱)"}
@@ -150,8 +150,10 @@ export default function WomenCategoryPage() {
         >
           <div className="bg-white border border-sky-100 rounded-3xl p-6 sticky top-28 shadow-sm">
             <div className="flex items-center justify-between mb-6 border-b border-sky-100 pb-4">
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-[#0082CA]" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
+                  <Filter className="w-4 h-4 text-white" />
+                </div>
                 <h2 className="text-lg font-black text-[#0B192C]">فیلترها</h2>
               </div>
               {selectedCategory !== "all" && (

@@ -365,15 +365,17 @@ function SearchContent() {
   const renderFilterSidebar = () => (
     <div className="space-y-8 text-right" dir="rtl">
       {/* Active Filter Clear Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-white/10">
-        <span className="text-sm font-bold text-white flex items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+      <div className="flex items-center justify-between pb-4 border-b border-sky-100">
+        <span className="text-sm font-bold text-[#0B192C] flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-[#0082CA] text-white flex items-center justify-center shadow-sm">
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+          </div>
           فیلترهای اعمال شده ({activeFiltersCount})
         </span>
         {activeFiltersCount > 0 && (
           <button
             onClick={handleClearAll}
-            className="text-xs text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1 cursor-pointer"
+            className="text-xs text-rose-500 hover:text-rose-600 transition-colors flex items-center gap-1 cursor-pointer font-bold"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             حذف همه
@@ -383,7 +385,7 @@ function SearchContent() {
 
       {/* Category Filter */}
       <div className="space-y-3">
-        <h4 className="text-xs font-black uppercase tracking-wider text-gray-400">
+        <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">
           دسته‌بندی‌ها
         </h4>
         <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1">
@@ -394,8 +396,8 @@ function SearchContent() {
             }}
             className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
               !selectedCategory
-                ? "bg-white text-black font-bold shadow-md"
-                : "text-gray-400 hover:text-white hover:bg-white/5"
+                ? "bg-[#0082CA] text-white font-bold shadow-sm shadow-[#0082CA]/25"
+                : "text-slate-600 hover:text-[#0082CA] hover:bg-sky-50"
             }`}
           >
             <span>همه دسته‌بندی‌ها</span>
@@ -466,8 +468,7 @@ function SearchContent() {
         </div>
         <Button
           onClick={() => applyFiltersToUrl({ min_price: minPrice || null, max_price: maxPrice || null, page: "1" })}
-          variant="outline"
-          className="w-full h-8 text-xs border-sky-200 bg-sky-50 text-[#0082CA] hover:bg-sky-100 rounded-xl cursor-pointer"
+          className="w-full h-9 text-xs bg-[#0082CA] hover:bg-[#006CA8] text-white font-bold rounded-xl cursor-pointer shadow-md shadow-[#0082CA]/25 transition-all"
         >
           اعمال فیلتر قیمت
         </Button>
@@ -534,7 +535,9 @@ function SearchContent() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-2xl md:text-4xl font-black tracking-tight text-[#0B192C] flex items-center gap-3">
-                  <Search className="w-7 h-7 text-[#0082CA]" />
+                  <div className="w-10 h-10 rounded-2xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25 shrink-0">
+                    <Search className="w-5 h-5 text-white" />
+                  </div>
                   کاتالوگ و جستجوی محصولات
                 </h1>
                 <p className="text-xs md:text-sm text-slate-500 mt-1.5">
@@ -593,7 +596,7 @@ function SearchContent() {
                 <SheetTrigger asChild>
                   <Button
                     variant="outline"
-                    className="h-10 px-4 rounded-xl border-sky-200 bg-sky-50 text-[#0082CA] font-bold text-xs flex items-center gap-2"
+                    className="h-10 px-4 rounded-xl border-2 border-[#0082CA]/40 bg-sky-50 text-[#0072B3] font-bold text-xs flex items-center gap-2 hover:bg-[#0082CA] hover:text-white transition-all"
                   >
                     <Filter className="w-4 h-4 text-[#0082CA]" />
                     فیلترها {activeFiltersCount > 0 && `(${activeFiltersCount})`}
@@ -857,8 +860,8 @@ function SearchContent() {
                             className={cn(
                               "rounded-xl font-bold text-xs h-9 w-9 transition-all cursor-pointer",
                               isActive
-                                ? "bg-white text-black border-white shadow-lg hover:bg-gray-200 hover:text-black scale-105"
-                                : "text-gray-400 hover:text-white hover:bg-white/10"
+                                ? "bg-[#0082CA] text-white border-[#0082CA] shadow-md shadow-[#0082CA]/30 hover:bg-[#006CA8] hover:text-white scale-105"
+                                : "text-slate-600 hover:text-[#0082CA] hover:bg-sky-50"
                             )}
                           >
                             {pageNum.toLocaleString("fa-IR")}

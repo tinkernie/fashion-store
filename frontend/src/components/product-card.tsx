@@ -37,7 +37,7 @@ export default function ProductCard({
 
   return (
     <Link href={`/products/${id}`} className="group block cursor-pointer">
-      <div className="relative aspect-[3/4] overflow-hidden bg-white rounded-2xl border border-sky-100 shadow-sm group-hover:shadow-lg group-hover:border-sky-300 transition-all">
+      <div className="relative aspect-[3/4] overflow-hidden bg-white rounded-2xl border border-sky-100 shadow-sm group-hover:shadow-xl group-hover:border-[#0082CA] transition-all">
         <div className="absolute inset-0 bg-[#0B192C]/5 group-hover:bg-transparent transition-colors duration-500 z-10" />
         
         {/* Discount Percentage Badge on Banner/Photo */}
@@ -61,7 +61,7 @@ export default function ProductCard({
 
       {/* Product Metadata */}
       <div className="mt-4 flex flex-col space-y-1 px-1">
-        <span className="text-[11px] font-bold text-[#0082CA]">
+        <span className="inline-block px-2 py-0.5 rounded-md bg-sky-50 text-[#0072B3] text-[11px] font-bold w-fit">
           {category}
         </span>
         <h3 className="text-base font-bold tracking-wide text-[#0B192C] group-hover:text-[#0082CA] transition-colors line-clamp-1">
