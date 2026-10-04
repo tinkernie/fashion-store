@@ -1,7 +1,28 @@
+from django.core.cache import cache
 from .models import Page
 from .repositories import PageRepository, SiteContentRepository
 from .selectors import PageSelector, SiteContentSelector
 from common.exceptions import BusinessException
+
+PAGE_CACHE_TTL = 300
+SITE_CACHE_TTL = 300
+
+
+def _invalidate_page_cache(slug=None):
+    try:
+        if slug:
+            cache.delete(f"cms:page:{slug}")
+        cache.delete("cms:pages:published")
+    except Exception:
+        pass
+
+
+def _invalidate_site_cache(key=None):
+    try:
+        if key:
+            cache.delete(f"cms:site:{key}")
+    except Exception:
+        pass
 
 class CMSService:
     # --- Pages ---
@@ -22,6 +43,8 @@ class CMSService:
             if PageSelector.get_page_by_slug(new_slug):
                 raise BusinessException("A page with this slug already exists.")
         updated = PageRepository.update_page(page, **data)
+        _invalidate_page_cache(slug)
+        _invalidate_page_cache(updated.slug)
         return self._serialize_page(updated)
 
     def delete_page(self, slug: str) -> dict:
@@ -29,6 +52,7 @@ class CMSService:
         if not page:
             raise BusinessException("Page not found.")
         PageRepository.delete_page(page)
+        _invalidate_page_cache(slug)
         return {"message": f"Page '{slug}' deleted."}
 
     def publish_page(self, slug: str) -> dict:
@@ -36,45 +60,119 @@ class CMSService:
         if not page:
             raise BusinessException("Page not found.")
         PageRepository.update_page(page, status=Page.Status.PUBLISHED)
+        _invalidate_page_cache(slug)
         return self._serialize_page(page)
 
-    def get_page_public(self, slug: str) -> dict:
+    def get_page_public(self, slug: str, preview: bool = False, user=None) -> dict:
+        # preview=true allows staff to see drafts without publishing
+        if preview and user and getattr(user, "is_staff", False):
+            page = PageSelector.get_page_by_slug(slug)
+            if not page or page.deleted_at is not None:
+                raise BusinessException("Page not found.")
+            return self._serialize_page(page)
+        cache_key = f"cms:page:{slug}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
         page = PageSelector.get_published_page_by_slug(slug)
         if not page:
             raise BusinessException("Page not found.")
-        return self._serialize_page(page)
+        data = self._serialize_page(page)
+        try:
+            cache.set(cache_key, data, PAGE_CACHE_TTL)
+        except Exception:
+            pass
+        return data
 
     def list_pages_public(self) -> list[dict]:
+        cached = cache.get("cms:pages:published")
+        if cached is not None:
+            return cached
         pages = PageSelector.list_published_pages()
-        return [self._serialize_page(p, include_content=False) for p in pages]
+        data = [self._serialize_page(p, include_content=False) for p in pages]
+        try:
+            cache.set("cms:pages:published", data, PAGE_CACHE_TTL)
+        except Exception:
+            pass
+        return data
 
-    def list_pages_admin(self) -> list[dict]:
-        pages = PageSelector.list_all_pages()
-        return [self._serialize_page(p) for p in pages]
+    def list_pages_admin(self, filters: dict = None):
+        # Step 5: return queryset for DRF pagination in view
+        return PageSelector.list_all_pages(filters)
 
     # --- Site Content ---
     def get_site_content(self, key: str) -> dict:
+        cache_key = f"cms:site:{key}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
         content = SiteContentSelector.get_by_key(key)
         if content is None:
+            # Discount section defaults to disabled instead of 404 so footer never breaks
+            if key == "discount_section":
+                return {key: self.get_discount_section_default()}
             raise BusinessException("Content key not found.")
-        return {key: content}
+        data = {key: content}
+        try:
+            cache.set(cache_key, data, SITE_CACHE_TTL)
+        except Exception:
+            pass
+        return data
 
     def update_site_content(self, key: str, content: dict) -> dict:
+        # Step 4: lock keys at service layer too (serializers can be bypassed)
+        from .models import SiteContent as SiteContentModel
+
+        if key not in SiteContentModel.ALLOWED_KEYS:
+            raise BusinessException(
+                f"Unknown key '{key}'. Allowed: {', '.join(SiteContentModel.ALLOWED_KEYS)}."
+            )
         # Ensure key exists
         SiteContentRepository.get_or_create_by_key(key)
         obj = SiteContentRepository.update_content(key, content)
+        _invalidate_site_cache(key)
         return {obj.key: obj.content}
 
     def delete_site_content(self, key: str):
         SiteContentRepository.delete_by_key(key)
+        _invalidate_site_cache(key)
         return {"message": f"Site content '{key}' deleted."}
 
+    @staticmethod
+    def get_discount_section_default() -> dict:
+        return {
+            "enabled": False,
+            "title": "",
+            "subtitle": "",
+            "cta_text": "",
+            "cta_link": "/products/?has_discount=true",
+            "collection_slug": None,
+            "background_image": "",
+            "expires_at": None,
+        }
+
     def _serialize_page(self, page, include_content=True) -> dict:
+        from django.conf import settings
+
+        meta = page.seo_metadata or {}
+        base = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        meta_title = meta.get("meta_title") or meta.get("title") or f"{page.title} | Luxe"
+        meta_title = str(meta_title)[:70]
+        meta_desc = meta.get("meta_description") or meta.get("description") or ""
+        meta_desc = str(meta_desc)[:160]
+        canonical = f"{base}/pages/{page.slug}"
         data = {
             'slug': page.slug,
             'title': page.title,
             'status': page.status,
             'seo_metadata': page.seo_metadata,
+            'meta_title': meta_title,
+            'meta_description': meta_desc,
+            'canonical_url': canonical,
+            'hreflang': [
+                {"hreflang": "fa-IR", "href": canonical},
+                {"hreflang": "x-default", "href": canonical},
+            ],
             'updated_at': page.updated_at.isoformat(),
         }
         if include_content:

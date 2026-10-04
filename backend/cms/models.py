@@ -23,11 +23,25 @@ class Page(BaseModel):
 
 class SiteContent(BaseModel):
     """
-    Key-value store for global site sections.
-    Expected keys: 'homepage', 'header', 'footer', 'announcement'.
+    Key-value store for global site sections edited by merchandiser without deploy.
+    Step 1 (split usage): static pages like 'about/contact' should be hardcoded
+    in frontend (Next.js), NOT as Page rows. CMS is only for dynamic sections:
+    'homepage', 'header', 'footer', 'announcement', 'discount_section'.
     The latest updated record for each key is used.
     """
-    key = models.CharField(max_length=100, db_index=True)
+    HOMEPAGE = "homepage"
+    HEADER = "header"
+    FOOTER = "footer"
+    ANNOUNCEMENT = "announcement"
+    DISCOUNT_SECTION = "discount_section"
+
+    ALLOWED_KEYS = (HOMEPAGE, HEADER, FOOTER, ANNOUNCEMENT, DISCOUNT_SECTION)
+
+    key = models.CharField(
+        max_length=100,
+        db_index=True,
+        help_text="One of: homepage, header, footer, announcement, discount_section",
+    )
     content = models.JSONField(default=dict, blank=True)
 
     class Meta:
