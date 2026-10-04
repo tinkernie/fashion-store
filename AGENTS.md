@@ -11,7 +11,9 @@
 ## 3. Automatic Commit & Production Sync
 - Whenever code changes or fixes are implemented, test and verify them locally first.
 - **Commit and push to GitHub immediately** before asking the user to do so or awaiting user prompt.
+- **Detailed Commit Summary in Chat**: Whenever a task or set of changes is completed, always output a detailed commit summary and full description in the conversation (Conventional Commit title, technical rationale, modified file paths, and exact functional changes) so the user has complete granular details.
 - **Deploy to the live production server (`37.32.31.95`)**: Using `docs/DEPLOYMENT_GUIDE.md`, pull the latest commit into `/var/www/fashion-store`, run necessary builds/migrations, apply the Iranian DPI middlebox asset patch (`static/assets`), set permissions (`chown -R www-data:www-data`), and restart PM2 / Gunicorn / Celery so changes appear online immediately.
+
 
 ## 4. Design System Compliance
 - For ALL frontend changes, new features, component additions, or UI refinements, you MUST strictly refer to and adhere to [DESIGN_SYSTEM.md](file:///c:/Users/Mahdi/Desktop/Stuf/Github/fashion-store/DESIGN_SYSTEM.md) (and [DESIGN.md](file:///c:/Users/Mahdi/Desktop/Stuf/Github/fashion-store/DESIGN.md)).
