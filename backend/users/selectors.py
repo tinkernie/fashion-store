@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
-from .models import EmailChangeRequest
 
 User = get_user_model()
 
@@ -11,8 +10,14 @@ class UserSelector:
         return User.objects.filter(id=user_id).first()
 
     @staticmethod
-    def get_user_by_email(email: str) -> User:
-        return User.objects.filter(email__iexact=email).first()
+    def get_user_by_phone(phone_number: str) -> User:
+        from authentication.validators import PhoneValidator
+
+        try:
+            phone_number = PhoneValidator.normalize(phone_number)
+        except Exception:
+            pass
+        return User.objects.filter(phone_number=phone_number).first()
 
     @staticmethod
     def get_active_users() -> QuerySet[User]:
@@ -25,21 +30,14 @@ class UserSelector:
             if "is_active" in filters:
                 qs = qs.filter(is_active=filters["is_active"])
             if "search" in filters:
-                # Group B: prevent DoS via huge search string
                 search = filters["search"]
                 if search and len(search) > 100:
                     from common.exceptions import BusinessException
 
                     raise BusinessException("Search query too long (max 100).")
                 qs = (
-                    qs.filter(email__icontains=search)
+                    qs.filter(phone_number__icontains=search)
                     | qs.filter(first_name__icontains=search)
                     | qs.filter(last_name__icontains=search)
                 )
         return qs
-
-    @staticmethod
-    def get_email_change_request(token: str) -> EmailChangeRequest:
-        return EmailChangeRequest.objects.select_related("user").get(
-            token=token, is_used=False
-        )

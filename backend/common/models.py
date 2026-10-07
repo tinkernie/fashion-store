@@ -49,7 +49,14 @@ class BaseModel(UUIDPrimaryKeyMixin, TimestampedModel, SoftDeleteModel):
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils import timezone
 
+from django.core.validators import RegexValidator
+
 from .managers import UserAllObjectsManager, UserManager
+
+phone_validator = RegexValidator(
+    regex=r"^09\d{9}$",
+    message="Phone number must be Iranian mobile like 09123456789.",
+)
 
 
 class User(BaseModel, AbstractBaseUser, PermissionsMixin):
@@ -57,28 +64,28 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
     all_objects = UserAllObjectsManager()  # M4: includes soft-deleted
 
-    email = models.EmailField(unique=True, db_index=True)
+    phone_number = models.CharField(
+        max_length=15, unique=True, db_index=True, validators=[phone_validator],
+        null=True, blank=True,  # temporary for email->SMS migration of existing rows
+    )
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
-    # objects = UserManager()
-
-    USERNAME_FIELD = "email"
+    USERNAME_FIELD = "phone_number"
     REQUIRED_FIELDS = []
 
     class Meta:
-        # Group A: case-insensitive unique (Postgres Lower, SQLite functional index)
         constraints = [
             models.UniqueConstraint(
-                models.functions.Lower("email"),
-                name="unique_lower_email",
+                "phone_number",
+                name="unique_phone_number",
                 condition=models.Q(deleted_at__isnull=True),
-                violation_error_message="A user with this email already exists.",
+                violation_error_message="A user with this phone already exists.",
             )
         ]
 
     def __str__(self):
-        return self.email
+        return self.phone_number

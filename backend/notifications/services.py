@@ -7,25 +7,20 @@ from .repositories import (
     PreferenceRepository,
 )
 from .selectors import NotificationSelector, PreferenceSelector
-from .tasks import send_notification_email
+from .tasks import send_sms
 from common.exceptions import BusinessException
 from .models import Notification
 
 
 class NotificationService:
-    def send_notification(self, user, type: str, context: dict = None, send_email: bool = True) -> dict:
-        """
-        Create an in-app notification and conditionally send an email.
-        """
-        # M1: validate type against allowlist to prevent arbitrary type spam
+    def send_notification(self, user, type: str, context: dict = None, send_sms_flag: bool = True) -> dict:
+        """Create in-app notification and dispatch SMS via sms.ir (no email)."""
         from .models import NotificationTemplate
         allowed_types = [c[0] for c in NotificationTemplate.TYPE_CHOICES]
         if type not in allowed_types:
             raise BusinessException(f"Invalid notification type: {type}")
-        # M1/L1: limit context size to prevent JSONField DoS / PII bloat
         if context and len(str(context)) > 5000:
             raise BusinessException("Notification context too large.")
-        # Enrich context with Persian status labels if order status change
         if context is None:
             context = {}
         if context.get('new_status') and 'new_status_fa' not in context:
@@ -41,10 +36,9 @@ class NotificationService:
             except Exception:
                 pass
 
-        # Check user preferences for email
         prefs = PreferenceRepository.get_or_create_preferences(user)
-        email_allowed = self._is_email_allowed(type, prefs)
-        if send_email and email_allowed:
+        sms_allowed = self._is_sms_allowed(type, prefs)
+        if send_sms_flag and sms_allowed:
             try:
                 template = TemplateRepository.get_template(type)
                 subject = self._render_template_string(template.subject_template, context)
@@ -70,7 +64,6 @@ class NotificationService:
             subject = ""
             body = ""
 
-        # Always create in-app notification if user has in-app preference
         in_app_allowed = self._is_inapp_allowed(type, prefs)
         notification = None
         if in_app_allowed:
@@ -82,18 +75,23 @@ class NotificationService:
                 context=context,
             )
 
-        # Dispatch email via Celery if allowed — after commit to ensure Notification exists
-        if send_email and email_allowed:
+        if send_sms_flag and sms_allowed and getattr(user, "phone_number", None):
             nid = str(notification.id) if notification else None
-            transaction.on_commit(
-                lambda: send_notification_email.delay(user.email, subject, body, nid)
-            )
+            sms_text = f"{subject} {body}".strip()[:300] if (subject or body) else subject or body
+            phone = user.phone_number
+            transaction.on_commit(lambda: send_sms.delay(phone, sms_text or subject, nid))
 
         return {
             'notification_id': str(notification.id) if notification else None,
-            'email_sent': email_allowed,
+            'sms_sent': sms_allowed,
             'in_app': in_app_allowed,
         }
+
+    # Backward compat: send_email kwarg maps to SMS
+    def send_notification_legacy(self, *args, **kwargs):
+        if "send_email" in kwargs:
+            kwargs["send_sms_flag"] = kwargs.pop("send_email")
+        return self.send_notification(*args, **kwargs)
 
     def mark_as_read(self, user, notification_id: str):
         notification = Notification.objects.filter(id=notification_id, user=user).first()
@@ -128,9 +126,9 @@ class NotificationService:
     def get_preferences(self, user) -> dict:
         prefs = PreferenceRepository.get_or_create_preferences(user)
         return {
-            'email_order_updates': prefs.email_order_updates,
-            'email_promotions': prefs.email_promotions,
-            'email_account': prefs.email_account,
+            'sms_order_updates': prefs.sms_order_updates,
+            'sms_promotions': prefs.sms_promotions,
+            'sms_account': prefs.sms_account,
             'in_app_order_updates': prefs.in_app_order_updates,
             'in_app_account': prefs.in_app_account,
         }
@@ -139,14 +137,12 @@ class NotificationService:
         prefs = PreferenceRepository.update_preferences(user, **data)
         return self.get_preferences(user)
 
-    # Helper to determine if email should be sent based on type
-    def _is_email_allowed(self, type, prefs) -> bool:
+    def _is_sms_allowed(self, type, prefs) -> bool:
         mapping = {
-            'order_confirmation': prefs.email_order_updates,
-            'order_status_change': prefs.email_order_updates,
-            'shipping_update': prefs.email_order_updates,
-            'password_reset': prefs.email_account,
-            'welcome': prefs.email_account,
+            'order_confirmation': prefs.sms_order_updates,
+            'order_status_change': prefs.sms_order_updates,
+            'shipping_update': prefs.sms_order_updates,
+            'welcome': prefs.sms_account,
             'generic': True,
         }
         return mapping.get(type, True)
@@ -156,7 +152,6 @@ class NotificationService:
             'order_confirmation': prefs.in_app_order_updates,
             'order_status_change': prefs.in_app_order_updates,
             'shipping_update': prefs.in_app_order_updates,
-            'password_reset': prefs.in_app_account,
             'welcome': prefs.in_app_account,
             'generic': True,
         }

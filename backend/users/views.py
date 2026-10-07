@@ -9,8 +9,8 @@ from .selectors import UserSelector
 from .serializers import (
     UserProfileSerializer,
     UpdateProfileSerializer,
-    ChangeEmailSerializer,
-    ConfirmEmailSerializer,
+    ChangePhoneSerializer,
+    ConfirmPhoneSerializer,
     AdminUserSerializer,
     AdminUserUpdateSerializer,
     AssignGroupsSerializer,
@@ -27,12 +27,10 @@ class UserProfileViewSet(
     permission_classes = [IsAuthenticated, IsSelf]
 
     def get_object(self):
-        # Always return the current authenticated user for 'me' actions
         return self.request.user
 
     def get_throttles(self):
-        # Group B: rate limit email change to 5/min per auth scope
-        if self.action in ["change_email", "confirm_email"]:
+        if self.action in ["change_phone", "confirm_phone"]:
             self.throttle_scope = "auth"
             return [ScopedRateThrottle()]
         return super().get_throttles()
@@ -56,32 +54,31 @@ class UserProfileViewSet(
         return Response(output_serializer.data)
 
     def update(self, request, *args, **kwargs):
-        # Same as partial_update for PUT
         return self.partial_update(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-        # Allow POST /api/users/me/ to update profile
         return self.partial_update(request, *args, **kwargs)
 
-    @action(detail=False, methods=["post"], serializer_class=ChangeEmailSerializer)
-    def change_email(self, request):
-        # explicit serializer avoids get_serializer returning UserProfileSerializer via as_view mapping
-        serializer = ChangeEmailSerializer(data=request.data)
+    @action(detail=False, methods=["post"], serializer_class=ChangePhoneSerializer)
+    def change_phone(self, request):
+        serializer = ChangePhoneSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         service = UserService()
-        result = service.change_email_request(
-            request.user,
-            serializer.validated_data["new_email"],
-            serializer.validated_data["password"],
+        result = service.change_phone_request(
+            request.user, serializer.validated_data["new_phone"]
         )
         return Response(result)
 
-    @action(detail=False, methods=["post"], serializer_class=ConfirmEmailSerializer)
-    def confirm_email(self, request):
-        serializer = ConfirmEmailSerializer(data=request.data)
+    @action(detail=False, methods=["post"], serializer_class=ConfirmPhoneSerializer)
+    def confirm_phone(self, request):
+        serializer = ConfirmPhoneSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         service = UserService()
-        result = service.confirm_email_change(str(serializer.validated_data["token"]))
+        result = service.confirm_phone_change(
+            request.user,
+            serializer.validated_data["new_phone"],
+            serializer.validated_data["code"],
+        )
         return Response(result)
 
 

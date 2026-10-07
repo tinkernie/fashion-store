@@ -15,7 +15,7 @@ redis==5.0.8
 celery==5.3.6
 
 python-decouple==3.8
-kavenegar==1.1.2
+requests==2.31.0
 
 Pillow==11.3.0
 boto3==1.42.97

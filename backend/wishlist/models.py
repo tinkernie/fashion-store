@@ -15,7 +15,7 @@ class Wishlist(BaseModel):
         db_table = "wishlist"
 
     def __str__(self):
-        return f"Wishlist of {self.user.email}"
+        return f"Wishlist of {self.user.phone_number}"
 
 
 class WishlistItem(BaseModel):
@@ -32,4 +32,4 @@ class WishlistItem(BaseModel):
         unique_together = ("wishlist", "product")
 
     def __str__(self):
-        return f"{self.product.title} in {self.wishlist.user.email}'s wishlist"
+        return f"{self.product.title} in {self.wishlist.user.phone_number}'s wishlist"

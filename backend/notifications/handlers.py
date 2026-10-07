@@ -1,11 +1,20 @@
 import logging
 
 from django.conf import settings
-from django.db import transaction
 
 from .services import NotificationService
 
 logger = logging.getLogger(__name__)
+
+
+def _display_name(user) -> str:
+    name = f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip()
+    if name:
+        return name
+    phone = getattr(user, "phone_number", "")
+    if phone and len(phone) >= 4:
+        return f"کاربر {phone[-4:]}"
+    return "مشتری عزیز"
 
 
 def order_status_changed_handler(sender, order, old_status, new_status, **kwargs):
@@ -21,23 +30,16 @@ def order_status_changed_handler(sender, order, old_status, new_status, **kwargs
         'new_status': new_status,
         'old_status_fa': old_status_fa,
         'new_status_fa': new_status_fa,
-        'user_name': user.first_name or user.email.split("@")[0],
-        'email': user.email,
+        'user_name': _display_name(user),
+        'phone_number': getattr(user, "phone_number", ""),
         'frontend_url': settings.FRONTEND_URL,
     }
-    service.send_notification(user, type, context, send_email=True)
+    service.send_notification(user, type, context, send_sms_flag=True)
 
 
 def order_placed_handler(sender, user, order, items_data, **kwargs):
-    """
-    Sends order confirmation email (HTML invoice) + optional SMS with invoice link.
-    Wired to analytics.signals.order_placed (dispatched in orders/services.py:157).
-    Uses NotificationService for in-app + email, and send_sms task for SMS.
-    """
+    """In-app + SMS order confirmation with invoice link (no email)."""
     service = NotificationService()
-    # Build rich context for HTML invoice template email/order_confirmation.html & email/invoice.html
-    # items_data from orders/services.py contains product_snapshot, quantity etc.
-    # Normalize items for template (title, sku, quantity, price_snapshot, line_total, product_snapshot)
     normalized_items = []
     for item in (items_data or []):
         snapshot = item.get("product_snapshot", {}) or {}
@@ -53,12 +55,10 @@ def order_placed_handler(sender, user, order, items_data, **kwargs):
         )
 
     invoice_url = f"{settings.FRONTEND_URL}/orders/{order.order_number}"
-    # For SMS short link, frontend may have short invoice path
     context = {
         "order_number": order.order_number,
-        "user_name": user.first_name or user.email.split("@")[0],
-        "user_email": user.email,
-        "email": user.email,
+        "user_name": _display_name(user),
+        "phone_number": getattr(user, "phone_number", ""),
         "frontend_url": settings.FRONTEND_URL,
         "invoice_url": invoice_url,
         "items": normalized_items,
@@ -73,42 +73,5 @@ def order_placed_handler(sender, user, order, items_data, **kwargs):
         "status": order.status,
         "preheader": f"Order {order.order_number} confirmed - {order.total}",
     }
-    # 1) In-app + Email via NotificationService (creates Notification, dispatches email via Celery)
-    result = service.send_notification(user, "order_confirmation", context, send_email=True)
-    logger.info("order_placed_handler sent order_confirmation notification %s for order %s", result, order.order_number)
-
-    # 2) Optional SMS: only if user has phone_number and SMS_ENABLED
-    phone = getattr(user, "phone_number", None) or getattr(user, "phone", None)
-    # Try to get phone from profile if exists
-    if not phone:
-        # Future: try UserProfile or common User model after phone migration
-        try:
-            # If User has related profile with phone
-            if hasattr(user, "profile") and getattr(user.profile, "phone_number", None):
-                phone = user.profile.phone_number
-        except Exception:
-            pass
-
-    if phone and settings.SMS_ENABLED:
-        try:
-            from .tasks import send_sms
-
-            formatted_total = f"{int(round(float(order.total))):,}" if order.total else "0"
-            sms_message = f"لوکس: سفارش {order.order_number} با موفقیت ثبت شد. مبلغ: {formatted_total} تومان. مشاهده فاکتور: {invoice_url}"
-            if len(sms_message) > 160:
-                sms_message = f"لوکس: سفارش {order.order_number} ثبت شد. فاکتور: {invoice_url}"
-
-            # Use same notification_id for idempotency if created
-            nid = result.get("notification_id")
-            # Dispatch after commit to ensure order persisted
-            def _dispatch_sms():
-                send_sms.delay(phone, sms_message, nid)
-
-            # If we're already inside atomic (order creation), defer to on_commit
-            try:
-                transaction.on_commit(_dispatch_sms)
-            except Exception:
-                _dispatch_sms()
-            logger.info("order_placed_handler queued SMS to %s for order %s", phone, order.order_number)
-        except Exception as e:
-            logger.exception("Failed to queue SMS for order %s: %s", order.order_number, e)
+    result = service.send_notification(user, "order_confirmation", context, send_sms_flag=True)
+    logger.info("order_placed_handler sent order_confirmation %s for order %s", result, order.order_number)

@@ -60,7 +60,7 @@ class AdminNotificationViewSet(viewsets.GenericViewSet):
         if page is not None:
             data = [{
                 'id': str(n.id),
-                'user_email': n.user.email if n.user else "کاربر عمومی",
+                'user_phone': n.user.phone_number if n.user else "کاربر عمومی",
                 'type': n.type,
                 'subject': n.subject,
                 'is_read': n.is_read,
@@ -70,7 +70,7 @@ class AdminNotificationViewSet(viewsets.GenericViewSet):
         # Fallback if pagination disabled
         data = [{
             'id': str(n.id),
-            'user_email': n.user.email if n.user else "کاربر عمومی",
+            'user_phone': n.user.phone_number if n.user else "کاربر عمومی",
             'type': n.type,
             'subject': n.subject,
             'is_read': n.is_read,

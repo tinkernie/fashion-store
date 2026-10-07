@@ -1,6 +1,8 @@
 import re
 from django.core.exceptions import ValidationError
 
+from common.exceptions import BusinessException
+
 
 class PasswordValidator:
     MIN_LENGTH = 10
@@ -30,3 +32,24 @@ class PasswordValidator:
             raise ValidationError(
                 "Password must contain at least one special character."
             )
+
+
+class PhoneValidator:
+    @staticmethod
+    def normalize(phone: str) -> str:
+        phone = (phone or "").strip().replace(" ", "").replace("-", "")
+        if phone.startswith("+98"):
+            phone = "0" + phone[3:]
+        elif phone.startswith("98") and len(phone) == 12:
+            phone = "0" + phone[2:]
+        return phone
+
+    @classmethod
+    def validate(cls, phone: str) -> str:
+        normalized = cls.normalize(phone)
+        if not re.match(r"^09\d{9}$", normalized):
+            raise BusinessException(
+                "Phone number must be Iranian mobile like 09123456789.",
+                code="invalid_phone",
+            )
+        return normalized

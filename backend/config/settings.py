@@ -93,10 +93,10 @@ DATABASES = {
 AUTH_USER_MODEL = "common.User"  # custom user prepared for full RBAC
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
-# JWT
+# JWT - long-lived for OTP (2-day browser-close survival via 30d refresh)
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
@@ -200,13 +200,12 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 
-# --- Queue routing (ISSUE-16) ---
+# --- Queue routing (SMS-only, email removed) ---
 CELERY_TASK_ROUTES = {
-    "authentication.tasks.*": {"queue": "emails"},
-    "users.tasks.*": {"queue": "emails"},
-    "notifications.tasks.send_notification_email": {"queue": "emails"},
+    "authentication.tasks.*": {"queue": "sms"},
     "notifications.tasks.send_sms": {"queue": "sms"},
-    "notifications.tasks.*": {"queue": "emails"},
+    "notifications.tasks.send_otp_sms": {"queue": "sms"},
+    "notifications.tasks.*": {"queue": "sms"},
     "inventory.tasks.*": {"queue": "inventory"},
     "media_libm.tasks.*": {"queue": "media"},
 }
@@ -314,10 +313,16 @@ EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
 AWS_SES_REGION = os.environ.get("AWS_SES_REGION", "us-east-1")
 
-# --- SMS (Kavenegar) ---
-KAVENEGAR_API_KEY = os.environ.get("KAVENEGAR_API_KEY", "")
-SMS_SENDER = os.environ.get("SMS_SENDER", "10008642")
-SMS_ENABLED = bool(KAVENEGAR_API_KEY)  # auto-disable if no key (dev logs only)
+# --- SMS (sms.ir) - email system fully replaced ---
+SMS_IR_API_KEY = os.environ.get("SMS_IR_API_KEY", os.environ.get("KAVENEGAR_API_KEY", ""))
+SMS_IR_LINE_NUMBER = os.environ.get("SMS_IR_LINE_NUMBER", os.environ.get("SMS_SENDER", "300021152280"))
+SMS_IR_OTP_TEMPLATE_ID = int(os.environ.get("SMS_IR_OTP_TEMPLATE_ID", "919633"))
+SMS_IR_OTP_PARAM = os.environ.get("SMS_IR_OTP_PARAM", "Code")
+SMS_ENABLED = bool(SMS_IR_API_KEY)
+OTP_LENGTH = int(os.environ.get("OTP_LENGTH", "5"))
+OTP_EXPIRY_SECONDS = int(os.environ.get("OTP_EXPIRY_SECONDS", "180"))
+OTP_RESEND_SECONDS = int(os.environ.get("OTP_RESEND_SECONDS", "60"))
+OTP_MAX_ATTEMPTS = int(os.environ.get("OTP_MAX_ATTEMPTS", "5"))
 # Frontend should be https in production
 if not DEBUG and FRONTEND_URL.startswith("http://"):
     import warnings

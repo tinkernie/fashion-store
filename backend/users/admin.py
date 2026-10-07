@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import EmailChangeRequest
+from .models import PhoneChangeRequest
 
 
-@admin.register(EmailChangeRequest)
-class EmailChangeRequestAdmin(admin.ModelAdmin):
-    list_display = ["user", "new_email", "is_used", "created_at"]
+@admin.register(PhoneChangeRequest)
+class PhoneChangeRequestAdmin(admin.ModelAdmin):
+    list_display = ["user", "new_phone", "is_used", "created_at"]

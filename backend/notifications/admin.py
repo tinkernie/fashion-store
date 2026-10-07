@@ -15,4 +15,4 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(UserNotificationPreference)
 class UserNotificationPreferenceAdmin(admin.ModelAdmin):
-    list_display = ['user', 'email_order_updates', 'email_account']
+    list_display = ['user', 'sms_order_updates', 'sms_account']

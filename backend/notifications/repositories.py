@@ -47,7 +47,7 @@ class PreferenceRepository:
     @staticmethod
     def update_preferences(user, **fields) -> UserNotificationPreference:
         prefs = PreferenceRepository.get_or_create_preferences(user)
-        allowed = ['email_order_updates', 'email_promotions', 'email_account',
+        allowed = ['sms_order_updates', 'sms_promotions', 'sms_account',
                    'in_app_order_updates', 'in_app_account']
         for key, value in fields.items():
             if key in allowed:

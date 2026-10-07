@@ -460,7 +460,7 @@ class PublicReviewViewSet(viewsets.GenericViewSet):
         if custom_name and custom_name.strip() and custom_name.strip() != "کاربر خریدار":
             user_display = custom_name.strip()
         elif user:
-            user_display = f"{user.first_name} {user.last_name}".strip() or user.email or "کاربر خریدار"
+            user_display = f"{user.first_name} {user.last_name}".strip() or getattr(user, "phone_number", "") or "کاربر خریدار"
         else:
             user_display = "کاربر خریدار"
 

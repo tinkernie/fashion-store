@@ -34,7 +34,7 @@ class AuditLogMiddleware:
                 logger.info(
                     "request_id=%s user=%s method=%s path=%s status=%d",
                     request_id,
-                    request.user.email,
+                    getattr(request.user, "phone_number", str(request.user.id)),
                     request.method,
                     request.path,
                     response.status_code,

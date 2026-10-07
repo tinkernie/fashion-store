@@ -6,7 +6,7 @@ User = get_user_model()
 
 class UserProfileSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
-    email = serializers.EmailField(read_only=True)
+    phone_number = serializers.CharField(read_only=True)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     is_active = serializers.BooleanField(read_only=True)
@@ -20,7 +20,6 @@ class UpdateProfileSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=False)
 
     def validate_first_name(self, value):
-        # Group B: strip + BusinessException handled via DRF ValidationError
         from .validators import UserValidator
 
         UserValidator.validate_name(value, field_name="first_name")
@@ -33,18 +32,29 @@ class UpdateProfileSerializer(serializers.Serializer):
         return value.strip()
 
 
-class ChangeEmailSerializer(serializers.Serializer):
-    new_email = serializers.EmailField()
-    password = serializers.CharField()
+class ChangePhoneSerializer(serializers.Serializer):
+    new_phone = serializers.CharField()
+    password = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_new_phone(self, value):
+        from authentication.validators import PhoneValidator
+
+        return PhoneValidator.validate(value)
 
 
-class ConfirmEmailSerializer(serializers.Serializer):
-    token = serializers.UUIDField()
+class ConfirmPhoneSerializer(serializers.Serializer):
+    new_phone = serializers.CharField()
+    code = serializers.CharField(min_length=4, max_length=8)
+
+    def validate_new_phone(self, value):
+        from authentication.validators import PhoneValidator
+
+        return PhoneValidator.validate(value)
 
 
 class AdminUserSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
-    email = serializers.EmailField()
+    phone_number = serializers.CharField()
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     is_active = serializers.BooleanField(required=False)
@@ -60,7 +70,6 @@ class AdminUserSerializer(serializers.Serializer):
         from orders.models import Order
         from django.db.models import Sum
 
-        # Sum total for non-cancelled/active orders (paid, packing, shipping, delivered)
         active_statuses = [
             Order.Status.PAID,
             Order.Status.PACKING,
@@ -71,7 +80,6 @@ class AdminUserSerializer(serializers.Serializer):
             total=Sum("total")
         )
         total = agg["total"] or 0
-        # Format to 2 decimal places
         try:
             return format(total, ".2f")
         except Exception:
@@ -84,7 +92,6 @@ class AdminUserSerializer(serializers.Serializer):
 
 
 class AdminUserUpdateSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=False)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     is_active = serializers.BooleanField(required=False)

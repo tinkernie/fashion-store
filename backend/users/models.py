@@ -4,15 +4,16 @@ from django.conf import settings
 from common.models import TimestampedModel, UUIDPrimaryKeyMixin
 
 
-class EmailChangeRequest(UUIDPrimaryKeyMixin, TimestampedModel):
+class PhoneChangeRequest(UUIDPrimaryKeyMixin, TimestampedModel):
+    """OTP-verified phone change: old phone -> new phone via sms.ir."""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="email_change_requests",
+        related_name="phone_change_requests",
     )
-    new_email = models.EmailField()
-    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    new_phone = models.CharField(max_length=15)
     is_used = models.BooleanField(default=False)
 
     class Meta:
-        db_table = "user_email_change_request"
+        db_table = "user_phone_change_request"

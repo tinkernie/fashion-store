@@ -1,138 +1,11 @@
-import html
 import logging
-import smtplib
-import socket
 
 from celery import shared_task
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.utils import OperationalError
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
-
-
-def _sanitize_subject(subject: str) -> str:
-    return subject.replace("\n", " ").replace("\r", " ").strip()[:300]
-
-
-@shared_task(
-    bind=True,
-    acks_late=True,
-    time_limit=60,
-    soft_time_limit=45,
-    autoretry_for=(smtplib.SMTPException, socket.error, ConnectionError, TimeoutError, OperationalError),
-    retry_backoff=True,
-    retry_jitter=True,
-    max_retries=3,
-)
-def send_notification_email(self, email, subject, body, notification_id):
-    # Early exit for missing email - not retryable + validate RFC 5322
-    if not email:
-        logger.warning("send_notification_email: missing email, skipping")
-        return
-    try:
-        validate_email(email)
-    except ValidationError:
-        logger.warning("send_notification_email: invalid email %s, skipping", email)
-        return
-
-    # Sanitize subject to prevent header injection + size limit (Celery broker DoS)
-    subject = _sanitize_subject(subject or "")
-    if len(subject) > 300:
-        subject = subject[:300]
-    if body and len(body) > 10000:
-        body = body[:10000]
-
-    # Idempotency check before sending: avoid duplicate email if already marked sent
-    if notification_id:
-        try:
-            from .models import Notification
-
-            existing = Notification.objects.filter(id=notification_id).first()
-            if existing and existing.context_json and existing.context_json.get("email_sent"):
-                logger.info("send_notification_email: already sent for %s, skipping", notification_id)
-                return
-        except Exception as e:
-            logger.exception("Idempotency check failed for %s: %s", notification_id, e)
-
-    # Build HTML alternative: wrap plain body in branded base if no specific template
-    # Try to infer html template from subject/body context if notification available
-    html_body = None
-    try:
-        # If notification has context, try to render type-specific html template
-        if notification_id:
-            from .models import Notification
-
-            notif = Notification.objects.filter(id=notification_id).first()
-            if notif and notif.type:
-                try:
-                    type_template_map = {
-                        "order_confirmation": "email/order_confirmation.html",
-                        "order_status_change": "email/order_status_change.html",
-                        "shipping_update": "email/shipping_update.html",
-                        "welcome": "email/welcome.html",
-                        "generic": None,
-                    }
-                    tmpl = type_template_map.get(notif.type)
-                    if tmpl:
-                        # context_json holds original context dict passed to service
-                        ctx = notif.context_json or {}
-                        ctx.setdefault("frontend_url", settings.FRONTEND_URL)
-                        ctx.setdefault("email", email)
-                        ctx.setdefault("subject", subject)
-                        # Map body fields for invoice compatibility
-                        if notif.type == "order_confirmation" and "order_number" in ctx:
-                            # Ensure invoice fields available
-                            pass
-                        html_body = render_to_string(tmpl, ctx)
-                except Exception as e:
-                    logger.debug("Type-specific HTML template render failed: %s", e)
-    except Exception:
-        pass
-
-    # Fallback HTML: simple branded wrapper with body line-breaks - M1: html.escape
-    if not html_body:
-        # M1: escape user-controlled body to prevent stored XSS
-        safe_body = html.escape(body) if body else html.escape(subject)
-        escaped_body = safe_body.replace("\n", "<br>")
-        html_body = f"""<!DOCTYPE html><html><body style="font-family:Arial,sans-serif; color:#333; line-height:22px; max-width:600px; margin:0 auto; padding:24px; border:1px solid #eeeeee;"><div style="background:#111;color:#fff;padding:16px;text-align:center;font-weight:bold;letter-spacing:2px;">LUXE</div><div style="padding:24px;">{escaped_body}</div><div style="font-size:11px;color:#888;text-align:center;padding:16px;border-top:1px solid #eee;">&copy; Luxe Fashion Store</div></body></html>"""
-
-    text_body = body or strip_tags(html_body)
-    msg = EmailMultiAlternatives(
-        subject=subject,
-        body=text_body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=[email],
-    )
-    msg.attach_alternative(html_body, "text/html")
-    msg.send(fail_silently=False)
-    logger.info("send_notification_email sent to %s notification_id=%s subject=%s", email, notification_id, subject)
-
-    # Mark as sent atomically after successful send
-    if notification_id:
-        try:
-            from .models import Notification
-
-            with transaction.atomic():
-                notification = Notification.objects.select_for_update().get(id=notification_id)
-                if notification.context_json and notification.context_json.get("email_sent"):
-                    logger.info("send_notification_email: race, already marked sent for %s", notification_id)
-                    return
-                notification.context_json = {
-                    **(notification.context_json or {}),
-                    "email_sent": True,
-                }
-                notification.save(update_fields=["context_json", "updated_at"])
-        except Exception as e:
-            logger.exception("Failed to mark notification %s as sent: %s", notification_id, e)
-            if isinstance(e, (OperationalError, ConnectionError, TimeoutError, smtplib.SMTPException, socket.error)):
-                raise
-            return
 
 
 @shared_task(
@@ -147,19 +20,16 @@ def send_notification_email(self, email, subject, body, notification_id):
 )
 def send_sms(self, phone_number: str, message: str, notification_id: str = None):
     """
-    Async SMS dispatch via Kavenegar. Uses SMS_ENABLED flag; in dev (no API key) logs only.
-    Message should be short (<160 chars) for order notifications with invoice link.
+    Async SMS dispatch via sms.ir bulk. Uses SMS_ENABLED flag; in dev (no API key) logs only.
     """
     if not phone_number:
         logger.warning("send_sms: missing phone_number, skipping")
         return
-    # Sanitize message: strip extra whitespace, limit length
     message = (message or "").strip()[:500]
     if not message:
         logger.warning("send_sms: empty message, skipping")
         return
 
-    # Idempotency similar to email if notification_id provided
     if notification_id:
         try:
             from .models import Notification
@@ -171,29 +41,24 @@ def send_sms(self, phone_number: str, message: str, notification_id: str = None)
         except Exception as e:
             logger.exception("send_sms idempotency check failed: %s", e)
 
-    if not settings.SMS_ENABLED or not settings.KAVENEGAR_API_KEY:
-        logger.info("SMS_ENABLED=False or no KAVENEGAR_API_KEY - mock SMS to %s: %s", phone_number, message)
-        # Still mark as sent in dev to avoid retry loops
+    if not settings.SMS_ENABLED or not settings.SMS_IR_API_KEY:
+        logger.info("SMS_ENABLED=False - mock SMS to %s: %s", phone_number, message)
     else:
         try:
-            from kavenegar import KavenegarAPI, APIException, HTTPException  # type: ignore
+            from .sms_ir import send_bulk
 
-            api = KavenegarAPI(settings.KAVENEGAR_API_KEY)
-            params = {"sender": settings.SMS_SENDER, "receptor": phone_number, "message": message}
-            response = api.sms_send(params)
-            logger.info("SMS sent to %s via Kavenegar response=%s", phone_number, response)
-        except ImportError:
-            logger.warning("kavenegar package not installed - mock SMS to %s: %s", phone_number, message)
+            response = send_bulk(settings.SMS_IR_LINE_NUMBER, message, [phone_number])
+            logger.info("SMS sent to %s via sms.ir response=%s", phone_number, response)
         except Exception as e:
-            # APIException, HTTPException are transient -> retry
             logger.exception("SMS send failed to %s: %s", phone_number, e)
-            # Only retry on transient network/API errors
-            if "APIException" in type(e).__name__ or "HTTPException" in type(e).__name__ or isinstance(e, (ConnectionError, TimeoutError, OperationalError)):
+            if isinstance(e, (ConnectionError, TimeoutError, OperationalError)):
                 raise self.retry(exc=e)
-            # For invalid receptor etc., don't retry
+            if "sms.ir" in str(e).lower() or "verify failed" in str(e) or "bulk failed" in str(e):
+                if "115" in str(e) or "blacklist" in str(e).lower():
+                    return
+                raise self.retry(exc=e)
             return
 
-    # Mark sms_sent in Notification if applicable
     if notification_id:
         try:
             from .models import Notification
@@ -212,3 +77,38 @@ def send_sms(self, phone_number: str, message: str, notification_id: str = None)
             if isinstance(e, (OperationalError, ConnectionError, TimeoutError)):
                 raise
             return
+
+
+@shared_task(
+    bind=True,
+    acks_late=True,
+    time_limit=30,
+    soft_time_limit=20,
+    autoretry_for=(ConnectionError, TimeoutError, OperationalError),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=3,
+)
+def send_otp_sms(self, phone_number: str, code: str):
+    """OTP via sms.ir verify (template 919633, param Code). Mocked when no key."""
+    from django.conf import settings as dj_settings
+
+    code = str(code).strip()
+    if not phone_number or not code:
+        logger.warning("send_otp_sms: missing phone/code, skipping")
+        return
+    if not dj_settings.SMS_ENABLED or not dj_settings.SMS_IR_API_KEY:
+        logger.info("Mock OTP to %s: %s", phone_number, code)
+        return
+    try:
+        from .sms_ir import send_verify
+
+        resp = send_verify(
+            phone_number,
+            dj_settings.SMS_IR_OTP_TEMPLATE_ID,
+            [{"name": dj_settings.SMS_IR_OTP_PARAM, "value": code}],
+        )
+        logger.info("OTP sent to %s via sms.ir %s", phone_number, resp)
+    except Exception as e:
+        logger.exception("OTP send failed to %s: %s", phone_number, e)
+        raise self.retry(exc=e)

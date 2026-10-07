@@ -24,9 +24,9 @@ app.conf.beat_schedule = {
         "task": "inventory.tasks.expire_reservations_task",
         "schedule": crontab(minute="*/5"),
     },
-    "cleanup-expired-tokens-every-24-hours": {
-        "task": "authentication.tasks.cleanup_expired_tokens",
-        "schedule": crontab(hour=2, minute=0),  # daily 02:00 UTC; also callable on demand
+    "cleanup-expired-otps-every-24-hours": {
+        "task": "authentication.tasks.cleanup_expired_otps",
+        "schedule": crontab(hour=2, minute=0),
     },
 }
 # Note: inventory.tasks.release_expired_reservations is an alias for

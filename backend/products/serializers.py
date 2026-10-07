@@ -514,8 +514,8 @@ class ReviewSerializer(serializers.ModelSerializer):
             name = f"{review.user.first_name} {review.user.last_name}".strip()
             if name:
                 return name
-            if review.user.email:
-                return review.user.email
+            if getattr(review.user, "phone_number", None):
+                return review.user.phone_number
         if review.user_name and review.user_name.strip() and review.user_name.strip() != "کاربر خریدار":
             return review.user_name.strip()
         return "کاربر خریدار"

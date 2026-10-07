@@ -7,7 +7,6 @@ class NotificationTemplate(BaseModel):
         ('order_confirmation', 'Order Confirmation'),
         ('order_status_change', 'Order Status Change'),
         ('shipping_update', 'Shipping Update'),
-        ('password_reset', 'Password Reset'),
         ('welcome', 'Welcome'),
         ('wishlist_discount', 'Wishlist Product Discount'),
         ('generic', 'Generic'),
@@ -26,9 +25,9 @@ class NotificationTemplate(BaseModel):
 
 class UserNotificationPreference(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notification_preferences')
-    email_order_updates = models.BooleanField(default=True)
-    email_promotions = models.BooleanField(default=True)    # for future marketing
-    email_account = models.BooleanField(default=True)       # password resets, etc.
+    sms_order_updates = models.BooleanField(default=True)
+    sms_promotions = models.BooleanField(default=True)
+    sms_account = models.BooleanField(default=True)
     in_app_order_updates = models.BooleanField(default=True)
     in_app_account = models.BooleanField(default=True)
 
@@ -36,7 +35,7 @@ class UserNotificationPreference(models.Model):
         db_table = 'user_notification_preference'
 
     def __str__(self):
-        return f"Preferences for {self.user.email}"
+        return f"Preferences for {self.user.phone_number}"
 
 
 class Notification(BaseModel):
@@ -46,7 +45,6 @@ class Notification(BaseModel):
     body = models.TextField()
     is_read = models.BooleanField(default=False, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
-    # Store any reference data (order_id, etc.) as JSON
     context_json = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -54,4 +52,4 @@ class Notification(BaseModel):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Notification {self.type} for {self.user.email}"
+        return f"Notification {self.type} for {self.user.phone_number}"

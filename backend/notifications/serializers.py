@@ -11,8 +11,8 @@ class MarkReadSerializer(serializers.Serializer):
 
 
 class PreferenceSerializer(serializers.Serializer):
-    email_order_updates = serializers.BooleanField(required=False)
-    email_promotions = serializers.BooleanField(required=False)
-    email_account = serializers.BooleanField(required=False)
+    sms_order_updates = serializers.BooleanField(required=False)
+    sms_promotions = serializers.BooleanField(required=False)
+    sms_account = serializers.BooleanField(required=False)
     in_app_order_updates = serializers.BooleanField(required=False)
     in_app_account = serializers.BooleanField(required=False)

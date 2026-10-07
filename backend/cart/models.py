@@ -32,7 +32,7 @@ class Cart(BaseModel):
 
     def __str__(self):
         if self.user:
-            return f"Cart of {self.user.email}"
+            return f"Cart of {self.user.phone_number}"
         return f"Guest cart {self.session_key}"
 
 

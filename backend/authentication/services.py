@@ -1,178 +1,203 @@
-from datetime import timedelta
+import secrets
+from django.conf import settings
+from django.db import transaction, IntegrityError
 from django.utils import timezone
-from django.contrib.auth import authenticate
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
     OutstandingToken,
 )
-from django.db import transaction, IntegrityError
 
 from common.exceptions import BusinessException
-from .repositories import UserRepository, TokenRepository
-from .selectors import UserSelector, TokenSelector
-from .validators import PasswordValidator
-from .models import EmailVerificationToken
-from .tasks import send_verification_email, send_password_reset_email
+from .repositories import UserRepository, OtpRepository
+from .selectors import UserSelector
+from .validators import PasswordValidator, PhoneValidator
 from django.contrib.auth import get_user_model
 
 
+def _issue_tokens(user):
+    refresh = RefreshToken.for_user(user)
+    refresh["is_staff"] = user.is_staff
+    refresh["is_superuser"] = user.is_superuser
+    refresh["phone_number"] = user.phone_number
+    refresh.access_token["is_staff"] = user.is_staff
+    refresh.access_token["is_superuser"] = user.is_superuser
+    refresh.access_token["phone_number"] = user.phone_number
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user": {
+            "id": str(user.id),
+            "phone_number": user.phone_number,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "is_staff": user.is_staff,
+            "is_superuser": user.is_superuser,
+        },
+    }
+
+
+def _generate_code() -> str:
+    length = max(4, min(int(getattr(settings, "OTP_LENGTH", 5)), 8))
+    return "".join(secrets.choice("0123456789") for _ in range(length))
+
+
 class AuthService:
+    # --- password-based (username + password) ---
     def register_user(
-        self, email: str, password: str, first_name: str = "", last_name: str = ""
+        self, phone_number: str, password: str, first_name: str = "", last_name: str = ""
     ) -> dict:
         PasswordValidator.validate(password)
-
-        # H1: TOCTOU fix - atomic + IntegrityError catch for concurrent same email
+        phone_number = PhoneValidator.validate(phone_number)
         try:
             with transaction.atomic():
-                existing = UserSelector.get_user_by_email(email)
-                if existing:
+                if UserSelector.get_user_by_phone(phone_number):
                     raise BusinessException(
-                        "A user with this email already exists.", code="email_exists"
+                        "A user with this phone already exists.", code="phone_exists"
                     )
-
                 user = UserRepository.create_user(
-                    email=email,
+                    phone_number=phone_number,
                     password=password,
                     first_name=first_name,
                     last_name=last_name,
                     is_active=True,
                 )
-                # Create verification token inside same atomic to avoid orphan token
-                token = TokenRepository.create_verification_token(user)
         except IntegrityError:
-            # Race: second concurrent insert hit UNIQUE(email) - map to 400 not 500
             raise BusinessException(
-                "A user with this email already exists.", code="email_exists"
+                "A user with this phone already exists.", code="phone_exists"
             )
-        # Send verification email (async) — after commit to avoid race
-        transaction.on_commit(
-            lambda: send_verification_email.delay(str(user.id), str(token.token))
-        )
-        return {
-            "id": user.id,
-            "email": user.email,
-            "message": "User registered successfully.",
-        }
+        data = _issue_tokens(user)
+        data["message"] = "User registered successfully."
+        return data
 
-    def verify_email(self, token_str: str) -> dict:
-        # H2: atomic + select_for_update to prevent double-spend
-        with transaction.atomic():
-            try:
-                token = EmailVerificationToken.objects.select_for_update().select_related("user").get(token=token_str)
-            except EmailVerificationToken.DoesNotExist:
-                raise BusinessException("Invalid verification token.", code="invalid_token")
-            if token.is_used:
-                raise BusinessException("Token already used.", code="token_used")
-            if token.created_at < timezone.now() - timedelta(hours=24):
-                raise BusinessException("Verification token expired.", code="token_expired")
-
-            token.is_used = True
-            token.save(update_fields=["is_used", "updated_at"])
-            UserRepository.mark_email_verified(token.user)
-        return {"message": "Email verified successfully."}
-
-    def login_user(self, email: str, password: str) -> dict:
-        user = UserSelector.get_user_by_email(email)
-        if not user or not user.check_password(password):
+    def login_user(self, phone_number: str, password: str) -> dict:
+        phone_number = PhoneValidator.validate(phone_number)
+        user = UserSelector.get_user_by_phone(phone_number)
+        if not user or not user.has_usable_password() or not user.check_password(password):
             raise BusinessException("Invalid credentials.", code="invalid_credentials")
         if not user.is_active:
-            raise BusinessException(
-                "Account not activated. Please verify your email.",
-                code="inactive_account",
+            raise BusinessException("Account is not active.", code="inactive_account")
+        return _issue_tokens(user)
+
+    # --- OTP passwordless (signup + login via sms.ir verify) ---
+    def request_otp(self, phone_number: str, purpose: str = "login") -> dict:
+        from .models import OtpCode
+
+        phone_number = PhoneValidator.validate(phone_number)
+        if purpose not in (OtpCode.PURPOSE_LOGIN, OtpCode.PURPOSE_RESET):
+            purpose = OtpCode.PURPOSE_LOGIN
+        with transaction.atomic():
+            latest = OtpRepository.latest_valid(phone_number, purpose)
+            if latest:
+                elapsed = (timezone.now() - latest.created_at).total_seconds()
+                if elapsed < settings.OTP_RESEND_SECONDS:
+                    # Return generic to avoid enumeration, do not send new SMS
+                    return {"message": "If the number is valid, an OTP has been sent."}
+                # Invalidate previous unused codes for this phone/purpose
+                OtpCode.objects.filter(
+                    phone_number=phone_number, purpose=purpose, is_used=False
+                ).update(is_used=True)
+            raw_code = _generate_code()
+            OtpRepository.create_otp(phone_number, raw_code, purpose)
+        from notifications.tasks import send_otp_sms
+
+        transaction.on_commit(lambda: send_otp_sms.delay(phone_number, raw_code))
+        return {"message": "If the number is valid, an OTP has been sent."}
+
+    def verify_otp(self, phone_number: str, code: str, purpose: str = "login") -> dict:
+        from .models import OtpCode
+
+        phone_number = PhoneValidator.validate(phone_number)
+        if purpose not in (OtpCode.PURPOSE_LOGIN, OtpCode.PURPOSE_RESET):
+            purpose = OtpCode.PURPOSE_LOGIN
+        with transaction.atomic():
+            otp = (
+                OtpCode.objects.select_for_update()
+                .filter(phone_number=phone_number, purpose=purpose, is_used=False)
+                .order_by("-created_at")
+                .first()
             )
+            if not otp:
+                raise BusinessException("Invalid or expired code.", code="invalid_otp")
+            if timezone.now() >= otp.expires_at:
+                otp.is_used = True
+                otp.save(update_fields=["is_used", "updated_at"])
+                raise BusinessException("Code expired.", code="otp_expired")
+            if otp.attempts >= otp.max_attempts:
+                otp.is_used = True
+                otp.save(update_fields=["is_used", "updated_at"])
+                raise BusinessException("Too many attempts.", code="otp_locked")
+            if not otp.check_code(code):
+                otp.attempts += 1
+                if otp.attempts >= otp.max_attempts:
+                    otp.is_used = True
+                otp.save(update_fields=["attempts", "is_used", "updated_at"])
+                raise BusinessException("Invalid code.", code="invalid_otp")
+            otp.is_used = True
+            otp.save(update_fields=["is_used", "updated_at"])
+            user, _ = UserRepository.get_or_create_for_otp(phone_number)
+            if not user.is_active:
+                raise BusinessException("Account is not active.", code="inactive_account")
+        return _issue_tokens(user)
 
-        refresh = RefreshToken.for_user(user)
-        refresh["is_staff"] = user.is_staff
-        refresh["is_superuser"] = user.is_superuser
-        refresh["email"] = user.email
+    def reset_password_with_otp(self, phone_number: str, code: str, new_password: str) -> dict:
+        """Verify OTP (purpose=reset) then set new password and blacklist sessions."""
+        from .models import OtpCode
 
-        # Also inject claims into access token
-        refresh.access_token["is_staff"] = user.is_staff
-        refresh.access_token["is_superuser"] = user.is_superuser
-        refresh.access_token["email"] = user.email
-
-        return {
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "user": {
-                "id": str(user.id),
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "is_staff": user.is_staff,
-                "is_superuser": user.is_superuser,
-            },
-        }
+        phone_number = PhoneValidator.validate(phone_number)
+        PasswordValidator.validate(new_password)
+        with transaction.atomic():
+            otp = (
+                OtpCode.objects.select_for_update()
+                .filter(phone_number=phone_number, purpose=OtpCode.PURPOSE_RESET, is_used=False)
+                .order_by("-created_at")
+                .first()
+            )
+            if not otp:
+                raise BusinessException("Invalid or expired code.", code="invalid_otp")
+            if timezone.now() >= otp.expires_at:
+                otp.is_used = True
+                otp.save(update_fields=["is_used", "updated_at"])
+                raise BusinessException("Code expired.", code="otp_expired")
+            if not otp.check_code(code):
+                otp.attempts += 1
+                if otp.attempts >= otp.max_attempts:
+                    otp.is_used = True
+                otp.save(update_fields=["attempts", "is_used", "updated_at"])
+                raise BusinessException("Invalid code.", code="invalid_otp")
+            user = UserSelector.get_user_by_phone(phone_number)
+            if not user:
+                raise BusinessException("User not found.", code="not_found")
+            otp.is_used = True
+            otp.save(update_fields=["is_used", "updated_at"])
+            UserRepository.change_password(user, new_password)
+            for outstanding in OutstandingToken.objects.filter(user=user):
+                BlacklistedToken.objects.get_or_create(token=outstanding)
+        return {"message": "Password reset successful."}
 
     def logout_user(self, refresh_token: str):
         from rest_framework_simplejwt.exceptions import TokenError
-        from rest_framework.exceptions import PermissionDenied
 
         try:
             token = RefreshToken(refresh_token)
-            # H2-related: small ownership check is done in view, but keep generic here
             token.blacklist()
         except TokenError as e:
             raise BusinessException(str(e), code="invalid_token")
 
     def refresh_token(self, refresh_token: str) -> dict:
-        # SimpleJWT handles rotation and blacklisting automatically in the view.
-        # We'll just delegate to the library view.
         pass  # handled in view directly
 
-    def request_password_reset(self, email: str) -> dict:
-        user = UserSelector.get_user_by_email(email)
-        # Always return success even if email not found (prevent enumeration)
-        if not user:
-            return {
-                "message": "If the email is registered, a reset link has been sent."
-            }
-        # Generate token using Django's default token generator
-        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
-        # Send email — after commit (even though no DB write, keeps pattern consistent)
-        transaction.on_commit(
-            lambda: send_password_reset_email.delay(user.email, uidb64, token)
-        )
-        return {"message": "If the email is registered, a reset link has been sent."}
-
-    def reset_password(self, uidb64: str, token: str, new_password: str) -> dict:
-        try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = UserSelector.get_user_by_id(uid)
-            User = get_user_model()
-            if not user:
-                raise BusinessException("Invalid reset link.", code="invalid_link")
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            raise BusinessException("Invalid reset link.", code="invalid_link")
-        # H3: explicit None check before check_token to avoid AttributeError 500
-        if user is None or not default_token_generator.check_token(user, token):
-            raise BusinessException(
-                "Invalid or expired reset token.", code="invalid_token"
-            )
-
-        PasswordValidator.validate(new_password)
-        with transaction.atomic():
-            UserRepository.change_password(user, new_password)
-            # Invalidate all existing refresh tokens for this user
-            for outstanding in OutstandingToken.objects.filter(user=user):
-                BlacklistedToken.objects.get_or_create(token=outstanding)
-        return {"message": "Password reset successful."}
-
     def change_password(self, user, old_password: str, new_password: str):
-        if not user.check_password(old_password):
-            raise BusinessException(
-                "Current password is incorrect.", code="wrong_password"
-            )
+        # For phone+password users; OTP-only users have unusable password
+        if not user.has_usable_password() or not user.check_password(old_password):
+            # Allow setting first password via old='' for OTP users
+            if not (old_password in ("", None) and not user.has_usable_password()):
+                raise BusinessException(
+                    "Current password is incorrect.", code="wrong_password"
+                )
         PasswordValidator.validate(new_password)
         with transaction.atomic():
             UserRepository.change_password(user, new_password)
-            # Optional: blacklist all tokens to force re-login
             for outstanding in OutstandingToken.objects.filter(user=user):
                 BlacklistedToken.objects.get_or_create(token=outstanding)
         return {"message": "Password changed successfully."}

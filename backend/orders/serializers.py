@@ -28,7 +28,7 @@ class StatusTransitionSerializer(serializers.Serializer):
 class OrderListSerializer(serializers.ModelSerializer):
     items_count = serializers.IntegerField(source="items.count", read_only=True)
     user_id = serializers.UUIDField(source="user.id", read_only=True)
-    customer_email = serializers.EmailField(source="user.email", read_only=True)
+    customer_phone = serializers.CharField(source="user.phone_number", read_only=True)
     total = serializers.SerializerMethodField()
 
     class Meta:
@@ -37,7 +37,7 @@ class OrderListSerializer(serializers.ModelSerializer):
             "id",
             "order_number",
             "user_id",
-            "customer_email",
+            "customer_phone",
             "status",
             "total",
             "placed_at",
