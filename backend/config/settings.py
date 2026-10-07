@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sitemaps",
+    "django.contrib.postgres",
     # Third party
     "rest_framework",
     "rest_framework_simplejwt",
@@ -71,24 +72,31 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# Production database is PostgreSQL (env-driven). SQLite only for quick local
+# fallback via DB_ENGINE=sqlite (e.g. CI without postgres) — never in production.
+_DB_ENGINE = os.environ.get("DB_ENGINE", "postgres").lower()
+if _DB_ENGINE == "sqlite":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": os.environ["POSTGRES_DB"],
-#         "USER": os.environ["POSTGRES_USER"],
-#         "PASSWORD": os.environ["POSTGRES_PASSWORD"],
-#         "HOST": os.environ["POSTGRES_HOST"],
-#         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-#         "OPTIONS": {"options": "-c timezone=UTC"},
-#     }
-# }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("POSTGRES_DB", "luxe_db"),
+            "USER": os.environ.get("POSTGRES_USER", "luxe_user"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+            "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+            "CONN_MAX_AGE": int(os.environ.get("POSTGRES_CONN_MAX_AGE", "60")),
+            "CONN_HEALTH_CHECKS": True,
+            "OPTIONS": {"options": "-c timezone=UTC"},
+            "TEST": {"NAME": os.environ.get("POSTGRES_TEST_DB", "test_luxe_db")},
+        }
+    }
 
 AUTH_USER_MODEL = "common.User"  # custom user prepared for full RBAC
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]

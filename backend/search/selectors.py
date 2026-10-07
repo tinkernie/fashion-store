@@ -1,6 +1,5 @@
 from django.db import models
 from django.db.models import Q, Min, Count, OuterRef, Subquery, Exists
-from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.utils import timezone
 from django.db import connection
 
@@ -9,6 +8,9 @@ from variants.models import Variant
 from product_options.models import OptionValue, ProductOption
 from categories.models import Category
 from store_collections.models import Collection
+
+# NOTE: 'simple' config (not 'english') — the catalog is Persian + SKU codes,
+# and the english stemmer mangles both. Trigram similarity covers typos.
 
 
 class SearchSelector:
@@ -22,19 +24,42 @@ class SearchSelector:
         )
 
         has_rank = False
+        has_similarity = False
         # Apply text search
         if query:
             if connection.vendor == "postgresql":
-                vector = (
-                    SearchVector("title", weight="A", config="english")
-                    + SearchVector("description", weight="B", config="english")
+                from django.contrib.postgres.search import (
+                    SearchQuery,
+                    SearchRank,
+                    TrigramSimilarity,
                 )
-                search_query = SearchQuery(query, config="english")
-                qs = qs.annotate(rank=SearchRank(vector, search_query)).filter(
-                    rank__gt=0
-                )
+
+                search_query = SearchQuery(query, config="simple")
+                qs = qs.annotate(
+                    rank=SearchRank(models.F("search_vector"), search_query)
+                ).filter(rank__gt=0)
                 has_rank = True
+                # Trigram fallback for typos / short queries with no FTS hit
+                if not qs.exists():
+                    qs = (
+                        Product.objects.filter(
+                            status=Product.Status.PUBLISHED,
+                            deleted_at__isnull=True,
+                        )
+                        .filter(
+                            Q(category__isnull=True) | Q(category__is_active=True)
+                        )
+                        .annotate(
+                            similarity=TrigramSimilarity("title", query)
+                            + TrigramSimilarity("description", query)
+                        )
+                        .filter(similarity__gt=0.1)
+                        .order_by("-similarity")
+                    )
+                    has_rank = False
+                    has_similarity = True
             else:
+                # SQLite dev fallback (no tsvector/trigram available)
                 qs = qs.filter(
                     Q(title__icontains=query) | Q(description__icontains=query)
                 )
@@ -100,6 +125,8 @@ class SearchSelector:
         else:
             if has_rank:
                 qs = qs.order_by('-rank')
+            elif has_similarity:
+                pass  # keep trigram similarity ordering
             else:
                 qs = qs.order_by('-created_at')
 
@@ -134,8 +161,9 @@ class SearchSelector:
 
         # Option values (color, size, material, etc.)
         option_values = []
-        # Get all options used by the products in qs
-        product_ids = list(qs.values_list('id', flat=True))
+        # Get all options used by the products in qs (capped: full-table
+        # IN-lists blow up on large catalogs; facets stay accurate enough)
+        product_ids = list(qs.values_list('id', flat=True)[:5000])
         if product_ids:
             values = OptionValue.objects.filter(
                 variants__product_id__in=product_ids,

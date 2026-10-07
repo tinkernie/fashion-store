@@ -1,4 +1,6 @@
 import uuid
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVectorField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
@@ -56,9 +58,17 @@ class Product(BaseModel):
         help_text="زمان پایان مهلت تخفیف (اختیاری)",
     )
 
+    # Full-text search vector (PostgreSQL only, maintained by DB trigger).
+    # Stays NULL on SQLite; search falls back to icontains there.
+    search_vector = SearchVectorField(null=True, blank=True, editable=False)
+
     class Meta:
         db_table = "product"
         ordering = ["-created_at"]
+        indexes = [
+            GinIndex(fields=["search_vector"], name="product_search_gin"),
+            models.Index(fields=["status", "-created_at"], name="product_status_created_idx"),
+        ]
 
     @property
     def is_discount_active(self) -> bool:
