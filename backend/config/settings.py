@@ -252,7 +252,12 @@ USE_TZ = True
 
 # Static / Media
 STATIC_URL = "static/"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
 MEDIA_URL = "/media_libm/"
 MEDIA_ROOT = BASE_DIR / "media_libm"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
