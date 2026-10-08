@@ -245,7 +245,7 @@ export default function AdminOrdersPage() {
                   const badge = getStatusBadge(order.status);
                   const Icon = badge.icon;
                   const customer = order.shipping_address?.full_name || "کاربر سایت";
-                  const phone = order.shipping_address?.phone || "";
+                  const phone = order.customer_phone || order.shipping_address?.phone || "";
                   const itemCount = order.items?.length || 1;
 
                   return (

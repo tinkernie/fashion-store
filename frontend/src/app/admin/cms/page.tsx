@@ -83,6 +83,24 @@ export default function AdminCMSPage() {
     working_hours: "شنبه تا پنج‌شنبه: ۹ صبح الی ۹ شب",
   });
 
+  // Discount Campaign & Storefront Banner State
+  const [discountSection, setDiscountSection] = useState({
+    enabled: false,
+    title: "جشنواره تخفیفات استثنایی ماوی",
+    subtitle: "تخفیف‌های ویژه بر روی برترین استایل‌های این فصل",
+    cta_text: "مشاهده محصولات جشنواره",
+    cta_link: "/products?has_discount=true",
+    background_image: "",
+    collection_slug: "",
+    expires_at: "",
+  });
+  const [productsList, setProductsList] = useState<any[]>([]);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [campaignPercent, setCampaignPercent] = useState<number>(25);
+  const [campaignExpiresAt, setCampaignExpiresAt] = useState<string>("");
+  const [productSearch, setProductSearch] = useState<string>("");
+  const [isCampaignLoading, setIsCampaignLoading] = useState(false);
+
   useEffect(() => {
     loadAllCmsData();
   }, []);
@@ -90,11 +108,13 @@ export default function AdminCMSPage() {
   const loadAllCmsData = async () => {
     setIsLoading(true);
     try {
-      const [pagesData, announceData, heroData, footerData] = await Promise.allSettled([
+      const [pagesData, announceData, heroData, footerData, discountData, productsData] = await Promise.allSettled([
         adminApi.getPages(),
         adminApi.getSiteContent("announcement"),
         adminApi.getSiteContent("hero"),
         adminApi.getSiteContent("footer"),
+        adminApi.getSiteContent("discount_section"),
+        adminApi.getProducts(),
       ]);
 
       if (pagesData.status === "fulfilled") {
@@ -118,6 +138,23 @@ export default function AdminCMSPage() {
       }
       if (footerData.status === "fulfilled" && footerData.value) {
         setFooterInfo((prev) => ({ ...prev, ...footerData.value }));
+      }
+      if (discountData.status === "fulfilled" && discountData.value) {
+        const sec = discountData.value;
+        setDiscountSection((prev) => ({ ...prev, ...sec }));
+        if (sec.expires_at) {
+          setCampaignExpiresAt(sec.expires_at.slice(0, 16));
+        }
+      }
+      if (productsData.status === "fulfilled" && productsData.value) {
+        const val = productsData.value as any;
+        const prods = Array.isArray(val) ? val : (val.results || []);
+        setProductsList(prods);
+        // Pre-select products that currently have discount
+        const discounted = prods.filter((p: any) => p.discount_percent || p.is_discount_active).map((p: any) => p.id);
+        if (discounted.length > 0) {
+          setSelectedProductIds(discounted);
+        }
       }
     } catch (e) {
       console.error("Error loading CMS data:", e);
@@ -173,6 +210,79 @@ export default function AdminCMSPage() {
       toast.error(msg);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // --- Discount Campaign Handlers ---
+  const handleActivateCampaign = async () => {
+    if (selectedProductIds.length === 0) {
+      toast.error("لطفاً حداقل یک محصول را برای شرکت در کمپین تخفیف انتخاب کنید.");
+      return;
+    }
+    if (campaignPercent < 1 || campaignPercent > 99) {
+      toast.error("درصد تخفیف باید بین ۱ تا ۹۹ درصد باشد.");
+      return;
+    }
+
+    setIsCampaignLoading(true);
+    try {
+      const payload: any = {
+        product_ids: selectedProductIds,
+        discount_percent: Number(campaignPercent),
+        title: discountSection.title,
+        subtitle: discountSection.subtitle,
+        cta_text: discountSection.cta_text,
+        background_image: discountSection.background_image,
+        collection_slug: discountSection.collection_slug || undefined,
+      };
+      if (campaignExpiresAt) {
+        payload.expires_at = new Date(campaignExpiresAt).toISOString();
+      }
+
+      const res = await adminApi.activateDiscountCampaign(payload);
+      setDiscountSection((prev) => ({
+        ...prev,
+        enabled: true,
+        expires_at: res.expires_at || campaignExpiresAt,
+      }));
+      toast.success(res.message || `کمپین تخفیف ${campaignPercent}٪ روی ${selectedProductIds.length} محصول با موفقیت فعال شد.`);
+      await loadAllCmsData();
+    } catch (e: any) {
+      toast.error(getApiErrorMessage(e, "خطا در فعال‌سازی کمپین تخفیفات"));
+    } finally {
+      setIsCampaignLoading(false);
+    }
+  };
+
+  const handleDeactivateCampaign = async () => {
+    setIsCampaignLoading(true);
+    try {
+      const res = await adminApi.deactivateDiscountCampaign();
+      setDiscountSection((prev) => ({ ...prev, enabled: false }));
+      toast.success(res.message || "کمپین تخفیفات غیرفعال شد و تمامی قیمت‌ها به حالت اولیه بازگشتند.");
+      await loadAllCmsData();
+    } catch (e: any) {
+      toast.error(getApiErrorMessage(e, "خطا در غیرفعال‌سازی کمپین تخفیفات"));
+    } finally {
+      setIsCampaignLoading(false);
+    }
+  };
+
+  const handleSaveCampaignBanner = async () => {
+    setIsCampaignLoading(true);
+    try {
+      await adminApi.updateDiscountCampaignContent({
+        title: discountSection.title,
+        subtitle: discountSection.subtitle,
+        cta_text: discountSection.cta_text,
+        background_image: discountSection.background_image,
+        collection_slug: discountSection.collection_slug || undefined,
+      });
+      toast.success("تنظیمات متن و تصویر بنر فروش ویژه ذخیره شد.");
+    } catch (e: any) {
+      toast.error(getApiErrorMessage(e, "خطا در بروزرسانی بنر فروش ویژه"));
+    } finally {
+      setIsCampaignLoading(false);
     }
   };
 
@@ -320,6 +430,13 @@ export default function AdminCMSPage() {
           >
             <FileText className="w-4 h-4" />
             برگه‌های مستقل ({pages.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="discount-campaign"
+            className="rounded-xl px-5 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 font-bold text-xs md:text-sm transition-all flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            کمپین تخفیفات و بنر فروش ویژه
           </TabsTrigger>
         </TabsList>
 
@@ -599,6 +716,314 @@ export default function AdminCMSPage() {
                 <Save className="w-4 h-4" />
                 ذخیره اطلاعات فوتر
               </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* --- Tab 3: Discount Campaign & Promotional Banner --- */}
+        <TabsContent value="discount-campaign" className="space-y-8 outline-none mt-0">
+          {/* Campaign Status & Action Bar */}
+          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-black border ${
+                    discountSection.enabled
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                      : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                  }`}
+                >
+                  {discountSection.enabled ? "کمپین فعال است" : "کمپین غیرفعال است"}
+                </span>
+                <span className="text-white text-sm font-bold">
+                  {discountSection.enabled
+                    ? `تخفیف گروهی روی محصولات فروشگاه فعال و بنر اختصاصی در سایت نمایش داده می‌شود`
+                    : `برای شروع جشنواره، درصد تخفیف و محصولات را مشخص کرده و دکمه فعال‌سازی را بزنید`}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400">
+                با فعال‌سازی کمپین، درصد تخفیف مشخص‌شده در یک تراکنش امن دیتابیسی روی تمام محصولات انتخابی اعمال می‌شود و بنر اختصاصی در بالای فوتر فعال می‌گردد.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              {discountSection.enabled && (
+                <Button
+                  onClick={handleDeactivateCampaign}
+                  disabled={isCampaignLoading}
+                  variant="destructive"
+                  className="h-11 px-5 rounded-xl font-bold text-xs bg-rose-600 hover:bg-rose-700 text-white cursor-pointer"
+                >
+                  {isCampaignLoading ? "در حال غیرفعال‌سازی..." : "غیرفعال‌سازی و بازگرداندن قیمت‌ها"}
+                </Button>
+              )}
+              <Button
+                onClick={handleActivateCampaign}
+                disabled={isCampaignLoading || selectedProductIds.length === 0}
+                className="h-11 px-6 rounded-xl bg-[#0082CA] hover:bg-[#006CA8] text-white font-bold text-xs shadow-lg shadow-[#0082CA]/25 cursor-pointer"
+              >
+                {isCampaignLoading ? "در حال پردازش..." : "فعال‌سازی و انتشار کمپین"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Grid of Rules and Banner Media */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Box 1: Rules & Percentage */}
+            <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base md:text-lg font-bold text-white">درصد تخفیف و زمان انقضا</h3>
+                  <p className="text-xs text-gray-400">مشخصات اصلی جشنواره فروش ویژه</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <label className="font-bold text-gray-300">درصد تخفیف عمومی (٪)</label>
+                    <span className="font-mono text-amber-400 font-bold">{campaignPercent}٪</span>
+                  </div>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={campaignPercent}
+                    onChange={(e) => setCampaignPercent(Math.min(99, Math.max(1, Number(e.target.value))))}
+                    className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs font-mono"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-300">مهلت پایان کمپین (اختیاری)</label>
+                  <Input
+                    type="datetime-local"
+                    value={campaignExpiresAt}
+                    onChange={(e) => setCampaignExpiresAt(e.target.value)}
+                    className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs font-mono"
+                    dir="ltr"
+                  />
+                  <p className="text-[11px] text-gray-500">
+                    در صورت تعیین مهلت، با گذشت تاریخ انقضا محصولات تخفیف‌دار به طور خودکار از فید حراج حذف می‌شوند.
+                  </p>
+                </div>
+
+                {discountSection.enabled && (
+                  <div className="pt-2 flex justify-end">
+                    <Button
+                      onClick={async () => {
+                        setIsCampaignLoading(true);
+                        try {
+                          await adminApi.setDiscountCampaignPercent(
+                            Number(campaignPercent),
+                            selectedProductIds.length > 0 ? selectedProductIds : undefined,
+                            campaignExpiresAt ? new Date(campaignExpiresAt).toISOString() : null
+                          );
+                          toast.success("درصد و مهلت کمپین با موفقیت بروزرسانی شد.");
+                          await loadAllCmsData();
+                        } catch (err: any) {
+                          toast.error(getApiErrorMessage(err, "خطا در بروزرسانی درصد"));
+                        } finally {
+                          setIsCampaignLoading(false);
+                        }
+                      }}
+                      disabled={isCampaignLoading}
+                      variant="outline"
+                      className="h-10 px-4 rounded-xl border-amber-500/30 text-amber-400 bg-amber-500/5 hover:bg-amber-500/10 text-xs font-bold"
+                    >
+                      بروزرسانی سریع درصد یا مهلت
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Box 2: Promotional Banner Content */}
+            <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+                  <LayoutTemplate className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base md:text-lg font-bold text-white">تنظیمات بنر اختصاصی فروش ویژه</h3>
+                  <p className="text-xs text-gray-400">محتوای بنر تبلیغاتی جشنواره در بالای فوتر صفحه نخست</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-300">عنوان بنر</label>
+                  <Input
+                    value={discountSection.title}
+                    onChange={(e) => setDiscountSection({ ...discountSection, title: e.target.value })}
+                    placeholder="جشنواره تخفیفات استثنایی ماوی"
+                    className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-300">زیرعنوان / توضیحات بنر</label>
+                  <Input
+                    value={discountSection.subtitle}
+                    onChange={(e) => setDiscountSection({ ...discountSection, subtitle: e.target.value })}
+                    placeholder="تخفیف‌های ویژه بر روی برترین استایل‌های این فصل"
+                    className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-300">متن دکمه (CTA)</label>
+                    <Input
+                      value={discountSection.cta_text}
+                      onChange={(e) => setDiscountSection({ ...discountSection, cta_text: e.target.value })}
+                      placeholder="مشاهده محصولات جشنواره"
+                      className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-300">لینک دکمه</label>
+                    <Input
+                      value={discountSection.cta_link}
+                      onChange={(e) => setDiscountSection({ ...discountSection, cta_link: e.target.value })}
+                      placeholder="/products?has_discount=true"
+                      className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs font-mono"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-300">آدرس تصویر پس‌زمینه (اختیاری)</label>
+                  <Input
+                    value={discountSection.background_image || ""}
+                    onChange={(e) => setDiscountSection({ ...discountSection, background_image: e.target.value })}
+                    placeholder="https://... یا /media/..."
+                    className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs font-mono"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    onClick={handleSaveCampaignBanner}
+                    disabled={isCampaignLoading}
+                    className="h-10 px-5 rounded-xl bg-white text-black hover:bg-gray-200 text-xs font-bold flex items-center gap-2 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    ذخیره تنظیمات بنر
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Product Multi-Selector for Campaign */}
+          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+                  <span>محصولات حاضر در جشنواره</span>
+                  <span className="text-xs font-normal text-gray-400">
+                    ({selectedProductIds.length} از {productsList.length} محصول انتخاب شده)
+                  </span>
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  محصولاتی که مایلید با تخفیف {campaignPercent}٪ به فروش برسند را تیک بزنید.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setSelectedProductIds(productsList.map((p) => p.id))}
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 text-xs font-bold"
+                >
+                  انتخاب همه
+                </Button>
+                <Button
+                  onClick={() => setSelectedProductIds([])}
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 rounded-xl border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 text-xs font-bold"
+                >
+                  لغو انتخاب‌ها
+                </Button>
+              </div>
+            </div>
+
+            {/* Product Filter Search */}
+            <div className="flex items-center gap-3 bg-[#0a0a0a] border border-white/10 rounded-2xl px-4 py-2">
+              <Search className="w-4 h-4 text-gray-500 shrink-0" />
+              <input
+                type="text"
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="جستجو در نام محصول یا دسته‌بندی..."
+                className="flex-1 bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-600"
+              />
+            </div>
+
+            {/* Products Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto p-1">
+              {productsList
+                .filter((p) =>
+                  (p.title || p.name || "").toLowerCase().includes(productSearch.toLowerCase()) ||
+                  (p.category || "").toLowerCase().includes(productSearch.toLowerCase())
+                )
+                .map((product) => {
+                  const isSelected = selectedProductIds.includes(product.id);
+                  const price = Number(product.price || 0);
+                  const calculatedDiscountPrice = Math.round(price * (1 - campaignPercent / 100));
+
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedProductIds((prev) => prev.filter((id) => id !== product.id));
+                        } else {
+                          setSelectedProductIds((prev) => [...prev, product.id]);
+                        }
+                      }}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex gap-3 items-center ${
+                        isSelected
+                          ? "bg-[#0082CA]/15 border-[#0082CA] shadow-md shadow-[#0082CA]/10"
+                          : "bg-[#161616] border-white/5 hover:border-white/20"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        className="w-4 h-4 rounded accent-[#0082CA] cursor-pointer"
+                      />
+                      <img
+                        src={product.imageUrl || product.image_url || product.image || "/globe.svg"}
+                        alt={product.title || product.name}
+                        className="w-12 h-14 object-cover rounded-xl border border-white/10 bg-black/20 shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-bold text-white block truncate">
+                          {product.title || product.name}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[11px] font-mono">
+                          <span className="text-gray-400 line-through">
+                            {price.toLocaleString("fa-IR")}
+                          </span>
+                          <span className="text-amber-400 font-bold">
+                            {calculatedDiscountPrice.toLocaleString("fa-IR")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </TabsContent>

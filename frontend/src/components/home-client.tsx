@@ -17,6 +17,8 @@ import {
   RefreshCw,
   Headphones,
   ArrowRight,
+  Clock,
+  Percent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/components/ui/banner";
@@ -76,6 +78,7 @@ const DEFAULT_ANNOUNCEMENT = {
 interface HomeClientProps {
   initialHero?: any;
   initialAnnouncement?: any;
+  initialDiscountSection?: any;
   initialCategories?: any[];
   initialPopular?: any[];
   initialDiscounted?: any[];
@@ -85,11 +88,16 @@ interface HomeClientProps {
 export default function HomeClient({
   initialHero,
   initialAnnouncement,
+  initialDiscountSection,
   initialCategories,
   initialPopular,
   initialDiscounted,
   initialProducts,
 }: HomeClientProps) {
+  // Discount Campaign State
+  const [discountSection, setDiscountSection] = useState<any>(() => {
+    return initialDiscountSection?.discount_section || initialDiscountSection || null;
+  });
   // 1. Hero Content & Slides State
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {
     const unwrapped = initialHero?.hero || initialHero;
@@ -785,6 +793,75 @@ export default function HomeClient({
           </Button>
         </div>
       </section>
+
+      {/* ----------------------------------------------------------------- */}
+      {/* 5.5 CMS DISCOUNT CAMPAIGN PROMOTIONAL BANNER (Above Footer)      */}
+      {/* ----------------------------------------------------------------- */}
+      {discountSection?.enabled && (
+        <section className="w-full max-w-7xl mx-auto px-4 md:px-6 py-6 sm:py-10">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B192C] via-[#004870] to-[#0082CA] text-white p-6 sm:p-10 md:p-12 shadow-2xl border border-sky-400/20">
+            {/* Background image overlay if provided */}
+            {discountSection.background_image && (
+              <div className="absolute inset-0 z-0">
+                <img
+                  src={discountSection.background_image}
+                  alt={discountSection.title || "کمپین تخفیفات ماوی"}
+                  className="w-full h-full object-cover opacity-25 mix-blend-overlay"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0B192C]/90 via-[#0B192C]/70 to-[#0082CA]/80" />
+              </div>
+            )}
+
+            {/* Glowing Accent Orbs */}
+            <div className="absolute -top-24 -left-24 w-80 h-80 bg-[#0091DF]/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+              {/* Left Column: Campaign Copy */}
+              <div className="max-w-2xl space-y-4">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-xs font-bold shadow-sm">
+                  <Percent className="w-3.5 h-3.5 text-sky-200" />
+                  <span>فروش فوق‌العاده و محدود</span>
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight">
+                  {discountSection.title || "جشنواره تخفیفات استثنایی ماوی"}
+                </h2>
+
+                <p className="text-sm sm:text-base text-sky-100/90 leading-relaxed font-normal">
+                  {discountSection.subtitle ||
+                    "فرصت ویژه خرید شیک‌ترین استایل‌ها و کالکشن‌های مد و پوشاک با تخفیف‌های شگفت‌انگیز"}
+                </p>
+
+                {/* Expiration Note / Badge if deadline is present */}
+                {discountSection.expires_at && (
+                  <div className="inline-flex items-center gap-2 text-xs font-medium text-sky-200/90 pt-1">
+                    <Clock className="w-4 h-4 text-sky-300" />
+                    <span>مهلت استفاده از تخفیف‌های این کمپین محدود است.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: CTA Button */}
+              <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <Button
+                  asChild
+                  size="lg"
+                  className="rounded-full px-8 sm:px-10 py-4 bg-white text-[#0082CA] font-black hover:bg-sky-50 shadow-xl shadow-black/20 hover:shadow-2xl active:scale-[0.98] transition-all text-sm cursor-pointer"
+                >
+                  <Link
+                    href={discountSection.cta_link || "/products?has_discount=true"}
+                    className="flex items-center justify-center gap-2.5"
+                  >
+                    <span>{discountSection.cta_text || "مشاهده محصولات جشنواره"}</span>
+                    <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ----------------------------------------------------------------- */}
       {/* 6. TRUST & BRAND VALUES BAR                                       */}

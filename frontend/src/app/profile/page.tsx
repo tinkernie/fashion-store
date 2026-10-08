@@ -119,20 +119,20 @@ export default function ProfilePage() {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [preferences, setPreferences] = useState<any>({
-    email_order_updates: true,
-    email_promotions: true,
-    email_account: true,
+    sms_order_updates: true,
+    sms_promotions: true,
+    sms_account: true,
     in_app_order_updates: true,
     in_app_account: true,
   });
   const [isUpdatingPrefs, setIsUpdatingPrefs] = useState(false);
 
-  // Email Change State
-  const [newEmailInput, setNewEmailInput] = useState("");
-  const [emailChangePassword, setEmailChangePassword] = useState("");
-  const [emailChangeToken, setEmailChangeToken] = useState("");
-  const [isEmailChangeStepTwo, setIsEmailChangeStepTwo] = useState(false);
-  const [isSubmittingEmailChange, setIsSubmittingEmailChange] = useState(false);
+  // Phone Change State
+  const [newPhoneInput, setNewPhoneInput] = useState("");
+  const [phoneChangePassword, setPhoneChangePassword] = useState("");
+  const [phoneChangeCode, setPhoneChangeCode] = useState("");
+  const [isPhoneChangeStepTwo, setIsPhoneChangeStepTwo] = useState(false);
+  const [isSubmittingPhoneChange, setIsSubmittingPhoneChange] = useState(false);
 
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
@@ -382,52 +382,58 @@ export default function ProfilePage() {
     }
   };
 
-  const handleChangeEmailRequest = async (e: React.FormEvent) => {
+  const handleChangePhoneRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    const normalizedEmail = newEmailInput.trim().toLowerCase();
-    if (!normalizedEmail || !emailChangePassword) {
-      toast.error("لطفاً ایمیل جدید و رمز عبور را وارد کنید");
+    const normalizedPhone = newPhoneInput.trim().replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+    if (!/^09\d{9}$/.test(normalizedPhone)) {
+      toast.error("شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد (مثال: 09123456789)");
       return;
     }
-    setIsSubmittingEmailChange(true);
+    setIsSubmittingPhoneChange(true);
     try {
-      await api.post("/api/users/me/change_email/", {
-        new_email: normalizedEmail,
-        password: emailChangePassword,
+      await api.post("/api/users/me/change_phone/", {
+        new_phone: normalizedPhone,
+        password: phoneChangePassword || undefined,
       });
-      toast.success("لینک و کد تایید به ایمیل جدید ارسال شد. لطفاً کد را در کادر زیر وارد کنید.");
-      setIsEmailChangeStepTwo(true);
+      toast.success("کد تایید پیامکی به شماره جدید ارسال شد. لطفاً کد را در کادر زیر وارد کنید.");
+      setIsPhoneChangeStepTwo(true);
     } catch (err: any) {
-      toast.error(getApiErrorMessage(err, "خطا در ثبت درخواست تغییر ایمیل"));
+      toast.error(getApiErrorMessage(err, "خطا در ثبت درخواست تغییر شماره موبایل"));
     } finally {
-      setIsSubmittingEmailChange(false);
+      setIsSubmittingPhoneChange(false);
     }
   };
 
-  const handleConfirmEmailChange = async (e: React.FormEvent) => {
+  const handleConfirmPhoneChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = emailChangeToken.trim();
-    if (!token) {
-      toast.error("کد یا توکن تایید را وارد کنید");
+    const normalizedPhone = newPhoneInput.trim().replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+    const code = phoneChangeCode.trim().replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+    if (!code) {
+      toast.error("کد تایید را وارد کنید");
       return;
     }
-    setIsSubmittingEmailChange(true);
+    setIsSubmittingPhoneChange(true);
     try {
-      await api.post("/api/users/me/confirm_email/", {
-        token: token,
+      await api.post("/api/users/me/confirm_phone/", {
+        new_phone: normalizedPhone,
+        code: code,
       });
-      toast.success("ایمیل شما با موفقیت تغییر یافت. به دلایل امنیتی، لطفاً مجدداً وارد حساب خود شوید.");
-      
-      // Clear session tokens and redirect to auth
-      clearAuthSession({ notify: false, redirect: false });
-      
-      setTimeout(() => {
-        router.push(`/auth?email=${encodeURIComponent(newEmailInput.trim().toLowerCase())}`);
-      }, 1500);
+      toast.success("شماره موبایل حساب شما با موفقیت تغییر یافت.");
+      setUserProfile((prev: any) => ({ ...prev, phone_number: normalizedPhone }));
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("user");
+        const parsed = stored ? JSON.parse(stored) : {};
+        localStorage.setItem("user", JSON.stringify({ ...parsed, phone_number: normalizedPhone }));
+        window.dispatchEvent(new Event("auth-change"));
+      }
+      setIsPhoneChangeStepTwo(false);
+      setNewPhoneInput("");
+      setPhoneChangeCode("");
+      setPhoneChangePassword("");
     } catch (err: any) {
       toast.error(getApiErrorMessage(err, "کد تایید اشتباه یا منقضی شده است"));
     } finally {
-      setIsSubmittingEmailChange(false);
+      setIsSubmittingPhoneChange(false);
     }
   };
 
@@ -465,6 +471,7 @@ export default function ProfilePage() {
     : "";
   const displayName =
     profileFullName ||
+    userProfile?.phone_number ||
     (userProfile?.email ? userProfile.email.split("@")[0] : "کاربر گرامی");
 
   if (!mounted) return null;
@@ -490,7 +497,7 @@ export default function ProfilePage() {
               {displayName}
             </h2>
             <p className="text-xs text-slate-500 font-sans mb-6" dir="ltr">
-              {userProfile?.email || ""}
+              {userProfile?.phone_number || userProfile?.email || ""}
             </p>
 
             {/* Quick Stats Grid */}
@@ -871,34 +878,32 @@ export default function ProfilePage() {
                 </form>
               </div>
 
-              {/* Change Email */}
+              {/* Change Phone Number */}
               <div>
-                <h3 className="text-lg font-black text-slate-900 mb-4">تغییر آدرس ایمیل</h3>
+                <h3 className="text-lg font-black text-slate-900 mb-4">تغییر شماره موبایل</h3>
                 <div className="bg-white border border-sky-100 rounded-3xl p-6 max-w-xl shadow-sm space-y-4">
-                  {!isEmailChangeStepTwo ? (
-                    <form onSubmit={handleChangeEmailRequest} className="space-y-4">
+                  {!isPhoneChangeStepTwo ? (
+                    <form onSubmit={handleChangePhoneRequest} className="space-y-4">
                       <p className="text-xs text-slate-500">
-                        ایمیل فعلی شما: <strong className="text-slate-900 font-mono" dir="ltr">{userProfile?.email || ""}</strong>
+                        شماره موبایل فعلی شما: <strong className="text-slate-900 font-mono" dir="ltr">{userProfile?.phone_number || "ثبت نشده"}</strong>
                       </p>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-700">ایمیل جدید</label>
+                        <label className="text-xs font-bold text-slate-700">شماره موبایل جدید</label>
                         <Input
-                          type="email"
                           required
-                          value={newEmailInput}
-                          onChange={(e) => setNewEmailInput(e.target.value)}
-                          placeholder="new-email@example.com"
-                          className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
+                          value={newPhoneInput}
+                          onChange={(e) => setNewPhoneInput(e.target.value)}
+                          placeholder="09123456789"
+                          className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA] font-mono"
                           dir="ltr"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-700">رمز عبور فعلی برای تایید هویت</label>
+                        <label className="text-xs font-bold text-slate-700">رمز عبور فعلی (اختیاری)</label>
                         <Input
                           type="password"
-                          required
-                          value={emailChangePassword}
-                          onChange={(e) => setEmailChangePassword(e.target.value)}
+                          value={phoneChangePassword}
+                          onChange={(e) => setPhoneChangePassword(e.target.value)}
                           placeholder="••••••••"
                           className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                           dir="ltr"
@@ -906,40 +911,41 @@ export default function ProfilePage() {
                       </div>
                       <Button
                         type="submit"
-                        disabled={isSubmittingEmailChange}
+                        disabled={isSubmittingPhoneChange}
                         className="w-full h-12 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20"
                       >
-                        {isSubmittingEmailChange ? "در حال ارسال کد..." : "ارسال کد تایید به ایمیل جدید"}
+                        {isSubmittingPhoneChange ? "در حال ارسال کد..." : "ارسال کد تایید پیامکی به شماره جدید"}
                       </Button>
                     </form>
                   ) : (
-                    <form onSubmit={handleConfirmEmailChange} className="space-y-4">
+                    <form onSubmit={handleConfirmPhoneChange} className="space-y-4">
                       <p className="text-xs text-[#0082CA] font-bold">
-                        کد تایید ارسال شده به ایمیل جدید «{newEmailInput}» را وارد کنید:
+                        کد تایید ۵ رقمی پیامک‌شده به شماره جدید «{newPhoneInput}» را وارد کنید:
                       </p>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-700">کد / توکن تایید</label>
+                        <label className="text-xs font-bold text-slate-700">کد تایید پیامکی</label>
                         <Input
                           required
-                          value={emailChangeToken}
-                          onChange={(e) => setEmailChangeToken(e.target.value)}
-                          placeholder="کد تایید را وارد کنید"
-                          className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl font-mono text-center focus-visible:ring-2 focus-visible:ring-[#0082CA]"
+                          value={phoneChangeCode}
+                          onChange={(e) => setPhoneChangeCode(e.target.value)}
+                          placeholder="کد ۵ رقمی"
+                          maxLength={8}
+                          className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl font-mono text-center tracking-widest font-black focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                           dir="ltr"
                         />
                       </div>
                       <div className="flex gap-2">
                         <Button
                           type="submit"
-                          disabled={isSubmittingEmailChange}
+                          disabled={isSubmittingPhoneChange}
                           className="flex-1 h-12 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20"
                         >
-                          {isSubmittingEmailChange ? "در حال تایید..." : "تایید نهایی ایمیل جدید"}
+                          {isSubmittingPhoneChange ? "در حال تایید..." : "تایید نهایی و ثبت شماره جدید"}
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
-                          onClick={() => setIsEmailChangeStepTwo(false)}
+                          onClick={() => setIsPhoneChangeStepTwo(false)}
                           className="h-12 text-xs text-slate-500 hover:text-slate-900"
                         >
                           انصراف
@@ -1010,21 +1016,31 @@ export default function ProfilePage() {
 
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between p-3 bg-sky-50/60 rounded-2xl">
-                    <span className="text-xs font-bold text-slate-800">ایمیل‌های تغییر وضعیت سفارش</span>
+                    <span className="text-xs font-bold text-slate-800">پیامک اطلاع‌رسانی وضعیت سفارش‌ها</span>
                     <input
                       type="checkbox"
-                      checked={!!preferences.email_order_updates}
-                      onChange={(e) => handleTogglePreference("email_order_updates", e.target.checked)}
+                      checked={!!preferences.sms_order_updates}
+                      onChange={(e) => handleTogglePreference("sms_order_updates", e.target.checked)}
                       className="w-4 h-4 accent-[#0082CA] cursor-pointer"
                     />
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-sky-50/60 rounded-2xl">
-                    <span className="text-xs font-bold text-slate-800">ایمیل‌های تخفیف‌ها و پیشنهادات شگفت‌انگیز</span>
+                    <span className="text-xs font-bold text-slate-800">پیامک تخفیف‌ها و حراج‌های فصلی ماوی</span>
                     <input
                       type="checkbox"
-                      checked={!!preferences.email_promotions}
-                      onChange={(e) => handleTogglePreference("email_promotions", e.target.checked)}
+                      checked={!!preferences.sms_promotions}
+                      onChange={(e) => handleTogglePreference("sms_promotions", e.target.checked)}
+                      className="w-4 h-4 accent-[#0082CA] cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-sky-50/60 rounded-2xl">
+                    <span className="text-xs font-bold text-slate-800">پیامک‌های امنیتی ورود به حساب</span>
+                    <input
+                      type="checkbox"
+                      checked={!!preferences.sms_account}
+                      onChange={(e) => handleTogglePreference("sms_account", e.target.checked)}
                       className="w-4 h-4 accent-[#0082CA] cursor-pointer"
                     />
                   </div>

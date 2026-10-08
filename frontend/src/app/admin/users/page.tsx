@@ -180,13 +180,13 @@ export default function AdminUsersPage() {
   }, [userOrders]);
 
   const filteredUsers = users.filter((u) => {
+    const phone = (u.phone_number || u.phone || "").toLowerCase();
     const email = (u.email || "").toLowerCase();
     const name = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
-    const phone = (u.phone || "").toLowerCase();
     return (
-      email.includes(searchQuery.toLowerCase()) ||
+      phone.includes(searchQuery.toLowerCase()) ||
       name.includes(searchQuery.toLowerCase()) ||
-      phone.includes(searchQuery.toLowerCase())
+      email.includes(searchQuery.toLowerCase())
     );
   });
 
@@ -212,7 +212,7 @@ export default function AdminUsersPage() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="جستجو بر اساس نام، نام خانوادگی، شماره موبایل یا آدرس ایمیل..."
+          placeholder="جستجو بر اساس نام، شماره موبایل یا مشخصات..."
           className="flex-1 bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-600"
         />
       </div>
@@ -224,7 +224,7 @@ export default function AdminUsersPage() {
             <thead className="bg-[#161616] text-gray-400 border-b border-white/10">
               <tr>
                 <th className="p-4 md:p-5 font-bold">نام و مشخصات کاربر</th>
-                <th className="p-4 md:p-5 font-bold">ایمیل</th>
+                <th className="p-4 md:p-5 font-bold">شماره موبایل</th>
                 <th className="p-4 md:p-5 font-bold">نقش کاربری</th>
                 <th className="p-4 md:p-5 font-bold">تاریخ عضویت</th>
                 <th className="p-4 md:p-5 font-bold">وضعیت حساب</th>
@@ -267,17 +267,12 @@ export default function AdminUsersPage() {
                             <span className="block group-hover:text-blue-300 transition-colors">
                               {fullName}
                             </span>
-                            {user.phone && (
-                              <span className="text-[10px] text-gray-500 font-mono block mt-0.5" dir="ltr">
-                                {user.phone}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </td>
 
                       <td className="p-4 md:p-5 text-gray-300 font-mono" dir="ltr">
-                        {user.email || "—"}
+                        {user.phone_number || user.phone || user.email || "—"}
                       </td>
 
                       <td className="p-4 md:p-5">

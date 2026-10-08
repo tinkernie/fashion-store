@@ -6,6 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 export interface StoredUser {
   id?: string | number;
   user_id?: string | number;
+  phone_number?: string;
   email?: string;
   first_name?: string;
   last_name?: string;
@@ -18,6 +19,7 @@ export interface JWTPayload {
   exp?: number;
   user_id?: string | number;
   id?: string | number;
+  phone_number?: string;
   email?: string;
   is_staff?: boolean;
   is_superuser?: boolean;

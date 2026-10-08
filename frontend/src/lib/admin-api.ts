@@ -88,6 +88,56 @@ export const adminApi = {
     return res.data;
   },
 
+  // Discount Campaign & Storefront Section
+  async activateDiscountCampaign(data: {
+    product_ids: string[];
+    discount_percent: number;
+    expires_at?: string | null;
+    title?: string;
+    subtitle?: string;
+    cta_text?: string;
+    background_image?: string;
+    collection_slug?: string;
+  }) {
+    const res = await api.post('/api/admin/products/discount-section/activate/', data);
+    return res.data;
+  },
+  async deactivateDiscountCampaign() {
+    const res = await api.post('/api/admin/products/discount-section/deactivate/');
+    return res.data;
+  },
+  async addOneToDiscountCampaign(productId: string, discountPercent?: number) {
+    const res = await api.post('/api/admin/products/discount-section/add-one/', {
+      product_id: productId,
+      discount_percent: discountPercent,
+    });
+    return res.data;
+  },
+  async removeOneFromDiscountCampaign(productId: string) {
+    const res = await api.post('/api/admin/products/discount-section/remove-one/', {
+      product_id: productId,
+    });
+    return res.data;
+  },
+  async setDiscountCampaignPercent(discountPercent: number, productIds?: string[], expiresAt?: string | null) {
+    const payload: any = { discount_percent: discountPercent };
+    if (productIds) payload.product_ids = productIds;
+    if (expiresAt !== undefined) payload.expires_at = expiresAt;
+    const res = await api.post('/api/admin/products/discount-section/set-percent/', payload);
+    return res.data;
+  },
+  async updateDiscountCampaignContent(data: {
+    title?: string;
+    subtitle?: string;
+    cta_text?: string;
+    background_image?: string;
+    collection_slug?: string;
+    enabled?: boolean;
+  }) {
+    const res = await api.post('/api/admin/products/discount-section/content/', data);
+    return res.data;
+  },
+
   // Products
   async getProducts(params?: { search?: string; status?: string; category?: string }): Promise<any[]> {
     const query = new URLSearchParams(params as any).toString();
