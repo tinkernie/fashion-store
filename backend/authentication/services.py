@@ -81,11 +81,23 @@ class AuthService:
 
     # --- OTP passwordless (signup + login via sms.ir verify) ---
     def request_otp(self, phone_number: str, purpose: str = "login") -> dict:
+        from django.core.cache import cache
+
         from .models import OtpCode
 
         phone_number = PhoneValidator.validate(phone_number)
         if purpose not in (OtpCode.PURPOSE_LOGIN, OtpCode.PURPOSE_RESET):
             purpose = OtpCode.PURPOSE_LOGIN
+        # Per-phone hourly cap (Redis, shared across workers) — protects SMS credit.
+        # DRF throttle is per-IP; this is per-target-number: max 5 sends/hour.
+        hour_key = f"otp:hour:{phone_number}:{purpose}"
+        try:
+            sent = cache.get(hour_key, 0)
+            if int(sent) >= 5:
+                # Generic message (no enumeration), no SMS sent
+                return {"message": "If the number is valid, an OTP has been sent."}
+        except Exception:
+            sent = 0
         with transaction.atomic():
             latest = OtpRepository.latest_valid(phone_number, purpose)
             if latest:
@@ -99,6 +111,10 @@ class AuthService:
                 ).update(is_used=True)
             raw_code = _generate_code()
             OtpRepository.create_otp(phone_number, raw_code, purpose)
+            try:
+                cache.set(hour_key, int(sent) + 1, 3600)
+            except Exception:
+                pass
         from notifications.tasks import send_otp_sms
 
         transaction.on_commit(lambda: send_otp_sms.delay(phone_number, raw_code))

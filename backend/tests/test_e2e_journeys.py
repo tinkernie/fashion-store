@@ -485,7 +485,12 @@ class TestAdminJourneyAndTasks:
         published = client.post("/api/admin/cms/pages/shipping/publish/")
         assert published.status_code == status.HTTP_200_OK
 
-        image = SimpleUploadedFile("colour.jpg", b"not-a-real-image", content_type="image/jpeg")
+        from io import BytesIO
+        from PIL import Image
+
+        _buf = BytesIO()
+        Image.new("RGB", (64, 64), (10, 20, 30)).save(_buf, format="JPEG")
+        image = SimpleUploadedFile("colour.jpg", _buf.getvalue(), content_type="image/jpeg")
         upload = client.post(
             "/api/admin/media_libm/upload/",
             {

@@ -12,8 +12,12 @@ from core.views_seo import robots_txt
 
 sitemaps = {"products": ProductSitemap, "categories": CategorySitemap}
 
+from django.conf import settings as _dj_settings
+
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    # Django admin is mounted in DEBUG only; production uses the custom
+    # admin panel APIs (smaller attack surface, domain logic enforced).
+    *([path("admin/", admin.site.urls)] if _dj_settings.DEBUG else []),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", cache_page(3600)(sitemap), {"sitemaps": sitemaps}, name="sitemap"),
     # drf schema swagger -> api document

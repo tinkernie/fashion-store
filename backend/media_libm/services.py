@@ -15,6 +15,11 @@ class MediaService:
     def upload_media(self, obj, file, media_type='image', alt_text='', caption='', position=0) -> dict:
         # Validate file type and size
         self._validate_file(file, media_type)
+        # Every image entering the site becomes WebP (originals replaced)
+        if media_type == 'image':
+            from .webp import to_webp_file
+
+            file = to_webp_file(file)
         content_type = ContentType.objects.get_for_model(obj)
         media = MediaRepository.create_media(
             content_type=content_type,

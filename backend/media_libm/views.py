@@ -54,14 +54,15 @@ class AdminMediaViewSet(viewsets.GenericViewSet):
 
         # If no object relation specified, perform direct media upload & return URL
         if not content_type or not object_id:
-            import os, uuid
+            import uuid
             from django.core.files.storage import default_storage
             from django.core.files.base import ContentFile
             from django.conf import settings
+            from .webp import to_webp_file
 
-            ext = os.path.splitext(file.name)[1]
-            filename = f"products/{uuid.uuid4().hex}{ext}"
-            saved_path = default_storage.save(filename, ContentFile(file.read()))
+            webp_file = to_webp_file(file)
+            filename = f"products/{uuid.uuid4().hex}.webp"
+            saved_path = default_storage.save(filename, ContentFile(webp_file.read()))
             
             # Format absolute and relative URLs
             media_prefix = getattr(settings, 'MEDIA_URL', '/media_libm/')
