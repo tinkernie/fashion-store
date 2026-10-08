@@ -566,6 +566,7 @@ class DiscountSectionSetPercentSerializer(serializers.Serializer):
     product_ids = serializers.ListField(
         child=serializers.UUIDField(), required=False, allow_empty=True, default=None
     )
+    expires_at = serializers.DateTimeField(required=False, allow_null=True, default=None)
 
 
 class DiscountSectionContentSerializer(serializers.Serializer):

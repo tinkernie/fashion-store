@@ -234,16 +234,33 @@ class AdminProductViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=["post"], url_path="discount-section/set-percent")
     def discount_section_set_percent(self, request):
         """Mid-campaign adjust: POST .../discount-section/set-percent/
-        {discount_percent, product_ids?: [...]} (all campaign items if omitted)."""
+        {discount_percent, product_ids?: [...], expires_at?: iso|null}
+        (all campaign items if product_ids omitted; deadline preserved unless
+        expires_at is explicitly sent, null clears it)."""
         from .serializers import DiscountSectionSetPercentSerializer
 
         serializer = DiscountSectionSetPercentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         service = ProductService()
+        kwargs = {}
+        if "expires_at" in request.data:
+            kwargs["expires_at"] = serializer.validated_data.get("expires_at")
         result = service.set_section_percent(
             serializer.validated_data["discount_percent"],
             serializer.validated_data.get("product_ids"),
+            **kwargs,
         )
+        # Keep the CMS banner expiry in sync when the deadline moves
+        if "expires_at" in request.data:
+            try:
+                from cms.services import CMSService
+                from cms.selectors import SiteContentSelector
+
+                current = SiteContentSelector.get_by_key("discount_section") or {}
+                current["expires_at"] = result["expires_at"]
+                CMSService().update_site_content("discount_section", current)
+            except Exception:
+                pass
         return Response(result, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["post"], url_path="discount-section/content")

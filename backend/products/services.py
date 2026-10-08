@@ -330,9 +330,15 @@ class ProductService:
             pass
         return {"message": "Product removed from discount section.", "product_id": str(product.id)}
 
+    _KEEP_DEADLINE = object()
+
     @transaction.atomic
-    def set_section_percent(self, discount_percent: int, product_ids: list = None) -> dict:
-        """Mid-campaign adjust: raise/lower the percentage for all (or given) campaign items."""
+    def set_section_percent(
+        self, discount_percent: int, product_ids: list = None, expires_at=_KEEP_DEADLINE
+    ) -> dict:
+        """Mid-campaign adjust: raise/lower the percentage for all (or given)
+        campaign items. Pass expires_at (or null to clear it) to also move the
+        deadline; omit it to preserve existing deadlines."""
         if not isinstance(discount_percent, int) or not 1 <= discount_percent <= 99:
             raise BusinessException("Discount must be an integer between 1 and 99.")
         qs = Product.objects.select_for_update().filter(
@@ -343,15 +349,16 @@ class ProductService:
         products = list(qs)
         if not products:
             raise BusinessException("No discounted products to update.")
+        update_fields = ["discount_percent", "discount_price", "updated_at"]
+        if expires_at is not self._KEEP_DEADLINE:
+            update_fields.append("discount_expires_at")
         for product in products:
             base = self._base_price(product)
             product.discount_percent = discount_percent
             product.discount_price = product.calculate_discount_price(base)
-            # expires_at preserved: a mid-campaign percent change must not
-            # silently extend or cut the deadline.
-            product.save(
-                update_fields=["discount_percent", "discount_price", "updated_at"]
-            )
+            if expires_at is not self._KEEP_DEADLINE:
+                product.discount_expires_at = expires_at
+            product.save(update_fields=update_fields)
         try:
             from django.core.cache import cache
             cache.delete_pattern("luxe:products:*")
@@ -361,6 +368,11 @@ class ProductService:
             "message": f"Discount set to {discount_percent}% on {len(products)} products.",
             "discount_percent": discount_percent,
             "product_ids": [str(p.id) for p in products],
+            "expires_at": (
+                expires_at.isoformat()
+                if expires_at not in (None, self._KEEP_DEADLINE)
+                else None
+            ),
         }
 
     @transaction.atomic
