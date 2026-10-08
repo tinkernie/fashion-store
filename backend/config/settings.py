@@ -4,6 +4,19 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load local .env file if present
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    try:
+        with open(_env_file, encoding="utf-8") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    os.environ.setdefault(_k.strip(), _v.strip())
+    except Exception:
+        pass
+
 SECRET_KEY = "12345"
 DEBUG = True  # overridden in dev/prod
 ALLOWED_HOSTS = [

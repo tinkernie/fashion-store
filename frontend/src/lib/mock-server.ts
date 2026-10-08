@@ -81,9 +81,10 @@ function createMockResponse(data: any, status = 200, config: InternalAxiosReques
 }
 
 export function setupMockServer(axiosInstance: AxiosInstance) {
-  // Check if mock is enabled
-  const isMockExplicitlyDisabled = process.env.NEXT_PUBLIC_ENABLE_MOCKS === "false";
-  if (isMockExplicitlyDisabled) return;
+  // Only activate mock interceptor if explicitly enabled with NEXT_PUBLIC_ENABLE_MOCKS === "true"
+  if (process.env.NEXT_PUBLIC_ENABLE_MOCKS !== "true") {
+    return;
+  }
 
   axiosInstance.interceptors.request.use(async (config) => {
     const url = config.url || "";

@@ -50,8 +50,9 @@ venv.bak/
 *.sqlite3-journal
 #db.sqlite3
 **/media/
-**/media_libm/
-media_libm/
+# Only ignore user-uploaded media files inside media_libm, not the Django app source code
+backend/media_libm/uploads/
+backend/media_libm/products/
 **/staticfiles/
 local_settings.py
 
