@@ -29,6 +29,8 @@ class SearchViewSet(viewsets.GenericViewSet):
             filters['max_price'] = data.get('max_price')
         if data.get('options'):
             filters['options'] = data['options']
+        if data.get('exclude_discounted'):
+            filters['exclude_discounted'] = data['exclude_discounted']
 
         service = SearchService()
         result = service.search(

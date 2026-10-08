@@ -1,3 +1,5 @@
+from django.db import transaction
+from django.utils import timezone
 from .repositories import ProductRepository
 from .selectors import ProductSelector
 from .models import Product
@@ -184,6 +186,202 @@ class ProductService:
                 is_cover=p_img["is_cover"],
                 alt_text=p_img["alt_text"],
             )
+
+    @staticmethod
+    def _base_price(product: Product) -> int:
+        """Single source of truth for discount calculation (matches serializer)."""
+        try:
+            first_variant = product.variants.filter(deleted_at__isnull=True).first()
+            if first_variant and first_variant.price is not None:
+                return int(round(float(first_variant.price)))
+        except Exception:
+            pass
+        try:
+            if product.metadata and "price" in product.metadata:
+                return int(round(float(product.metadata["price"])))
+        except Exception:
+            pass
+        return 0
+
+    @transaction.atomic
+    def activate_discount_section(
+        self, product_ids: list, discount_percent: int, expires_at=None
+    ) -> dict:
+        """Bulk campaign: one percentage applied to all selected products at once."""
+        if not isinstance(discount_percent, int) or not 1 <= discount_percent <= 99:
+            raise BusinessException("Discount must be an integer between 1 and 99.")
+        if not product_ids:
+            raise BusinessException("Select at least one product.")
+        # Deduplicate while preserving order
+        seen, unique_ids = set(), []
+        for pid in product_ids:
+            key = str(pid)
+            if key not in seen:
+                seen.add(key)
+                unique_ids.append(pid)
+
+        products = list(
+            Product.objects.select_for_update().filter(
+                id__in=unique_ids, deleted_at__isnull=True
+            )
+        )
+        found = {str(p.id) for p in products}
+        missing = [str(pid) for pid in unique_ids if str(pid) not in found]
+        if missing:
+            raise BusinessException(f"Products not found: {', '.join(missing)}.")
+
+        # Add/overwrite semantics: activate never clears products outside the
+        # given set, so re-activating can never silently drop campaign items.
+        # Full removal is explicit via remove-one / deactivate endpoints.
+        self._apply_percent_to_products(products, discount_percent, expires_at)
+
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+        except Exception:
+            pass
+        return {
+            "message": f"Discount of {discount_percent}% applied to {len(products)} products.",
+            "discount_percent": discount_percent,
+            "product_ids": [str(p.id) for p in products],
+            "expires_at": expires_at.isoformat() if expires_at else None,
+        }
+
+    def _apply_percent_to_products(self, products: list, discount_percent: int, expires_at=None) -> None:
+        """Shared bulk writer: one percentage for many products (no per-product calls)."""
+        for product in products:
+            base = self._base_price(product)
+            product.discount_percent = discount_percent
+            product.discount_price = product.calculate_discount_price(base)
+            product.discount_expires_at = expires_at
+            product.save(
+                update_fields=["discount_percent", "discount_price", "discount_expires_at", "updated_at"]
+            )
+
+    @staticmethod
+    def _current_campaign_percent():
+        """Returns int or None (Optional[] avoided for py3.9 compat in signature)."""
+        """The running campaign's percentage (all campaign items share one)."""
+        row = (
+            Product.objects.filter(
+                deleted_at__isnull=True, discount_percent__isnull=False
+            )
+            .values_list("discount_percent", flat=True)
+            .first()
+        )
+        return row
+
+    @transaction.atomic
+    def add_product_to_section(self, product_id, discount_percent: int = None) -> dict:
+        """Incremental add: one product joins the running campaign (no full re-select)."""
+        product = Product.objects.select_for_update().filter(
+            id=product_id, deleted_at__isnull=True
+        ).first()
+        if not product:
+            raise BusinessException("Product not found.")
+        campaign_expires_at = None
+        if discount_percent is None:
+            discount_percent = self._current_campaign_percent()
+            if discount_percent is None:
+                raise BusinessException(
+                    "No active campaign: pass discount_percent for the first product."
+                )
+            # New joiners inherit the running campaign's deadline
+            campaign_expires_at = (
+                Product.objects.filter(
+                    deleted_at__isnull=True, discount_percent__isnull=False
+                )
+                .exclude(discount_expires_at__isnull=True)
+                .values_list("discount_expires_at", flat=True)
+                .first()
+            )
+        if not isinstance(discount_percent, int) or not 1 <= discount_percent <= 99:
+            raise BusinessException("Discount must be an integer between 1 and 99.")
+        self._apply_percent_to_products([product], discount_percent, campaign_expires_at)
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+        except Exception:
+            pass
+        return {
+            "message": f"Product added to discount section at {discount_percent}%.",
+            "product_id": str(product.id),
+            "discount_percent": discount_percent,
+        }
+
+    @transaction.atomic
+    def remove_product_from_section(self, product_id) -> dict:
+        """Incremental remove: one product leaves the campaign (stays on the site)."""
+        product = Product.objects.select_for_update().filter(
+            id=product_id, deleted_at__isnull=True
+        ).first()
+        if not product:
+            raise BusinessException("Product not found.")
+        product.discount_percent = None
+        product.discount_price = None
+        product.discount_expires_at = None
+        product.save(
+            update_fields=["discount_percent", "discount_price", "discount_expires_at", "updated_at"]
+        )
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+        except Exception:
+            pass
+        return {"message": "Product removed from discount section.", "product_id": str(product.id)}
+
+    @transaction.atomic
+    def set_section_percent(self, discount_percent: int, product_ids: list = None) -> dict:
+        """Mid-campaign adjust: raise/lower the percentage for all (or given) campaign items."""
+        if not isinstance(discount_percent, int) or not 1 <= discount_percent <= 99:
+            raise BusinessException("Discount must be an integer between 1 and 99.")
+        qs = Product.objects.select_for_update().filter(
+            deleted_at__isnull=True, discount_percent__isnull=False
+        )
+        if product_ids:
+            qs = qs.filter(id__in=product_ids)
+        products = list(qs)
+        if not products:
+            raise BusinessException("No discounted products to update.")
+        for product in products:
+            base = self._base_price(product)
+            product.discount_percent = discount_percent
+            product.discount_price = product.calculate_discount_price(base)
+            # expires_at preserved: a mid-campaign percent change must not
+            # silently extend or cut the deadline.
+            product.save(
+                update_fields=["discount_percent", "discount_price", "updated_at"]
+            )
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+        except Exception:
+            pass
+        return {
+            "message": f"Discount set to {discount_percent}% on {len(products)} products.",
+            "discount_percent": discount_percent,
+            "product_ids": [str(p.id) for p in products],
+        }
+
+    @transaction.atomic
+    def deactivate_discount_section(self) -> dict:
+        """Bulk revert: clear discounts on every discounted product (prices restore automatically)."""
+        qs = Product.objects.select_for_update().filter(
+            deleted_at__isnull=True, discount_percent__isnull=False
+        )
+        count = qs.count()
+        qs.update(
+            discount_percent=None,
+            discount_price=None,
+            discount_expires_at=None,
+            updated_at=timezone.now(),
+        )
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+        except Exception:
+            pass
+        return {"message": f"Discount removed from {count} products.", "cleared_count": count}
 
     def archive_product(self, product_id) -> dict:
         product = ProductSelector.get_product_by_id(product_id)

@@ -34,6 +34,8 @@ class PublicProductViewSet(viewsets.GenericViewSet):
             filters["ordering"] = request.query_params["ordering"]
         if "has_discount" in request.query_params:
             filters["has_discount"] = request.query_params["has_discount"]
+        if "exclude_discounted" in request.query_params:
+            filters["exclude_discounted"] = request.query_params["exclude_discounted"]
         products = ProductSelector.get_visible_products(filters)
         # manual pagination? We'll use DRF's default pagination via core.pagination.StandardPagination.
         page = self.paginate_queryset(products)
@@ -149,6 +151,140 @@ class AdminProductViewSet(viewsets.GenericViewSet):
         service = ProductService()
         result = service.archive_product(pk)
         return Response(result)
+
+    @action(detail=False, methods=["post"], url_path="discount-section/activate")
+    def discount_section_activate(self, request):
+        """Bulk campaign: POST /api/admin/products/discount-section/activate/
+        {product_ids: [...], discount_percent: 25, expires_at?: iso} + flips CMS toggle on."""
+        from .serializers import DiscountSectionActivateSerializer
+
+        serializer = DiscountSectionActivateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = ProductService()
+        result = service.activate_discount_section(
+            serializer.validated_data["product_ids"],
+            serializer.validated_data["discount_percent"],
+            serializer.validated_data.get("expires_at"),
+        )
+        # Flip the storefront section on (same admin action, above footer)
+        try:
+            from cms.services import CMSService
+            from cms.selectors import SiteContentSelector
+
+            previous = SiteContentSelector.get_by_key("discount_section") or {}
+            CMSService().update_site_content(
+                "discount_section",
+                {
+                    "enabled": True,
+                    "title": request.data.get("title", previous.get("title", "")),
+                    "subtitle": request.data.get("subtitle", previous.get("subtitle", "")),
+                    "cta_text": request.data.get("cta_text", previous.get("cta_text", "")),
+                    "cta_link": "/products/?has_discount=true",
+                    "background_image": request.data.get(
+                        "background_image", previous.get("background_image", "")
+                    ),
+                    "collection_slug": request.data.get(
+                        "collection_slug", previous.get("collection_slug")
+                    ),
+                    "expires_at": result["expires_at"],
+                },
+            )
+        except Exception:
+            pass
+        return Response(result, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="discount-section/add-one")
+    def discount_section_add_one(self, request):
+        """Incremental add: POST .../discount-section/add-one/
+        {product_id, discount_percent?} (inherits campaign % if omitted)."""
+        from .serializers import DiscountSectionProductSerializer
+
+        serializer = DiscountSectionProductSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        raw_pct = request.data.get("discount_percent")
+        pct = None
+        if raw_pct is not None:
+            try:
+                pct = int(raw_pct)
+            except (TypeError, ValueError):
+                return Response(
+                    {"detail": "discount_percent must be an integer between 1 and 99."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        service = ProductService()
+        result = service.add_product_to_section(
+            serializer.validated_data["product_id"], pct
+        )
+        return Response(result, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="discount-section/remove-one")
+    def discount_section_remove_one(self, request):
+        """Incremental remove: POST .../discount-section/remove-one/
+        {product_id} (product stays on the site, discount cleared)."""
+        from .serializers import DiscountSectionProductSerializer
+
+        serializer = DiscountSectionProductSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = ProductService()
+        result = service.remove_product_from_section(
+            serializer.validated_data["product_id"]
+        )
+        return Response(result, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="discount-section/set-percent")
+    def discount_section_set_percent(self, request):
+        """Mid-campaign adjust: POST .../discount-section/set-percent/
+        {discount_percent, product_ids?: [...]} (all campaign items if omitted)."""
+        from .serializers import DiscountSectionSetPercentSerializer
+
+        serializer = DiscountSectionSetPercentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = ProductService()
+        result = service.set_section_percent(
+            serializer.validated_data["discount_percent"],
+            serializer.validated_data.get("product_ids"),
+        )
+        return Response(result, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="discount-section/content")
+    def discount_section_content(self, request):
+        """Mid-campaign media/text edit: POST .../discount-section/content/
+        {title?, subtitle?, cta_text?, background_image?, collection_slug?}
+        merges into CMS content without touching products."""
+        from .serializers import DiscountSectionContentSerializer
+
+        serializer = DiscountSectionContentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            from cms.services import CMSService
+            from cms.selectors import SiteContentSelector
+
+            current = SiteContentSelector.get_by_key("discount_section") or {}
+            merged = {**current, **serializer.validated_data}
+            # Never allow content edit to flip the toggle accidentally
+            if "enabled" not in request.data:
+                merged["enabled"] = current.get("enabled", False)
+            CMSService().update_site_content("discount_section", merged)
+        except Exception:
+            pass
+        return Response(merged, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="discount-section/deactivate")
+    def discount_section_deactivate(self, request):
+        """Bulk revert: POST /api/admin/products/discount-section/deactivate/
+        clears discounts on all campaign products (prices restore) + flips toggle off."""
+        service = ProductService()
+        result = service.deactivate_discount_section()
+        try:
+            from cms.services import CMSService
+            from cms.selectors import SiteContentSelector
+
+            current = SiteContentSelector.get_by_key("discount_section") or {}
+            current["enabled"] = False
+            CMSService().update_site_content("discount_section", current)
+        except Exception:
+            pass
+        return Response(result, status=status.HTTP_200_OK)
 
     def list(self, request):
         # Direct admin list with full filter support per spec

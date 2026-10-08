@@ -535,6 +535,52 @@ class ReviewCreateSerializer(serializers.Serializer):
     text = serializers.CharField(min_length=3)
 
 
+class DiscountSectionActivateSerializer(serializers.Serializer):
+    product_ids = serializers.ListField(
+        child=serializers.UUIDField(), min_length=1, allow_empty=False
+    )
+    discount_percent = serializers.IntegerField(
+        min_value=1,
+        max_value=99,
+        error_messages={
+            "min_value": "Discount must be between 1 and 99.",
+            "max_value": "Discount must be between 1 and 99.",
+        },
+    )
+    expires_at = serializers.DateTimeField(required=False, allow_null=True, default=None)
+
+
+class DiscountSectionProductSerializer(serializers.Serializer):
+    product_id = serializers.UUIDField()
+
+
+class DiscountSectionSetPercentSerializer(serializers.Serializer):
+    discount_percent = serializers.IntegerField(
+        min_value=1,
+        max_value=99,
+        error_messages={
+            "min_value": "Discount must be between 1 and 99.",
+            "max_value": "Discount must be between 1 and 99.",
+        },
+    )
+    product_ids = serializers.ListField(
+        child=serializers.UUIDField(), required=False, allow_empty=True, default=None
+    )
+
+
+class DiscountSectionContentSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    subtitle = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    cta_text = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    background_image = serializers.URLField(required=False, allow_blank=True)
+    collection_slug = serializers.SlugField(required=False, allow_null=True, default=None)
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError("Nothing to update.")
+        return attrs
+
+
 class AdminReviewUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["pending", "approved", "rejected"], required=False)
     user_name = serializers.CharField(max_length=150, required=False)

@@ -10,6 +10,7 @@ class SearchSerializer(serializers.Serializer):
     max_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
     # Options passed as JSON string: e.g., '{"Color":["Red","Blue"],"Size":["M"]}'
     options = serializers.JSONField(required=False)
+    exclude_discounted = serializers.BooleanField(required=False, default=False)
     sort = serializers.ChoiceField(
         choices=['price_asc', 'price_desc', 'newest', 'name', 'relevance', 'popularity', 'best_selling', 'trending'],
         required=False,

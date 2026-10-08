@@ -33,12 +33,26 @@ class ProductSelector:
         elif not is_admin:
             qs = qs.filter(status=Product.Status.PUBLISHED)
 
-        # has_discount filter
+        # has_discount filter (expiry-aware: expired campaigns drop out automatically)
+        from django.utils import timezone as _tz
+
+        _now = _tz.now()
+        _active_discount = (
+            Q(discount_price__isnull=False)
+            & Q(discount_price__gt=0)
+            & (Q(discount_expires_at__isnull=True) | Q(discount_expires_at__gte=_now))
+        )
         has_discount = filters.get("has_discount")
         if has_discount in ["true", "1", True, "True", "TRUE"]:
-            qs = qs.filter(Q(discount_price__isnull=False) & Q(discount_price__gt=0))
+            qs = qs.filter(_active_discount)
         elif has_discount in ["false", "0", False]:
-            qs = qs.filter(Q(discount_price__isnull=True) | Q(discount_price=0))
+            qs = qs.exclude(_active_discount)
+
+        # exclude_discounted: homepage main rail + newest rail hide campaign
+        # items; category / collection / all-products / campaign feeds keep them.
+        exclude_discounted = filters.get("exclude_discounted")
+        if exclude_discounted in ["true", "1", True, "True", "TRUE"]:
+            qs = qs.exclude(_active_discount)
 
         # Category filter - supports slug or ID
         category = filters.get("category") or filters.get("category_slug")
