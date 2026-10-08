@@ -1,3 +1,6 @@
+Only deploy on the server when task done, if the SERVER_ON below is true, if not skip deploying on the server.
+SERVER_ON : FALSE
+
 # Production Deployment Guide: Fashion Store on Ubuntu
 
 This guide documents the full setup, production configuration, and troubleshooting history for running the Fashion Store project on an Ubuntu Linux server.
