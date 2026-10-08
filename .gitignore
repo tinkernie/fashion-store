@@ -139,3 +139,5 @@ CLAUDE.original.md
 *.original.md
 
 AUDIT_FINDINGS.md
+
+assets/*
