@@ -1,33 +1,84 @@
-BACKEND :
-# 1. Go into the backend directory
+================================================================================
+FASHION STORE - FULL LOCAL RUN GUIDE (BACKEND & FRONTEND)
+================================================================================
+
+PREREQUISITES:
+- Python 3.10+
+- Node.js 20+ & npm
+- (Optional) Docker Desktop (if using PostgreSQL + Redis instead of SQLite)
+
+--------------------------------------------------------------------------------
+1. BACKEND (DJANGO REST FRAMEWORK)
+--------------------------------------------------------------------------------
+# Step 1: Navigate to backend folder
 cd backend
 
-# 2. Create a virtual environment (only need to do this once)
-python -m venv venv
+# Step 2: Create virtual environment (once)
+python -m venv .venv
 
-# 3. Activate the virtual environment
-.\.venv\Scripts\activate
+# Step 3: Activate virtual environment
+# Windows (PowerShell):
+.\.venv\Scripts\Activate.ps1
+# Windows (CMD):
+.\.venv\Scripts\activate.bat
+# Linux / macOS:
+source .venv/bin/activate
 
-# 4. Install backend dependencies (only need to do this once)
+# Step 4: Install dependencies (once)
 pip install -r requirements.txt
 
-# 5. Apply database migrations
+# Step 5: Database configuration (Choose ONE):
+# --- OPTION A: SQLite (Quickest, zero-setup, pre-populated db.sqlite3) ---
+# Windows PowerShell:
+$env:DB_ENGINE="sqlite"
+# Windows CMD:
+set DB_ENGINE=sqlite
+# Linux / macOS:
+export DB_ENGINE=sqlite
+
+# --- OPTION B: PostgreSQL & Redis (Docker) ---
+docker compose up -d postgres redis
+
+# Step 6: Apply migrations & setup data
 python manage.py migrate
+python manage.py createsuperuser      # (Optional: create admin user)
+python seed_data.py                   # (Optional: load initial catalog/products)
 
-# 6. (Optional) Create an Admin / Manager user account
-python manage.py createsuperuser
+# Step 7: Run Django development server
+python manage.py runserver 127.0.0.1:8000
 
-# 7. Start the Django backend server
-python manage.py runserver
+# Backend Endpoints:
+# - API Base:        http://127.0.0.1:8000/api/
+# - Swagger Docs:    http://127.0.0.1:8000/api/docs/
+# - Admin Dashboard: http://127.0.0.1:8000/admin/
 
+# Optional: Celery (Only needed when testing async queues with Redis):
+# Worker: celery -A config worker -l info -Q default,emails,sms,inventory,media
+# Beat:   celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+# (Note: In local dev DEBUG=True, tasks run eager/in-process automatically)
 
-
-FRONTEND : 
-# 1. Go into the frontend directory
+--------------------------------------------------------------------------------
+2. FRONTEND (NEXT.JS 16 / REACT 19)
+--------------------------------------------------------------------------------
+# Step 1: Navigate to frontend folder (in a new terminal)
 cd frontend
 
-# 2. Install dependencies (if not already installed)
+# Step 2: Install dependencies (once)
 npm install
 
-# 3. Start the Next.js development server
+# Step 3: Configure Environment (.env.local)
+# Create or edit frontend/.env.local:
+#
+# To connect to the live Django backend:
+#   NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+#   NEXT_PUBLIC_ENABLE_MOCKS=false
+#
+# Or to run frontend in standalone mock mode (without backend):
+#   NEXT_PUBLIC_ENABLE_MOCKS=true
+
+# Step 4: Start Next.js development server
 npm run dev
+
+# Frontend Endpoint:
+# - Storefront: http://localhost:3000
+================================================================================
