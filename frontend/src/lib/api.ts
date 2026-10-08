@@ -4,6 +4,7 @@ import {
   refreshTokensSynchronized,
   clearAuthSession,
 } from './auth';
+import { setupMockServer } from './mock-server';
 
 // Connects directly to backend at http://127.0.0.1:8000 or via Next.js proxy
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -14,6 +15,10 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === 'true') {
+  setupMockServer(api);
+}
 
 // Determines if an endpoint can be safely retried as anonymous guest on 401 failure
 function isPublicReadEndpoint(url?: string, method?: string): boolean {

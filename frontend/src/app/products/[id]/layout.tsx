@@ -17,16 +17,16 @@ export async function generateMetadata({
     });
     if (!res.ok) {
       return {
-        title: "جزئیات محصول | Luxe Fashion Store",
-        description: "مشاهده جزئیات، مشخصات و خرید آنلاین محصول در فروشگاه لوکس فشن",
+        title: "جزئیات محصول | ماوی MAVI",
+        description: "مشاهده جزئیات، مشخصات و خرید آنلاین محصول در فروشگاه تخصصی مد و پوشاک ماوی (MAVI)",
       };
     }
     const product = await res.json();
-    const title = product.meta_title || `${product.title || product.name || "محصول"} | Luxe`;
+    const title = product.meta_title || `${product.title || product.name || "محصول"} | ماوی MAVI`;
     const description =
       product.meta_description ||
       product.description?.slice(0, 160) ||
-      "خرید آنلاین با بهترین کیفیت و ضمانت اصالت";
+      "خرید آنلاین با بهترین کیفیت و ضمانت اصالت در ماوی";
     const canonical = product.canonical_url;
     const ogImage = product.og_image || product.media?.[0]?.url || product.image;
 
@@ -63,8 +63,8 @@ export async function generateMetadata({
     };
   } catch {
     return {
-      title: "جزئیات محصول | Luxe Fashion Store",
-      description: "مشاهده جزئیات، مشخصات و خرید آنلاین محصول در فروشگاه لوکس فشن",
+      title: "جزئیات محصول | ماوی MAVI",
+      description: "مشاهده جزئیات، مشخصات و خرید آنلاین محصول در فروشگاه تخصصی مد و پوشاک ماوی (MAVI)",
     };
   }
 }

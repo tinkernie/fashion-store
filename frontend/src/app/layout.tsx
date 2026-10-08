@@ -10,8 +10,11 @@ const vazirmatn = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "Fashion Store",
-  description: "فروشگاه لباس",
+  title: {
+    template: "%s | ماوی MAVI",
+    default: "ماوی (MAVI) — فروشگاه تخصصی مد و پوشاک فاخر",
+  },
+  description: "فروشگاه تخصصی مد و پوشاک فاخر ماوی (MAVI)؛ جدیدترین کالکشن‌های پوشاک، پیراهن، شومیز، اکسسوری و استایل مدرن زنانه و مردانه",
 };
 
 export default function RootLayout({

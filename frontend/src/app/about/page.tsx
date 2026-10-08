@@ -33,7 +33,7 @@ export default function AboutPage() {
       >
         <img 
           src="https://images.unsplash.com/photo-1550614000-4b95d466f128?q=80&w=1920&auto=format&fit=crop" 
-          alt="About Fashion Store" 
+          alt="درباره فروشگاه ماوی MAVI" 
           className="w-full h-full object-cover opacity-90"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>

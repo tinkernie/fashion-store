@@ -337,12 +337,12 @@ export default function AdminLayout({
         {/* Sidebar Brand Header */}
         <div className="h-20 px-6 border-b border-white/10 flex items-center justify-between">
           <Link href="/admin" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white text-black flex items-center justify-center font-black text-lg shadow-lg">
-              ف
+            <div className="w-9 h-9 rounded-xl bg-white text-[#0082CA] flex items-center justify-center font-black text-lg shadow-lg">
+              م
             </div>
             <div>
-              <span className="font-black text-base text-white tracking-wider block">پنل مدیریت</span>
-              <span className="text-[10px] text-gray-400 block -mt-1">Fashion Store CMS</span>
+              <span className="font-black text-base text-white tracking-wider block">پنل مدیریت ماوی</span>
+              <span className="text-[10px] text-sky-300 block -mt-1 font-sans">MAVI CMS</span>
             </div>
           </Link>
           <button

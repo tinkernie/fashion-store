@@ -4,8 +4,13 @@ import { Metadata } from "next";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "فروشگاه لوکس پوشاک | Fashion Store",
-  description: "جدیدترین کالکشن‌های مد و پوشاک فاخر زنانه و مردانه با مرغوب‌ترین متریال و طراحی‌های بین‌المللی",
+  title: "ماوی (MAVI) — فروشگاه تخصصی مد و پوشاک فاخر",
+  description: "جدیدترین کالکشن‌های مد، استایل و پوشاک لوکس زنانه و مردانه با مرغوب‌ترین متریال در فروشگاه ماوی (MAVI)",
+  openGraph: {
+    title: "ماوی (MAVI) — فروشگاه تخصصی مد و پوشاک فاخر",
+    description: "جدیدترین کالکشن‌های مد، استایل و پوشاک لوکس در فروشگاه ماوی (MAVI)",
+    siteName: "ماوی MAVI",
+  },
 };
 
 async function getInitialData() {
@@ -13,17 +18,19 @@ async function getInitialData() {
 
   let hero = null;
   let announcement = null;
-  let products = [];
-  let bestSellers = [];
-  let trending = [];
+  let categories = [];
+  let popularProducts = [];
+  let discountedProducts = [];
+  let catalogProducts = [];
 
   try {
-    const [heroRes, announceRes, productsRes, bestSellersRes, trendingRes] = await Promise.allSettled([
+    const [heroRes, announceRes, categoriesRes, popularRes, discountRes, catalogRes] = await Promise.allSettled([
       fetch(`${backendUrl}/api/site-content/hero/`, { cache: "no-store" }),
       fetch(`${backendUrl}/api/site-content/announcement/`, { cache: "no-store" }),
-      fetch(`${backendUrl}/api/products/?page_size=12`, { cache: "no-store" }),
-      fetch(`${backendUrl}/api/products/?ordering=best_selling&page_size=8`, { cache: "no-store" }),
-      fetch(`${backendUrl}/api/products/?ordering=trending&page_size=8`, { cache: "no-store" }),
+      fetch(`${backendUrl}/api/categories/flat/`, { cache: "no-store" }),
+      fetch(`${backendUrl}/api/products/?ordering=popularity&page_size=12`, { cache: "no-store" }),
+      fetch(`${backendUrl}/api/products/?has_discount=true&page_size=12`, { cache: "no-store" }),
+      fetch(`${backendUrl}/api/products/?page_size=32`, { cache: "no-store" }),
     ]);
 
     if (heroRes.status === "fulfilled" && heroRes.value.ok) {
@@ -36,37 +43,43 @@ async function getInitialData() {
       announcement = data.announcement || data;
     }
 
-    if (productsRes.status === "fulfilled" && productsRes.value.ok) {
-      const data = await productsRes.value.json();
-      products = Array.isArray(data) ? data : data.results || [];
+    if (categoriesRes.status === "fulfilled" && categoriesRes.value.ok) {
+      const data = await categoriesRes.value.json();
+      categories = Array.isArray(data) ? data : data.results || [];
     }
 
-    if (bestSellersRes.status === "fulfilled" && bestSellersRes.value.ok) {
-      const data = await bestSellersRes.value.json();
-      bestSellers = Array.isArray(data) ? data : data.results || [];
+    if (popularRes.status === "fulfilled" && popularRes.value.ok) {
+      const data = await popularRes.value.json();
+      popularProducts = Array.isArray(data) ? data : data.results || [];
     }
 
-    if (trendingRes.status === "fulfilled" && trendingRes.value.ok) {
-      const data = await trendingRes.value.json();
-      trending = Array.isArray(data) ? data : data.results || [];
+    if (discountRes.status === "fulfilled" && discountRes.value.ok) {
+      const data = await discountRes.value.json();
+      discountedProducts = Array.isArray(data) ? data : data.results || [];
+    }
+
+    if (catalogRes.status === "fulfilled" && catalogRes.value.ok) {
+      const data = await catalogRes.value.json();
+      catalogProducts = Array.isArray(data) ? data : data.results || [];
     }
   } catch (error) {
     console.error("Failed to fetch initial home data on server:", error);
   }
 
-  return { hero, announcement, products, bestSellers, trending };
+  return { hero, announcement, categories, popularProducts, discountedProducts, catalogProducts };
 }
 
 export default async function Home() {
-  const { hero, announcement, products, bestSellers, trending } = await getInitialData();
+  const { hero, announcement, categories, popularProducts, discountedProducts, catalogProducts } = await getInitialData();
 
   return (
     <HomeClient
       initialHero={hero}
       initialAnnouncement={announcement}
-      initialProducts={products}
-      initialBestSellers={bestSellers}
-      initialTrending={trending}
+      initialCategories={categories}
+      initialPopular={popularProducts}
+      initialDiscounted={discountedProducts}
+      initialProducts={catalogProducts}
     />
   );
 }

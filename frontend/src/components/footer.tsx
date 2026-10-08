@@ -13,11 +13,12 @@ export default function Footer() {
           
           {/* Column 1: Brand & Contact */}
           <div className="md:col-span-5 flex flex-col space-y-6">
-            <Link href="/" className="text-3xl font-black tracking-widest uppercase text-white hover:text-sky-200 transition-colors drop-shadow-sm">
-              فشن استور
+            <Link href="/" className="flex items-baseline gap-2.5 text-white hover:text-sky-200 transition-colors drop-shadow-sm group">
+              <span className="text-3xl font-black tracking-widest uppercase font-sans">MAVI</span>
+              <span className="text-sm font-bold text-sky-300">ماوی</span>
             </Link>
             <p className="text-sky-100/80 text-sm leading-relaxed max-w-sm">
-              مجموعه‌ای از بهترین طراحی‌های مینیمال و استایل خیابانی. ما به کیفیت متریال و اصالت در طراحی باور داریم.
+              فروشگاه تخصصی مد و پوشاک فاخر ماوی (MAVI)؛ پیشرو در ارائه جدیدترین طراحی‌های مدرن و متریال‌های باکیفیت جهانی.
             </p>
             
             <div className="flex flex-col space-y-4 pt-2">
@@ -78,7 +79,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-sky-900/60 gap-4 text-sky-300/60">
           <p className="text-xs font-sans">
-            © 2026 Fashion Store. All rights reserved.
+            © 2026 MAVI (ماوی). All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-sky-300/70">
             <Link href="https://instagram.com/your_username" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">

@@ -292,7 +292,7 @@ export function setupMockServer(axiosInstance: AxiosInstance) {
     if (url.includes("/api/products/") || url.includes("/api/search/products/")) {
       let results = [...MOCK_PRODUCTS];
 
-      const searchParam = params.search || (url.includes("search=") ? url.split("search=")[1].split("&")[0] : "");
+      const searchParam = params?.search || (url.includes("search=") ? url.split("search=")[1].split("&")[0] : "");
       if (searchParam) {
         const q = decodeURIComponent(searchParam).toLowerCase();
         results = results.filter(
@@ -300,15 +300,39 @@ export function setupMockServer(axiosInstance: AxiosInstance) {
         );
       }
 
-      const categoryParam = params.category || params.category_id;
+      const categoryParam = params?.category || params?.category_id || (url.includes("category=") ? url.split("category=")[1].split("&")[0] : "");
       if (categoryParam) {
-        results = results.filter((p: MockProduct) => p.category_id === categoryParam || p.category === categoryParam);
+        results = results.filter((p: MockProduct) => p.category_id === categoryParam || p.category === categoryParam || p.slug.includes(categoryParam));
+      }
+
+      const hasDiscountParam = params?.has_discount || (url.includes("has_discount=") ? url.split("has_discount=")[1].split("&")[0] : "");
+      if (hasDiscountParam === "true" || hasDiscountParam === "1" || hasDiscountParam === true) {
+        results = results.filter((p: MockProduct) => (p.compare_at_price && p.compare_at_price > p.price) || (p as any).discount_price);
+      }
+
+      const orderingParam = params?.ordering || (url.includes("ordering=") ? url.split("ordering=")[1].split("&")[0] : "");
+      if (orderingParam === "popularity" || orderingParam === "-popularity" || orderingParam === "best_selling" || orderingParam === "-best_selling") {
+        results.sort((a, b) => (b.reviews_count || 0) - (a.reviews_count || 0));
+      } else if (orderingParam === "trending" || orderingParam === "-trending") {
+        results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      } else if (orderingParam === "price_asc" || orderingParam === "price") {
+        results.sort((a, b) => a.price - b.price);
+      } else if (orderingParam === "price_desc" || orderingParam === "-price") {
+        results.sort((a, b) => b.price - a.price);
+      } else if (orderingParam === "newest" || orderingParam === "-created_at") {
+        results.reverse();
+      }
+
+      const pageSizeParam = params?.page_size ? parseInt(String(params.page_size), 10) : (url.includes("page_size=") ? parseInt(url.split("page_size=")[1].split("&")[0], 10) : 0);
+      const totalCount = results.length;
+      if (pageSizeParam && pageSizeParam > 0) {
+        results = results.slice(0, pageSizeParam);
       }
 
       return Promise.reject({
         __mock_handled: true,
         response: createMockResponse({
-          count: results.length,
+          count: totalCount,
           results: results,
         }, 200, config),
       });
@@ -317,6 +341,14 @@ export function setupMockServer(axiosInstance: AxiosInstance) {
     // ------------------------------------------------------------------------
     // 5. CART ENDPOINTS (Fully Interactive with LocalStorage)
     // ------------------------------------------------------------------------
+    if (url.match(/\/api\/cart\/?(\?.*)?$/) && (method === "get" || !method)) {
+      const cart = getStoredCart();
+      return Promise.reject({
+        __mock_handled: true,
+        response: createMockResponse(cart, 200, config),
+      });
+    }
+
     if (url.includes("/api/cart/add_item/") && method === "post") {
       const cart = getStoredCart();
       const variantId = data.variant_id;

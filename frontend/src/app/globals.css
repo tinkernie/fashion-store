@@ -344,3 +344,45 @@ input[type="number"] {
 ::-webkit-scrollbar-thumb:hover {
   background: #006CA8;
 }
+
+/* Continuous Elegant Marquee Animation (Hardware Accelerated) */
+@keyframes marquee-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee-scroll 42s linear infinite;
+}
+
+.animate-marquee-track-fast {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee-scroll 32s linear infinite;
+}
+
+.pause-on-hover:hover .animate-marquee-track,
+.pause-on-hover:hover .animate-marquee-track-fast {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-track,
+  .animate-marquee-track-fast {
+    animation: none !important;
+  }
+}
+
+/* Side Gradient Fade Masks for E-Commerce Marquees */
+.marquee-fade-mask {
+  mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+}

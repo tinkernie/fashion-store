@@ -241,8 +241,13 @@ export default function Navbar() {
         dir="rtl"
       >
         {/* Right side: Brand Logo */}
-        <Link href="/" className="text-xl font-black tracking-widest uppercase text-white hover:text-sky-100 shrink-0 transition-colors drop-shadow-sm">
-          فشن استور
+        <Link href="/" className="flex items-center gap-2 text-white hover:text-sky-100 shrink-0 transition-all group">
+          <span className="text-xl md:text-2xl font-black tracking-widest uppercase drop-shadow-sm font-sans">
+            MAVI
+          </span>
+          <span className="text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+            ماوی
+          </span>
         </Link>
 
         {/* Center Section: Animated Toggle between Nav Links & Expanding Search Field */}
@@ -520,7 +525,8 @@ export default function Navbar() {
                     <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
-                    فشن استور
+                    <span>ماوی</span>
+                    <span className="text-xs uppercase tracking-widest text-sky-500 font-extrabold">MAVI</span>
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-5 py-6 text-base font-medium">
