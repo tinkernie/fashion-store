@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
-def to_webp_file(file, quality: int = 82) -> InMemoryUploadedFile | ContentFile:
+def to_webp_file(file, quality: int = 82) -> InMemoryUploadedFile or ContentFile:
     """
     Converts any incoming image to WebP format, preserving transparency and correcting EXIF orientation.
     Returns an InMemoryUploadedFile with .webp extension and 'image/webp' content-type.
