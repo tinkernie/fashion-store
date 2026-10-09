@@ -8,6 +8,7 @@ import { ShoppingBag, User, Search, Trash2, Menu, Tag, X, Loader2, Sparkles, Arr
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MaviWordmark } from "@/components/ui/mavi-wordmark";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -239,9 +240,7 @@ export default function Navbar() {
       >
         {/* Right side: Brand Logo */}
         <Link href="/" className="flex items-center gap-2 text-white hover:text-sky-100 shrink-0 transition-all group">
-          <span className="text-xl md:text-2xl font-black tracking-widest uppercase drop-shadow-sm font-sans">
-            MAVI
-          </span>
+          <MaviWordmark className="h-5 sm:h-6 w-auto text-white drop-shadow-sm group-hover:scale-105 transition-transform" />
           <span className="text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-sm group-hover:bg-white/30 transition-colors">
             ماوی
           </span>
@@ -535,7 +534,7 @@ export default function Navbar() {
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
                     <span>ماوی</span>
-                    <span className="text-xs uppercase tracking-widest text-sky-500 font-extrabold">MAVI</span>
+                    <MaviWordmark className="h-4.5 w-auto text-[#0082CA]" />
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-5 py-6 text-base font-medium">

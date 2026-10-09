@@ -24,6 +24,7 @@ import {
   Lock,
   ArrowRight
 } from "lucide-react";
+import { MaviWordmark } from "@/components/ui/mavi-wordmark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -342,7 +343,10 @@ export default function AdminLayout({
             </div>
             <div>
               <span className="font-black text-base text-white tracking-wider block">پنل مدیریت ماوی</span>
-              <span className="text-[10px] text-sky-300 block -mt-1 font-sans">MAVI CMS</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <MaviWordmark className="h-2.5 w-auto text-sky-400" />
+                <span className="text-[9px] text-sky-300 font-extrabold tracking-widest uppercase">CMS</span>
+              </div>
             </div>
           </Link>
           <button

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ShieldCheck, Zap, Scissors } from "lucide-react";
+import { MaviWordmark } from "@/components/ui/mavi-wordmark";
 
 export default function AboutPage() {
   return (
@@ -11,9 +12,10 @@ export default function AboutPage() {
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-3xl md:text-6xl font-black text-slate-900"
+          className="text-3xl md:text-5xl font-black text-slate-900 flex items-center justify-center gap-3 flex-wrap"
         >
-          درباره فشن استور
+          <span>درباره خانه مد</span>
+          <MaviWordmark className="h-8 md:h-11 w-auto text-[#0082CA]" />
         </motion.h1>
         <motion.p 
           initial={{ opacity: 0 }}
@@ -21,7 +23,7 @@ export default function AboutPage() {
           transition={{ delay: 0.2 }}
           className="text-slate-500 max-w-2xl text-sm md:text-lg leading-relaxed"
         >
-          ما معتقدیم استایل شما بازتابی از هویت شماست. فشن استور با هدف ارائه پوشاک با کیفیت پریمیوم و طراحی‌های مینیمال برای نسل جدید خلق شده است.
+          ما معتقدیم استایل شما بازتابی از هویت شماست. ماوی (MAVi) با هدف ارائه پوشاک با کیفیت پریمیوم و طراحی‌های مدرن مدیترانه‌ای برای نسل جدید خلق شده است.
         </motion.p>
       </div>
 

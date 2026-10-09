@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MapPin, Phone, Mail, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MaviWordmark } from "@/components/ui/mavi-wordmark";
 
 export default function Footer() {
   return (
@@ -13,8 +14,8 @@ export default function Footer() {
           
           {/* Column 1: Brand & Contact */}
           <div className="md:col-span-5 flex flex-col space-y-6">
-            <Link href="/" className="flex items-baseline gap-2.5 text-white hover:text-sky-200 transition-colors drop-shadow-sm group">
-              <span className="text-3xl font-black tracking-widest uppercase font-sans">MAVI</span>
+            <Link href="/" className="flex items-center gap-3 text-white hover:text-sky-200 transition-colors drop-shadow-sm group">
+              <MaviWordmark className="h-7 sm:h-8 w-auto text-white group-hover:scale-105 transition-transform" />
               <span className="text-sm font-bold text-sky-300">ماوی</span>
             </Link>
             <p className="text-sky-100/80 text-sm leading-relaxed max-w-sm">
