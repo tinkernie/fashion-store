@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,8 +10,6 @@ import {
   ShoppingBag,
   TrendingUp,
   Sparkles,
-  Flame,
-  Tag,
   Truck,
   ShieldCheck,
   RefreshCw,
@@ -191,23 +189,6 @@ export default function HomeClient({
   };
 
   // 4. Products States with reliable fallback to MOCK_PRODUCTS
-  const [popularProducts, setPopularProducts] = useState<any[]>(() => {
-    const list = Array.isArray(initialPopular)
-      ? initialPopular
-      : (initialPopular as any)?.results || [];
-    if (list.length >= 6) return list.slice(0, 10);
-    return MOCK_PRODUCTS.slice(0, 10);
-  });
-
-  const [discountedProducts, setDiscountedProducts] = useState<any[]>(() => {
-    const list = Array.isArray(initialDiscounted)
-      ? initialDiscounted
-      : (initialDiscounted as any)?.results || [];
-    const valid = list.filter((p: any) => getDiscountInfo(p).hasDiscount);
-    if (valid.length >= 4) return valid.slice(0, 10);
-    return MOCK_PRODUCTS.filter((p) => p.compare_at_price && p.compare_at_price > p.price).slice(0, 10);
-  });
-
   const [catalogProducts, setCatalogProducts] = useState<any[]>(() => {
     const list = Array.isArray(initialProducts)
       ? initialProducts
@@ -216,49 +197,49 @@ export default function HomeClient({
     return MOCK_PRODUCTS;
   });
 
-  // Random Discovery Products (Deduplicated against popular and discounted)
-  const [discoveryProducts, setDiscoveryProducts] = useState<any[]>(() => {
-    return MOCK_PRODUCTS.slice(0, 12);
-  });
-
-  // Calculate non-duplicate discovery products
-  useEffect(() => {
-    const popularIds = new Set(popularProducts.map((p) => String(p.id)));
-    const discountIds = new Set(discountedProducts.map((p) => String(p.id)));
-
-    // Filter out products already featured in marquees
-    const nonFeatured = catalogProducts.filter(
-      (p) => !popularIds.has(String(p.id)) && !discountIds.has(String(p.id))
-    );
-
-    // If we have enough non-featured, use them; otherwise fill from catalog and MOCK_PRODUCTS
-    let pool = nonFeatured.length >= 8 ? nonFeatured : [...nonFeatured, ...catalogProducts, ...MOCK_PRODUCTS];
-
-    // Deduplicate by ID
-    const seen = new Set();
-    const unique = pool.filter((p) => {
-      const id = String(p.id);
-      if (seen.has(id)) return false;
-      seen.add(id);
-      return true;
+  // Newest Products (sorted newest to oldest, 24 products for 6 cards/row x 4 rows)
+  const newestProducts = useMemo(() => {
+    const cleanCatalog = catalogProducts.filter((p) => {
+      const name = (p.name || p.title || "").toLowerCase();
+      return !name.includes("test") && !name.includes("related a") && !name.includes("related b") && !name.includes("related c") && !name.includes("related d") && !name.includes("related e");
     });
+    const pool = [...cleanCatalog];
+    const seen = new Set(pool.map((p) => String(p.id)));
+    for (const mock of MOCK_PRODUCTS) {
+      if (!seen.has(String(mock.id))) {
+        seen.add(String(mock.id));
+        pool.push(mock);
+      }
+    }
 
-    // Deterministic shuffle for variety
-    const shuffled = [...unique].sort(() => 0.5 - Math.random());
-    setDiscoveryProducts(shuffled.slice(0, 12));
-  }, [catalogProducts, popularProducts, discountedProducts]);
+    return pool
+      .sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        if (timeA && timeB && timeA !== timeB) {
+          return timeB - timeA;
+        }
+        if (timeA && !timeB) return -1;
+        if (!timeA && timeB) return 1;
+        const numA = Number(a.id);
+        const numB = Number(b.id);
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numB - numA;
+        }
+        return String(b.id || "").localeCompare(String(a.id || ""));
+      })
+      .slice(0, 24);
+  }, [catalogProducts]);
 
   // Client-side background sync for fresh data from backend
   useEffect(() => {
     const syncData = async () => {
       try {
-        const [cats, heroRes, announceRes, popRes, discRes, catRes] = await Promise.allSettled([
+        const [cats, heroRes, announceRes, catRes] = await Promise.allSettled([
           getCategories(),
           api.get("/api/site-content/hero/"),
           api.get("/api/site-content/announcement/"),
-          api.get("/api/products/?ordering=popularity&page_size=12"),
-          api.get("/api/products/?has_discount=true&page_size=12"),
-          api.get("/api/products/?page_size=32"),
+          api.get("/api/products/?ordering=newest&page_size=32"),
         ]);
 
         if (cats.status === "fulfilled" && cats.value?.length > 0) {
@@ -310,17 +291,6 @@ export default function HomeClient({
           }
         }
 
-        if (popRes.status === "fulfilled" && popRes.value?.data) {
-          const res = Array.isArray(popRes.value.data) ? popRes.value.data : popRes.value.data.results || [];
-          if (res.length >= 4) setPopularProducts(res.slice(0, 10));
-        }
-
-        if (discRes.status === "fulfilled" && discRes.value?.data) {
-          const res = Array.isArray(discRes.value.data) ? discRes.value.data : discRes.value.data.results || [];
-          const validDiscounts = res.filter((p: any) => getDiscountInfo(p).hasDiscount);
-          if (validDiscounts.length >= 4) setDiscountedProducts(validDiscounts.slice(0, 10));
-        }
-
         if (catRes.status === "fulfilled" && catRes.value?.data) {
           const res = Array.isArray(catRes.value.data) ? catRes.value.data : catRes.value.data.results || [];
           if (res.length > 0) setCatalogProducts(res);
@@ -349,6 +319,21 @@ export default function HomeClient({
     }, 10000); // 10 seconds auto-advance per brief specification
     return () => clearInterval(interval);
   }, [isPaused, nextSlide, heroSlides.length]);
+
+  // Fallback image healer for missing/broken product images
+  useEffect(() => {
+    const handleBrokenImages = () => {
+      const images = document.querySelectorAll<HTMLImageElement>("img[data-product-img]");
+      images.forEach((img) => {
+        if (img.complete && (img.naturalWidth === 0 || img.naturalHeight === 0)) {
+          img.src = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop";
+        }
+      });
+    };
+    handleBrokenImages();
+    const timer = setTimeout(handleBrokenImages, 800);
+    return () => clearTimeout(timer);
+  }, [newestProducts]);
 
   // Safe bounded slide reference
   const currentSlideIndex = ((activeSlide % (heroSlides.length || 1)) + (heroSlides.length || 1)) % (heroSlides.length || 1);
@@ -593,193 +578,7 @@ export default function HomeClient({
       </section>
 
       {/* ----------------------------------------------------------------- */}
-      {/* 3. POPULAR PRODUCTS MARQUEE (Continuous Smooth Looping Marquee)    */}
-      {/* ----------------------------------------------------------------- */}
-      {popularProducts.length > 0 && (
-        <section className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 sm:py-12">
-          {/* Section Header */}
-          <div className="flex items-end justify-between mb-6 border-b border-sky-100 pb-4">
-            <div>
-              <div className="flex items-center gap-2.5 mb-1.5">
-                <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
-                  <Flame className="w-4 h-4 text-white" />
-                </div>
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0B192C]">
-                  محبوب‌ترین‌های ماوی
-                </h2>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500">
-                پرفروش‌ترین و موردعلاقه‌ترین استایل‌های این فصل بر اساس انتخاب خریداران
-              </p>
-            </div>
-
-            <Link
-              href="/products?ordering=popularity"
-              className="hidden sm:inline-flex items-center gap-1 text-xs md:text-sm font-bold text-[#0082CA] hover:text-[#006CA8] transition-colors"
-            >
-              مشاهده همه
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Marquee Track Container with Side Gradient Fade Masks */}
-          <div className="relative overflow-hidden w-full marquee-fade-mask pause-on-hover py-2" dir="ltr">
-            <div className="animate-marquee-track flex gap-4 sm:gap-6">
-              {/* Repeated array rendering for seamless infinite looping */}
-              {[...popularProducts, ...popularProducts, ...popularProducts].map((product, idx) => {
-                const disc = getDiscountInfo(product);
-                return (
-                  <div
-                    key={`popular-${product.id}-${idx}`}
-                    className="w-[170px] sm:w-[210px] md:w-[240px] shrink-0 group flex flex-col"
-                    dir="rtl"
-                  >
-                    <Link
-                      href={`/products/${product.id}`}
-                      className="block relative aspect-[3/4] overflow-hidden rounded-2xl bg-white border border-sky-100 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all mb-2 sm:mb-3"
-                    >
-                      {disc.hasDiscount && (
-                        <div className="absolute top-2.5 right-2.5 z-20">
-                          <span className="px-2 py-0.5 rounded-full bg-[#0082CA] text-white text-[10px] font-bold shadow-md shadow-[#0082CA]/30">
-                            ٪{disc.discountPercent} تخفیف
-                          </span>
-                        </div>
-                      )}
-                      <img
-                        src={product.imageUrl || product.image_url || product.image}
-                        alt={product.name || product.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-[#0B192C]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                        <span className="bg-white text-[#0082CA] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                          <ShoppingBag className="w-3.5 h-3.5" />
-                          مشاهده
-                        </span>
-                      </div>
-                    </Link>
-
-                    <div className="flex flex-col px-1">
-                      <span className="text-[11px] font-semibold text-[#0082CA] mb-0.5">
-                        {(product.category || "").split("-")[1]?.trim() || product.category || "ماوی"}
-                      </span>
-                      <h3 className="text-xs sm:text-sm font-bold text-[#0B192C] line-clamp-1 mb-1">
-                        {product.name || product.title}
-                      </h3>
-                      {disc.hasDiscount ? (
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-[#0082CA] font-extrabold text-xs sm:text-sm">
-                            {formatPrice(disc.discountPrice)}
-                          </span>
-                          <span className="text-[10px] text-slate-400 line-through">
-                            {formatPrice(disc.basePrice)}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-[#0B192C] font-extrabold text-xs sm:text-sm">
-                          {formatPrice(product.price)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ----------------------------------------------------------------- */}
-      {/* 4. DISCOUNTED PRODUCTS MARQUEE (Continuous Loop for Active Deals) */}
-      {/* ----------------------------------------------------------------- */}
-      {discountedProducts.length > 0 && (
-        <section className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 sm:py-12">
-          {/* Section Header */}
-          <div className="flex items-end justify-between mb-6 border-b border-sky-100 pb-4">
-            <div>
-              <div className="flex items-center gap-2.5 mb-1.5">
-                <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
-                  <Tag className="w-4 h-4 text-white" />
-                </div>
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0B192C]">
-                  حراج و تخفیف‌های ویژه ماوی
-                </h2>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500">
-                فرصت طلایی خرید استایل‌های محبوب با تخفیف‌های استثنایی و محدود
-              </p>
-            </div>
-
-            <Link
-              href="/products?has_discount=true"
-              className="hidden sm:inline-flex items-center gap-1 text-xs md:text-sm font-bold text-[#0082CA] hover:text-[#006CA8] transition-colors"
-            >
-              مشاهده همه حراج‌ها
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {/* Marquee Track Container with Side Gradient Fade Masks */}
-          <div className="relative overflow-hidden w-full marquee-fade-mask pause-on-hover py-2" dir="ltr">
-            <div className="animate-marquee-track-fast flex gap-4 sm:gap-6">
-              {/* Repeated array rendering for seamless infinite looping */}
-              {[...discountedProducts, ...discountedProducts, ...discountedProducts].map((product, idx) => {
-                const disc = getDiscountInfo(product);
-                return (
-                  <div
-                    key={`discount-${product.id}-${idx}`}
-                    className="w-[170px] sm:w-[210px] md:w-[240px] shrink-0 group flex flex-col"
-                    dir="rtl"
-                  >
-                    <Link
-                      href={`/products/${product.id}`}
-                      className="block relative aspect-[3/4] overflow-hidden rounded-2xl bg-white border border-sky-100 shadow-sm hover:shadow-lg hover:border-sky-300 transition-all mb-2 sm:mb-3"
-                    >
-                      <div className="absolute top-2.5 right-2.5 z-20">
-                        <span className="px-2 py-0.5 rounded-full bg-[#0082CA] text-white text-[10px] font-bold shadow-md shadow-[#0082CA]/30">
-                          ٪{disc.discountPercent || 25} تخفیف
-                        </span>
-                      </div>
-                      <img
-                        src={product.imageUrl || product.image_url || product.image}
-                        alt={product.name || product.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-[#0B192C]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                        <span className="bg-white text-[#0082CA] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                          <ShoppingBag className="w-3.5 h-3.5" />
-                          مشاهده
-                        </span>
-                      </div>
-                    </Link>
-
-                    <div className="flex flex-col px-1">
-                      <span className="text-[11px] font-semibold text-[#0082CA] mb-0.5">
-                        {(product.category || "").split("-")[1]?.trim() || product.category || "حراج فصل"}
-                      </span>
-                      <h3 className="text-xs sm:text-sm font-bold text-[#0B192C] line-clamp-1 mb-1">
-                        {product.name || product.title}
-                      </h3>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[#0082CA] font-extrabold text-xs sm:text-sm">
-                          {formatPrice(disc.discountPrice)}
-                        </span>
-                        <span className="text-[10px] text-slate-400 line-through">
-                          {formatPrice(disc.basePrice)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ----------------------------------------------------------------- */}
-      {/* 5. RANDOM PRODUCTS DISCOVERY GRID (Main Discovery Catalog Area)   */}
+      {/* 3. NEWEST PRODUCTS GRID (6 per row, 4 rows = 24 items)            */}
       {/* ----------------------------------------------------------------- */}
       <section className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 sm:py-16">
         {/* Section Header */}
@@ -790,11 +589,11 @@ export default function HomeClient({
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0B192C]">
-                کشف استایل‌های متنوع ماوی
+                جدیدترین محصولات
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-slate-500">
-              مجموعه‌ای متنوع از جدیدترین پوشاک، پیراهن، شومیز و استایل‌های روزمره و رسمی
+              جدیدترین استایل‌ها و کالکشن‌های مد روز اضافه شده به فروشگاه ماوی
             </p>
           </div>
 
@@ -802,23 +601,23 @@ export default function HomeClient({
             href="/products"
             className="hidden sm:inline-flex items-center gap-1 text-xs md:text-sm font-bold text-[#0082CA] hover:text-[#006CA8] transition-colors"
           >
-            مشاهده کاتالوگ کامل
+            مشاهده همه
             <ArrowLeft className="w-4 h-4" />
           </Link>
         </div>
 
-        {/* Responsive Grid: 2 cols on mobile, 3 cols on tablet, 4 cols on desktop */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5 md:gap-6">
-          {discoveryProducts.map((product, index) => {
+        {/* Responsive Grid: 2 cols on mobile, 3 on sm, 4 on md, 6 on desktop (4 rows x 6 cols = 24 cards) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-4.5">
+          {newestProducts.map((product, index) => {
             const disc = getDiscountInfo(product);
             return (
               <div
-                key={`discovery-${product.id || index}`}
+                key={`newest-${product.id || index}`}
                 className="group flex flex-col bg-white rounded-2xl md:rounded-3xl border border-sky-100/80 p-2 sm:p-2.5 shadow-sm hover:shadow-xl hover:border-sky-300 hover:-translate-y-1 transition-all duration-300"
               >
                 <Link
                   href={`/products/${product.id}`}
-                  className="block relative aspect-[3/4] overflow-hidden rounded-xl md:rounded-2xl bg-slate-50 mb-2 sm:mb-3"
+                  className="block relative aspect-[3/4] overflow-hidden rounded-xl md:rounded-2xl bg-slate-50 mb-2 sm:mb-2.5"
                 >
                   {disc.hasDiscount && (
                     <div className="absolute top-2 right-2 z-20">
@@ -829,23 +628,28 @@ export default function HomeClient({
                   )}
 
                   <img
-                    src={product.imageUrl || product.image_url || product.image}
+                    src={product.imageUrl || product.image_url || product.image || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop"}
                     alt={product.name || product.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
                     loading="lazy"
+                    data-product-img="true"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop";
+                    }}
                   />
 
                   <div className="absolute inset-0 bg-[#0B192C]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <span className="bg-white text-[#0082CA] px-4 py-2 rounded-full font-bold text-xs shadow-lg flex items-center gap-1.5 transform translate-y-3 group-hover:translate-y-0 transition-all duration-300">
+                    <span className="bg-white text-[#0082CA] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-lg flex items-center gap-1.5 transform translate-y-3 group-hover:translate-y-0 transition-all duration-300">
                       <ShoppingBag className="w-3.5 h-3.5" />
                       مشاهده جزئیات
                     </span>
                   </div>
                 </Link>
 
-                <div className="flex flex-col px-1.5 pb-1 flex-1 justify-between">
+                <div className="flex flex-col px-1 pb-1 flex-1 justify-between">
                   <div>
-                    <span className="text-[11px] font-semibold text-[#0082CA] mb-0.5 block truncate">
+                    <span className="text-[10px] sm:text-[11px] font-semibold text-[#0082CA] mb-0.5 block truncate">
                       {(product.category || "").split("-")[1]?.trim() || product.category || "ماوی"}
                     </span>
                     <h3 className="text-xs sm:text-sm font-bold text-[#0B192C] line-clamp-1 mb-1.5">
@@ -855,16 +659,16 @@ export default function HomeClient({
 
                   <div className="pt-1 border-t border-sky-50">
                     {disc.hasDiscount ? (
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-[#0082CA] font-black text-xs sm:text-base">
+                      <div className="flex items-baseline justify-between gap-1">
+                        <span className="text-[#0082CA] font-black text-xs sm:text-sm">
                           {formatPrice(disc.discountPrice)}
                         </span>
-                        <span className="text-[10px] sm:text-xs text-slate-400 line-through">
+                        <span className="text-[10px] text-slate-400 line-through">
                           {formatPrice(disc.basePrice)}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-[#0B192C] font-black text-xs sm:text-base block text-left">
+                      <span className="text-[#0B192C] font-black text-xs sm:text-sm block text-left">
                         {formatPrice(product.price)}
                       </span>
                     )}
@@ -880,10 +684,10 @@ export default function HomeClient({
           <Button
             asChild
             size="lg"
-            className="rounded-full px-8 sm:px-12 py-3.5 sm:py-4 bg-[#0082CA] text-white font-bold hover:bg-[#006CA8] shadow-lg shadow-[#0082CA]/25 hover:shadow-xl active:scale-[0.98] transition-all text-xs sm:text-sm cursor-pointer"
+            className="rounded-full px-8 sm:px-12 py-3.5 sm:py-4 bg-[#0082CA] hover:bg-[#0072B3] text-white font-bold shadow-lg shadow-[#0082CA]/25 hover:shadow-xl hover:shadow-[#0082CA]/35 active:scale-[0.98] transition-all text-xs sm:text-sm cursor-pointer"
           >
             <Link href="/products" className="flex items-center gap-2">
-              مشاهده همه محصولات کاتالوگ ماوی
+              <span>مشاهده همه محصولات</span>
               <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" />
             </Link>
           </Button>

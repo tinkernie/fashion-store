@@ -25,14 +25,12 @@ async function getInitialData() {
   let catalogProducts = [];
 
   try {
-    const [heroRes, announceRes, discountSecRes, categoriesRes, popularRes, discountRes, catalogRes] = await Promise.allSettled([
+    const [heroRes, announceRes, discountSecRes, categoriesRes, catalogRes] = await Promise.allSettled([
       fetch(`${backendUrl}/api/site-content/hero/`, { cache: "no-store" }),
       fetch(`${backendUrl}/api/site-content/announcement/`, { cache: "no-store" }),
       fetch(`${backendUrl}/api/site-content/discount_section/`, { cache: "no-store" }),
       fetch(`${backendUrl}/api/categories/flat/`, { cache: "no-store" }),
-      fetch(`${backendUrl}/api/products/?ordering=popularity&exclude_discounted=true&page_size=12`, { cache: "no-store" }),
-      fetch(`${backendUrl}/api/products/?has_discount=true&page_size=12`, { cache: "no-store" }),
-      fetch(`${backendUrl}/api/products/?exclude_discounted=true&page_size=32`, { cache: "no-store" }),
+      fetch(`${backendUrl}/api/products/?ordering=newest&page_size=32`, { cache: "no-store" }),
     ]);
 
     if (heroRes.status === "fulfilled" && heroRes.value.ok) {
@@ -55,16 +53,6 @@ async function getInitialData() {
       categories = Array.isArray(data) ? data : data.results || [];
     }
 
-    if (popularRes.status === "fulfilled" && popularRes.value.ok) {
-      const data = await popularRes.value.json();
-      popularProducts = Array.isArray(data) ? data : data.results || [];
-    }
-
-    if (discountRes.status === "fulfilled" && discountRes.value.ok) {
-      const data = await discountRes.value.json();
-      discountedProducts = Array.isArray(data) ? data : data.results || [];
-    }
-
     if (catalogRes.status === "fulfilled" && catalogRes.value.ok) {
       const data = await catalogRes.value.json();
       catalogProducts = Array.isArray(data) ? data : data.results || [];
@@ -73,11 +61,11 @@ async function getInitialData() {
     console.error("Failed to fetch initial home data on server:", error);
   }
 
-  return { hero, announcement, discountSection, categories, popularProducts, discountedProducts, catalogProducts };
+  return { hero, announcement, discountSection, categories, catalogProducts };
 }
 
 export default async function Home() {
-  const { hero, announcement, discountSection, categories, popularProducts, discountedProducts, catalogProducts } = await getInitialData();
+  const { hero, announcement, discountSection, categories, catalogProducts } = await getInitialData();
 
   return (
     <HomeClient
@@ -85,8 +73,6 @@ export default async function Home() {
       initialAnnouncement={announcement}
       initialDiscountSection={discountSection}
       initialCategories={categories}
-      initialPopular={popularProducts}
-      initialDiscounted={discountedProducts}
       initialProducts={catalogProducts}
     />
   );

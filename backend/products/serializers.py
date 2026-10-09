@@ -188,6 +188,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "discount_percent", "discount_price", "discount_expires_at", "is_discount_active",
             "related_products", "complete_look", "seo_schema",
             "meta_title", "meta_description", "canonical_url", "breadcrumbs", "og_image", "hreflang",
+            "created_at", "updated_at",
         )
 
     def get_variants(self, product):
