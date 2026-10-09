@@ -122,7 +122,6 @@ lerna-debug.log*
 .skills/
 
 # Graphify
-graphify-out/
 .graphify*
 GRAPH_REPORT.md
 
