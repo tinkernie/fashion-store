@@ -569,6 +569,7 @@ function SearchContent() {
             {/* Animated Gooey Search Bar */}
             <div className="py-2 flex justify-center w-full">
               <GooeySearchBar
+                variant="blue"
                 initialValue={keyword}
                 placeholder="نام کالا، دسته‌بندی، متریال یا استایل مورد نظر را بنویسید..."
                 buttonLabel="جستجوی کالا"

@@ -108,6 +108,7 @@ export interface AnimatedSearchBarProps {
   autoExpand?: boolean;
   className?: string;
   inputWidth?: number;
+  variant?: "default" | "blue";
 }
 
 export function GooeySearchBar({
@@ -120,7 +121,9 @@ export function GooeySearchBar({
   autoExpand = false,
   className,
   inputWidth = 280,
+  variant = "blue",
 }: AnimatedSearchBarProps) {
+  const isBlue = variant === "blue";
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -235,14 +238,22 @@ export function GooeySearchBar({
             whileHover={{ scale: step === 2 ? 1 : 1.03 }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-              "relative flex items-center justify-between h-12 bg-white text-black rounded-full px-4 shadow-xl border border-zinc-200 cursor-pointer overflow-hidden transition-colors",
+              "relative flex items-center justify-between h-12 rounded-full px-4 shadow-xl cursor-pointer overflow-hidden transition-all duration-300",
+              isBlue
+                ? "bg-[#0082CA] text-white border border-[#0091DF]/60 shadow-[#0082CA]/30 hover:bg-[#007ABF] focus-within:ring-2 focus-within:ring-white/40"
+                : "bg-white text-black border border-zinc-200 shadow-xl",
               step === 2 && "cursor-text",
             )}
             role="search"
           >
             {step === 1 ? (
-              <div className="flex items-center justify-center w-full gap-2 text-xs md:text-sm font-black text-black">
-                <Search className="w-4 h-4 text-black" />
+              <div
+                className={cn(
+                  "flex items-center justify-center w-full gap-2 text-xs md:text-sm font-black",
+                  isBlue ? "text-white" : "text-black",
+                )}
+              >
+                <Search className={cn("w-4 h-4", isBlue ? "text-white" : "text-black")} />
                 <span>{buttonLabel}</span>
               </div>
             ) : (
@@ -251,7 +262,12 @@ export function GooeySearchBar({
                   ref={inputRef}
                   type="text"
                   value={searchText}
-                  className="w-full bg-transparent border-none outline-none text-xs md:text-sm text-black font-medium placeholder:text-zinc-400 pr-1 pl-6"
+                  className={cn(
+                    "w-full bg-transparent border-none outline-none text-xs md:text-sm font-medium pr-1 pl-4 transition-colors",
+                    isBlue
+                      ? "text-white placeholder:text-white/70 selection:bg-white/30 selection:text-white"
+                      : "text-black placeholder:text-zinc-400",
+                  )}
                   placeholder={placeholder}
                   aria-label="Search input"
                   onChange={handleSearchChange}
@@ -265,7 +281,12 @@ export function GooeySearchBar({
                       setSearchText("");
                       setSearchData([]);
                     }}
-                    className="p-1 text-zinc-400 hover:text-black rounded-full transition-colors"
+                    className={cn(
+                      "p-1 rounded-full transition-colors",
+                      isBlue
+                        ? "text-white/80 hover:text-white hover:bg-white/20"
+                        : "text-zinc-400 hover:text-black",
+                    )}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -275,12 +296,27 @@ export function GooeySearchBar({
 
             {/* Trailing Icon Indicator */}
             {step === 2 && (
-              <div className="shrink-0 flex items-center justify-center pl-1 text-black">
+              <div
+                className={cn(
+                  "shrink-0 flex items-center justify-center pl-1",
+                  isBlue ? "text-white" : "text-black",
+                )}
+              >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-zinc-500" />
+                  <Loader2
+                    className={cn(
+                      "w-4 h-4 animate-spin",
+                      isBlue ? "text-white/80" : "text-zinc-500",
+                    )}
+                  />
                 ) : (
                   <Search
-                    className="w-4 h-4 text-zinc-700 cursor-pointer hover:text-black transition-colors"
+                    className={cn(
+                      "w-4 h-4 cursor-pointer transition-colors",
+                      isBlue
+                        ? "text-white hover:text-sky-200"
+                        : "text-zinc-700 hover:text-black",
+                    )}
                     onClick={() => {
                       if (searchText.trim() && onSearch) {
                         onSearch(searchText.trim());
@@ -316,15 +352,30 @@ export function GooeySearchBar({
                       exit="exit"
                       transition={getResultItemTransition(index)}
                       onClick={() => handleItemClick(item)}
-                      className="pointer-events-auto absolute flex items-center justify-between bg-white text-black rounded-full px-5 py-2.5 text-xs font-bold shadow-2xl border border-zinc-200 cursor-pointer hover:bg-zinc-100 transition-colors"
+                      className={cn(
+                        "pointer-events-auto absolute flex items-center justify-between rounded-full px-5 py-2.5 text-xs font-bold shadow-2xl cursor-pointer transition-colors",
+                        isBlue
+                          ? "bg-[#0072B3] text-white border border-sky-400/40 hover:bg-[#0082CA] shadow-[#0082CA]/25"
+                          : "bg-white text-black border border-zinc-200 hover:bg-zinc-100",
+                      )}
                       style={{ width: inputWidth - 20, height: 44 }}
                       role="option"
                     >
                       <div className="flex items-center gap-2.5 truncate">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <Sparkles
+                          className={cn(
+                            "w-3.5 h-3.5 shrink-0",
+                            isBlue ? "text-amber-300" : "text-amber-500",
+                          )}
+                        />
                         <span className="truncate">{item}</span>
                       </div>
-                      <Search className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                      <Search
+                        className={cn(
+                          "w-3.5 h-3.5 shrink-0",
+                          isBlue ? "text-white/80" : "text-zinc-400",
+                        )}
+                      />
                     </motion.div>
                   ))}
                 </AnimatePresence>
