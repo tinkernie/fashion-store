@@ -880,7 +880,7 @@ function SearchContent() {
                           setCurrentPage((p) => Math.min(p + 1, totalPages));
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
-                        className="text-xs text-gray-300 hover:text-white rounded-xl gap-1 px-3 h-9 disabled:opacity-30 cursor-pointer"
+                        className="text-xs text-slate-600 hover:text-[#0082CA] hover:bg-sky-50 rounded-xl gap-1 px-3 h-9 disabled:opacity-30 cursor-pointer"
                       >
                         <span className="hidden sm:inline">بعدی</span>
                         <ChevronLeft className="w-4 h-4 rtl:rotate-0" />
