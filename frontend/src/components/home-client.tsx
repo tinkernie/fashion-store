@@ -502,51 +502,24 @@ export default function HomeClient({
               دسته‌بندی‌ها
             </h2>
           </div>
-          {/* Slideshow Arrow Navigation (Replaces "مشاهده همه") */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <button
-              type="button"
-              onClick={() => handleCategoriesScroll("prev")}
-              disabled={!canScrollCategoriesPrev}
-              aria-label="دسته‌بندی‌های قبلی"
-              className={cn(
-                "w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer",
-                canScrollCategoriesPrev
-                  ? "bg-white hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200/80 shadow-sm hover:shadow active:scale-95"
-                  : "bg-slate-50 text-slate-300 border-slate-200/60 cursor-not-allowed opacity-40"
-              )}
-            >
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleCategoriesScroll("next")}
-              disabled={!canScrollCategoriesNext}
-              aria-label="دسته‌بندی‌های بعدی"
-              className={cn(
-                "w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer",
-                canScrollCategoriesNext
-                  ? "bg-white hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200/80 shadow-sm hover:shadow active:scale-95"
-                  : "bg-slate-50 text-slate-300 border-slate-200/60 cursor-not-allowed opacity-40"
-              )}
-            >
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          </div>
         </div>
 
         {/* Categories Horizontal Slider Track */}
-        <div className="relative group/cats">
-          {canScrollCategoriesPrev && (
-            <button
-              type="button"
-              onClick={() => handleCategoriesScroll("prev")}
-              aria-label="قبلی"
-              className="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border border-sky-200 shadow-md backdrop-blur-sm items-center justify-center transition-all cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
+        <div className="relative group/cats px-11 sm:px-14">
+          <button
+            type="button"
+            onClick={() => handleCategoriesScroll("prev")}
+            disabled={!canScrollCategoriesPrev}
+            aria-label="دسته‌بندی‌های قبلی"
+            className={cn(
+              "flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full border shadow-sm backdrop-blur-sm items-center justify-center transition-all cursor-pointer",
+              canScrollCategoriesPrev
+                ? "bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200 shadow-md hover:shadow-lg active:scale-95"
+                : "bg-white/50 text-slate-300 border-slate-200/50 opacity-40 cursor-not-allowed pointer-events-none"
+            )}
+          >
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
 
           <div
             ref={categoriesRef}
@@ -564,16 +537,20 @@ export default function HomeClient({
             ))}
           </div>
 
-          {canScrollCategoriesNext && (
-            <button
-              type="button"
-              onClick={() => handleCategoriesScroll("next")}
-              aria-label="بعدی"
-              className="hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border border-sky-200 shadow-md backdrop-blur-sm items-center justify-center transition-all cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => handleCategoriesScroll("next")}
+            disabled={!canScrollCategoriesNext}
+            aria-label="دسته‌بندی‌های بعدی"
+            className={cn(
+              "flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full border shadow-sm backdrop-blur-sm items-center justify-center transition-all cursor-pointer",
+              canScrollCategoriesNext
+                ? "bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200 shadow-md hover:shadow-lg active:scale-95"
+                : "bg-white/50 text-slate-300 border-slate-200/50 opacity-40 cursor-not-allowed pointer-events-none"
+            )}
+          >
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
         </div>
       </section>
 
