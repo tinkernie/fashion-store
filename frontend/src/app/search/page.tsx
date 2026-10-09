@@ -666,8 +666,8 @@ function SearchContent() {
           <main className="lg:col-span-9 space-y-8">
             {isLoading ? (
               // Loading Skeletons
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-6">
-                {[...Array(6)].map((_, i) => (
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 md:gap-5">
+                {[...Array(8)].map((_, i) => (
                   <div key={i} className="animate-pulse bg-sky-50 border border-sky-100 rounded-2xl p-3 space-y-4">
                     <div className="aspect-[3/4] bg-sky-100 rounded-xl" />
                     <div className="space-y-2 px-1">
@@ -699,7 +699,7 @@ function SearchContent() {
               </div>
             ) : (
               // Products Grid
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 md:gap-5">
                 {products.map((product) => {
                   const isWishlisted = wishlistItems.some((w) => w.id === product.id);
                   const img = product.image || product.imageUrl || "/globe.svg";
