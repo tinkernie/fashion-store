@@ -361,7 +361,7 @@ export default function AuthPage() {
                   dir="ltr"
                   className="font-sans pl-10 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA]"
                 />
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-4" />
+                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
               {resetErrors.phone && (
                 <p className="text-[11px] text-rose-500 mt-1">{resetErrors.phone.message}</p>
@@ -409,7 +409,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-3.5 text-slate-400 hover:text-slate-600"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -490,7 +490,7 @@ export default function AuthPage() {
                           dir="ltr"
                           className="font-sans pl-10 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA] text-sm"
                         />
-                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-4" />
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                       {otpReqErrors.phone && (
                         <p className="text-[11px] text-rose-500 mt-1">{otpReqErrors.phone.message}</p>
@@ -596,7 +596,7 @@ export default function AuthPage() {
                           dir="ltr"
                           className="font-sans pl-10 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA]"
                         />
-                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-4" />
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                       {passLoginErrors.phone && (
                         <p className="text-[11px] text-rose-500 mt-1">
@@ -630,7 +630,7 @@ export default function AuthPage() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute left-3 top-3.5 text-slate-400 hover:text-slate-600"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                         >
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -663,9 +663,9 @@ export default function AuthPage() {
                         <Input
                           {...regPassReg("fullName")}
                           placeholder="مثال: سارا محمدی"
-                          className="h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA]"
+                          className="pl-10 pr-4 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA] text-sm"
                         />
-                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-4" />
+                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                       {passRegErrors.fullName && (
                         <p className="text-[11px] text-rose-500 mt-1">
@@ -685,7 +685,7 @@ export default function AuthPage() {
                           dir="ltr"
                           className="font-sans pl-10 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA]"
                         />
-                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-4" />
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                       {passRegErrors.phone && (
                         <p className="text-[11px] text-rose-500 mt-1">
@@ -707,7 +707,7 @@ export default function AuthPage() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute left-3 top-3.5 text-slate-400 hover:text-slate-600"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                         >
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
