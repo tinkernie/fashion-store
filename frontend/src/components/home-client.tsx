@@ -470,7 +470,7 @@ export default function HomeClient({
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#0082CA]" />
             <h2 className="text-sm md:text-base font-extrabold text-[#0B192C]">
-              دسته‌بندی‌های برگزیده ماوی
+              دسته‌بندی‌ها
             </h2>
           </div>
           <Link
