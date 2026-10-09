@@ -616,8 +616,14 @@ export default function Navbar() {
                     className="flex items-center gap-4 p-2.5 hover:bg-sky-50 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-sky-100"
                   >
                     <img
-                      src={product.imageUrl || product.image || "/globe.svg"}
+                      src={product.imageUrl || product.image || "/placeholder-product.svg"}
                       alt={product.name || product.title}
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "/placeholder-product.svg";
+                      }}
                       className="w-12 h-14 object-cover rounded-xl border border-sky-100 shrink-0 shadow-sm"
                     />
                     <div className="flex flex-col flex-1 min-w-0">

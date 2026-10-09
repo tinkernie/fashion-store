@@ -466,8 +466,14 @@ export default function CheckoutPage() {
                   className="flex gap-3 items-center bg-sky-50/50 p-2.5 rounded-2xl border border-sky-100"
                 >
                   <img
-                    src={item.imageUrl || "/globe.svg"}
+                    src={item.imageUrl || "/placeholder-product.svg"}
                     alt={item.name}
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/placeholder-product.svg";
+                    }}
                     className="w-14 h-16 object-cover rounded-xl shrink-0 border border-sky-100"
                   />
                   <div className="flex-1 min-w-0">

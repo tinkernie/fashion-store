@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_COLLECTIONS } from "./mock-data";
 
 export function getApiBaseUrl(): string {
   const url =
@@ -36,66 +35,7 @@ export async function fetchProduct(idOrSlug: string): Promise<any | null> {
       return await res.json();
     }
   } catch (err) {
-    // Backend may be offline during build or dev
-  }
-
-  // Fallback to mock data if enabled
-  if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
-    const mock = MOCK_PRODUCTS.find(
-      (p) =>
-        p.id === idOrSlug ||
-        p.slug === idOrSlug ||
-        String(p.id) === String(idOrSlug)
-    );
-    if (mock) {
-      const site = getSiteBaseUrl();
-      const mockImages = Array.isArray(mock.images)
-        ? mock.images
-        : [mock.imageUrl || mock.image_url];
-      return {
-        ...mock,
-        title: mock.title || mock.name,
-        meta_title: `${mock.title || mock.name} | ماوی MAVI`,
-        meta_description:
-          mock.description?.slice(0, 160) ||
-          "خرید آنلاین مد و پوشاک فاخر با ضمانت کیفیت در ماوی (MAVI)",
-        canonical_url: `${site}/products/${mock.slug || mock.id}`,
-        og_image: mock.imageUrl || mock.image_url,
-        hreflang: [
-          { hreflang: "fa-IR", href: `${site}/products/${mock.slug || mock.id}` },
-          { hreflang: "x-default", href: `${site}/products/${mock.slug || mock.id}` },
-        ],
-        breadcrumbs: [
-          { name: "صفحه اصلی", url: `${site}/` },
-          { name: mock.category || "پوشاک", url: `${site}/products` },
-          { name: mock.title || mock.name, url: `${site}/products/${mock.slug || mock.id}` },
-        ],
-        seo_schema: {
-          "@context": "https://schema.org",
-          "@type": "Product",
-          name: mock.title || mock.name,
-          description: mock.description?.slice(0, 300),
-          sku: mock.slug || mock.id,
-          url: `${site}/products/${mock.slug || mock.id}`,
-          image: mockImages,
-          category: mock.category,
-          offers: {
-            "@type": "Offer",
-            priceCurrency: "IRR",
-            price: mock.price,
-            availability: "https://schema.org/InStock",
-            url: `${site}/products/${mock.slug || mock.id}`,
-          },
-          aggregateRating: mock.rating
-            ? {
-                "@type": "AggregateRating",
-                ratingValue: mock.rating,
-                reviewCount: mock.reviews_count || 1,
-              }
-            : undefined,
-        },
-      };
-    }
+    // Backend may be offline or product not found
   }
 
   return null;
@@ -125,7 +65,7 @@ export async function fetchProductFullData(idOrSlug: string) {
     }
   }
 
-  // Fallback to fetchProduct mock if backend was unreachable
+  // Fallback to fetchProduct if backend was unreachable
   if (!product) {
     product = await fetchProduct(idOrSlug);
   }
@@ -345,23 +285,6 @@ export async function fetchCategory(slug: string): Promise<any | null> {
     }
   } catch {}
 
-  if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
-    const mock = MOCK_CATEGORIES.find((c) => c.slug === slug || c.id === slug);
-    if (mock) {
-      const site = getSiteBaseUrl();
-      return {
-        ...mock,
-        meta_title: `${mock.name} | ماوی MAVI`,
-        meta_description: `خرید آنلاین جدیدترین مدل‌های ${mock.name} با ضمانت کیفیت و ارسال سریع در فروشگاه مد و پوشاک ماوی`,
-        canonical_url: `${site}/categories/${mock.slug}`,
-        hreflang: [
-          { hreflang: "fa-IR", href: `${site}/categories/${mock.slug}` },
-          { hreflang: "x-default", href: `${site}/categories/${mock.slug}` },
-        ],
-      };
-    }
-  }
-
   return null;
 }
 
@@ -382,15 +305,6 @@ export async function fetchCategoryProducts(slug: string, pageSize = 24): Promis
       return Array.isArray(data) ? data : data.results || [];
     }
   } catch {}
-
-  if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
-    return MOCK_PRODUCTS.filter(
-      (p) =>
-        p.category_id === slug ||
-        p.category === slug ||
-        p.collection_slug === slug
-    );
-  }
 
   return [];
 }
@@ -489,23 +403,6 @@ export async function fetchCollection(slug: string): Promise<any | null> {
       return await res.json();
     }
   } catch {}
-
-  if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
-    const mock = MOCK_COLLECTIONS.find((c) => c.slug === slug || c.id === slug);
-    if (mock) {
-      const site = getSiteBaseUrl();
-      const colProducts = MOCK_PRODUCTS.filter((p) => p.collection_slug === slug);
-      return {
-        ...mock,
-        products: colProducts,
-        meta_title: `${mock.title || mock.name} | کالکشن ماوی MAVI`,
-        meta_description:
-          mock.description ||
-          "جدیدترین کالکشن اختصاصی، پوشاک شیک و استایل‌های منتخب ماوی",
-        canonical_url: `${site}/collections/${mock.slug}`,
-      };
-    }
-  }
 
   return null;
 }

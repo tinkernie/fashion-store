@@ -274,7 +274,7 @@ export default function RelatedProductsSlider({
             const imageSrc =
               item.imageUrl ||
               item.image_url ||
-              "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop";
+              "/placeholder-product.svg";
 
             const disc = getDiscountInfo({
               price: item.price,
@@ -301,6 +301,11 @@ export default function RelatedProductsSlider({
                         src={imageSrc}
                         alt={item.title}
                         loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "/placeholder-product.svg";
+                        }}
                         className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
                       />
 

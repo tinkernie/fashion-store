@@ -6,10 +6,11 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronLeft, Layers } from "lucide-react";
 
-export function CollectionsSection() {
-  const [collections, setCollections] = useState<any[]>([]);
+export function CollectionsSection({ initialCollections }: { initialCollections?: any[] } = {}) {
+  const [collections, setCollections] = useState<any[]>(initialCollections || []);
 
   useEffect(() => {
+    if (initialCollections && initialCollections.length > 0) return;
     const fetchCollections = async () => {
       try {
         const response = await api.get('/api/collections/');
@@ -20,7 +21,7 @@ export function CollectionsSection() {
       }
     };
     fetchCollections();
-  }, []);
+  }, [initialCollections]);
 
   if (collections.length === 0) return null;
 
@@ -56,6 +57,8 @@ export function CollectionsSection() {
                     src={bannerUrl}
                     alt={collection.name || collection.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).style.display = "none";
                     }}

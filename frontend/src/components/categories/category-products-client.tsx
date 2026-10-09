@@ -114,7 +114,7 @@ export default function CategoryProductsClient({
               prod.image_url ||
               (Array.isArray(prod.images) && prod.images[0]?.url) ||
               (Array.isArray(prod.images) && typeof prod.images[0] === "string" ? prod.images[0] : null) ||
-              "/globe.svg";
+              "/placeholder-product.svg";
 
             return (
               <Link
@@ -128,6 +128,11 @@ export default function CategoryProductsClient({
                     src={imageSrc}
                     alt={prod.title || prod.name}
                     loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/placeholder-product.svg";
+                    }}
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                   />
                   {disc.hasDiscount && (

@@ -725,8 +725,14 @@ export default function ProfilePage() {
                       >
                         <div className="relative shrink-0">
                           <img
-                            src={item.imageUrl || "/globe.svg"}
+                            src={item.imageUrl || "/placeholder-product.svg"}
                             alt={item.name}
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = "/placeholder-product.svg";
+                            }}
                             className="w-20 h-24 object-cover rounded-2xl border border-sky-100 bg-sky-50"
                           />
                           {disc.hasDiscount && (
@@ -1110,7 +1116,7 @@ export default function ProfilePage() {
                       finalImage = `${backendBase}${finalImage.startsWith("/") ? "" : "/"}${finalImage}`;
                     }
                     if (!finalImage) {
-                      finalImage = "/globe.svg";
+                      finalImage = "/placeholder-product.svg";
                     }
 
                     return (
@@ -1118,9 +1124,11 @@ export default function ProfilePage() {
                         <img
                           src={finalImage}
                           alt={itemTitle}
+                          loading="lazy"
+                          decoding="async"
                           className="w-16 h-18 object-cover rounded-xl shrink-0 border border-sky-200 bg-white"
                           onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = "/globe.svg";
+                            (e.currentTarget as HTMLImageElement).src = "/placeholder-product.svg";
                           }}
                         />
                         <div className="flex-1 min-w-0">

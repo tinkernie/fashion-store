@@ -397,7 +397,7 @@ export default function ProductDetailClient({
         price: finalPayablePrice,
         size: optionsSummary,
         quantity: quantity,
-        imageUrl: product.imageUrl || product.image_url || "/globe.svg",
+        imageUrl: product.imageUrl || product.image_url || "/placeholder-product.svg",
         variant_id: matchedVariant?.id || product.id,
         weight: Number(itemWeight) || 500,
       });

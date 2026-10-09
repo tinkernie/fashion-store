@@ -282,7 +282,7 @@ export default function WomenCategoryPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
               {filteredProducts.map((product, index) => {
-                const img = product.imageUrl || product.image || product.image_url || "/globe.svg";
+                const img = product.imageUrl || product.image || product.image_url || "/placeholder-product.svg";
                 const catLabel = product.category_name || product.category || "فشن استور";
                 const disc = getDiscountInfo(product);
 
@@ -305,6 +305,12 @@ export default function WomenCategoryPage() {
                       <img 
                         src={img} 
                         alt={product.name || product.title}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "/placeholder-product.svg";
+                        }}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-[#0B192C]/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">

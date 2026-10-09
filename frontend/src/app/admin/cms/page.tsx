@@ -1004,7 +1004,7 @@ export default function AdminCMSPage() {
                         className="w-4 h-4 rounded accent-[#0082CA] cursor-pointer"
                       />
                       <img
-                        src={product.imageUrl || product.image_url || product.image || "/globe.svg"}
+                        src={product.imageUrl || product.image_url || product.image || "/placeholder-product.svg"}
                         alt={product.title || product.name}
                         className="w-12 h-14 object-cover rounded-xl border border-white/10 bg-black/20 shrink-0"
                       />

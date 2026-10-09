@@ -36,6 +36,12 @@ export default function AboutPage() {
         <img 
           src="https://images.unsplash.com/photo-1550614000-4b95d466f128?q=80&w=1920&auto=format&fit=crop" 
           alt="درباره فروشگاه ماوی MAVI" 
+          loading="lazy"
+          decoding="async"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = "/placeholder-product.svg";
+          }}
           className="w-full h-full object-cover opacity-90"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>

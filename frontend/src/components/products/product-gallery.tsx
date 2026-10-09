@@ -59,7 +59,7 @@ export default function ProductGallery({
 
     // 4. Ultimate fallback placeholder
     if (list.length === 0) {
-      list.push("/globe.svg");
+      list.push("/placeholder-product.svg");
     }
 
     // Remove duplicates while preserving order
@@ -149,7 +149,7 @@ export default function ProductGallery({
     }
   };
 
-  const currentImage = images[currentIndex] || "/globe.svg";
+  const currentImage = images[currentIndex] || "/placeholder-product.svg";
 
   // Framer Motion slide variants
   const slideVariants = {
@@ -247,6 +247,11 @@ export default function ProductGallery({
                 alt={`${product?.name || product?.title || "محصول"} - تصویر ${currentIndex + 1}`}
                 className="w-full h-full object-cover object-top pointer-events-none"
                 loading="eager"
+                decoding="async"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "/placeholder-product.svg";
+                }}
                 draggable={false}
               />
             </motion.div>
@@ -352,6 +357,11 @@ export default function ProductGallery({
                     alt={`تصویر بندانگشتی ${idx + 1}`}
                     className="w-full h-full object-cover object-top"
                     loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/placeholder-product.svg";
+                    }}
                   />
                   {isActive && (
                     <div className="absolute inset-0 bg-[#0082CA]/10 pointer-events-none" />

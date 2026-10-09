@@ -669,7 +669,7 @@ export default function AdminUsersPage() {
                                     {ord.items.map((item: any, itemIdx: number) => {
                                       const snap = item.product_snapshot || {};
                                       const title = snap.title || item.product_title || item.name || "کالای سفارش";
-                                      const img = snap.image || item.image || item.imageUrl || "/globe.svg";
+                                      const img = snap.image || item.image || item.imageUrl || "/placeholder-product.svg";
 
                                       return (
                                         <div
@@ -678,11 +678,11 @@ export default function AdminUsersPage() {
                                         >
                                           <div className="flex items-center gap-2.5 min-w-0">
                                             <img
-                                              src={typeof img === "string" ? img : img.url || "/globe.svg"}
+                                              src={typeof img === "string" ? img : img.url || "/placeholder-product.svg"}
                                               alt={title}
                                               className="w-10 h-10 object-cover rounded-lg bg-[#222] border border-white/10 shrink-0"
                                               onError={(e) => {
-                                                (e.currentTarget as HTMLImageElement).src = "/globe.svg";
+                                                (e.currentTarget as HTMLImageElement).src = "/placeholder-product.svg";
                                               }}
                                             />
                                             <div className="min-w-0">

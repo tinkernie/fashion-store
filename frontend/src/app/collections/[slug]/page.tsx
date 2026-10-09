@@ -120,7 +120,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                 product.image_url ||
                 (Array.isArray(product.images) && product.images[0]?.url) ||
                 (Array.isArray(product.images) && typeof product.images[0] === "string" ? product.images[0] : null) ||
-                "/globe.svg";
+                "/placeholder-product.svg";
 
               return (
                 <Link
@@ -133,6 +133,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                       src={imgUrl}
                       alt={product.title || product.name}
                       loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                     />
                     {disc.hasDiscount && (

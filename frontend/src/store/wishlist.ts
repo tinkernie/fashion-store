@@ -67,7 +67,7 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
           id: item.product_id || item.id,
           name: item.product_name || item.name || item.title || "محصول",
           price: parsePrice(item.product_price || item.price),
-          imageUrl: item.product_image || item.imageUrl || item.image || "/globe.svg",
+          imageUrl: item.product_image || item.imageUrl || item.image || "/placeholder-product.svg",
           category: item.category || "پوشاک",
         }));
         set({ items: mappedItems });

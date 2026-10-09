@@ -221,10 +221,10 @@ export default function AdminInventoryPage() {
                         <td className="p-4 md:p-5 text-right">
                           <div className="flex items-center gap-3">
                             <img
-                              src={p.imageUrl || p.image_url || p.image || "/globe.svg"}
+                              src={p.imageUrl || p.image_url || p.image || "/placeholder-product.svg"}
                               alt={prodName}
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/globe.svg";
+                                (e.target as HTMLImageElement).src = "/placeholder-product.svg";
                               }}
                               className="w-12 h-14 object-cover rounded-xl border border-white/10 shrink-0 bg-[#181818]"
                             />
