@@ -561,14 +561,17 @@ export default function AdminProductsPage() {
     const finalRemaining = discountRemaining.trim() || "۴۸ ساعت";
 
     const primaryImg = imageUrls[0] || imageUrl || "";
+    const isUuid = (val?: string | null) => Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+    const validCatId = isUuid(categoryId) ? categoryId : undefined;
+    const validColId = isUuid(collectionId) ? collectionId : undefined;
+
     const payload: any = {
       title,
       slug: cleanSlug,
-      category_id: categoryId || undefined,
-      category: matchedCategory?.name || undefined,
-      collection_id: collectionId || undefined,
-      price: basePriceNum,
-      discount_price: finalDiscountPrice,
+      category_id: validCatId,
+      collection_id: validColId,
+      price: Math.round(basePriceNum),
+      discount_price: finalDiscountPrice ? Math.round(finalDiscountPrice) : undefined,
       weight: parsedWeight,
       images: imageUrls,
       metadata: {

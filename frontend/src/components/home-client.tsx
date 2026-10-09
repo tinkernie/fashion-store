@@ -63,6 +63,27 @@ const PLACEHOLDER_HERO_SLIDE: HeroSlide = {
   image_url: "/placeholder-product.svg",
 };
 
+const DEFAULT_ADDITIONAL_SLIDES: HeroSlide[] = [
+  {
+    id: "hero-slide-2",
+    title: "کالکشن شیک و بهاره ماوی",
+    subtitle: "ترکیب اصالت و مینیمالیسم مدرن با پارچه‌های فوق‌العاده باکیفیت و تن‌خور عالی",
+    badge: "استایل برتر فصل",
+    cta_label: "مشاهده کالکشن بهاره",
+    cta_link: "/collections/spring-2026",
+    image_url: "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=1600&auto=format&fit=crop",
+  },
+  {
+    id: "hero-slide-3",
+    title: "استایل مینیمال و پرفروش",
+    subtitle: "ظرافت در جزئیات، راحتی در هر حرکت و طراحی بدون تاریخ انقضا برای خاص‌پسندان",
+    badge: "منتخب استایلیست‌ها",
+    cta_label: "خرید پرفروش‌ترین‌ها",
+    cta_link: "/collections/best-sellers",
+    image_url: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1600&auto=format&fit=crop",
+  },
+];
+
 interface HomeClientProps {
   initialHero?: any;
   initialAnnouncement?: any;
@@ -87,14 +108,14 @@ export default function HomeClient({
     return initialDiscountSection?.discount_section || initialDiscountSection || null;
   });
 
-  // 1. Hero Content & Slides State (pure DB data)
+  // 1. Hero Content & Slides State (pure DB data + full 3-slide rotation)
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {
     const unwrapped = initialHero?.hero || initialHero;
+    let list: HeroSlide[] = [];
     if (unwrapped?.slides && Array.isArray(unwrapped.slides) && unwrapped.slides.length > 0) {
-      return unwrapped.slides;
-    }
-    if (unwrapped?.image_url) {
-      return [
+      list = [...unwrapped.slides];
+    } else if (unwrapped?.image_url) {
+      list = [
         {
           id: "hero-db-1",
           title: unwrapped.headline || unwrapped.title || "فروشگاه تخصصی مد و پوشاک ماوی",
@@ -106,7 +127,16 @@ export default function HomeClient({
         },
       ];
     }
-    return [PLACEHOLDER_HERO_SLIDE];
+    if (list.length === 0) {
+      return [PLACEHOLDER_HERO_SLIDE, ...DEFAULT_ADDITIONAL_SLIDES];
+    }
+    if (list.length === 1) {
+      return [...list, ...DEFAULT_ADDITIONAL_SLIDES];
+    }
+    if (list.length === 2) {
+      return [...list, DEFAULT_ADDITIONAL_SLIDES[1]];
+    }
+    return list;
   });
 
   const [activeSlide, setActiveSlide] = useState(0);
@@ -224,10 +254,11 @@ export default function HomeClient({
 
         if (heroRes.status === "fulfilled" && heroRes.value?.data) {
           const heroData = heroRes.value.data.hero || heroRes.value.data;
-          if (heroData?.slides && heroData.slides.length > 0) {
-            setHeroSlides(heroData.slides);
+          let list: HeroSlide[] = [];
+          if (heroData?.slides && Array.isArray(heroData.slides) && heroData.slides.length > 0) {
+            list = [...heroData.slides];
           } else if (heroData?.image_url) {
-            setHeroSlides([
+            list = [
               {
                 id: "hero-db-1",
                 title: heroData.headline || heroData.title || "فروشگاه تخصصی مد و پوشاک ماوی",
@@ -237,7 +268,15 @@ export default function HomeClient({
                 cta_link: heroData.cta_link || "/products",
                 image_url: heroData.image_url,
               },
-            ]);
+            ];
+          }
+          if (list.length === 1) {
+            list = [...list, ...DEFAULT_ADDITIONAL_SLIDES];
+          } else if (list.length === 2) {
+            list = [...list, DEFAULT_ADDITIONAL_SLIDES[1]];
+          }
+          if (list.length > 0) {
+            setHeroSlides(list);
           }
         }
 
@@ -262,7 +301,7 @@ export default function HomeClient({
     syncData();
   }, []);
 
-  // Hero Banner 10-second Auto Rotation Timer
+  // Hero Banner 5-second Auto Rotation Timer
   const nextSlide = useCallback(() => {
     setActiveSlide((prev) => (prev + 1) % heroSlides.length);
   }, [heroSlides.length]);
@@ -275,7 +314,7 @@ export default function HomeClient({
     if (isPaused || heroSlides.length <= 1) return;
     const interval = setInterval(() => {
       nextSlide();
-    }, 10000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [isPaused, nextSlide, heroSlides.length]);
 
@@ -321,7 +360,7 @@ export default function HomeClient({
       {/* TOP ANNOUNCEMENT RIBBON (If enabled)                              */}
       {/* ----------------------------------------------------------------- */}
       {announcement && announcement.enabled !== false ? (
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 pt-20 sm:pt-22 pb-1.5">
+        <div className="w-full max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 pt-20 sm:pt-22 pb-1.5">
           <Banner
             id="top-mavi-announcement"
             variant="rainbow"
@@ -342,23 +381,23 @@ export default function HomeClient({
       )}
 
       {/* ----------------------------------------------------------------- */}
-      {/* 1. MAIN HERO BANNER / SLIDER (Framed luxury card)                 */}
+      {/* 1. MAIN HERO BANNER / SLIDER (Extended Luxury Showcase)          */}
       {/* ----------------------------------------------------------------- */}
       <section
-        className="w-full max-w-6xl mx-auto px-4 sm:px-6 pt-1 sm:pt-2 pb-6 sm:pb-8"
+        className="w-full max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 pt-1 sm:pt-2 pb-6 sm:pb-8"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="relative w-full h-[280px] sm:h-[360px] md:h-[460px] lg:h-[500px] rounded-2xl sm:rounded-3xl md:rounded-[2rem] overflow-hidden shadow-xl sm:shadow-2xl shadow-sky-950/10 border border-sky-100/90 bg-[#0B192C]">
-          <AnimatePresence>
+        <div className="relative w-full h-[320px] sm:h-[400px] md:h-[500px] lg:h-[560px] xl:h-[600px] rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl shadow-sky-950/15 border border-sky-100/90 bg-[#0B192C]">
+          <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide.id || currentSlideIndex}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
+              initial={{ opacity: 0, scale: 1.02 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.65, ease: "easeInOut" }}
               className="absolute inset-0 w-full h-full"
             >
               <Link
@@ -370,14 +409,16 @@ export default function HomeClient({
                   src={currentSlide.image_url}
                   alt={currentSlide.title}
                   className="w-full h-full object-cover object-center transition-transform duration-1000 group-hover:scale-105"
+                  loading="eager"
+                  decoding="async"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/85 via-[#0B192C]/30 to-transparent md:bg-gradient-to-r md:from-[#0B192C]/85 md:via-[#0B192C]/35 md:to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/90 via-[#0B192C]/35 to-transparent md:bg-gradient-to-r md:from-[#0B192C]/90 md:via-[#0B192C]/40 md:to-transparent" />
 
                 {/* Banner Editorial Typography & Actions */}
-                <div className="absolute inset-0 flex flex-col justify-end md:justify-center px-6 sm:px-10 md:px-14 text-right z-10 pointer-events-none">
-                  <div className="max-w-2xl space-y-2 md:space-y-4 pointer-events-auto">
+                <div className="absolute inset-0 flex flex-col justify-end md:justify-center px-6 sm:px-12 md:px-16 lg:px-20 text-right z-10 pointer-events-none">
+                  <div className="max-w-2xl lg:max-w-3xl space-y-2.5 md:space-y-4 pointer-events-auto">
                     {currentSlide.badge && (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-md w-fit shadow-sm">
+                      <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-md w-fit shadow-sm">
                         <Sparkles className="w-3.5 h-3.5 text-sky-300" />
                         <span className="text-[11px] sm:text-xs font-bold text-white tracking-wide">
                           {currentSlide.badge}
@@ -385,16 +426,16 @@ export default function HomeClient({
                       </div>
                     )}
 
-                    <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight md:leading-[1.2] drop-shadow-md">
+                    <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight md:leading-[1.15] drop-shadow-md">
                       {currentSlide.title}
                     </h1>
 
-                    <p className="text-xs sm:text-sm md:text-base text-sky-100/90 font-medium line-clamp-2 md:line-clamp-3 leading-relaxed max-w-xl drop-shadow">
+                    <p className="text-xs sm:text-sm md:text-base lg:text-lg text-sky-100/90 font-medium line-clamp-2 md:line-clamp-3 leading-relaxed max-w-xl lg:max-w-2xl drop-shadow">
                       {currentSlide.subtitle}
                     </p>
 
                     <div className="pt-2 md:pt-4">
-                      <span className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-[#0082CA] text-white text-xs sm:text-sm font-bold shadow-lg shadow-[#0082CA]/30 group-hover:bg-[#006CA8] transition-all transform group-hover:scale-105 active:scale-[0.98]">
+                      <span className="inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-3.5 rounded-full bg-[#0082CA] text-white text-xs sm:text-sm md:text-base font-bold shadow-lg shadow-[#0082CA]/30 group-hover:bg-[#006CA8] transition-all transform group-hover:scale-105 active:scale-[0.98]">
                         {currentSlide.cta_label || "مشاهده و خرید"}
                         <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" />
                       </span>
