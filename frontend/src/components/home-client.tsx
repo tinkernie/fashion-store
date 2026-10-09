@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/components/ui/banner";
+import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { getCategories, CategoryItem, DEFAULT_CATEGORIES } from "@/lib/categories";
 import { formatPrice, parsePrice, getDiscountInfo } from "@/lib/price-utils";
@@ -134,7 +135,7 @@ export default function HomeClient({
     return DEFAULT_ANNOUNCEMENT;
   });
 
-  // 3. Categories State (Curated top 8 clean items without cluttered test names)
+  // 3. Categories State (Curated full set of categories without test names)
   const [categories, setCategories] = useState<CategoryItem[]>(() => {
     let source = DEFAULT_CATEGORIES;
     if (initialCategories && initialCategories.length > 0) {
@@ -145,10 +146,49 @@ export default function HomeClient({
           name: c.name || c.title,
           slug: c.slug || String(c.id),
         }));
-      if (cleanList.length >= 4) source = cleanList;
+      if (cleanList.length >= 4) {
+        const existingNames = new Set(cleanList.map((c: any) => c.name));
+        const missingDefaults = DEFAULT_CATEGORIES.filter((d) => !existingNames.has(d.name));
+        source = [...cleanList, ...missingDefaults];
+      }
     }
-    return source.slice(0, 8);
+    return source;
   });
+
+  const categoriesRef = useRef<HTMLDivElement>(null);
+  const [canScrollCategoriesPrev, setCanScrollCategoriesPrev] = useState(false);
+  const [canScrollCategoriesNext, setCanScrollCategoriesNext] = useState(true);
+
+  const checkCategoriesScroll = useCallback(() => {
+    const el = categoriesRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll <= 5) {
+      setCanScrollCategoriesPrev(false);
+      setCanScrollCategoriesNext(false);
+      return;
+    }
+    const currentAbs = Math.abs(scrollLeft);
+    setCanScrollCategoriesPrev(currentAbs > 10);
+    setCanScrollCategoriesNext(currentAbs < maxScroll - 10);
+  }, []);
+
+  useEffect(() => {
+    checkCategoriesScroll();
+    window.addEventListener("resize", checkCategoriesScroll);
+    return () => window.removeEventListener("resize", checkCategoriesScroll);
+  }, [checkCategoriesScroll, categories]);
+
+  const handleCategoriesScroll = (direction: "prev" | "next") => {
+    const el = categoriesRef.current;
+    if (!el) return;
+    const scrollAmount = el.clientWidth * 0.65;
+    // In RTL, "next" moves leftwards (-), "prev" moves rightwards (+)
+    const delta = direction === "next" ? -scrollAmount : scrollAmount;
+    el.scrollBy({ left: delta, behavior: "smooth" });
+    setTimeout(checkCategoriesScroll, 350);
+  };
 
   // 4. Products States with reliable fallback to MOCK_PRODUCTS
   const [popularProducts, setPopularProducts] = useState<any[]>(() => {
@@ -237,7 +277,9 @@ export default function HomeClient({
               slug: c.slug || String(c.id),
             }));
           if (list.length > 0) {
-            setCategories(list.slice(0, 8));
+            const existingNames = new Set(list.map((c: any) => c.name));
+            const missingDefaults = DEFAULT_CATEGORIES.filter((d) => !existingNames.has(d.name));
+            setCategories([...list, ...missingDefaults]);
           }
         }
 
@@ -465,7 +507,7 @@ export default function HomeClient({
       </section>
 
       {/* ----------------------------------------------------------------- */}
-      {/* 2. CATEGORIES SECTION (Clean Shaped Buttons with Titles Only)     */}
+      {/* 2. CATEGORIES SECTION (Smooth Horizontal Slider with Navigation)   */}
       {/* ----------------------------------------------------------------- */}
       <section className="w-full max-w-7xl mx-auto px-4 md:px-6 py-6 sm:py-8">
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-sky-100/70">
@@ -475,26 +517,78 @@ export default function HomeClient({
               دسته‌بندی‌ها
             </h2>
           </div>
-          <Link
-            href="/products"
-            className="text-xs md:text-sm font-bold text-[#0082CA] hover:text-[#006CA8] transition-colors flex items-center gap-1"
-          >
-            مشاهده همه
-            <ChevronLeft className="w-4 h-4" />
-          </Link>
+          {/* Slideshow Arrow Navigation (Replaces "مشاهده همه") */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => handleCategoriesScroll("prev")}
+              disabled={!canScrollCategoriesPrev}
+              aria-label="دسته‌بندی‌های قبلی"
+              className={cn(
+                "w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer",
+                canScrollCategoriesPrev
+                  ? "bg-white hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200/80 shadow-sm hover:shadow active:scale-95"
+                  : "bg-slate-50 text-slate-300 border-slate-200/60 cursor-not-allowed opacity-40"
+              )}
+            >
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCategoriesScroll("next")}
+              disabled={!canScrollCategoriesNext}
+              aria-label="دسته‌بندی‌های بعدی"
+              className={cn(
+                "w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer",
+                canScrollCategoriesNext
+                  ? "bg-white hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200/80 shadow-sm hover:shadow active:scale-95"
+                  : "bg-slate-50 text-slate-300 border-slate-200/60 cursor-not-allowed opacity-40"
+              )}
+            >
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Clean Shaped Pill Buttons */}
-        <div className="flex items-center gap-2.5 sm:gap-3.5 overflow-x-auto pb-3 pt-1 hide-scrollbar snap-x md:flex-wrap md:justify-center">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/products?category=${encodeURIComponent(cat.slug || cat.name)}`}
-              className="inline-flex items-center justify-center shrink-0 snap-start px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-white hover:bg-sky-50 text-slate-700 hover:text-[#0082CA] border border-sky-100 shadow-sm hover:shadow-md hover:border-[#0082CA]/40 text-xs sm:text-sm font-bold transition-all active:scale-[0.97] cursor-pointer"
+        {/* Categories Horizontal Slider Track */}
+        <div className="relative group/cats">
+          {canScrollCategoriesPrev && (
+            <button
+              type="button"
+              onClick={() => handleCategoriesScroll("prev")}
+              aria-label="قبلی"
+              className="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border border-sky-200 shadow-md backdrop-blur-sm items-center justify-center transition-all cursor-pointer"
             >
-              {cat.name}
-            </Link>
-          ))}
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+
+          <div
+            ref={categoriesRef}
+            onScroll={checkCategoriesScroll}
+            className="flex items-center gap-2.5 sm:gap-3.5 overflow-x-auto pb-3 pt-1 hide-scrollbar scroll-smooth snap-x snap-mandatory flex-nowrap"
+          >
+            {categories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/products?category=${encodeURIComponent(cat.slug || cat.name)}`}
+                className="inline-flex items-center justify-center shrink-0 snap-start px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-white hover:bg-sky-50 text-slate-700 hover:text-[#0082CA] border border-sky-100 shadow-sm hover:shadow-md hover:border-[#0082CA]/40 text-xs sm:text-sm font-bold transition-all active:scale-[0.97] cursor-pointer"
+              >
+                {cat.name}
+              </Link>
+            ))}
+          </div>
+
+          {canScrollCategoriesNext && (
+            <button
+              type="button"
+              onClick={() => handleCategoriesScroll("next")}
+              aria-label="بعدی"
+              className="hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border border-sky-200 shadow-md backdrop-blur-sm items-center justify-center transition-all cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </section>
 

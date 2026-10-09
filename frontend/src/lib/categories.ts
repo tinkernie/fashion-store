@@ -78,6 +78,41 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
     description: "تی‌شرت‌های کراپ، بیسیک و پلوشرت‌های تابستانه",
     is_active: true,
   },
+  {
+    id: "cat-underwear",
+    name: "لباس زیر و راحتی",
+    slug: "underwear",
+    description: "لباس‌های زیر پنبه‌ای، بادی و ست‌های راحتی خانگی",
+    is_active: true,
+  },
+  {
+    id: "cat-blazers",
+    name: "کت و بلیزر",
+    slug: "blazers",
+    description: "کت‌های تک مجلسی، بلیزرهای کلاسیک و استایل کژوال",
+    is_active: true,
+  },
+  {
+    id: "cat-blouses",
+    name: "شومیز و بلوز",
+    slug: "blouses",
+    description: "شومیزهای ساتن، حریر و بلوزهای مجلسی شیک",
+    is_active: true,
+  },
+  {
+    id: "cat-jewelry",
+    name: "اکسسوری و زیورآلات",
+    slug: "jewelry",
+    description: "گوشواره، گردنبند، دستبند و زیورآلات مد روز",
+    is_active: true,
+  },
+  {
+    id: "cat-bags",
+    name: "کیف دستی و دوشی",
+    slug: "bags",
+    description: "کیف‌های چرم طبیعی، کلاچ و کوله‌پشتی‌های چرم",
+    is_active: true,
+  },
 ];
 
 const STORAGE_KEY = "fashion_custom_categories";
