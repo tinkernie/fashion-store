@@ -1,84 +1,34 @@
-================================================================================
-FASHION STORE - FULL LOCAL RUN GUIDE (BACKEND & FRONTEND)
-================================================================================
-
-PREREQUISITES:
-- Python 3.10+
-- Node.js 20+ & npm
-- (Optional) Docker Desktop (if using PostgreSQL + Redis instead of SQLite)
-
---------------------------------------------------------------------------------
-1. BACKEND (DJANGO REST FRAMEWORK)
---------------------------------------------------------------------------------
-# Step 1: Navigate to backend folder
+Run it properly (6 terminals)
+0. Prerequisites: Docker Desktop, Node 18+, backend/venv active.
+1. Infrastructure:
 cd backend
-
-# Step 2: Create virtual environment (once)
-python -m venv .venv
-
-# Step 3: Activate virtual environment
-# Windows (PowerShell):
-.\.venv\Scripts\Activate.ps1
-# Windows (CMD):
-.\.venv\Scripts\activate.bat
-# Linux / macOS:
-source .venv/bin/activate
-
-# Step 4: Install dependencies (once)
-pip install -r requirements.txt
-
-# Step 5: Database configuration (Choose ONE):
-# --- OPTION A: SQLite (Quickest, zero-setup, pre-populated db.sqlite3) ---
-# Windows PowerShell:
-$env:DB_ENGINE="sqlite"
-# Windows CMD:
-set DB_ENGINE=sqlite
-# Linux / macOS:
-export DB_ENGINE=sqlite
-
-# --- OPTION B: PostgreSQL & Redis (Docker) ---
 docker compose up -d postgres redis
+docker exec -it luxe-redis redis-cli ping  # already covered by compose redis
+2. Backend setup (first time only):
+.\venv\Scripts\Activate.ps1
+$env:DB_ENGINE='postgres'  # or omit — postgres is default
+$env:POSTGRES_PASSWORD='change-me'  # must match compose
+.\venv\Scripts\python.exe manage.py migrate
+.\venv\Scripts\python.exe manage.py createsuperuser  # phone-based now: enter 0912... as username
+.\venv\Scripts\python.exe manage.py init_notification_templates
+3. Run (4 terminals):
+# T1 API
+.\venv\Scripts\python.exe manage.py runserver 8000
 
-# Step 6: Apply migrations & setup data
-python manage.py migrate
-python manage.py createsuperuser      # (Optional: create admin user)
-python seed_data.py                   # (Optional: load initial catalog/products)
+# T2 Celery worker (Windows needs solo)
+.\venv\Scripts\celery.exe -A config worker -l info -P solo -Q default,sms,inventory,media
 
-# Step 7: Run Django development server
-python manage.py runserver 127.0.0.1:8000
+# T3 Celery beat
+.\venv\Scripts\celery.exe -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
-# Backend Endpoints:
-# - API Base:        http://127.0.0.1:8000/api/
-# - Swagger Docs:    http://127.0.0.1:8000/api/docs/
-# - Admin Dashboard: http://127.0.0.1:8000/admin/
-
-# Optional: Celery (Only needed when testing async queues with Redis):
-# Worker: celery -A config worker -l info -Q default,emails,sms,inventory,media
-# Beat:   celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-# (Note: In local dev DEBUG=True, tasks run eager/in-process automatically)
-
---------------------------------------------------------------------------------
-2. FRONTEND (NEXT.JS 16 / REACT 19)
---------------------------------------------------------------------------------
-# Step 1: Navigate to frontend folder (in a new terminal)
-cd frontend
-
-# Step 2: Install dependencies (once)
-npm install
-
-# Step 3: Configure Environment (.env.local)
-# Create or edit frontend/.env.local:
-#
-# To connect to the live Django backend:
-#   NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-#   NEXT_PUBLIC_ENABLE_MOCKS=false
-#
-# Or to run frontend in standalone mock mode (without backend):
-#   NEXT_PUBLIC_ENABLE_MOCKS=true
-
-# Step 4: Start Next.js development server
-npm run dev
-
-# Frontend Endpoint:
-# - Storefront: http://localhost:3000
-================================================================================
+# T4 Frontend (repo root/frontend)
+npm run dev  # -> http://localhost:3000
+4. Smoke test:
+- POST /api/auth/otp/request {"phone_number":"0912..."} → (mock SMS in console, no key set) → read code from auth_otp_code table → POST /api/auth/otp/verify → JWT
+- Admin login with superuser phone + password → POST /api/admin/products/discount-section/activate/
+- GET /api/products/?has_discount=true, GET /sitemap.xml, GET /robots.txt
+Notes for your stage:
+- Without SMS_IR_API_KEY, SMS is mocked to console — set the prod key in env only when testing real delivery (each test costs credit)
+- DEBUG=True + SQLite fallback (DB_ENGINE=sqlite) still available for quick offline work, but run postgres for anything resembling real testing
+- Remaining before deploy: payment gateway, SECRET_KEY/DEBUG=False/hosts (you said you'd handle those at deploy time)
+Stop order: Ctrl+C beat → worker → runserver → docker compose stop.
