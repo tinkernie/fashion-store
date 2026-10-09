@@ -234,10 +234,7 @@ export default function Navbar() {
       <motion.nav
         layout
         transition={{ type: "spring", stiffness: 350, damping: 30 }}
-        className={cn(
-          "w-full bg-[#0082CA] backdrop-blur-2xl border border-white/25 rounded-full h-16 flex items-center justify-between px-5 md:px-7 text-white shadow-xl shadow-[#0082CA]/30 transition-[max-width,border-color] duration-500",
-          isSearchExpanded ? "max-w-4xl border-white/50 ring-2 ring-white/30" : "max-w-5xl"
-        )}
+        className="w-full bg-[#0082CA] backdrop-blur-2xl border border-white/25 rounded-full h-16 flex items-center justify-between px-4 sm:px-6 md:px-7 text-white shadow-xl shadow-[#0082CA]/30 max-w-5xl transition-all duration-300"
         dir="rtl"
       >
         {/* Right side: Brand Logo */}
@@ -250,87 +247,99 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Center Section: Animated Toggle between Nav Links & Expanding Search Field */}
+        {/* Center Section: Navigation Links */}
         <div className="flex-1 flex items-center justify-center px-2 md:px-6 relative min-w-0">
-          <AnimatePresence mode="wait">
-            {!isSearchExpanded ? (
-              <motion.div
-                key="nav-links"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className="hidden md:flex items-center gap-2 lg:gap-3 text-sm font-medium"
-              >
-                <Link href="/products" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">فروشگاه و کاتالوگ</Link>
-                <Link href="/search?sort=newest" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">جدیدترین‌ها</Link>
-                <Link href="/search?sort=best_selling" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">پرفروش‌ترین‌ها</Link>
-                <Link href="/search?sort=trending" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">ترندها</Link>
-              </motion.div>
-            ) : (
-              <motion.form
-                key="search-bar-expanded"
-                initial={{ opacity: 0, width: "0%", scale: 0.96 }}
-                animate={{ opacity: 1, width: "100%", scale: 1 }}
-                exit={{ opacity: 0, width: "0%", scale: 0.96 }}
-                transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                onSubmit={handleSearchSubmit}
-                className="w-full flex items-center bg-white/20 border border-white/35 rounded-full px-4 h-11 shadow-inner focus-within:border-white focus-within:bg-white transition-all relative text-white focus-within:text-slate-900 group"
-              >
-                <Search className="w-4 h-4 text-white group-focus-within:text-[#0082CA] shrink-0 ml-2 transition-colors" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="جستجوی محصول، برند، متریال یا استایل..."
-                  className="flex-1 bg-transparent border-none outline-none text-xs md:text-sm text-inherit placeholder:text-white/70 focus-within:placeholder:text-slate-400 font-medium w-full"
-                />
-                
-                {isSearching && (
-                  <Loader2 className="w-4 h-4 text-white group-focus-within:text-[#0082CA] animate-spin shrink-0 mx-2" />
-                )}
-
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSearchResults([]);
-                    }}
-                    className="p-1 text-white/70 hover:text-white group-focus-within:text-slate-400 group-focus-within:hover:text-slate-700 transition-colors mr-1 cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setIsSearchExpanded(false)}
-                  className="mr-2 text-[11px] font-bold text-white hover:bg-white/20 px-2.5 py-0.5 rounded-full bg-white/15 transition-all border border-white/25 shrink-0 group-focus-within:text-slate-700 group-focus-within:bg-slate-100 group-focus-within:hover:bg-slate-200 group-focus-within:border-slate-200"
-                >
-                  بستن
-                </button>
-              </motion.form>
-            )}
-          </AnimatePresence>
+          <div className="hidden md:flex items-center gap-1.5 lg:gap-3 text-sm font-medium">
+            <Link href="/products" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">فروشگاه و کاتالوگ</Link>
+            <Link href="/search?sort=newest" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">جدیدترین‌ها</Link>
+            <Link href="/search?sort=best_selling" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">پرفروش‌ترین‌ها</Link>
+            <Link href="/search?sort=trending" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">ترندها</Link>
+          </div>
         </div>
 
-        {/* Left Side: Actions (Search Trigger, User, Cart Drawer, Mobile Menu) */}
+        {/* Left Side: Actions (Search with Little Text Field, User, Cart Drawer, Mobile Menu) */}
         <div className="flex items-center gap-2 md:gap-3 text-white shrink-0">
-          
-          {/* Magnifier Search Toggle Button (When Collapsed) */}
-          {!isSearchExpanded && (
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.92 }}
-              onClick={() => setIsSearchExpanded(true)}
-              className="p-2 text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer"
-              aria-label="Open search bar"
+          {/* Animated Expanding Search Bar with Little Text Field */}
+          <motion.form
+            layout
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            onSubmit={handleSearchSubmit}
+            onClick={() => {
+              if (!isSearchExpanded) {
+                setIsSearchExpanded(true);
+              }
+            }}
+            className={cn(
+              "relative flex items-center h-10 rounded-full px-3 transition-colors duration-300 border overflow-hidden shrink-0 cursor-pointer group",
+              isSearchExpanded
+                ? "w-48 sm:w-60 md:w-72 bg-white text-slate-900 border-white shadow-lg ring-2 ring-white/30"
+                : "w-24 sm:w-28 md:w-32 bg-white/15 hover:bg-white/25 text-white border-white/25"
+            )}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsSearchExpanded((prev) => !prev);
+              }}
+              className="p-0.5 text-inherit hover:opacity-85 transition-opacity cursor-pointer shrink-0 ml-1.5 flex items-center justify-center"
+              aria-label="Search"
             >
-              <Search className="w-5 h-5" />
-            </motion.button>
-          )}
+              <Search
+                className={cn(
+                  "w-4 h-4 transition-colors",
+                  isSearchExpanded ? "text-[#0082CA]" : "text-white"
+                )}
+              />
+            </button>
+
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onFocus={() => setIsSearchExpanded(true)}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isSearchExpanded ? "جستجوی محصول، برند، استایل..." : "جستجو..."}
+              className={cn(
+                "flex-1 bg-transparent border-none outline-none text-xs font-medium min-w-0 transition-colors",
+                isSearchExpanded
+                  ? "text-slate-900 placeholder:text-slate-400"
+                  : "text-white placeholder:text-white/75 cursor-pointer"
+              )}
+            />
+
+            {isSearching && isSearchExpanded && (
+              <Loader2 className="w-3.5 h-3.5 text-[#0082CA] animate-spin shrink-0 mx-1" />
+            )}
+
+            {searchQuery && isSearchExpanded && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSearchQuery("");
+                  setSearchResults([]);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-700 transition-colors mr-0.5 cursor-pointer shrink-0"
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {isSearchExpanded && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsSearchExpanded(false);
+                }}
+                className="mr-1 text-[10px] font-bold text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-all border border-slate-200 shrink-0"
+              >
+                بستن
+              </button>
+            )}
+          </motion.form>
 
           {/* Customer Notifications (Strictly visible only when logged in, hidden for guests) */}
           {isLoggedIn && (
