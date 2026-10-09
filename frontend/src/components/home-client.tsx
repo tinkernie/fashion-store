@@ -336,7 +336,7 @@ export default function HomeClient({
       {/* TOP ANNOUNCEMENT RIBBON (If enabled)                              */}
       {/* ----------------------------------------------------------------- */}
       {announcement && announcement.enabled !== false ? (
-        <div className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-24 md:pt-28 pb-2">
+        <div className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-20 sm:pt-22 pb-1.5">
           <Banner
             id="top-mavi-announcement"
             variant="rainbow"
@@ -353,20 +353,20 @@ export default function HomeClient({
           </Banner>
         </div>
       ) : (
-        <div className="pt-24 md:pt-28" />
+        <div className="pt-20 sm:pt-22" />
       )}
 
       {/* ----------------------------------------------------------------- */}
-      {/* 1. MAIN HERO BANNER / SLIDER (Digistyle-inspired Full-bleed comp) */}
+      {/* 1. MAIN HERO BANNER / SLIDER (Full-bleed edge-to-edge comp)       */}
       {/* ----------------------------------------------------------------- */}
       <section
-        className="w-full max-w-7xl mx-auto px-4 md:px-6 py-3 sm:py-4"
+        className="w-full px-0 pt-0 pb-4 sm:pb-6"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="relative w-full h-[230px] sm:h-[300px] md:h-[420px] lg:h-[460px] rounded-2xl md:rounded-3xl overflow-hidden shadow-xl shadow-sky-950/10 border border-sky-100/80 bg-[#0B192C]">
+        <div className="relative w-full h-[260px] sm:h-[340px] md:h-[450px] lg:h-[520px] overflow-hidden shadow-xl shadow-sky-950/10 border-y border-sky-100/80 bg-[#0B192C]">
           <AnimatePresence>
             <motion.div
               key={currentSlide.id || currentSlideIndex}
@@ -389,29 +389,31 @@ export default function HomeClient({
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/85 via-[#0B192C]/30 to-transparent md:bg-gradient-to-r md:from-[#0B192C]/85 md:via-[#0B192C]/35 md:to-transparent" />
 
                 {/* Banner Editorial Typography & Actions */}
-                <div className="absolute inset-0 flex flex-col justify-end md:justify-center p-6 sm:p-8 md:p-14 max-w-2xl text-right z-10 space-y-2 md:space-y-4">
-                  {currentSlide.badge && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-md w-fit shadow-sm">
-                      <Sparkles className="w-3.5 h-3.5 text-sky-300" />
-                      <span className="text-[11px] sm:text-xs font-bold text-white tracking-wide">
-                        {currentSlide.badge}
+                <div className="absolute inset-0 flex flex-col justify-end md:justify-center max-w-7xl mx-auto px-6 sm:px-10 md:px-16 text-right z-10 pointer-events-none">
+                  <div className="max-w-2xl space-y-2 md:space-y-4 pointer-events-auto">
+                    {currentSlide.badge && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-md w-fit shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-sky-300" />
+                        <span className="text-[11px] sm:text-xs font-bold text-white tracking-wide">
+                          {currentSlide.badge}
+                        </span>
+                      </div>
+                    )}
+
+                    <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight md:leading-[1.2] drop-shadow-md">
+                      {currentSlide.title}
+                    </h1>
+
+                    <p className="text-xs sm:text-sm md:text-base text-sky-100/90 font-medium line-clamp-2 md:line-clamp-3 leading-relaxed max-w-xl drop-shadow">
+                      {currentSlide.subtitle}
+                    </p>
+
+                    <div className="pt-2 md:pt-4">
+                      <span className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-[#0082CA] text-white text-xs sm:text-sm font-bold shadow-lg shadow-[#0082CA]/30 group-hover:bg-[#006CA8] transition-all transform group-hover:scale-105 active:scale-[0.98]">
+                        {currentSlide.cta_label || "مشاهده و خرید"}
+                        <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" />
                       </span>
                     </div>
-                  )}
-
-                  <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight md:leading-[1.2] drop-shadow-md">
-                    {currentSlide.title}
-                  </h1>
-
-                  <p className="text-xs sm:text-sm md:text-base text-sky-100/90 font-medium line-clamp-2 md:line-clamp-3 leading-relaxed max-w-xl drop-shadow">
-                    {currentSlide.subtitle}
-                  </p>
-
-                  <div className="pt-2 md:pt-4">
-                    <span className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-[#0082CA] text-white text-xs sm:text-sm font-bold shadow-lg shadow-[#0082CA]/30 group-hover:bg-[#006CA8] transition-all transform group-hover:scale-105 active:scale-[0.98]">
-                      {currentSlide.cta_label || "مشاهده و خرید"}
-                      <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" />
-                    </span>
                   </div>
                 </div>
               </Link>
@@ -427,7 +429,7 @@ export default function HomeClient({
                   prevSlide();
                 }}
                 aria-label="اسلاید قبلی"
-                className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/35 hover:bg-black/60 text-white border border-white/20 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/35 hover:bg-black/60 text-white border border-white/20 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
               >
                 <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
@@ -437,7 +439,7 @@ export default function HomeClient({
                   nextSlide();
                 }}
                 aria-label="اسلاید بعدی"
-                className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/35 hover:bg-black/60 text-white border border-white/20 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-black/35 hover:bg-black/60 text-white border border-white/20 backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
               >
                 <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
