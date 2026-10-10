@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, User, Search, Trash2, Menu, Tag, X, Loader2, Sparkles, ArrowLeft } from "lucide-react";
+import { ShoppingBag, User, Search, Trash2, Menu, Tag, X, Loader2, Sparkles, ArrowLeft, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ import NotificationDropdown from "@/components/notification-dropdown";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatPrice, formatPriceNumber } from "@/lib/price-utils";
-import { isTokenExpired, clearAuthSession, getStoredAuth } from "@/lib/auth";
+import { isTokenExpired, clearAuthSession, getStoredAuth, parseJwtPayload } from "@/lib/auth";
 
 const POPULAR_SEARCH_TAGS = [
   "پالتو کشمیر",
@@ -61,6 +61,7 @@ export default function Navbar() {
   const [couponInput, setCouponInput] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSuperuser, setIsSuperuser] = useState(false);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
 
   const checkAuth = () => {
@@ -75,14 +76,31 @@ export default function Navbar() {
     setIsLoggedIn(authenticated);
 
     if (authenticated) {
+      let superuserFlag = Boolean(user?.is_superuser || user?.is_staff);
+      if (!superuserFlag && accessToken) {
+        const payload = parseJwtPayload(accessToken);
+        if (payload?.is_superuser || payload?.is_staff) {
+          superuserFlag = true;
+        }
+      }
+      setIsSuperuser(superuserFlag);
+
+      if (!superuserFlag && accessToken) {
+        api.get("/api/users/me/").then((res) => {
+          if (res.data?.is_superuser || res.data?.is_staff) {
+            setIsSuperuser(true);
+          }
+        }).catch(() => {});
+      }
+
       if (user) {
         setUserDisplayName(
           [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email || "کاربر گرامی"
         );
       } else if (accessToken) {
         try {
-          const payload = JSON.parse(atob(accessToken.split(".")[1]));
-          setUserDisplayName(payload.email || "کاربر گرامی");
+          const payload = parseJwtPayload(accessToken);
+          setUserDisplayName(payload?.email || "کاربر گرامی");
         } catch {
           setUserDisplayName("کاربر گرامی");
         }
@@ -90,6 +108,7 @@ export default function Navbar() {
         setUserDisplayName("کاربر گرامی");
       }
     } else {
+      setIsSuperuser(false);
       setUserDisplayName(null);
       // Clean up orphaned user state if tokens are already expired/gone
       if (accessToken || refreshToken || user) {
@@ -345,6 +364,18 @@ export default function Navbar() {
             <NotificationDropdown />
           )}
 
+          {/* Superuser Admin Panel Shortcut Button */}
+          {isLoggedIn && isSuperuser && (
+            <Link
+              href="/admin"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 text-xs font-bold transition-all shadow-sm shrink-0"
+              title="ورود به پنل مدیریت فروشگاه"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+              <span>پنل مدیریت</span>
+            </Link>
+          )}
+
           {/* User Dropdown */}
           <div className="hidden md:block">
             <DropdownMenu dir="rtl">
@@ -376,6 +407,17 @@ export default function Navbar() {
                       <p className="text-[11px] text-slate-400">حساب کاربری</p>
                       <p className="text-xs font-bold text-slate-800 truncate">{userDisplayName}</p>
                     </div>
+                    {isSuperuser && (
+                      <>
+                        <DropdownMenuItem asChild className="focus:bg-amber-50 focus:text-amber-800 cursor-pointer rounded-xl text-right font-bold text-amber-700">
+                          <Link href="/admin" className="flex items-center justify-between w-full">
+                            <span>پنل مدیریت</span>
+                            <ShieldCheck className="w-4 h-4 text-amber-600" />
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-sky-100" />
+                      </>
+                    )}
                     <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
                       <Link href="/profile">پروفایل کاربری</Link>
                     </DropdownMenuItem>
@@ -557,6 +599,14 @@ export default function Navbar() {
                           <p className="text-[11px] text-slate-400">کاربر وارد شده:</p>
                           <p className="text-xs font-bold text-emerald-600 truncate">{userDisplayName}</p>
                         </div>
+                        {isSuperuser && (
+                          <SheetClose asChild>
+                            <Link href="/admin" className="flex items-center gap-2 text-amber-600 font-bold hover:text-amber-700 py-1">
+                              <ShieldCheck className="w-4 h-4 text-amber-500" />
+                              <span>پنل مدیریت</span>
+                            </Link>
+                          </SheetClose>
+                        )}
                         <SheetClose asChild><Link href="/profile" className="hover:text-[#0082CA] transition-colors text-slate-700">پروفایل کاربری</Link></SheetClose>
                         <SheetClose asChild>
                           <button

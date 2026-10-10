@@ -28,7 +28,7 @@ import * as z from "zod";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import { getApiErrorMessage } from "@/lib/error-utils";
-import { setAuthSession } from "@/lib/auth";
+import { setAuthSession, parseJwtPayload } from "@/lib/auth";
 
 // Persian to English digit normalizer
 function normalizePersianDigits(str: string): string {
@@ -94,7 +94,8 @@ type ResetPasswordOtpForm = z.infer<typeof resetPasswordOtpSchema>;
 export default function AuthPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [authMode, setAuthMode] = useState<"otp" | "password">("otp");
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [loginMethod, setLoginMethod] = useState<"password" | "otp">("password");
   const [view, setView] = useState<"login" | "resetPassword">("login");
   const [otpStep, setOtpStep] = useState<"request" | "verify">("request");
   const [otpPhone, setOtpPhone] = useState("");
@@ -152,11 +153,39 @@ export default function AuthPage() {
       await mergeCart();
       await useWishlist.getState().fetchWishlist();
     } catch {}
+
+    // Task 4: Superuser redirection check
+    let isSuper = Boolean(data?.user?.is_superuser || data?.user?.is_staff);
+    if (!isSuper && data?.access) {
+      const payload = parseJwtPayload(data.access);
+      if (payload?.is_superuser || payload?.is_staff) {
+        isSuper = true;
+      }
+    }
+
+    if (!isSuper && data?.access) {
+      try {
+        const meRes = await api.get("/api/users/me/");
+        if (meRes.data?.is_superuser || meRes.data?.is_staff) {
+          isSuper = true;
+          setAuthSession({ ...data, user: meRes.data });
+        }
+      } catch {}
+    }
+
     toast.success("ورود با موفقیت انجام شد", {
-      description: "به فروشگاه پوشاک ماوی خوش آمدید.",
+      description: isSuper ? "به پنل مدیریت فروشگاه ماوی خوش آمدید." : "به فروشگاه پوشاک ماوی خوش آمدید.",
     });
+
     const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-    const redirectPath = searchParams?.get("redirect") || "/profile";
+    const redirectParam = searchParams?.get("redirect");
+
+    if (isSuper) {
+      router.push("/admin");
+      return;
+    }
+
+    const redirectPath = redirectParam || "/profile";
     router.push(redirectPath);
   };
 
@@ -279,7 +308,8 @@ export default function AuthPage() {
         description: "اکنون می‌توانید با رمز عبور جدید وارد شوید.",
       });
       setView("login");
-      setAuthMode("password");
+      setActiveTab("login");
+      setLoginMethod("password");
     } catch (error: any) {
       toast.error(getApiErrorMessage(error, "کد تایید اشتباه است یا منقضی شده"));
     } finally {
@@ -334,15 +364,15 @@ export default function AuthPage() {
           <h1 className="text-2xl font-black text-[#0B192C]">
             {view === "resetPassword"
               ? "بازیابی رمز عبور"
-              : authMode === "otp"
-              ? "ورود یا ثبت‌نام سریع"
+              : activeTab === "register"
+              ? "ثبت‌نام جدید در ماوی"
               : "ورود به حساب کاربری"}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-2">
             {view === "resetPassword"
               ? "کد پیامک‌شده و رمز عبور جدید خود را وارد نمایید."
-              : authMode === "otp"
-              ? "ورود امن بدون نیاز به رمز عبور تنها با شماره موبایل"
+              : activeTab === "register"
+              ? "ایجاد حساب کاربری با پیامک تایید (OTP)"
               : "مدیریت سفارش‌ها و دسترسی به اطلاعات کاربری ماوی"}
           </p>
         </div>
@@ -431,7 +461,8 @@ export default function AuthPage() {
               type="button"
               onClick={() => {
                 setView("login");
-                setAuthMode("otp");
+                setActiveTab("login");
+                setLoginMethod("password");
               }}
               className="w-full text-center text-xs text-slate-500 hover:text-[#0082CA] mt-2 block"
             >
@@ -445,146 +476,63 @@ export default function AuthPage() {
         {/* ------------------------------------------------------------- */}
         {view === "login" && (
           <div>
-            {/* Mode Selector Tabs (OTP vs Password) */}
-            <div className="grid grid-cols-2 p-1 bg-sky-50/80 rounded-2xl border border-sky-100 mb-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("otp");
-                  setOtpStep("request");
-                }}
-                className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  authMode === "otp"
-                    ? "bg-white text-[#0082CA] shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                ورود با پیامک (OTP)
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuthMode("password")}
-                className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  authMode === "password"
-                    ? "bg-white text-[#0082CA] shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                ورود با رمز عبور
-              </button>
-            </div>
+            {/* Primary Tabs: ورود vs ثبت‌نام جدید (Task 2: Emboldened Tabs) */}
+            <Tabs
+              value={activeTab}
+              onValueChange={(val) => {
+                setActiveTab(val as "login" | "register");
+                setOtpStep("request");
+              }}
+              className="w-full"
+            >
+              <TabsList className="grid grid-cols-2 mb-6 bg-sky-50/90 p-1.5 rounded-2xl border border-sky-100/80">
+                <TabsTrigger
+                  value="login"
+                  className="rounded-xl text-xs sm:text-sm font-extrabold py-2.5 transition-all data-[state=active]:bg-white data-[state=active]:text-[#0082CA] data-[state=active]:shadow-sm text-slate-600 hover:text-slate-900 cursor-pointer"
+                >
+                  ورود
+                </TabsTrigger>
+                <TabsTrigger
+                  value="register"
+                  className="rounded-xl text-xs sm:text-sm font-extrabold py-2.5 transition-all data-[state=active]:bg-white data-[state=active]:text-[#0082CA] data-[state=active]:shadow-sm text-slate-600 hover:text-slate-900 cursor-pointer"
+                >
+                  ثبت‌نام جدید
+                </TabsTrigger>
+              </TabsList>
 
-            {/* OTP FLOW */}
-            {authMode === "otp" && (
-              <div>
-                {otpStep === "request" ? (
-                  <form onSubmit={handleOtpReqSubmit(onRequestOtp)} className="space-y-4">
-                    <div>
-                      <label className="text-xs font-bold text-[#0B192C] block mb-1.5">
-                        شماره موبایل
-                      </label>
-                      <div className="relative">
-                        <Input
-                          {...regOtpReq("phone")}
-                          placeholder="09123456789"
-                          dir="ltr"
-                          className="font-sans pl-10 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA] text-sm"
-                        />
-                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                      {otpReqErrors.phone && (
-                        <p className="text-[11px] text-rose-500 mt-1">{otpReqErrors.phone.message}</p>
-                      )}
-                    </div>
+              {/* TAB 1: LOGIN (Password or OTP) */}
+              <TabsContent value="login">
+                {/* Method Switch: Password vs OTP */}
+                <div className="flex items-center justify-center gap-2 mb-5">
+                  <button
+                    type="button"
+                    onClick={() => setLoginMethod("password")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      loginMethod === "password"
+                        ? "bg-[#0082CA] text-white shadow-sm shadow-[#0082CA]/25"
+                        : "bg-sky-50/70 text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    ورود با رمز عبور
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginMethod("otp");
+                      setOtpStep("request");
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      loginMethod === "otp"
+                        ? "bg-[#0082CA] text-white shadow-sm shadow-[#0082CA]/25"
+                        : "bg-sky-50/70 text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    ورود با پیامک (OTP)
+                  </button>
+                </div>
 
-                    <Button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full h-12 rounded-2xl bg-[#0082CA] hover:bg-[#006CA8] text-white font-bold shadow-lg shadow-[#0082CA]/25 text-sm cursor-pointer"
-                    >
-                      {isLoading ? "در حال ارسال..." : "دریافت کد تایید"}
-                    </Button>
-
-                    <p className="text-[11px] text-slate-400 text-center leading-relaxed pt-2">
-                      در صورت نداشتن حساب، با وارد کردن شماره موبایل، حساب کاربری شما به صورت خودکار ایجاد
-                      می‌گردد.
-                    </p>
-                  </form>
-                ) : (
-                  <form onSubmit={handleOtpVerSubmit(onVerifyOtp)} className="space-y-4">
-                    <div className="p-3 rounded-2xl bg-sky-50/60 border border-sky-100 text-xs text-[#0B192C] flex items-center justify-between">
-                      <span>
-                        کد تایید به شماره <strong className="font-sans">{otpPhone}</strong> پیامک شد.
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setOtpStep("request")}
-                        className="text-[11px] font-bold text-[#0082CA] hover:underline cursor-pointer"
-                      >
-                        ویرایش شماره
-                      </button>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-[#0B192C] block mb-1.5">
-                        کد تایید ۵ رقمی
-                      </label>
-                      <Input
-                        {...regOtpVer("code")}
-                        placeholder="• • • • •"
-                        dir="ltr"
-                        autoFocus
-                        maxLength={8}
-                        className="font-sans text-center tracking-widest text-lg font-black h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA]"
-                      />
-                      {otpVerErrors.code && (
-                        <p className="text-[11px] text-rose-500 mt-1">{otpVerErrors.code.message}</p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      {cooldown > 0 ? (
-                        <span className="text-slate-400 font-sans text-[11px]">
-                          ارسال مجدد تا {cooldown} ثانیه دیگر
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={onResendOtp}
-                          className="text-[#0082CA] font-bold hover:underline cursor-pointer text-xs"
-                        >
-                          ارسال مجدد کد تایید
-                        </button>
-                      )}
-                    </div>
-
-                    <Button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full h-12 rounded-2xl bg-[#0082CA] hover:bg-[#006CA8] text-white font-bold shadow-lg shadow-[#0082CA]/25 text-sm cursor-pointer"
-                    >
-                      {isLoading ? "در حال بررسی..." : "تایید و ورود"}
-                    </Button>
-                  </form>
-                )}
-              </div>
-            )}
-
-            {/* PASSWORD FLOW (Login / Register Tabs) */}
-            {authMode === "password" && (
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid grid-cols-2 mb-4 bg-slate-100 rounded-xl p-1">
-                  <TabsTrigger value="login" className="rounded-lg text-xs font-bold">
-                    ورود
-                  </TabsTrigger>
-                  <TabsTrigger value="register" className="rounded-lg text-xs font-bold">
-                    ثبت‌نام جدید
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* Password Login */}
-                <TabsContent value="login">
-                  <form onSubmit={handlePassLoginSubmit(onPasswordLogin)} className="space-y-4">
+                {loginMethod === "password" ? (
+                  <form onSubmit={handlePassLoginSubmit(onPasswordLogin)} noValidate className="space-y-4">
                     <div>
                       <label className="text-xs font-bold text-[#0B192C] block mb-1.5">
                         شماره موبایل
@@ -647,31 +595,111 @@ export default function AuthPage() {
                       disabled={isLoading}
                       className="w-full h-12 rounded-2xl bg-[#0082CA] hover:bg-[#006CA8] text-white font-bold shadow-lg shadow-[#0082CA]/25 text-sm cursor-pointer"
                     >
-                      {isLoading ? "در حال ورود..." : "ورود به حساب"}
+                      {isLoading ? "در حال ورود..." : "ورود به حساب کاربری"}
                     </Button>
                   </form>
-                </TabsContent>
-
-                {/* Password Register */}
-                <TabsContent value="register">
-                  <form onSubmit={handlePassRegSubmit(onPasswordRegister)} className="space-y-4">
-                    <div>
-                      <label className="text-xs font-bold text-[#0B192C] block mb-1.5">
-                        نام و نام خانوادگی
-                      </label>
-                      <div className="relative">
-                        <Input
-                          {...regPassReg("fullName")}
-                          placeholder="مثال: سارا محمدی"
-                          className="pl-10 pr-4 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA] text-sm"
-                        />
-                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                ) : (
+                  /* OTP Login */
+                  otpStep === "request" ? (
+                    <form onSubmit={handleOtpReqSubmit(onRequestOtp)} noValidate className="space-y-4">
+                      <div>
+                        <label className="text-xs font-bold text-[#0B192C] block mb-1.5">
+                          شماره موبایل
+                        </label>
+                        <div className="relative">
+                          <Input
+                            {...regOtpReq("phone")}
+                            placeholder="09123456789"
+                            dir="ltr"
+                            className="font-sans pl-10 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA] text-sm"
+                          />
+                          <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                        {otpReqErrors.phone && (
+                          <p className="text-[11px] text-rose-500 mt-1">{otpReqErrors.phone.message}</p>
+                        )}
                       </div>
-                      {passRegErrors.fullName && (
-                        <p className="text-[11px] text-rose-500 mt-1">
-                          {passRegErrors.fullName.message}
-                        </p>
-                      )}
+
+                      <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full h-12 rounded-2xl bg-[#0082CA] hover:bg-[#006CA8] text-white font-bold shadow-lg shadow-[#0082CA]/25 text-sm cursor-pointer"
+                      >
+                        {isLoading ? "در حال ارسال..." : "دریافت کد تایید یک‌بار مصرف"}
+                      </Button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleOtpVerSubmit(onVerifyOtp)} noValidate className="space-y-4">
+                      <div className="p-3 rounded-2xl bg-sky-50/60 border border-sky-100 text-xs text-[#0B192C] flex items-center justify-between">
+                        <span>
+                          کد تایید به شماره <strong className="font-sans">{otpPhone}</strong> پیامک شد.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setOtpStep("request")}
+                          className="text-[11px] font-bold text-[#0082CA] hover:underline cursor-pointer"
+                        >
+                          ویرایش شماره
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-[#0B192C] block mb-1.5">
+                          کد تایید ۵ رقمی
+                        </label>
+                        <Input
+                          {...regOtpVer("code")}
+                          placeholder="• • • • •"
+                          dir="ltr"
+                          autoFocus
+                          maxLength={8}
+                          className="font-sans text-center tracking-widest text-lg font-black h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA]"
+                        />
+                        {otpVerErrors.code && (
+                          <p className="text-[11px] text-rose-500 mt-1">{otpVerErrors.code.message}</p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        {cooldown > 0 ? (
+                          <span className="text-slate-400 font-sans text-[11px]">
+                            ارسال مجدد تا {cooldown} ثانیه دیگر
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={onResendOtp}
+                            className="text-[#0082CA] font-bold hover:underline cursor-pointer text-xs"
+                          >
+                            ارسال مجدد کد تایید
+                          </button>
+                        )}
+                      </div>
+
+                      <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full h-12 rounded-2xl bg-[#0082CA] hover:bg-[#006CA8] text-white font-bold shadow-lg shadow-[#0082CA]/25 text-sm cursor-pointer"
+                      >
+                        {isLoading ? "در حال بررسی..." : "تایید و ورود"}
+                      </Button>
+                    </form>
+                  )
+                )}
+              </TabsContent>
+
+              {/* TAB 2: REGISTER (Task 3: Strictly via OTP) */}
+              <TabsContent value="register">
+                {otpStep === "request" ? (
+                  <form onSubmit={handleOtpReqSubmit(onRequestOtp)} noValidate className="space-y-4">
+                    <div className="p-3.5 rounded-2xl bg-sky-50/80 border border-sky-100 text-xs text-slate-700 space-y-1">
+                      <p className="font-bold text-[#0082CA] flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-[#0082CA]" />
+                        ثبت‌نام سریع با شماره موبایل
+                      </p>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        ثبت‌نام در فروشگاه ماوی با پیامک تایید (OTP) انجام می‌شود. پس از ورود، می‌توانید رمز عبور و اطلاعات پروفایل خود را تکمیل نمایید.
+                      </p>
                     </div>
 
                     <div>
@@ -680,42 +708,15 @@ export default function AuthPage() {
                       </label>
                       <div className="relative">
                         <Input
-                          {...regPassReg("phone")}
+                          {...regOtpReq("phone")}
                           placeholder="09123456789"
                           dir="ltr"
-                          className="font-sans pl-10 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA]"
+                          className="font-sans pl-10 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA] text-sm"
                         />
                         <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
-                      {passRegErrors.phone && (
-                        <p className="text-[11px] text-rose-500 mt-1">
-                          {passRegErrors.phone.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-[#0B192C] block mb-1.5">رمز عبور</label>
-                      <div className="relative">
-                        <Input
-                          {...regPassReg("password")}
-                          type={showPassword ? "text" : "password"}
-                          placeholder="حداقل ۸ کاراکتر"
-                          dir="ltr"
-                          className="font-sans pl-10 h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                        >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      {passRegErrors.password && (
-                        <p className="text-[11px] text-rose-500 mt-1">
-                          {passRegErrors.password.message}
-                        </p>
+                      {otpReqErrors.phone && (
+                        <p className="text-[11px] text-rose-500 mt-1">{otpReqErrors.phone.message}</p>
                       )}
                     </div>
 
@@ -724,12 +725,68 @@ export default function AuthPage() {
                       disabled={isLoading}
                       className="w-full h-12 rounded-2xl bg-[#0082CA] hover:bg-[#006CA8] text-white font-bold shadow-lg shadow-[#0082CA]/25 text-sm cursor-pointer"
                     >
-                      {isLoading ? "در حال ثبت‌نام..." : "ایجاد حساب کاربری"}
+                      {isLoading ? "در حال ارسال..." : "دریافت کد تایید ثبت‌نام"}
                     </Button>
                   </form>
-                </TabsContent>
-              </Tabs>
-            )}
+                ) : (
+                  <form onSubmit={handleOtpVerSubmit(onVerifyOtp)} noValidate className="space-y-4">
+                    <div className="p-3 rounded-2xl bg-sky-50/60 border border-sky-100 text-xs text-[#0B192C] flex items-center justify-between">
+                      <span>
+                        کد تایید به شماره <strong className="font-sans">{otpPhone}</strong> پیامک شد.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setOtpStep("request")}
+                        className="text-[11px] font-bold text-[#0082CA] hover:underline cursor-pointer"
+                      >
+                        ویرایش شماره
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-[#0B192C] block mb-1.5">
+                        کد تایید ۵ رقمی
+                      </label>
+                      <Input
+                        {...regOtpVer("code")}
+                        placeholder="• • • • •"
+                        dir="ltr"
+                        autoFocus
+                        maxLength={8}
+                        className="font-sans text-center tracking-widest text-lg font-black h-12 rounded-2xl border-sky-100 focus-visible:ring-[#0082CA]"
+                      />
+                      {otpVerErrors.code && (
+                        <p className="text-[11px] text-rose-500 mt-1">{otpVerErrors.code.message}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      {cooldown > 0 ? (
+                        <span className="text-slate-400 font-sans text-[11px]">
+                          ارسال مجدد تا {cooldown} ثانیه دیگر
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={onResendOtp}
+                          className="text-[#0082CA] font-bold hover:underline cursor-pointer text-xs"
+                        >
+                          ارسال مجدد کد تایید
+                        </button>
+                      )}
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full h-12 rounded-2xl bg-[#0082CA] hover:bg-[#006CA8] text-white font-bold shadow-lg shadow-[#0082CA]/25 text-sm cursor-pointer"
+                    >
+                      {isLoading ? "در حال بررسی..." : "تایید و تکمیل ثبت‌نام"}
+                    </Button>
+                  </form>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 

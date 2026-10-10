@@ -443,16 +443,32 @@ export default function ProfilePage() {
     e.preventDefault();
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
+    const oldPassword = (formData.get("oldPassword") as string || "").trim();
+    const newPassword = (formData.get("newPassword") as string || "").trim();
+
+    if (!newPassword) {
+      toast.error("لطفاً رمز عبور جدید را وارد کنید");
+      setIsLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast.error("رمز عبور جدید باید حداقل ۸ کاراکتر باشد");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       await api.post("/api/auth/change-password/", {
-        old_password: formData.get("oldPassword"),
-        new_password: formData.get("newPassword"),
+        old_password: oldPassword || "",
+        new_password: newPassword,
       });
-      toast.success("رمز عبور با موفقیت تغییر یافت");
+      toast.success("رمز عبور جدید با موفقیت ثبت و ذخیره شد", {
+        description: "اکنون می‌توانید در مراجعات بعدی با شماره موبایل و این رمز عبور وارد شوید.",
+      });
       (e.target as HTMLFormElement).reset();
     } catch (error: any) {
-      toast.error(getApiErrorMessage(error, "تغییر رمز عبور ناموفق بود. لطفاً رمز عبور فعلی را بررسی کنید."));
+      toast.error(getApiErrorMessage(error, "تنظیم رمز عبور ناموفق بود. در صورت داشتن رمز قبلی، آن را بررسی نمایید."));
     } finally {
       setIsLoading(false);
     }
@@ -515,6 +531,19 @@ export default function ProfilePage() {
                 <span className="text-[10px] text-slate-400 block">آدرس‌ها</span>
               </div>
             </div>
+
+            {/* Superuser Admin Panel Button */}
+            {(userProfile?.is_superuser || userProfile?.is_staff) && (
+              <div className="mb-3">
+                <Link
+                  href="/admin"
+                  className="w-full h-11 rounded-xl bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-md shadow-amber-500/20"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>ورود به پنل مدیریت فروشگاه</span>
+                </Link>
+              </div>
+            )}
 
             <Button
               onClick={handleLogout}
@@ -962,17 +991,22 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Change Password */}
+              {/* Set / Change Password */}
               <div>
-                <h3 className="text-lg font-black text-slate-900 mb-4">تغییر کلمه عبور</h3>
-                <form onSubmit={handleChangePassword} className="bg-white border border-sky-100 rounded-3xl p-6 space-y-4 max-w-xl shadow-sm">
+                <h3 className="text-lg font-black text-slate-900 mb-1">تعیین یا تغییر رمز عبور</h3>
+                <p className="text-xs text-slate-500 mb-4">
+                  با تنظیم رمز عبور، می‌توانید در مراجعات بعدی با شماره موبایل و این رمز عبور وارد شوید.
+                </p>
+                <form onSubmit={handleChangePassword} noValidate className="bg-white border border-sky-100 rounded-3xl p-6 space-y-4 max-w-xl shadow-sm">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-700">رمز عبور فعلی</label>
+                    <label className="text-xs font-bold text-slate-700">
+                      رمز عبور فعلی (در صورت ثبت‌نام با پیامک و نداشتن رمز، خالی بگذارید)
+                    </label>
                     <div className="relative">
                       <Input
                         name="oldPassword"
                         type={showOldPassword ? "text" : "password"}
-                        required
+                        placeholder="••••••••"
                         className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl pr-4 pl-11 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                         dir="ltr"
                       />
@@ -987,12 +1021,12 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-700">رمز عبور جدید</label>
+                    <label className="text-xs font-bold text-slate-700">رمز عبور جدید (حداقل ۸ کاراکتر)</label>
                     <div className="relative">
                       <Input
                         name="newPassword"
                         type={showNewPassword ? "text" : "password"}
-                        required
+                        placeholder="••••••••"
                         className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl pr-4 pl-11 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                         dir="ltr"
                       />
@@ -1007,7 +1041,7 @@ export default function ProfilePage() {
                   </div>
 
                   <Button disabled={isLoading} type="submit" className="w-full h-12 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20">
-                    {isLoading ? "در حال ذخیره..." : "تغییر کلمه عبور"}
+                    {isLoading ? "در حال ذخیره..." : "ثبت و فعال‌سازی رمز عبور"}
                   </Button>
                 </form>
               </div>

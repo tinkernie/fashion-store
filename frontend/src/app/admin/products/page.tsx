@@ -381,29 +381,20 @@ export default function AdminProductsPage() {
       return;
     }
 
-    // Task 4: In clothing variant creation, Color, Size, and Material must NOT be empty!
-    const colorOpt = productOptions.find((o) =>
-      o.name?.includes("رنگ") || o.name?.toLowerCase().includes("color")
-    );
-    const sizeOpt = productOptions.find((o) =>
-      o.name?.includes("سایز") || o.name?.toLowerCase().includes("size")
-    );
-    const materialOpt = productOptions.find((o) =>
-      o.name?.includes("جنس") || o.name?.includes("متریال") || o.name?.includes("پارچه") || o.name?.toLowerCase().includes("material")
+    // Task 5 & 8: Flexible attribute combinations; all errors in Persian
+    const selectedEntries = Object.entries(selectedOptionValueIds).filter(
+      ([_, value_id]) => Boolean(value_id)
     );
 
-    const hasColorVal = Boolean(colorOpt && selectedOptionValueIds[colorOpt.id]);
-    const hasSizeVal = Boolean(sizeOpt && selectedOptionValueIds[sizeOpt.id]);
-    const hasMaterialVal = Boolean(materialOpt && selectedOptionValueIds[materialOpt.id]);
-
-    if (!hasColorVal || !hasSizeVal || !hasMaterialVal) {
-      toast.error("فیلدهای رنگ، سایز و جنس نباید خالی باشند. حداقل یک مقدار برای هرکدام باید وارد شود.");
+    if (productOptions.length > 0 && selectedEntries.length === 0) {
+      toast.error("لطفاً حداقل یک ویژگی (مانند رنگ، سایز یا جنس) را برای این تنوع انتخاب کنید.");
       return;
     }
 
-    const optionValuesPayload = Object.entries(selectedOptionValueIds).map(
-      ([option_id, value_id]) => ({ option_id, value_id })
-    );
+    const optionValuesPayload = selectedEntries.map(([option_id, value_id]) => ({
+      option_id,
+      value_id,
+    }));
 
     try {
       const createdVar = await adminApi.createVariant({
@@ -425,7 +416,7 @@ export default function AdminProductsPage() {
       setProductVariants(vars);
       setNewVariantSku(`${(selectedProductForVariants.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`);
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || "خطا در ایجاد تنوع");
+      toast.error(getApiErrorMessage(err, "خطا در ایجاد تنوع"));
     }
   };
 
@@ -467,7 +458,7 @@ export default function AdminProductsPage() {
     }
   };
 
-  // Generate Combinatorial Matrix for in-product form (Task 4)
+  // Generate Combinatorial Matrix for in-product form (Task 5 & 8: Flexible 1-, 2-, or 3-attributes)
   const handleGenerateClothingVariants = () => {
     const colors = clothingColor
       .split(/[,،]/)
@@ -482,32 +473,40 @@ export default function AdminProductsPage() {
       .map((v) => v.trim())
       .filter(Boolean);
 
-    // Task 4: Fields for color, size, and material must NOT be empty!
-    if (colors.length === 0 || sizes.length === 0 || materials.length === 0) {
-      toast.error("فیلدهای رنگ، سایز و جنس نباید خالی باشند. حداقل یک مقدار برای هرکدام باید وارد شود.");
+    // Collect non-empty attribute pools
+    const attributePools: { name: string; values: string[] }[] = [];
+    if (colors.length > 0) attributePools.push({ name: "رنگ", values: colors });
+    if (sizes.length > 0) attributePools.push({ name: "سایز", values: sizes });
+    if (materials.length > 0) attributePools.push({ name: "جنس", values: materials });
+
+    if (attributePools.length === 0) {
+      toast.error("لطفاً حداقل یکی از مشخصات (رنگ، سایز یا جنس) را وارد نمایید.");
       return false;
     }
 
-    const baseSlug = (slug || title).trim().toLowerCase().replace(/\s+/g, "-") || "item";
-    const generated: VariantItem[] = [];
-    let idx = 1;
+    // Cartesian product across whatever pools are provided
+    const cartesian = (arrays: string[][]): string[][] => {
+      return arrays.reduce<string[][]>(
+        (acc, curr) => acc.flatMap((x) => curr.map((y) => [...x, y])),
+        [[]]
+      );
+    };
 
-    for (const c of colors) {
-      for (const s of sizes) {
-        for (const m of materials) {
-          const comboName = `${c} / ${s} / ${m}`;
-          const comboSku = `${baseSlug.toUpperCase().slice(0, 3)}-${c.slice(0, 2).toUpperCase()}-${s}-${m.slice(0, 2).toUpperCase()}-${idx}`;
-          generated.push({
-            name: comboName,
-            sku: comboSku,
-            price: formatPriceInput(price) || "0",
-            weight: Number(weight) > 0 ? Number(weight) : 1, // Task 3
-            stock: 10,
-          });
-          idx++;
-        }
-      }
-    }
+    const combinations = cartesian(attributePools.map((p) => p.values));
+    const baseSlug = (slug || title).trim().toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, "").replace(/\s+/g, "-") || "item";
+    const generated: VariantItem[] = [];
+
+    combinations.forEach((combo, idx) => {
+      const comboName = combo.join(" / ");
+      const comboSku = `${baseSlug.toUpperCase().slice(0, 3)}-${combo.map((v) => v.slice(0, 2).toUpperCase()).join("-")}-${idx + 1}`;
+      generated.push({
+        name: comboName,
+        sku: comboSku,
+        price: formatPriceInput(price) || "0",
+        weight: Number(weight) > 0 ? Number(weight) : 1, // Task 3
+        stock: 10,
+      });
+    });
 
     setVariantsMatrix(generated);
     setShowVariantGenerator(true);
@@ -522,17 +521,20 @@ export default function AdminProductsPage() {
       return;
     }
 
-    // Task 4: In clothing variant creation, Color, Size, and Material must NOT be empty if any is provided
-    const hasAnyClothingVariant = Boolean(clothingColor.trim() || clothingSize.trim() || clothingMaterial.trim());
-    if (hasAnyClothingVariant) {
-      const colors = clothingColor.split(/[,،]/).map((v) => v.trim()).filter(Boolean);
-      const sizes = clothingSize.split(/[,،]/).map((v) => v.trim()).filter(Boolean);
-      const materials = clothingMaterial.split(/[,،]/).map((v) => v.trim()).filter(Boolean);
+    const matchedCategory = categories.find((c) => c.id === categoryId);
+    const isUuid = (val?: string | null) => Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+    const validCatId = isUuid(categoryId) ? categoryId : undefined;
+    const validColId = isUuid(collectionId) ? collectionId : undefined;
 
-      if (colors.length === 0 || sizes.length === 0 || materials.length === 0) {
-        toast.error("فیلدهای رنگ، سایز و جنس نباید خالی باشند. حداقل یک مقدار برای هرکدام باید وارد شود.");
-        return;
-      }
+    if (!validCatId) {
+      toast.error("لطفاً یک دسته‌بندی معتبر برای محصول انتخاب کنید");
+      return;
+    }
+
+    // Auto-generate variants if user entered options but forgot to click generate
+    const hasAnyClothingInput = Boolean(clothingColor.trim() || clothingSize.trim() || clothingMaterial.trim());
+    if (hasAnyClothingInput && variantsMatrix.length === 0) {
+      handleGenerateClothingVariants();
     }
 
     const basePriceNum = parsePrice(price);
@@ -556,14 +558,19 @@ export default function AdminProductsPage() {
         .replace(/[^\w\u0600-\u06FF\s-]/g, "")
         .replace(/\s+/g, "-") || `prod-${Date.now()}`;
 
-    const matchedCategory = categories.find((c) => c.id === categoryId);
     const parsedWeight = Number(weight) > 0 ? Number(weight) : 1; // Task 3: Default weight is 1
     const finalRemaining = discountRemaining.trim() || "۴۸ ساعت";
-
     const primaryImg = imageUrls[0] || imageUrl || "";
-    const isUuid = (val?: string | null) => Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
-    const validCatId = isUuid(categoryId) ? categoryId : undefined;
-    const validColId = isUuid(collectionId) ? collectionId : undefined;
+
+    // Task 7: Zero-variant publish guard
+    const hasVariants = variantsMatrix.length > 0 || (editingProduct?.variants && editingProduct.variants.length > 0);
+    let targetStatus = status === "active" ? "published" : status;
+    if (!hasVariants) {
+      targetStatus = "draft";
+      if (status === "active" || status === "published") {
+        toast.info("محصول به عنوان «پیش‌نویس» ذخیره شد؛ انتشار در فروشگاه نیازمند تعریف حداقل یک تنوع محصول است.");
+      }
+    }
 
     const payload: any = {
       title,
@@ -587,7 +594,7 @@ export default function AdminProductsPage() {
       },
       description,
       image_url: primaryImg,
-      status: status === "active" ? "published" : status,
+      status: targetStatus,
     };
 
     try {
@@ -672,6 +679,7 @@ export default function AdminProductsPage() {
       setCategories(updatedCats);
       if (isModalOpen) {
         setCategoryId(created.id);
+        setIsCategoryModalOpen(false);
       }
     } catch (err: any) {
       toast.error(getApiErrorMessage(err, "خطا در ایجاد دسته‌بندی"));
@@ -1161,17 +1169,23 @@ export default function AdminProductsPage() {
 
                       {/* Status */}
                       <td className="py-4 px-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                            p.status === "published" || p.status === "active"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                          }`}
-                        >
-                          {p.status === "published" || p.status === "active"
-                            ? "منتشر شده"
-                            : "پیش‌نویس / غیرفعال"}
-                        </span>
+                        {(!p.variants || p.variants.length === 0) ? (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-400 border-amber-500/20 whitespace-nowrap">
+                            پیش‌نویس (فاقد تنوع)
+                          </span>
+                        ) : (
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                              p.status === "published" || p.status === "active"
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                            }`}
+                          >
+                            {p.status === "published" || p.status === "active"
+                              ? "منتشر شده"
+                              : "پیش‌نویس / غیرفعال"}
+                          </span>
+                        )}
                       </td>
 
                       {/* Actions */}
@@ -1252,12 +1266,12 @@ export default function AdminProductsPage() {
                     className="text-xs px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                    افزودن خودکار ۳ ویژگی الزامی لباس (رنگ، سایز، جنس)
+                    افزودن ویژگی‌های متداول لباس (رنگ، سایز، جنس)
                   </button>
                 </div>
 
                 {/* Add New Option Input */}
-                <form onSubmit={handleAddProductOption} className="flex gap-2">
+                <form onSubmit={handleAddProductOption} noValidate className="flex gap-2">
                   <Input
                     value={newOptionName}
                     onChange={(e) => setNewOptionName(e.target.value)}
@@ -1365,6 +1379,7 @@ export default function AdminProductsPage() {
                 {/* Add Variant Form */}
                 <form
                   onSubmit={handleCreateRealVariant}
+                  noValidate
                   className="bg-[#1a1a1a] border border-white/5 rounded-xl p-4 space-y-4"
                 >
                   <span className="text-xs font-bold text-gray-300 block">ثبت تنوع جدید:</span>
@@ -1383,7 +1398,6 @@ export default function AdminProductsPage() {
                                 [opt.id]: e.target.value,
                               }))
                             }
-                            required
                             className="w-full bg-black/60 border border-white/10 rounded-lg h-9 px-2 text-xs text-white outline-none"
                           >
                             <option value="">انتخاب {opt.name}...</option>
@@ -1405,7 +1419,6 @@ export default function AdminProductsPage() {
                         value={newVariantSku}
                         onChange={(e) => setNewVariantSku(e.target.value)}
                         placeholder="SKU-101"
-                        required
                         className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg font-mono text-left"
                         dir="ltr"
                       />
@@ -1419,7 +1432,6 @@ export default function AdminProductsPage() {
                         value={newVariantPrice}
                         onChange={(e) => setNewVariantPrice(formatPriceInput(e.target.value))}
                         placeholder="۱,۲۰۰,۰۰۰"
-                        required
                         className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg font-mono text-left"
                         dir="ltr"
                       />
@@ -1432,7 +1444,6 @@ export default function AdminProductsPage() {
                         value={newVariantWeight}
                         onChange={(e) => setNewVariantWeight(e.target.value)}
                         placeholder="1"
-                        required
                         min={1}
                         className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg font-sans"
                         dir="ltr"
@@ -1516,8 +1527,16 @@ export default function AdminProductsPage() {
       </Dialog>
 
       {/* Product Create / Edit Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          if (!open && isCategoryModalOpen) return;
+          setIsModalOpen(open);
+        }}
+      >
         <DialogContent
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
           dir="rtl"
         >
@@ -1528,7 +1547,7 @@ export default function AdminProductsPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSaveProduct} className="space-y-6 mt-4">
+          <form onSubmit={handleSaveProduct} noValidate className="space-y-6 mt-4">
             {/* Basic Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1537,7 +1556,6 @@ export default function AdminProductsPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="مثال: کت چرم پاییزه اورسایز"
-                  required
                   className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl"
                 />
               </div>
@@ -1572,7 +1590,6 @@ export default function AdminProductsPage() {
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                   className="w-full bg-[#181818] border border-white/10 h-11 text-xs text-white rounded-xl px-3 outline-none focus:border-amber-400/50"
-                  required
                 >
                   <option value="">انتخاب دسته‌بندی...</option>
                   {categories.map((c) => (
@@ -1597,7 +1614,6 @@ export default function AdminProductsPage() {
                     }
                   }}
                   placeholder="۱,۲۵۰,۰۰۰"
-                  required
                   className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-mono text-left"
                   dir="ltr"
                 />
@@ -1928,7 +1944,8 @@ export default function AdminProductsPage() {
       {/* --- Category Management Modal --- */}
       <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
         <DialogContent
-          className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-3xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => e.stopPropagation()}
+          className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-3xl p-6 md:p-8 max-h-[90vh] overflow-y-auto z-[70]"
           dir="rtl"
         >
           <DialogHeader className="border-b border-white/10 pb-4">
@@ -1943,7 +1960,7 @@ export default function AdminProductsPage() {
 
           <div className="space-y-6 mt-4">
             {/* Create New Category Form */}
-            <form onSubmit={handleAddCategory} className="bg-[#141414] border border-white/10 rounded-2xl p-5 space-y-4">
+            <form onSubmit={handleAddCategory} noValidate className="bg-[#141414] border border-white/10 rounded-2xl p-5 space-y-4">
               <h3 className="text-sm font-black text-white flex items-center gap-2">
                 <Plus className="w-4 h-4 text-amber-400" />
                 افزودن دسته‌بندی جدید
@@ -1956,7 +1973,6 @@ export default function AdminProductsPage() {
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
                     placeholder="مثال: شومیز و بلوز مجلسی"
-                    required
                     className="bg-[#1a1a1a] border-white/10 h-10 text-xs text-white rounded-xl"
                   />
                 </div>

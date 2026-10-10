@@ -228,6 +228,7 @@ Every interactive component MUST explicitly style the following 8 states:
 4. **NO Layout-Shifting Hovers:** Never increase borders or element widths on hover; use box-shadow, background-color, or opacity changes.
 5. **NO Unmotivated Scroll Hijacking:** Never hijack native browser scroll unless in an isolated carousel component.
 6. **NO Broken RTL Layouts:** Always verify chevron arrows, drawer slide-ins, and alignment follow right-to-left conventions.
+7. **NO Raw Browser Tooltips / English Error Leaks:** Forms must explicitly specify `noValidate`. Never expose default browser validation popups (e.g. "Please select an item in the list") to users. All validation states, empty alerts, field hints, and error toasts must be rendered in human-written Persian (Vazirmatn typography) with styled MAVi alert banners or Sonner toasts.
 
 ---
 
