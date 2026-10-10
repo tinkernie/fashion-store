@@ -1,11 +1,101 @@
+import os
+import uuid
+from urllib.parse import urlparse
+
+from django.conf import settings
+from django.core.files.base import ContentFile
 from rest_framework import serializers
+
+
+MAX_BANNER_BYTES = 10 * 1024 * 1024
+ALLOWED_BANNER_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"}
+
+
+def _banner_name_from_url(path: str) -> str:
+    base = os.path.basename(path.rstrip("/")) or ("banner-%s" % uuid.uuid4().hex[:8])
+    stem, ext = os.path.splitext(base)
+    ext = ext.lower()
+    if ext not in ALLOWED_BANNER_EXTS:
+        ext = ".jpg"
+        base = (stem or "banner") + ext
+    return base
+
+
+def resolve_banner_url(url: str):
+    """Turn an image URL string into a Django file for hero_banner.
+
+    Same-server media URLs (/media_libm/...) are read straight from
+    MEDIA_ROOT (no re-download); remote http(s) URLs are fetched with
+    tight timeout/size guards. Raises ValidationError on any problem.
+    """
+    parsed = urlparse(url)
+    path = parsed.path or ""
+    if parsed.scheme not in ("http", "https", "") or (parsed.scheme == "" and not path):
+        raise serializers.ValidationError("Enter a valid image URL or upload a file.")
+
+    media_prefix = getattr(settings, "MEDIA_URL", "/media_libm/")
+    if path.startswith(media_prefix):
+        local = os.path.join(
+            str(getattr(settings, "MEDIA_ROOT", "")), path[len(media_prefix):].lstrip("/")
+        )
+        if not os.path.isfile(local):
+            raise serializers.ValidationError("Image URL does not match any stored media file.")
+        if os.path.getsize(local) > MAX_BANNER_BYTES:
+            raise serializers.ValidationError("Image file is too large (max 10 MB).")
+        try:
+            with open(local, "rb") as fh:
+                content = fh.read()
+        except OSError:
+            raise serializers.ValidationError("Image file could not be read.")
+        if not content:
+            raise serializers.ValidationError("Image file is empty.")
+        return ContentFile(content, name=_banner_name_from_url(path))
+
+    if parsed.scheme not in ("http", "https"):
+        raise serializers.ValidationError("Enter a valid image URL or upload a file.")
+    import requests
+
+    try:
+        resp = requests.get(url, timeout=10, stream=True)
+    except Exception:
+        raise serializers.ValidationError("Image URL could not be downloaded.")
+    if resp.status_code != 200:
+        raise serializers.ValidationError("Image URL could not be downloaded.")
+    content_type = (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+    if not content_type.startswith("image/"):
+        raise serializers.ValidationError("URL does not point to an image file.")
+    length = resp.headers.get("Content-Length")
+    if length and length.isdigit() and int(length) > MAX_BANNER_BYTES:
+        raise serializers.ValidationError("Image file is too large (max 10 MB).")
+    try:
+        content = resp.content
+    except Exception:
+        raise serializers.ValidationError("Image URL could not be downloaded.")
+    if len(content) > MAX_BANNER_BYTES:
+        raise serializers.ValidationError("Image file is too large (max 10 MB).")
+    if not content:
+        raise serializers.ValidationError("Downloaded image is empty.")
+    return ContentFile(content, name=_banner_name_from_url(path))
+
+
+class HeroBannerField(serializers.ImageField):
+    """hero_banner accepts either a multipart file upload or an image URL
+    string (typically a media-library URL returned by the uploader)."""
+
+    def to_internal_value(self, data):
+        if isinstance(data, str):
+            data = data.strip()
+            if not data:
+                return None
+            data = resolve_banner_url(data)
+        return super().to_internal_value(data)
 
 
 class CollectionCreateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200)
     slug = serializers.SlugField()
     description = serializers.CharField(required=False, allow_blank=True)
-    hero_banner = serializers.ImageField(required=False)
+    hero_banner = HeroBannerField(required=False, allow_null=True)
     landing_page_content = serializers.CharField(required=False, allow_blank=True)
     seo_metadata = serializers.JSONField(required=False, default=dict)
     priority = serializers.IntegerField(default=0)
