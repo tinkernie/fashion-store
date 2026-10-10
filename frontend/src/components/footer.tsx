@@ -8,7 +8,7 @@ import { MaviWordmark } from "@/components/ui/mavi-wordmark";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#0B192C] text-white border-t border-sky-900/50 pt-16 sm:pt-20 pb-28 md:pb-12 px-4 sm:px-6 mt-16 sm:mt-24 shadow-2xl">
+    <footer className="bg-[#0B192C] text-white border-t border-sky-900/50 pt-16 sm:pt-20 pb-28 md:pb-12 px-4 sm:px-6 mt-6 sm:mt-10 shadow-2xl">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
           

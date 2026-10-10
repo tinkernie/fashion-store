@@ -355,7 +355,7 @@ export default function HomeClient({
   };
 
   return (
-    <main className="min-h-screen bg-[#FAFCFE] pb-24 overflow-x-clip" dir="rtl">
+    <main className="min-h-screen bg-[#FAFCFE] pb-4 sm:pb-6 overflow-x-clip" dir="rtl">
       {/* ----------------------------------------------------------------- */}
       {/* TOP ANNOUNCEMENT RIBBON (If enabled)                              */}
       {/* ----------------------------------------------------------------- */}
@@ -771,7 +771,7 @@ export default function HomeClient({
       {/* ----------------------------------------------------------------- */}
       {/* 6. TRUST & BRAND VALUES BAR                                       */}
       {/* ----------------------------------------------------------------- */}
-      <section className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-4 pb-8">
+      <section className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-4 pb-2 sm:pb-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center">
           <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-sky-100 shadow-sm">
             <div className="w-10 h-10 rounded-xl bg-sky-100 text-[#0082CA] flex items-center justify-center shrink-0 shadow-sm">
