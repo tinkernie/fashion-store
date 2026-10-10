@@ -15,6 +15,7 @@ class ProductRepository:
             "description",
             "category",
             "status",
+            "weight",
             "seo_metadata",
             "metadata",
         }

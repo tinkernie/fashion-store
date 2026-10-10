@@ -7,6 +7,7 @@ from .selectors import InventorySelector
 from .serializers import (
     InventorySerializer,
     AdjustStockSerializer,
+    SetQuantitySerializer,
     SafetyStockSerializer,
     ReservationExpirationSerializer,
 )
@@ -46,6 +47,28 @@ class AdminInventoryViewSet(viewsets.GenericViewSet):
     )
     def adjust_stock_underscore(self, request, variant_id=None):
         return self.adjust_stock(request, variant_id=variant_id)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        serializer_class=SetQuantitySerializer,
+        url_path="set-quantity",
+    )
+    def set_quantity(self, request, variant_id=None):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = InventoryService()
+        result = service.set_quantity(variant_id, serializer.validated_data["quantity"])
+        return Response(result)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        serializer_class=SetQuantitySerializer,
+        url_path="set_quantity",
+    )
+    def set_quantity_underscore(self, request, variant_id=None):
+        return self.set_quantity(request, variant_id=variant_id)
 
     @action(
         detail=True,

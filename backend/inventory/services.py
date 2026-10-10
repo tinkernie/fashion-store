@@ -67,6 +67,43 @@ class InventoryService:
         )
         return self._serialize(updated)
 
+    @transaction.atomic
+    def set_quantity(self, variant_id: str, quantity: int) -> dict:
+        """Set available quantity to an absolute value (admin action).
+
+        Unlike adjust_stock (delta-based), this lets the admin type the exact
+        stock on hand (e.g. 1) without computing the difference first.
+        Negative input clamps to 0; reserved units are never touched, so the
+        status is recomputed from the new sellable amount.
+        """
+        from variants.models import Variant
+
+        variant = Variant.objects.filter(id=variant_id, deleted_at__isnull=True).first()
+        if not variant:
+            variant = Variant.objects.filter(
+                product_id=variant_id, deleted_at__isnull=True
+            ).first()
+            if variant:
+                variant_id = str(variant.id)
+            else:
+                raise BusinessException("Target product or variant not found.")
+
+        inventory = InventoryRepository.lock_inventory(str(variant_id))
+        new_qty = max(0, int(quantity))
+        new_sellable = new_qty - inventory.reserved_quantity
+        if new_sellable <= 0:
+            new_status = Inventory.Status.OUT_OF_STOCK
+        elif new_sellable <= inventory.safety_stock:
+            new_status = Inventory.Status.LOW_STOCK
+        else:
+            new_status = Inventory.Status.IN_STOCK
+        updated = InventoryRepository.update_fields(
+            inventory,
+            available_quantity=new_qty,
+            status=new_status,
+        )
+        return self._serialize(updated)
+
     def set_safety_stock(self, variant_id: str, value: int) -> dict:
         from variants.models import Variant
         actual_variant_id = variant_id

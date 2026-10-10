@@ -14,6 +14,10 @@ class AdjustStockSerializer(serializers.Serializer):
     delta = serializers.IntegerField()  # positive to add, negative to remove
 
 
+class SetQuantitySerializer(serializers.Serializer):
+    quantity = serializers.IntegerField(min_value=0)  # absolute stock on hand
+
+
 class SafetyStockSerializer(serializers.Serializer):
     safety_stock = serializers.IntegerField(min_value=0)
 

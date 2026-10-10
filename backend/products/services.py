@@ -146,6 +146,32 @@ class ProductService:
         except IntegrityError:
             raise BusinessException("A product with this slug already exists.")
 
+        if price is not None:
+            # Keep the storefront price in sync: the product-managed DEFAULT
+            # variant carries the selling price (serializers read variant
+            # price first). Per-variant pricing stays editable via the
+            # variant endpoints; only the DEFAULT variant follows here.
+            try:
+                from variants.models import Variant as _Variant
+
+                # The DEFAULT variant was keyed by the slug at creation time;
+                # match old and new slugs in case both changed at once.
+                candidate_skus = {f"{updated.slug}-DEFAULT"}
+                if new_slug:
+                    candidate_skus.add(f"{new_slug}-DEFAULT")
+                if product.slug:
+                    candidate_skus.add(f"{product.slug}-DEFAULT")
+                default_variant = _Variant.objects.filter(
+                    product=updated,
+                    sku__in=list(candidate_skus),
+                    deleted_at__isnull=True,
+                ).first()
+                if default_variant is not None:
+                    default_variant.price = price
+                    default_variant.save(update_fields=["price", "updated_at"])
+            except Exception:
+                pass
+
         if images is not None and isinstance(images, list):
             self._save_product_images(updated, images)
 
