@@ -11,6 +11,7 @@ class SearchSerializer(serializers.Serializer):
     # Options passed as JSON string: e.g., '{"Color":["Red","Blue"],"Size":["M"]}'
     options = serializers.JSONField(required=False)
     exclude_discounted = serializers.BooleanField(required=False, default=False)
+    has_discount = serializers.CharField(required=False, allow_blank=True)
     sort = serializers.ChoiceField(
         choices=['price_asc', 'price_desc', 'newest', 'name', 'relevance', 'popularity', 'best_selling', 'trending'],
         required=False,

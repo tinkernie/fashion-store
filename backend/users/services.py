@@ -12,14 +12,26 @@ User = get_user_model()
 
 class UserService:
     def update_profile(self, user: User, data: dict) -> User:
-        allowed_fields = {"first_name", "last_name"}
+        allowed_fields = {"first_name", "last_name", "email"}
         filtered = {k: v for k, v in data.items() if k in allowed_fields}
+        if "email" in filtered:
+            email = (filtered["email"] or "").strip().lower() or None
+            if email and User.objects.filter(
+                email=email, deleted_at__isnull=True
+            ).exclude(id=user.id).exists():
+                raise BusinessException("A user with this email address already exists.")
+            filtered["email"] = email
         if not filtered:
             raise BusinessException("No valid fields to update.")
         for field in ["first_name", "last_name"]:
             if field in filtered:
                 UserValidator.validate_name(filtered[field], field_name=field)
-        return UserRepository.update_user(user, **filtered)
+        from django.db import IntegrityError
+
+        try:
+            return UserRepository.update_user(user, **filtered)
+        except IntegrityError:
+            raise BusinessException("A user with this email address already exists.")
 
     def change_phone_request(self, user: User, new_phone: str) -> dict:
         from authentication.validators import PhoneValidator

@@ -68,6 +68,13 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
         max_length=15, unique=True, db_index=True, validators=[phone_validator],
         null=True, blank=True,  # temporary for email->SMS migration of existing rows
     )
+    email = models.EmailField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="User email address (optional, added post-signup via profile).",
+    )
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     is_active = models.BooleanField(default=True)
@@ -84,7 +91,15 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
                 name="unique_phone_number",
                 condition=models.Q(deleted_at__isnull=True),
                 violation_error_message="A user with this phone already exists.",
-            )
+            ),
+            models.UniqueConstraint(
+                "email",
+                name="unique_user_email_non_null",
+                condition=models.Q(deleted_at__isnull=True)
+                & models.Q(email__isnull=False)
+                & ~models.Q(email=""),
+                violation_error_message="A user with this email address already exists.",
+            ),
         ]
 
     def __str__(self):

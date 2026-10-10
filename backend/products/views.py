@@ -386,17 +386,16 @@ class AdminProductViewSet(viewsets.GenericViewSet):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         target_ids = request.data.get("target_ids", [])
         positions = request.data.get("positions", [])
-        if not isinstance(target_ids, list) or not target_ids:
-            return Response({"detail": "target_ids required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(target_ids, list):
+            return Response({"detail": "target_ids must be a list."}, status=status.HTTP_400_BAD_REQUEST)
         if len(target_ids) > 8:
             return Response({"detail": "Related products allows at most 8 items."}, status=status.HTTP_400_BAD_REQUEST)
-        if isinstance(target_ids, str):
-            target_ids = [target_ids]
         from .models import RelatedProduct
 
         RelatedProduct.objects.filter(
             source_product=product, relation_type=RelatedProduct.RelationType.SUGGESTED
         ).delete()
+        # Empty list intentionally clears all pins (no-op below, returns []).
         to_create = []
         for idx, tid in enumerate(target_ids[:8]):
             try:
@@ -524,11 +523,11 @@ class AdminProductViewSet(viewsets.GenericViewSet):
                 card["is_manual_pin"] = True
                 data.append(card)
             return Response(data)
-        # POST
+        # POST (empty list clears all pins and returns [])
         target_ids = request.data.get("target_ids", [])
         positions = request.data.get("positions", [])
-        if not isinstance(target_ids, list) or not target_ids:
-            return Response({"detail": "target_ids required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(target_ids, list):
+            return Response({"detail": "target_ids must be a list."}, status=status.HTTP_400_BAD_REQUEST)
         if len(target_ids) > 6:
             return Response({"detail": "Complete look allows at most 6 items."}, status=status.HTTP_400_BAD_REQUEST)
         RelatedProduct.objects.filter(

@@ -226,17 +226,37 @@ class ProductService:
             )
 
     @staticmethod
+    def _purge_campaign_caches() -> None:
+        """Purge product-list caches after campaign mutations.
+
+        NOTE: deliberately NOT cache.clear() — sessions live in the default
+        cache backend, so a full flush would log out every user. Instead we
+        purge the product rails plus Django's view-level cache entries
+        (cache_page stores under views.decorators.cache.*).
+        """
+        try:
+            from django.core.cache import cache
+            cache.delete_pattern("luxe:products:*")
+            cache.delete_pattern("views.decorators.cache.*")
+        except Exception:
+            pass
+
+    @staticmethod
     def _base_price(product: Product) -> int:
         """Single source of truth for discount calculation (matches serializer)."""
         try:
-            first_variant = product.variants.filter(deleted_at__isnull=True).first()
-            if first_variant and first_variant.price is not None:
-                return int(round(float(first_variant.price)))
+            variant = product.variants.filter(deleted_at__isnull=True, price__gt=0).first()
+            if not variant:
+                variant = product.variants.filter(deleted_at__isnull=True).first()
+            if variant and variant.price is not None and float(variant.price) > 0:
+                return int(round(float(variant.price)))
         except Exception:
             pass
         try:
             if product.metadata and "price" in product.metadata:
-                return int(round(float(product.metadata["price"])))
+                val = float(product.metadata["price"])
+                if val > 0:
+                    return int(round(val))
         except Exception:
             pass
         return 0
@@ -273,11 +293,7 @@ class ProductService:
         # Full removal is explicit via remove-one / deactivate endpoints.
         self._apply_percent_to_products(products, discount_percent, expires_at)
 
-        try:
-            from django.core.cache import cache
-            cache.delete_pattern("luxe:products:*")
-        except Exception:
-            pass
+        self._purge_campaign_caches()
         return {
             "message": f"Discount of {discount_percent}% applied to {len(products)} products.",
             "discount_percent": discount_percent,
@@ -292,8 +308,13 @@ class ProductService:
             product.discount_percent = discount_percent
             product.discount_price = product.calculate_discount_price(base)
             product.discount_expires_at = expires_at
+            meta = dict(product.metadata) if product.metadata else {}
+            meta["discount_percent"] = discount_percent
+            if product.discount_price:
+                meta["discount_price"] = str(int(product.discount_price))
+            product.metadata = meta
             product.save(
-                update_fields=["discount_percent", "discount_price", "discount_expires_at", "updated_at"]
+                update_fields=["discount_percent", "discount_price", "discount_expires_at", "metadata", "updated_at"]
             )
 
     @staticmethod
@@ -336,11 +357,7 @@ class ProductService:
         if not isinstance(discount_percent, int) or not 1 <= discount_percent <= 99:
             raise BusinessException("Discount must be an integer between 1 and 99.")
         self._apply_percent_to_products([product], discount_percent, campaign_expires_at)
-        try:
-            from django.core.cache import cache
-            cache.delete_pattern("luxe:products:*")
-        except Exception:
-            pass
+        self._purge_campaign_caches()
         return {
             "message": f"Product added to discount section at {discount_percent}%.",
             "product_id": str(product.id),
@@ -361,11 +378,7 @@ class ProductService:
         product.save(
             update_fields=["discount_percent", "discount_price", "discount_expires_at", "updated_at"]
         )
-        try:
-            from django.core.cache import cache
-            cache.delete_pattern("luxe:products:*")
-        except Exception:
-            pass
+        self._purge_campaign_caches()
         return {"message": "Product removed from discount section.", "product_id": str(product.id)}
 
     _KEEP_DEADLINE = object()
@@ -397,11 +410,7 @@ class ProductService:
             if expires_at is not self._KEEP_DEADLINE:
                 product.discount_expires_at = expires_at
             product.save(update_fields=update_fields)
-        try:
-            from django.core.cache import cache
-            cache.delete_pattern("luxe:products:*")
-        except Exception:
-            pass
+        self._purge_campaign_caches()
         return {
             "message": f"Discount set to {discount_percent}% on {len(products)} products.",
             "discount_percent": discount_percent,
@@ -426,11 +435,7 @@ class ProductService:
             discount_expires_at=None,
             updated_at=timezone.now(),
         )
-        try:
-            from django.core.cache import cache
-            cache.delete_pattern("luxe:products:*")
-        except Exception:
-            pass
+        self._purge_campaign_caches()
         return {"message": f"Discount removed from {count} products.", "cleared_count": count}
 
     def archive_product(self, product_id) -> dict:
