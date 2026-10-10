@@ -146,6 +146,17 @@ results.append({
 ### Query Optimization Hint
 Ensure `product_links.select_related("product", "product__category").prefetch_related("product__variants")` is used in `get_products` to prevent N+1 queries.
 
+---
+
+## 6. [RESOLVED] Collection Deletion: Hard Delete Instead of Deactivation
+
+### Status: Resolved
+- `backend/store_collections/repositories.py`: Added `hard_delete_collection(collection)` invoking `collection.hard_delete()`.
+- `backend/store_collections/services.py`: `delete_collection` looks up via `Collection.all_objects.filter(id=collection_id).first()` and calls `hard_delete_collection`, safely cascading `CollectionProduct` link rows without touching associated products.
+- `backend/store_collections/selectors.py`: `get_all_collections_admin` explicitly filters `deleted_at__isnull=True`.
+- `frontend/src/app/admin/collections/page.tsx`: Updated `handleDeleteCollection` with optimistic removal, updated Persian confirmation copy, and reactive UI re-sync.
+
+
 
 
 

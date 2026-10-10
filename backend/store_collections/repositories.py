@@ -33,6 +33,10 @@ class CollectionRepository:
         collection.delete()  # overridden method
 
     @staticmethod
+    def hard_delete_collection(collection: Collection):
+        collection.hard_delete()
+
+    @staticmethod
     @transaction.atomic
     def set_product_positions(collection: Collection, product_positions: list[dict]):
         """Replace product links with new positions. Expects [{'product_id': ..., 'position': ...}, ...]"""

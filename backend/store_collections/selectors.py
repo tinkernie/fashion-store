@@ -53,4 +53,7 @@ class CollectionSelector:
 
     @staticmethod
     def get_all_collections_admin() -> list[Collection]:
-        return Collection.objects.all().prefetch_related("product_links__product")
+        return (
+            Collection.objects.filter(deleted_at__isnull=True)
+            .prefetch_related("product_links__product")
+        )

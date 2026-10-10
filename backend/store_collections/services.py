@@ -30,11 +30,12 @@ class CollectionService:
         return self._serialize(updated)
 
     def delete_collection(self, collection_id) -> dict:
-        collection = CollectionSelector.get_collection_by_id(collection_id)
+        from .models import Collection
+        collection = Collection.all_objects.filter(id=collection_id).first()
         if not collection:
             raise BusinessException("Collection not found.")
-        CollectionRepository.soft_delete_collection(collection)
-        return {"message": f"Collection '{collection.name}' deactivated."}
+        CollectionRepository.hard_delete_collection(collection)
+        return {"message": f"Collection '{collection.name}' deleted."}
 
     def set_product_positions(self, collection_id, product_positions: list) -> dict:
         collection = CollectionSelector.get_collection_by_id(collection_id)

@@ -178,19 +178,21 @@ export default function AdminCollectionsPage() {
   };
 
   const handleDeleteCollection = async (col: CollectionItem) => {
-    if (!confirm(`آیا از غیرفعال‌سازی و حذف کالکشن «${col.name}» اطمینان دارید؟`)) {
+    if (!confirm(`آیا از حذف کامل کالکشن «${col.name}» اطمینان دارید؟ این عملیات غیرقابل بازگشت است.`)) {
       return;
     }
     try {
+      setCollections((prev) => prev.filter((c) => c.id !== col.id));
       await adminApi.deleteCollection(col.id);
-      toast.success(`کالکشن «${col.name}» حذف گردید.`);
-      await loadData();
+      toast.success(`کالکشن «${col.name}» با موفقیت حذف گردید.`);
       if (selectedCollectionForProducts?.id === col.id) {
         setIsProductModalOpen(false);
         setSelectedCollectionForProducts(null);
       }
+      await loadData();
     } catch (err) {
       toast.error(getApiErrorMessage(err, "خطا در حذف کالکشن"));
+      await loadData();
     }
   };
 
