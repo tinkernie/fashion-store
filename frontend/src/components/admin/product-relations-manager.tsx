@@ -59,6 +59,7 @@ export default function ProductRelationsManager({
   const [activeTab, setActiveTab] = useState<"complete_look" | "suggested">("complete_look");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
 
   // Complete the Look State (Max 6)
   const [lookItems, setLookItems] = useState<RelationItem[]>([]);
@@ -236,6 +237,21 @@ export default function ProductRelationsManager({
     }
   };
 
+  const handleAutoFillRelated = async () => {
+    if (!product?.id) return;
+    setIsAutoFilling(true);
+    try {
+      const res = await adminApi.autoFillRelatedProducts(product.id, 8);
+      toast.success(res.message || "پیشنهادات مرتبط هوشمند با موفقیت اضافه شدند.");
+      await loadRelations();
+      if (onSaved) onSaved();
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "خطا در تکمیل خودکار پیشنهادات مرتبط."));
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
+
   // Candidates list excluding current product and items already in current tab
   const activeIds = new Set(
     (activeTab === "complete_look" ? lookItems : relatedItems).map((it) => String(it.id))
@@ -335,7 +351,7 @@ export default function ProductRelationsManager({
                 <Layers className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                 <div className="text-xs text-blue-300/90 leading-relaxed">
                   <p className="font-bold text-blue-200">بخش پیشنهادات مرتبط (Suggested Products):</p>
-                  آیتم‌های پین‌شده به صورت دستی در اسلایدر محصولات مشابه نمایش داده می‌شوند. حداکثر سقف دستی <strong className="text-white">۸ قلم کالا</strong> است و در صورت خالی بودن یا تعداد کمتر، سیستم به صورت هوشمند جای خالی را پر می‌کند.
+                  آیتم‌های ذخیره‌شده در اسلایدر محصولات مشابه نمایش داده می‌شوند (حداکثر سقف <strong className="text-white">۸ قلم کالا</strong>). می‌توانید آیتم‌ها را دستی انتخاب نمایید یا با دکمه «تکمیل هوشمند پیشنهادها»، فضاهای خالی را با تحلیل هوشمند سیستم تکمیل کنید.
                 </div>
               </div>
             )}
@@ -349,9 +365,27 @@ export default function ProductRelationsManager({
                     (مرتب‌سازی از راست به چپ)
                   </span>
                 </h3>
-                <span className="text-xs text-zinc-400">
-                  {activeTab === "complete_look" ? `${lookItems.length} از ۶` : `${relatedItems.length} از ۸`}
-                </span>
+                <div className="flex items-center gap-2">
+                  {activeTab === "suggested" && relatedItems.length < 8 && (
+                    <button
+                      type="button"
+                      onClick={handleAutoFillRelated}
+                      disabled={isAutoFilling || isLoading}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/30 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-sm"
+                      title="پر کردن فضاهای خالی اسلایدر با تحلیل هوشمند سیستم"
+                    >
+                      {isAutoFilling ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5 text-purple-300" />
+                      )}
+                      <span>تکمیل هوشمند پیشنهادها</span>
+                    </button>
+                  )}
+                  <span className="text-xs text-zinc-400">
+                    {activeTab === "complete_look" ? `${lookItems.length} از ۶` : `${relatedItems.length} از ۸`}
+                  </span>
+                </div>
               </div>
 
               {(activeTab === "complete_look" ? lookItems : relatedItems).length === 0 ? (

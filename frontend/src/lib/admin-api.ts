@@ -196,6 +196,18 @@ export const adminApi = {
     const res = await api.delete(`/api/admin/products/${productId}/related/${targetId}/`);
     return res.data;
   },
+  async autoFillRelatedProducts(productId: string, limit = 8): Promise<{
+    filled: number;
+    total: number;
+    limit: number;
+    auto_filled_ids: string[];
+    target_ids: string[];
+    message: string;
+    items?: any[];
+  }> {
+    const res = await api.post(`/api/admin/products/${productId}/related/auto-fill/`, { limit });
+    return res.data;
+  },
 
   // Media Upload
   async uploadImage(file: File): Promise<{ url: string; image_url: string; relative_url?: string }> {
@@ -260,6 +272,12 @@ export const adminApi = {
   },
   async adjustStock(variantId: string, delta: number): Promise<any> {
     const res = await api.post(`/api/admin/inventory/${variantId}/adjust-stock/`, { delta });
+    return res.data;
+  },
+  async setStockQuantity(variantOrProdId: string, quantity: number): Promise<any> {
+    const res = await api.post(`/api/admin/inventory/${variantOrProdId}/set-quantity/`, {
+      quantity: Math.max(0, quantity),
+    });
     return res.data;
   },
   async setSafetyStock(variantId: string, safetyStock: number): Promise<any> {

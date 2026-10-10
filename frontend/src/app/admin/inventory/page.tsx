@@ -16,6 +16,7 @@ import {
   PackagePlus,
   ArrowUpRight,
   ArrowDownRight,
+  Equal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +45,7 @@ export default function AdminInventoryPage() {
   // Custom Stock Modal
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customStockItem, setCustomStockItem] = useState<any | null>(null);
-  const [customStockMode, setCustomStockMode] = useState<"add" | "subtract">("add");
+  const [customStockMode, setCustomStockMode] = useState<"add" | "subtract" | "set">("add");
   const [customAmountVal, setCustomAmountVal] = useState("50");
   const [isSubmittingCustomStock, setIsSubmittingCustomStock] = useState(false);
 
@@ -115,15 +116,20 @@ export default function AdminInventoryPage() {
     e.preventDefault();
     if (!customStockItem) return;
     const qty = parseInt(customAmountVal, 10);
-    if (isNaN(qty) || qty <= 0) {
-      toast.error("لطفاً یک عدد معتبر و بزرگتر از صفر وارد کنید.");
+    if (isNaN(qty) || qty < 0 || (customStockMode !== "set" && qty <= 0)) {
+      toast.error("لطفاً یک عدد معتبر وارد کنید.");
       return;
     }
-    const delta = customStockMode === "add" ? qty : -qty;
     setIsSubmittingCustomStock(true);
     try {
-      await adminApi.adjustStock(customStockItem.id, delta);
-      toast.success(`موجودی کالا با موفقیت (${delta > 0 ? `+${delta}` : delta} عدد) بروزرسانی شد.`);
+      if (customStockMode === "set") {
+        await adminApi.setStockQuantity(customStockItem.id, qty);
+        toast.success(`موجودی کالا دقیقا روی ${qty.toLocaleString("fa-IR")} عدد تنظیم شد.`);
+      } else {
+        const delta = customStockMode === "add" ? qty : -qty;
+        await adminApi.adjustStock(customStockItem.id, delta);
+        toast.success(`موجودی کالا با موفقیت (${delta > 0 ? `+${delta}` : delta} عدد) بروزرسانی شد.`);
+      }
       setIsCustomModalOpen(false);
       await loadInventoryData();
     } catch (err: any) {
@@ -471,42 +477,56 @@ export default function AdminInventoryPage() {
               </div>
             </div>
 
-            {/* Mode selection (Increase / Decrease) */}
+            {/* Mode selection (Increase / Decrease / Set Exact) */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-300">نوع عملیات:</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setCustomStockMode("add")}
-                  className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
+                  className={`py-2.5 px-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 border transition-all ${
                     customStockMode === "add"
                       ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/10"
                       : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10"
                   }`}
                 >
-                  <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                  افزایش موجودی (+)
+                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  افزایش (+)
                 </button>
                 <button
                   type="button"
                   onClick={() => setCustomStockMode("subtract")}
-                  className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
+                  className={`py-2.5 px-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 border transition-all ${
                     customStockMode === "subtract"
                       ? "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-lg shadow-rose-500/10"
                       : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10"
                   }`}
                 >
-                  <ArrowDownRight className="w-4 h-4 text-rose-400" />
-                  کاهش موجودی (-)
+                  <ArrowDownRight className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  کاهش (-)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomStockMode("set")}
+                  className={`py-2.5 px-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 border transition-all ${
+                    customStockMode === "set"
+                      ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-lg shadow-cyan-500/10"
+                      : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <Equal className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  مقدار قطعی (=)
                 </button>
               </div>
             </div>
 
             {/* Preset Amount Chips */}
             <div className="space-y-1.5">
-              <label className="text-[11px] text-gray-400">مقادیر پیشنهادی سریع:</label>
+              <label className="text-[11px] text-gray-400">
+                {customStockMode === "set" ? "مقادیر قطعی آماده:" : "مقادیر پیشنهادی سریع:"}
+              </label>
               <div className="flex items-center gap-1.5 flex-wrap">
-                {[10, 25, 50, 100, 250, 500].map((preset) => (
+                {(customStockMode === "set" ? [0, 5, 10, 25, 50, 100] : [10, 25, 50, 100, 250, 500]).map((preset) => (
                   <button
                     key={preset}
                     type="button"
@@ -517,7 +537,7 @@ export default function AdminInventoryPage() {
                         : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10"
                     }`}
                   >
-                    {customStockMode === "add" ? `+${preset}` : `-${preset}`}
+                    {customStockMode === "set" ? `${preset}` : customStockMode === "add" ? `+${preset}` : `-${preset}`}
                   </button>
                 ))}
               </div>
@@ -526,15 +546,17 @@ export default function AdminInventoryPage() {
             {/* Input */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-300">
-                تعداد عدد جهت {customStockMode === "add" ? "افزایش" : "کاهش"}:
+                {customStockMode === "set"
+                  ? "موجودی دقیق و جدید کالا:"
+                  : `تعداد عدد جهت ${customStockMode === "add" ? "افزایش" : "کاهش"}:`}
               </label>
               <Input
                 type="number"
                 value={customAmountVal}
                 onChange={(e) => setCustomAmountVal(e.target.value)}
                 required
-                min={1}
-                placeholder="مثلاً ۵۰"
+                min={customStockMode === "set" ? 0 : 1}
+                placeholder={customStockMode === "set" ? "مثلاً ۲۰" : "مثلاً ۵۰"}
                 className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl"
               />
             </div>
@@ -546,9 +568,17 @@ export default function AdminInventoryPage() {
                 {(() => {
                   const cur = getItemStock(customStockItem);
                   const val = parseInt(customAmountVal, 10) || 0;
-                  const res = customStockMode === "add" ? cur + val : Math.max(0, cur - val);
+                  const res = customStockMode === "set" ? Math.max(0, val) : customStockMode === "add" ? cur + val : Math.max(0, cur - val);
                   return (
-                    <span className={customStockMode === "add" ? "text-emerald-400 font-black" : "text-amber-400 font-black"}>
+                    <span
+                      className={
+                        customStockMode === "set"
+                          ? "text-cyan-400 font-black"
+                          : customStockMode === "add"
+                          ? "text-emerald-400 font-black"
+                          : "text-amber-400 font-black"
+                      }
+                    >
                       {res.toLocaleString("fa-IR")} عدد
                     </span>
                   );
@@ -560,10 +590,18 @@ export default function AdminInventoryPage() {
             <div className="flex gap-3 pt-2">
               <Button
                 type="submit"
-                disabled={isSubmittingCustomStock || !customAmountVal || parseInt(customAmountVal, 10) <= 0}
+                disabled={
+                  isSubmittingCustomStock ||
+                  !customAmountVal ||
+                  (customStockMode === "set" ? parseInt(customAmountVal, 10) < 0 : parseInt(customAmountVal, 10) <= 0)
+                }
                 className="flex-1 h-11 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs"
               >
-                {isSubmittingCustomStock ? "در حال ثبت..." : "ثبت تغییر موجودی"}
+                {isSubmittingCustomStock
+                  ? "در حال ثبت..."
+                  : customStockMode === "set"
+                  ? "ثبت موجودی قطعی"
+                  : "ثبت تغییر موجودی"}
               </Button>
               <Button
                 type="button"
