@@ -275,13 +275,53 @@ class ProductSelector:
 
     @staticmethod
     def get_auto_candidates(product, exclude_ids: set = None, limit: int = 8) -> list[Product]:
-        """System picks for related products, scored by collection match x2,
-        category match x3 and order popularity. Only published, non-deleted,
-        in-stock products. Used solely by the admin auto-fill action —
-        never injected silently into the storefront.
+        """System picks for related clothing, scored by fashion signals:
+
+        same category x3, same collection x2, shared option words (same
+        colour/size/fabric text, matched by value text since option rows
+        are per-product) x1 each, same price band (±40%) x2,
+        sibling category x1, high rating x1-2, order popularity capped at 5.
+        Only published, non-deleted, in-stock products. Used solely by the
+        admin auto-fill action — never injected silently into the storefront.
         """
+        from decimal import Decimal
+
         limit = min(max(int(limit), 1), 8)
         seen_ids = set(exclude_ids or set()) | {product.id}
+
+        # Source-product signals (two cheap lookups, no N+1).
+        from variants.models import Variant as _Variant
+        from product_options.models import OptionValue as _OptionValue
+
+        try:
+            base_price = float(
+                _Variant.objects.filter(
+                    product=product, deleted_at__isnull=True
+                ).aggregate(m=Min("price"))["m"] or 0
+            )
+        except Exception:
+            base_price = 0.0
+        try:
+            # Match by value TEXT ("red", "M", "cotton"): option rows are
+            # per-product, so ids never coincide across products — but the
+            # same colour/size/fabric words do, and that is the real
+            # affinity signal for clothing.
+            source_texts = [
+                t for t in (
+                    _OptionValue.objects.filter(
+                        variants__product=product,
+                        variants__deleted_at__isnull=True,
+                        deleted_at__isnull=True,
+                    ).values_list("value", flat=True).distinct()
+                ) if (t or "").strip()
+            ]
+        except Exception:
+            source_texts = []
+        try:
+            parent_id = product.category.parent_id if product.category else None
+        except Exception:
+            parent_id = None
+
         fallback_qs = (
             Product.objects.filter(
                 status=Product.Status.PUBLISHED,
@@ -292,6 +332,9 @@ class ProductSelector:
             .prefetch_related("collections", "images")
         )
         collection_ids = list(product.collections.values_list("id", flat=True))
+        # NOTE: when there is nothing to match, emit a bare Value(0) instead
+        # of Count(..., filter=Q(pk__in=[])) — the empty-IN filter inside an
+        # aggregate poisons the whole score expression to 0 on this stack.
         fallback_qs = fallback_qs.annotate(
             popularity=Count("order_items", distinct=True),
             cat_match=Case(
@@ -299,10 +342,29 @@ class ProductSelector:
                 default=Value(0),
                 output_field=IntegerField(),
             ),
+            sibling_match=Case(
+                When(category__parent_id=parent_id, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            ) if parent_id else Value(0, output_field=IntegerField()),
             coll_match=Count(
                 "collections",
-                filter=Q(collections__in=collection_ids) if collection_ids else Q(pk__in=[]),
+                filter=Q(collections__in=collection_ids),
                 distinct=True,
+            ) if collection_ids else Value(0, output_field=IntegerField()),
+            min_price=Min(
+                "variants__price",
+                filter=Q(variants__deleted_at__isnull=True),
+            ),
+            shared_options=Count(
+                "variants__option_values",
+                filter=Q(variants__option_values__value__in=source_texts,
+                         variants__deleted_at__isnull=True),
+                distinct=True,
+            ) if source_texts else Value(0, output_field=IntegerField()),
+            avg_rating=Avg(
+                "reviews__rating",
+                filter=Q(reviews__status="approved", reviews__deleted_at__isnull=True),
             ),
         )
         fallback_qs = fallback_qs.filter(
@@ -315,9 +377,40 @@ class ProductSelector:
                 )
             )
         )
+        # Second annotate pass so derived aliases can be referenced.
+        price_lo = Decimal(str(base_price * 0.6)) if base_price > 0 else None
+        price_hi = Decimal(str(base_price * 1.4)) if base_price > 0 else None
         fallback_qs = fallback_qs.annotate(
-            score=F("cat_match") * 3 + F("coll_match") * 2 + F("popularity")
-        ).order_by("-score", "-popularity", "-created_at")
+            price_band=Case(
+                When(min_price__gte=price_lo, min_price__lte=price_hi, then=Value(2)),
+                default=Value(0),
+                output_field=IntegerField(),
+            ) if price_lo is not None else Value(0, output_field=IntegerField()),
+            rating_bonus=Case(
+                When(avg_rating__gte=4.5, then=Value(2)),
+                When(avg_rating__gte=4.0, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            ),
+            popularity_capped=Case(
+                When(popularity__gte=5, then=Value(5)),
+                default=F("popularity"),
+                output_field=IntegerField(),
+            ),
+        )
+        # NOTE: shared_options is used directly (x2) — referencing an M2M
+        # Count alias inside a later Case/When collapses the score to 0 on
+        # this Django version, so no capped intermediate for it. Distinct
+        # shared values stay small in practice, keeping the weight sane.
+        fallback_qs = fallback_qs.annotate(
+            score=F("cat_match") * 3
+            + F("sibling_match")
+            + F("coll_match") * 2
+            + F("price_band")
+            + F("shared_options")
+            + F("rating_bonus")
+            + F("popularity_capped")
+        ).order_by("-score", "-popularity_capped", "-created_at")
         fallback_qs = ProductSelector._annotate_reviews(fallback_qs)
         candidates = list(fallback_qs.distinct()[: limit * 2])
         results = []
