@@ -8,11 +8,20 @@ from product_options.selectors import ProductOptionSelector
 
 class VariantService:
     def create_variant(self, product_id: str, data: dict) -> dict:
-        # Validate that option assignments are provided and values belong to the correct option
-        option_assignments = data.pop("option_values", [])
+        # Options are optional: only require assignments when the product
+        # actually defines active options. Option-less products (simple
+        # products) get plain variants with no assignments.
+        option_assignments = data.pop("option_values", []) or []
         if not option_assignments:
-            raise BusinessException("At least one option value must be provided.")
-        self._validate_option_assignments(option_assignments, product_id=product_id)
+            from product_options.models import ProductOption as _PO
+
+            has_options = _PO.objects.filter(
+                product_id=product_id, deleted_at__isnull=True
+            ).exists()
+            if has_options:
+                raise BusinessException("At least one option value must be provided.")
+        else:
+            self._validate_option_assignments(option_assignments, product_id=product_id)
 
         try:
             variant = VariantRepository.create_variant(

@@ -20,21 +20,21 @@ class VariantCreateSerializer(serializers.Serializer):
         choices=["draft", "published", "discontinued"], default="draft"
     )
     metadata = serializers.JSONField(required=False, default=dict)
+    # Options are fully optional: a product may have zero options (simple
+    # product with just the DEFAULT variant). Non-empty is only enforced in
+    # VariantService when the product actually defines active options.
     option_values = serializers.ListField(
-        child=OptionAssignmentSerializer(), allow_empty=False
+        child=OptionAssignmentSerializer(), required=False, allow_empty=True, default=list
     )
 
     def validate(self, attrs):
         option_values = attrs.get("option_values", [])
-        if not option_values:
-            raise serializers.ValidationError(
-                {"detail": "حداقل یک مقدار برای گزینه‌ها باید وارد شود."}
-            )
-        # Basic non-empty check for each assignment
+        # Basic non-empty check for each assignment (generic message: never
+        # implies رنگ/سایز/جنس are mandatory).
         for ov in option_values:
             if not ov.get("option_id") or not ov.get("value_id"):
                 raise serializers.ValidationError(
-                    {"detail": "فیلدهای رنگ، سایز و جنس نباید خالی باشند. هر گزینه باید مقدار داشته باشد."}
+                    {"detail": "هر گزینه انتخاب‌شده باید مقدار داشته باشد."}
                 )
         return attrs
 

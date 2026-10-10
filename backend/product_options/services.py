@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from .repositories import ProductOptionRepository, OptionValueRepository
 from .selectors import ProductOptionSelector, OptionValueSelector
 from common.exceptions import BusinessException
@@ -9,14 +10,26 @@ class ProductOptionService:
         # We'll just attempt creation; DB will enforce product FK.
         name = data["name"]
         order = data.get("display_order", 0)
-        option = ProductOptionRepository.create_option(product_id, name, order)
+        try:
+            option = ProductOptionRepository.create_option(product_id, name, order)
+        except BusinessException:
+            raise
+        except IntegrityError:
+            raise BusinessException(
+                f"Option '{str(name).strip()}' already exists for this product."
+            )
         return self._serialize_option(option)
 
     def update_option(self, option_id: str, data: dict) -> dict:
         option = ProductOptionSelector.get_option_by_id(option_id)
         if not option:
             raise BusinessException("Option not found.")
-        updated = ProductOptionRepository.update_option(option, **data)
+        try:
+            updated = ProductOptionRepository.update_option(option, **data)
+        except BusinessException:
+            raise
+        except IntegrityError:
+            raise BusinessException("Option with this name already exists.")
         return self._serialize_option(updated)
 
     def delete_option(self, option_id: str) -> dict:
@@ -42,14 +55,24 @@ class OptionValueService:
             raise BusinessException("Option not found.")
         value = data["value"]
         order = data.get("display_order", 0)
-        obj = OptionValueRepository.create_value(option, value, order)
+        try:
+            obj = OptionValueRepository.create_value(option, value, order)
+        except BusinessException:
+            raise
+        except IntegrityError:
+            raise BusinessException("This value already exists for the option.")
         return self._serialize_value(obj)
 
     def update_value(self, value_id: str, data: dict) -> dict:
         obj = OptionValueSelector.get_value_by_id(value_id)
         if not obj:
             raise BusinessException("Option value not found.")
-        updated = OptionValueRepository.update_value(obj, **data)
+        try:
+            updated = OptionValueRepository.update_value(obj, **data)
+        except BusinessException:
+            raise
+        except IntegrityError:
+            raise BusinessException("This value already exists for the option.")
         return self._serialize_value(updated)
 
     def delete_value(self, value_id: str) -> dict:

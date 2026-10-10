@@ -15,7 +15,13 @@ class ProductOption(BaseModel):
     class Meta:
         db_table = "product_option"
         ordering = ["display_order"]
-        unique_together = ("product", "name")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "name"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_productoption_product_name_active",
+            )
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.product.title})"
@@ -34,7 +40,13 @@ class OptionValue(BaseModel):
     class Meta:
         db_table = "option_value"
         ordering = ["display_order"]
-        unique_together = ("option", "value")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["option", "value"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_optionvalue_option_value_active",
+            )
+        ]
 
     def __str__(self):
         return f"{self.value} ({self.option.name})"
