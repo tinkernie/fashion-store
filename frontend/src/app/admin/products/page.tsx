@@ -1686,19 +1686,20 @@ export default function AdminProductsPage() {
                                   وزن: {Number(v.weight || 500).toLocaleString("fa-IR")} گرم
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => startEditVariant(v)}
-                                  className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                                  title="ویرایش تنوع"
+                                  className="px-2.5 py-1 text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/20 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                                  title="ویرایش تنوع کالا"
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
+                                  <span>ویرایش</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteVariant(v.id)}
-                                  className="p-1.5 text-gray-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                                  className="p-1.5 text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                                   title="حذف تنوع"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
