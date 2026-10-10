@@ -19,7 +19,10 @@ class MediaService:
         if media_type == 'image':
             from .webp import to_webp_file
 
-            file = to_webp_file(file)
+            try:
+                file = to_webp_file(file)
+            except ValueError as exc:
+                raise BusinessException(str(exc) or "Invalid image file.")
         content_type = ContentType.objects.get_for_model(obj)
         media = MediaRepository.create_media(
             content_type=content_type,

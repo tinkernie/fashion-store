@@ -58,9 +58,16 @@ class AdminMediaViewSet(viewsets.GenericViewSet):
             from django.core.files.storage import default_storage
             from django.core.files.base import ContentFile
             from django.conf import settings
+            from common.exceptions import BusinessException
             from .webp import to_webp_file
 
-            webp_file = to_webp_file(file)
+            try:
+                self.service._validate_file(file, 'image')
+                webp_file = to_webp_file(file)
+            except BusinessException:
+                raise
+            except ValueError as exc:
+                raise BusinessException(str(exc) or "Invalid image file.")
             filename = f"products/{uuid.uuid4().hex}.webp"
             saved_path = default_storage.save(filename, ContentFile(webp_file.read()))
             

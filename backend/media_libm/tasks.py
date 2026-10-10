@@ -1,14 +1,15 @@
 import logging
 from celery import shared_task
-from io import BytesIO
 from PIL import Image
 from django.core.files.base import ContentFile
 from django.db.utils import OperationalError
 from .models import Media
+from .webp import WEBP_QUALITY, image_to_webp_bytes, prepare_image
 
 logger = logging.getLogger(__name__)
 
 RESPONSIVE_WIDTHS = [480, 768, 1280]
+THUMB_SIZE = (200, 200)
 
 
 @shared_task(
@@ -31,33 +32,29 @@ def generate_thumbnails(self, media_id: str):
     if media.media_type != 'image':
         return
 
-    from PIL import ImageOps
-
     try:
-        img = ImageOps.exif_transpose(Image.open(media.file))
+        with media.file.open("rb") as fh:
+            img = prepare_image(fh)
+    except ValueError as exc:
+        logger.warning("generate_thumbnails: invalid image %s: %s", media.id, exc)
+        return
     except Exception as exc:
         logger.warning("generate_thumbnails: cannot open %s: %s", media.id, exc)
         return
-    if img.mode in ("RGBA", "LA"):
-        pass
-    elif img.mode == "P":
-        img = img.convert("RGBA" if "transparency" in img.info else "RGB")
-    else:
-        img = img.convert("RGB")
     original_name = media.file.name.rsplit('.', 1)[0]
     metadata = media.metadata.copy() if isinstance(media.metadata, dict) else {}
 
     def _save_webp(image, name):
         from django.core.files.storage import default_storage
 
-        buf = BytesIO()
-        image.save(buf, format='WEBP', quality=82, method=6)
-        path = default_storage.save(name, ContentFile(buf.getvalue()))
+        path = default_storage.save(
+            name, ContentFile(image_to_webp_bytes(image, quality=WEBP_QUALITY))
+        )
         return default_storage.url(path)
 
     # Generate thumbnail (200x200) as WebP
     thumb_img = img.copy()
-    thumb_img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+    thumb_img.thumbnail(THUMB_SIZE, Image.Resampling.LANCZOS)
     metadata['thumbnail'] = _save_webp(thumb_img, f"{original_name}_thumb.webp")
 
     # Generate responsive images as WebP
