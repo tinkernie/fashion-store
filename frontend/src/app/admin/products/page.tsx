@@ -381,15 +381,10 @@ export default function AdminProductsPage() {
       return;
     }
 
-    // Task 5 & 8: Flexible attribute combinations; all errors in Persian
+    // Task 5 & 8: Flexible attribute combinations (all options are optional)
     const selectedEntries = Object.entries(selectedOptionValueIds).filter(
       ([_, value_id]) => Boolean(value_id)
     );
-
-    if (productOptions.length > 0 && selectedEntries.length === 0) {
-      toast.error("لطفاً حداقل یک ویژگی (مانند رنگ، سایز یا جنس) را برای این تنوع انتخاب کنید.");
-      return;
-    }
 
     const optionValuesPayload = selectedEntries.map(([option_id, value_id]) => ({
       option_id,
@@ -414,6 +409,7 @@ export default function AdminProductsPage() {
       toast.success("تنوع جدید با موفقیت ایجاد شد");
       const vars = await adminApi.getVariants(selectedProductForVariants.id);
       setProductVariants(vars);
+      setSelectedOptionValueIds({});
       setNewVariantSku(`${(selectedProductForVariants.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`);
     } catch (err: any) {
       toast.error(getApiErrorMessage(err, "خطا در ایجاد تنوع"));
@@ -1400,7 +1396,7 @@ export default function AdminProductsPage() {
                             }
                             className="w-full bg-black/60 border border-white/10 rounded-lg h-9 px-2 text-xs text-white outline-none"
                           >
-                            <option value="">انتخاب {opt.name}...</option>
+                            <option value="">انتخاب {opt.name} (اختیاری)...</option>
                             {opt.values?.map((v: any) => (
                               <option key={v.id} value={v.id}>
                                 {v.value}
@@ -1659,7 +1655,6 @@ export default function AdminProductsPage() {
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="1"
-                  required
                   min={1}
                   className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
                   dir="ltr"
