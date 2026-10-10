@@ -11,13 +11,20 @@ class NotificationTemplate(BaseModel):
         ('wishlist_discount', 'Wishlist Product Discount'),
         ('generic', 'Generic'),
     ]
-    type = models.CharField(max_length=50, choices=TYPE_CHOICES, unique=True)
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES, db_index=True)
     subject_template = models.CharField(max_length=300)
     body_template = models.TextField(help_text="Use {{ variable }} placeholders")
     is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'notification_template'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['type'],
+                condition=models.Q(deleted_at__isnull=True),
+                name='uq_template_type_active',
+            )
+        ]
 
     def __str__(self):
         return f"Template: {self.get_type_display()}"

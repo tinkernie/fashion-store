@@ -16,14 +16,19 @@ class CategoryService:
             parent = CategorySelector.get_category_by_id(parent_id)
             if not parent:
                 raise BusinessException("Parent category not found.")
-        category = CategoryRepository.create_category(
-            name=data["name"],
-            slug=slug,
-            description=data.get("description", ""),
-            image=data.get("image", None),
-            is_active=data.get("is_active", True),
-            parent=parent,
-        )
+        from django.db import IntegrityError
+
+        try:
+            category = CategoryRepository.create_category(
+                name=data["name"],
+                slug=slug,
+                description=data.get("description", ""),
+                image=data.get("image", None),
+                is_active=data.get("is_active", True),
+                parent=parent,
+            )
+        except IntegrityError:
+            raise BusinessException("A category with this slug already exists.")
         # Invalidate Redis category cache
         try:
             from django.core.cache import cache
@@ -48,7 +53,12 @@ class CategoryService:
                     "Cannot move a category into its own descendant."
                 )
             data["parent"] = new_parent
-        updated = CategoryRepository.update_category(category, **data)
+        from django.db import IntegrityError as _IE
+
+        try:
+            updated = CategoryRepository.update_category(category, **data)
+        except _IE:
+            raise BusinessException("A category with this slug already exists.")
         try:
             from django.core.cache import cache
             cache.delete("categories:active_tree")

@@ -30,7 +30,12 @@ class CMSService:
         slug = data.get('slug')
         if PageSelector.get_page_by_slug(slug):
             raise BusinessException("A page with this slug already exists.")
-        page = PageRepository.create_page(data)
+        from django.db import IntegrityError
+
+        try:
+            page = PageRepository.create_page(data)
+        except IntegrityError:
+            raise BusinessException("A page with this slug already exists.")
         return self._serialize_page(page)
 
     def update_page(self, slug: str, data: dict) -> dict:
@@ -42,7 +47,12 @@ class CMSService:
         if new_slug and new_slug != slug:
             if PageSelector.get_page_by_slug(new_slug):
                 raise BusinessException("A page with this slug already exists.")
-        updated = PageRepository.update_page(page, **data)
+        from django.db import IntegrityError as _IE
+
+        try:
+            updated = PageRepository.update_page(page, **data)
+        except _IE:
+            raise BusinessException("A page with this slug already exists.")
         _invalidate_page_cache(slug)
         _invalidate_page_cache(updated.slug)
         return self._serialize_page(updated)

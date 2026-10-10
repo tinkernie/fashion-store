@@ -14,7 +14,7 @@ class Cart(BaseModel):
         db_index=True,
     )
     session_key = models.UUIDField(
-        default=uuid.uuid4, unique=True, editable=False, db_index=True
+        default=uuid.uuid4, editable=False, db_index=True
     )
     coupon = models.ForeignKey(
         "coupons.Coupon",
@@ -26,8 +26,19 @@ class Cart(BaseModel):
 
     class Meta:
         db_table = "cart"
+        # Partial uniqueness: soft-deleted carts never block a new cart for
+        # the same user/session (repository also resurrects when found).
         constraints = [
-            models.UniqueConstraint(fields=["user"], name="unique_user_cart"),
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="unique_user_cart",
+            ),
+            models.UniqueConstraint(
+                fields=["session_key"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_cart_session_active",
+            ),
         ]
 
     def __str__(self):
@@ -49,7 +60,13 @@ class CartItem(BaseModel):
 
     class Meta:
         db_table = "cart_item"
-        unique_together = ("cart", "variant")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cart", "variant"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_cartitem_cart_variant_active",
+            )
+        ]
 
     def __str__(self):
         return f"{self.quantity}x {self.variant.sku} in cart {self.cart_id}"

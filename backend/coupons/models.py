@@ -9,7 +9,7 @@ class Coupon(BaseModel):
         PERCENTAGE = 'percentage', 'Percentage'
         FIXED_AMOUNT = 'fixed', 'Fixed Amount'
 
-    code = models.CharField(max_length=50, unique=True, db_index=True)
+    code = models.CharField(max_length=50, db_index=True)
     discount_type = models.CharField(max_length=20, choices=DiscountType.choices)
     discount_value = models.DecimalField(
         max_digits=10,
@@ -35,6 +35,13 @@ class Coupon(BaseModel):
 
     class Meta:
         db_table = 'coupon'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['code'],
+                condition=models.Q(deleted_at__isnull=True),
+                name='uq_coupon_code_active',
+            )
+        ]
 
     def __str__(self):
         return self.code

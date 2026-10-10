@@ -32,7 +32,10 @@ class VariantService:
 
         option_assignments = data.pop("option_values", None)
         # Update scalar fields
-        updated = VariantRepository.update_variant(variant, data)
+        try:
+            updated = VariantRepository.update_variant(variant, data)
+        except IntegrityError:
+            raise BusinessException("SKU or barcode already exists.")
 
         if option_assignments is not None:
             self._validate_option_assignments(option_assignments, product_id=str(updated.product_id))

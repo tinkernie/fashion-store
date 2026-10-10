@@ -8,8 +8,12 @@ from categories.selectors import CategorySelector
 
 class ProductService:
     def create_product(self, data: dict) -> dict:
+        from django.db import IntegrityError
+
         slug = data.get("slug")
-        if ProductSelector.get_product_by_slug(slug):
+        # Active-scope check (any status: drafts count too). Soft-deleted
+        # slugs are reusable and pass this check.
+        if slug and Product.objects.filter(slug=slug, deleted_at__isnull=True).exists():
             raise BusinessException("A product with this slug already exists.")
 
         category_id = data.pop("category_id", None)
@@ -42,7 +46,10 @@ class ProductService:
             data["metadata"]["image_url"] = image_url
             data["metadata"]["imageUrl"] = image_url
 
-        product = ProductRepository.create_product(**data)
+        try:
+            product = ProductRepository.create_product(**data)
+        except IntegrityError:
+            raise BusinessException("A product with this slug already exists.")
 
         if images and isinstance(images, list):
             self._save_product_images(product, images)
@@ -93,11 +100,13 @@ class ProductService:
         product = ProductSelector.get_product_by_id(product_id)
         if not product:
             raise BusinessException("Product not found.")
-        # Check slug uniqueness if changed
+        # Check slug uniqueness if changed (any active status; deleted reusable)
+        from django.db import IntegrityError
+
         new_slug = data.get("slug")
         if new_slug and new_slug != product.slug:
-            existing = ProductSelector.get_product_by_slug(new_slug)
-            if existing and existing.id != product.id:
+            existing = Product.objects.filter(slug=new_slug, deleted_at__isnull=True).exclude(id=product.id).first()
+            if existing:
                 raise BusinessException("A product with this slug already exists.")
 
         if "category_id" in data:
@@ -132,7 +141,10 @@ class ProductService:
             except Exception:
                 pass
 
-        updated = ProductRepository.update_product(product, **data)
+        try:
+            updated = ProductRepository.update_product(product, **data)
+        except IntegrityError:
+            raise BusinessException("A product with this slug already exists.")
 
         if images is not None and isinstance(images, list):
             self._save_product_images(updated, images)

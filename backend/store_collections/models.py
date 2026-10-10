@@ -4,7 +4,7 @@ from common.models import BaseModel
 
 class Collection(BaseModel):
     name = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, db_index=True)
+    slug = models.SlugField(db_index=True)
     description = models.TextField(blank=True)
     hero_banner = models.ImageField(
         upload_to="collections/banners/", null=True, blank=True
@@ -28,14 +28,24 @@ class Collection(BaseModel):
     class Meta:
         db_table = "collection"
         ordering = ["-priority", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["slug"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_collection_slug_active",
+            )
+        ]
 
     def __str__(self):
         return self.name
 
     def delete(self, *args, **kwargs):
-        # Soft delete
+        # Soft delete: hide from all selectors (deleted_at) and mark inactive.
+        from django.utils import timezone
+
         self.is_active = False
-        self.save(update_fields=["is_active", "updated_at"])
+        self.deleted_at = timezone.now()
+        self.save(update_fields=["is_active", "deleted_at", "updated_at"])
 
 
 class CollectionProduct(models.Model):

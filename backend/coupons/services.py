@@ -88,7 +88,12 @@ class CouponService:
         # Validate discount value
         if data['discount_type'] == 'percentage' and not (0 < data['discount_value'] <= 100):
             raise BusinessException("Percentage discount must be between 0 and 100.")
-        coupon = CouponRepository.create_coupon(**data)
+        from django.db import IntegrityError
+
+        try:
+            coupon = CouponRepository.create_coupon(**data)
+        except IntegrityError:
+            raise BusinessException("A coupon with this code already exists.")
         return self._serialize(coupon)
 
     def update_coupon(self, coupon_id, data: dict) -> dict:
@@ -100,7 +105,12 @@ class CouponService:
             existing = CouponSelector.get_active_coupon_by_code(data['code'])
             if existing and existing.id != coupon.id:
                 raise BusinessException("A coupon with this code already exists.")
-        updated = CouponRepository.update_coupon(coupon, **data)
+        from django.db import IntegrityError as _IE
+
+        try:
+            updated = CouponRepository.update_coupon(coupon, **data)
+        except _IE:
+            raise BusinessException("A coupon with this code already exists.")
         return self._serialize(updated)
 
     def delete_coupon(self, coupon_id) -> dict:

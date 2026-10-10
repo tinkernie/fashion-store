@@ -19,9 +19,11 @@ class Variant(BaseModel):
         related_name="variants",
         db_index=True,
     )
-    sku = models.CharField(max_length=100, unique=True, db_index=True)
+    # Partial uniqueness (see Meta.constraints): soft-deleted variants never
+    # block re-using the same SKU/barcode.
+    sku = models.CharField(max_length=100, db_index=True)
     barcode = models.CharField(
-        max_length=100, unique=True, db_index=True, null=True, blank=True
+        max_length=100, db_index=True, null=True, blank=True
     )
     price = models.DecimalField(max_digits=10, decimal_places=2)
     weight = models.PositiveIntegerField(
@@ -59,6 +61,18 @@ class Variant(BaseModel):
     class Meta:
         db_table = "variant"
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["sku"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_variant_sku_active",
+            ),
+            models.UniqueConstraint(
+                fields=["barcode"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_variant_barcode_active",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.product.title} – {self.sku}"

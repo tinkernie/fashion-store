@@ -5,7 +5,7 @@ from common.models import BaseModel
 
 class Category(BaseModel, MPTTModel):
     name = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, db_index=True)
+    slug = models.SlugField(db_index=True)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="categories/", null=True, blank=True)
     seo_metadata = models.JSONField(default=dict, blank=True)
@@ -25,11 +25,22 @@ class Category(BaseModel, MPTTModel):
     class Meta:
         db_table = "category"
         verbose_name_plural = "categories"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["slug"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_category_slug_active",
+            )
+        ]
 
     def __str__(self):
         return self.name
 
     def delete(self, *args, **kwargs):
-        # Soft delete: set is_active=False and save, preserving tree
+        # Soft delete: hide from all selectors (deleted_at) and mark
+        # inactive, preserving the MPTT tree structure.
+        from django.utils import timezone
+
         self.is_active = False
-        self.save(update_fields=["is_active", "updated_at"])
+        self.deleted_at = timezone.now()
+        self.save(update_fields=["is_active", "deleted_at", "updated_at"])

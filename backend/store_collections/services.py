@@ -9,14 +9,24 @@ class CollectionService:
         slug = data.get("slug")
         if CollectionSelector.get_collection_by_slug(slug):  # check active only
             raise BusinessException("A collection with this slug already exists.")
-        collection = CollectionRepository.create_collection(**data)
+        from django.db import IntegrityError
+
+        try:
+            collection = CollectionRepository.create_collection(**data)
+        except IntegrityError:
+            raise BusinessException("A collection with this slug already exists.")
         return self._serialize(collection)
 
     def update_collection(self, collection_id, data: dict) -> dict:
         collection = CollectionSelector.get_collection_by_id(collection_id)
         if not collection:
             raise BusinessException("Collection not found.")
-        updated = CollectionRepository.update_collection(collection, **data)
+        from django.db import IntegrityError as _IE
+
+        try:
+            updated = CollectionRepository.update_collection(collection, **data)
+        except _IE:
+            raise BusinessException("A collection with this slug already exists.")
         return self._serialize(updated)
 
     def delete_collection(self, collection_id) -> dict:

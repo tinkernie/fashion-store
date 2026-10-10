@@ -29,7 +29,13 @@ class WishlistItem(BaseModel):
 
     class Meta:
         db_table = "wishlist_item"
-        unique_together = ("wishlist", "product")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["wishlist", "product"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_wishlistitem_wishlist_product_active",
+            )
+        ]
 
     def __str__(self):
         return f"{self.product.title} in {self.wishlist.user.phone_number}'s wishlist"

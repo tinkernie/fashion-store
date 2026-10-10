@@ -14,7 +14,9 @@ class Product(BaseModel):
         ARCHIVED = "archived", "Archived"
 
     title = models.CharField(max_length=300)
-    slug = models.SlugField(unique=True, db_index=True)
+    # Partial uniqueness: soft-deleted rows keep their slug in history but
+    # never block re-creating the same slug.
+    slug = models.SlugField(db_index=True)
     description = models.TextField(blank=True)
     category = models.ForeignKey(
         "categories.Category",
@@ -68,6 +70,13 @@ class Product(BaseModel):
         indexes = [
             GinIndex(fields=["search_vector"], name="product_search_gin"),
             models.Index(fields=["status", "-created_at"], name="product_status_created_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["slug"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="uq_product_slug_active",
+            )
         ]
 
     @property
