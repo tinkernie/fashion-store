@@ -57,3 +57,28 @@ email = models.EmailField(
 ### Validation & Verification
 - Test duplicate email rejection with friendly `400 BusinessException` ("A user with this email already exists.").
 - Ensure existing phone-only OTP users are unaffected by the migration.
+
+---
+
+## 3. Product Relations: Support Empty `target_ids: []` on POST
+
+### Objective
+Allow clearing all pins/relations for a product via `POST /api/admin/products/<id>/complete-look/` and `POST /api/admin/products/<id>/related/` without rejecting empty payloads with `400 Bad Request ("target_ids required.")`.
+
+### Required Updates (`backend/products/views.py`)
+Currently:
+```python
+# Lines 389-390 & 530-531:
+if not isinstance(target_ids, list) or not target_ids:
+    return Response({"detail": "target_ids required."}, status=status.HTTP_400_BAD_REQUEST)
+```
+Update to:
+```python
+if not isinstance(target_ids, list):
+    return Response({"detail": "target_ids must be a list."}, status=status.HTTP_400_BAD_REQUEST)
+```
+When `target_ids` is `[]`:
+- All existing relations for that product and relation type (`COMPLETE_LOOK` or `SUGGESTED`) are deleted.
+- Cache keys for that product are invalidated.
+- Response returns `[]` with `HTTP 200 OK`.
+

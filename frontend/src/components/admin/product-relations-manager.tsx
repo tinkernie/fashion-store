@@ -132,8 +132,10 @@ export default function ProductRelationsManager({
     if (product?.id) {
       try {
         await adminApi.deleteCompleteLookItem(product.id, candidateId);
-      } catch {
-        // Will be synced when user clicks save
+        toast.success("آیتم از ست لباس حذف شد.");
+        if (onSaved) onSaved();
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "خطا در حذف آیتم از ست"));
       }
     }
   };
@@ -152,6 +154,11 @@ export default function ProductRelationsManager({
     setIsSaving(true);
     try {
       const targetIds = lookItems.slice(0, 6).map((item) => String(item.id));
+      if (targetIds.length === 0) {
+        toast.success("ست لباس (تکمیل استایل) با موفقیت خالی و ذخیره شد.");
+        if (onSaved) onSaved();
+        return;
+      }
       const positions = targetIds.map((_, i) => i);
       await adminApi.updateCompleteLook(product.id, targetIds, positions);
       toast.success("ست لباس (تکمیل استایل) با موفقیت ذخیره و کش بروزرسانی شد.");
@@ -191,8 +198,10 @@ export default function ProductRelationsManager({
     if (product?.id) {
       try {
         await adminApi.deleteRelatedItem(product.id, candidateId);
-      } catch {
-        // Will sync on save
+        toast.success("آیتم از پیشنهادات مرتبط حذف شد.");
+        if (onSaved) onSaved();
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, "خطا در حذف آیتم از پیشنهادات"));
       }
     }
   };
@@ -211,6 +220,11 @@ export default function ProductRelationsManager({
     setIsSaving(true);
     try {
       const targetIds = relatedItems.slice(0, 8).map((item) => String(item.id));
+      if (targetIds.length === 0) {
+        toast.success("پیشنهادات مرتبط با موفقیت خالی و ذخیره شد.");
+        if (onSaved) onSaved();
+        return;
+      }
       const positions = targetIds.map((_, i) => i);
       await adminApi.updateRelatedProducts(product.id, targetIds, positions);
       toast.success("محصولات مرتبط با موفقیت ذخیره و کش بروزرسانی شد.");
