@@ -484,3 +484,90 @@ class ProductService:
                 for c in product.collections.all()
             ],
         }
+
+
+def invalidate_related_caches(product_id) -> None:
+    """Clear every cached related/suggested variant for a product, including
+    legacy key shapes from before the manual/auto split."""
+    try:
+        from django.core.cache import cache
+
+        for lim in range(1, 13):
+            cache.delete(f"suggested:{product_id}:{lim}:manual")
+            cache.delete(f"suggested:{product_id}:{lim}:auto")
+            cache.delete(f"suggested:{product_id}:{lim}")
+            cache.delete(f"related:{product_id}:{lim}")
+    except Exception:
+        pass
+
+
+class RelatedProductService:
+    """Admin-driven related-products rail (max 8, relation_type=suggested).
+
+    The storefront shows exactly what is stored — nothing is auto-added
+    behind the scenes. The admin explicitly triggers auto-fill, which
+    persists system picks into the remaining empty slots.
+    """
+
+    MAX_RELATED = 8
+
+    @transaction.atomic
+    def auto_fill(self, product_id, limit: int = MAX_RELATED) -> dict:
+        from .models import RelatedProduct
+
+        limit = min(max(int(limit or self.MAX_RELATED), 1), self.MAX_RELATED)
+        product = ProductSelector.get_product_by_id(product_id)
+        if not product:
+            raise BusinessException("Product not found.")
+
+        existing = list(
+            RelatedProduct.objects.filter(
+                source_product=product,
+                relation_type=RelatedProduct.RelationType.SUGGESTED,
+            ).order_by("position", "-created_at")
+        )
+        existing_ids = {rel.target_product_id for rel in existing}
+        needed = limit - len(existing)
+        filled = []
+        if needed > 0:
+            candidates = ProductSelector.get_auto_candidates(
+                product,
+                exclude_ids=existing_ids | {product.id},
+                limit=needed,
+            )
+            start = max([rel.position for rel in existing], default=-1) + 1
+            to_create = [
+                RelatedProduct(
+                    source_product=product,
+                    target_product=cand,
+                    relation_type=RelatedProduct.RelationType.SUGGESTED,
+                    position=start + idx,
+                )
+                for idx, cand in enumerate(candidates[:needed])
+            ]
+            if to_create:
+                RelatedProduct.objects.bulk_create(to_create)
+                filled = [str(c.target_product_id) for c in to_create]
+
+        invalidate_related_caches(product.id)
+
+        rows = list(
+            RelatedProduct.objects.filter(
+                source_product=product,
+                relation_type=RelatedProduct.RelationType.SUGGESTED,
+            )
+            .select_related("target_product")
+            .order_by("position", "-created_at")[:limit]
+        )
+        return {
+            "filled": len(filled),
+            "total": len(rows),
+            "limit": limit,
+            "auto_filled_ids": filled,
+            "target_ids": [str(r.target_product_id) for r in rows],
+            "message": (
+                f"Auto-filled {len(filled)} related product(s)."
+                if filled
+                else "Related rail already full — nothing to auto-fill."
+            ),
+        }

@@ -274,10 +274,70 @@ class ProductSelector:
         return results[:limit]
 
     @staticmethod
-    def get_suggested_products(product, limit: int = 8) -> list[Product]:
-        """Suggested: manual pins (relation_type=suggested) + auto fallback (collection/category/popularity), max 8."""
+    def get_auto_candidates(product, exclude_ids: set = None, limit: int = 8) -> list[Product]:
+        """System picks for related products, scored by collection match x2,
+        category match x3 and order popularity. Only published, non-deleted,
+        in-stock products. Used solely by the admin auto-fill action —
+        never injected silently into the storefront.
+        """
         limit = min(max(int(limit), 1), 8)
-        cache_key = f"suggested:{product.id}:{limit}"
+        seen_ids = set(exclude_ids or set()) | {product.id}
+        fallback_qs = (
+            Product.objects.filter(
+                status=Product.Status.PUBLISHED,
+                deleted_at__isnull=True,
+            )
+            .exclude(id__in=seen_ids)
+            .select_related("category")
+            .prefetch_related("collections", "images")
+        )
+        collection_ids = list(product.collections.values_list("id", flat=True))
+        fallback_qs = fallback_qs.annotate(
+            popularity=Count("order_items", distinct=True),
+            cat_match=Case(
+                When(category=product.category, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            ),
+            coll_match=Count(
+                "collections",
+                filter=Q(collections__in=collection_ids) if collection_ids else Q(pk__in=[]),
+                distinct=True,
+            ),
+        )
+        fallback_qs = fallback_qs.filter(
+            Exists(
+                Product.objects.filter(
+                    pk=OuterRef("pk"),
+                    variants__status="published",
+                    variants__deleted_at__isnull=True,
+                    variants__inventory__available_quantity__gt=0,
+                )
+            )
+        )
+        fallback_qs = fallback_qs.annotate(
+            score=F("cat_match") * 3 + F("coll_match") * 2 + F("popularity")
+        ).order_by("-score", "-popularity", "-created_at")
+        fallback_qs = ProductSelector._annotate_reviews(fallback_qs)
+        candidates = list(fallback_qs.distinct()[: limit * 2])
+        results = []
+        for item in candidates:
+            if item.id not in seen_ids:
+                seen_ids.add(item.id)
+                item.is_manual_pin = False
+                results.append(item)
+                if len(results) >= limit:
+                    break
+        return results
+
+    @staticmethod
+    def get_suggested_products(product, limit: int = 8, auto_fill: bool = False) -> list[Product]:
+        """Related products (max 8). Manual pins first; the system NEVER
+        auto-fills the storefront rail on its own — auto candidates are only
+        appended when auto_fill=True is explicitly requested (admin auto-fill
+        action, cart cross-sell). Empty manual configuration returns []."""
+        limit = min(max(int(limit), 1), 8)
+        cache_key = f"suggested:{product.id}:{limit}:{'auto' if auto_fill else 'manual'}"
         cached = cache.get(cache_key)
         if cached is not None:
             try:
@@ -327,52 +387,10 @@ class ProductSelector:
                 return results
 
         needed = limit - len(results)
-        if needed > 0:
-            fallback_qs = (
-                Product.objects.filter(
-                    status=Product.Status.PUBLISHED,
-                    deleted_at__isnull=True,
-                )
-                .exclude(id__in=seen_ids)
-                .select_related("category")
-                .prefetch_related("collections", "images")
+        if auto_fill and needed > 0:
+            results.extend(
+                ProductSelector.get_auto_candidates(product, exclude_ids=seen_ids, limit=needed)
             )
-            collection_ids = list(product.collections.values_list("id", flat=True))
-            fallback_qs = fallback_qs.annotate(
-                popularity=Count("order_items", distinct=True),
-                cat_match=Case(
-                    When(category=product.category, then=Value(1)),
-                    default=Value(0),
-                    output_field=IntegerField(),
-                ),
-                coll_match=Count(
-                    "collections",
-                    filter=Q(collections__in=collection_ids) if collection_ids else Q(pk__in=[]),
-                    distinct=True,
-                ),
-            )
-            fallback_qs = fallback_qs.filter(
-                Exists(
-                    Product.objects.filter(
-                        pk=OuterRef("pk"),
-                        variants__status="published",
-                        variants__deleted_at__isnull=True,
-                        variants__inventory__available_quantity__gt=0,
-                    )
-                )
-            )
-            fallback_qs = fallback_qs.annotate(
-                score=F("cat_match") * 3 + F("coll_match") * 2 + F("popularity")
-            ).order_by("-score", "-popularity", "-created_at")
-            fallback_qs = ProductSelector._annotate_reviews(fallback_qs)
-            candidates = list(fallback_qs.distinct()[: needed * 2])
-            for item in candidates:
-                if item.id not in seen_ids:
-                    seen_ids.add(item.id)
-                    item.is_manual_pin = False
-                    results.append(item)
-                    if len(results) >= limit:
-                        break
         try:
             cache.set(cache_key, [(str(r.id), bool(getattr(r, 'is_manual_pin', False))) for r in results[:limit]], 3600)
         except Exception:
@@ -387,8 +405,9 @@ class ProductSelector:
         seen = set(exclude_ids)
         results = []
         for prod in cart_products:
-            # Use suggested logic for cart cross-sell (hybrid)
-            related = ProductSelector.get_suggested_products(prod, limit=4)
+            # Cart cross-sell keeps the hybrid behaviour (manual + auto);
+            # the product-page rail itself is manual-only unless auto-filled.
+            related = ProductSelector.get_suggested_products(prod, limit=4, auto_fill=True)
             for r in related:
                 if r.id not in seen:
                     seen.add(r.id)

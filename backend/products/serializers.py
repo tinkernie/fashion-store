@@ -336,7 +336,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return False
 
     def get_related_products(self, product):
-        # Hybrid: manual (suggested type) + auto fallback via popularity/category/collection, max 8
+        # Manual pins only (relation_type=suggested) — the system never
+        # injects picks by itself; see the admin related/auto-fill action.
         if self.context.get("include_related") is False:
             return []
         try:

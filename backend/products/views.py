@@ -73,7 +73,7 @@ class PublicProductViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=["get"], url_path="related")
     def related(self, request, slug=None):
-        """Dedicated lazy related endpoint: GET /api/products/<slug>/related/?limit=8 (hybrid, max 8)"""
+        """Dedicated lazy related endpoint: GET /api/products/<slug>/related/?limit=8 (manual pins only — no silent auto-fill, max 8)"""
         product = ProductSelector.get_product_by_slug(slug)
         if not product:
             try:
@@ -389,7 +389,7 @@ class AdminProductViewSet(viewsets.GenericViewSet):
         if not isinstance(target_ids, list) or not target_ids:
             return Response({"detail": "target_ids required."}, status=status.HTTP_400_BAD_REQUEST)
         if len(target_ids) > 8:
-            return Response({"detail": "Related products allows at most 8 items (remaining auto-filled)."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Related products allows at most 8 items."}, status=status.HTTP_400_BAD_REQUEST)
         if isinstance(target_ids, str):
             target_ids = [target_ids]
         from .models import RelatedProduct
@@ -419,14 +419,9 @@ class AdminProductViewSet(viewsets.GenericViewSet):
         if to_create:
             RelatedProduct.objects.bulk_create(to_create)
         # Invalidate cache for this product (all limits)
-        try:
-            from django.core.cache import cache
+        from .services import invalidate_related_caches
 
-            for lim in range(1, 9):
-                cache.delete(f"related:{product.id}:{lim}")
-                cache.delete(f"suggested:{product.id}:{lim}")
-        except Exception:
-            pass
+        invalidate_related_caches(product.id)
         related_qs = RelatedProduct.objects.filter(
             source_product=product, relation_type=RelatedProduct.RelationType.SUGGESTED
         ).order_by("position")
@@ -453,15 +448,57 @@ class AdminProductViewSet(viewsets.GenericViewSet):
         ).delete()
         if deleted == 0:
             return Response({"detail": "Relation not found."}, status=status.HTTP_404_NOT_FOUND)
-        try:
-            from django.core.cache import cache
+        from .services import invalidate_related_caches
 
-            for lim in range(1, 13):
-                cache.delete(f"related:{product.id}:{lim}")
-                cache.delete(f"suggested:{product.id}:{lim}")
-        except Exception:
-            pass
+        invalidate_related_caches(product.id)
         return Response({"message": "Relation removed."})
+
+    @action(detail=True, methods=["post"], url_path="related/auto-fill")
+    def related_auto_fill(self, request, pk=None):
+        """POST /api/admin/products/<id>/related/auto-fill/ {?limit=8}
+
+        Admin-only trigger (the future front-end button calls this): fills
+        ONLY the empty remaining slots up to `limit` with system picks
+        (collection/category/popularity scoring) and persists them as rows.
+        Manual pins are never touched. With 0 pins all 8 are filled; with 4
+        pins the other 4; with 8 nothing happens. Without this call the
+        rail shows exactly what the admin configured (possibly empty)."""
+        from .services import RelatedProductService, invalidate_related_caches
+        from .serializers import RelatedProductCardSerializer
+
+        try:
+            limit = int(request.data.get("limit", request.query_params.get("limit", 8)))
+        except (TypeError, ValueError):
+            limit = 8
+        service = RelatedProductService()
+        try:
+            result = service.auto_fill(pk, limit=limit)
+        except Exception as exc:
+            from common.exceptions import BusinessException
+
+            if isinstance(exc, BusinessException):
+                return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+            raise
+        product = ProductSelector.get_product_by_id(pk)
+        from .models import RelatedProduct
+
+        rows = (
+            RelatedProduct.objects.filter(
+                source_product=product, relation_type=RelatedProduct.RelationType.SUGGESTED
+            )
+            .select_related("target_product")
+            .order_by("position", "-created_at")[: result["limit"]]
+        )
+        items = []
+        for rel in rows:
+            card = RelatedProductCardSerializer(rel.target_product, context={"request": request}).data
+            card["position"] = rel.position
+            card["is_manual_pin"] = True
+            card["is_auto_filled"] = str(rel.target_product_id) in result["auto_filled_ids"]
+            items.append(card)
+        invalidate_related_caches(product.id)
+        result["items"] = items
+        return Response(result, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get", "post"], url_path="complete-look")
     def complete_look_admin(self, request, pk=None):
