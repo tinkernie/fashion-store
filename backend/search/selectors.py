@@ -66,22 +66,15 @@ class SearchSelector:
 
         # Apply filters
         if filters:
-            from django.utils import timezone as _tz
-            _now = _tz.now()
-            _active_discount = (
-                Q(discount_price__isnull=False)
-                & Q(discount_price__gt=0)
-                & (Q(discount_expires_at__isnull=True) | Q(discount_expires_at__gte=_now))
-            )
-
             if filters.get('exclude_discounted') in ["true", "1", True, "True", "TRUE"]:
-                qs = qs.exclude(_active_discount)
+                from django.utils import timezone as _tz
 
-            has_discount = filters.get('has_discount')
-            if has_discount in ["true", "1", True, "True", "TRUE"]:
-                qs = qs.filter(_active_discount)
-            elif has_discount in ["false", "0", False]:
-                qs = qs.exclude(_active_discount)
+                _now = _tz.now()
+                qs = qs.exclude(
+                    Q(discount_price__isnull=False)
+                    & Q(discount_price__gt=0)
+                    & (Q(discount_expires_at__isnull=True) | Q(discount_expires_at__gte=_now))
+                )
             if 'category_slug' in filters and filters['category_slug']:
                 qs = qs.filter(category__slug=filters['category_slug'])
             if 'collection_slug' in filters and filters['collection_slug']:

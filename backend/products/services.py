@@ -229,18 +229,14 @@ class ProductService:
     def _base_price(product: Product) -> int:
         """Single source of truth for discount calculation (matches serializer)."""
         try:
-            variant = product.variants.filter(deleted_at__isnull=True, price__gt=0).first()
-            if not variant:
-                variant = product.variants.filter(deleted_at__isnull=True).first()
-            if variant and variant.price is not None and float(variant.price) > 0:
-                return int(round(float(variant.price)))
+            first_variant = product.variants.filter(deleted_at__isnull=True).first()
+            if first_variant and first_variant.price is not None:
+                return int(round(float(first_variant.price)))
         except Exception:
             pass
         try:
             if product.metadata and "price" in product.metadata:
-                val = float(product.metadata["price"])
-                if val > 0:
-                    return int(round(val))
+                return int(round(float(product.metadata["price"])))
         except Exception:
             pass
         return 0
@@ -279,7 +275,7 @@ class ProductService:
 
         try:
             from django.core.cache import cache
-            cache.clear()
+            cache.delete_pattern("luxe:products:*")
         except Exception:
             pass
         return {
@@ -296,13 +292,8 @@ class ProductService:
             product.discount_percent = discount_percent
             product.discount_price = product.calculate_discount_price(base)
             product.discount_expires_at = expires_at
-            meta = dict(product.metadata) if product.metadata else {}
-            meta["discount_percent"] = discount_percent
-            if product.discount_price:
-                meta["discount_price"] = str(int(product.discount_price))
-            product.metadata = meta
             product.save(
-                update_fields=["discount_percent", "discount_price", "discount_expires_at", "metadata", "updated_at"]
+                update_fields=["discount_percent", "discount_price", "discount_expires_at", "updated_at"]
             )
 
     @staticmethod
@@ -367,17 +358,12 @@ class ProductService:
         product.discount_percent = None
         product.discount_price = None
         product.discount_expires_at = None
-        if product.metadata:
-            meta = dict(product.metadata)
-            meta.pop("discount_percent", None)
-            meta.pop("discount_price", None)
-            product.metadata = meta
         product.save(
-            update_fields=["discount_percent", "discount_price", "discount_expires_at", "metadata", "updated_at"]
+            update_fields=["discount_percent", "discount_price", "discount_expires_at", "updated_at"]
         )
         try:
             from django.core.cache import cache
-            cache.clear()
+            cache.delete_pattern("luxe:products:*")
         except Exception:
             pass
         return {"message": "Product removed from discount section.", "product_id": str(product.id)}
@@ -401,7 +387,7 @@ class ProductService:
         products = list(qs)
         if not products:
             raise BusinessException("No discounted products to update.")
-        update_fields = ["discount_percent", "discount_price", "metadata", "updated_at"]
+        update_fields = ["discount_percent", "discount_price", "updated_at"]
         if expires_at is not self._KEEP_DEADLINE:
             update_fields.append("discount_expires_at")
         for product in products:
@@ -410,15 +396,10 @@ class ProductService:
             product.discount_price = product.calculate_discount_price(base)
             if expires_at is not self._KEEP_DEADLINE:
                 product.discount_expires_at = expires_at
-            meta = dict(product.metadata) if product.metadata else {}
-            meta["discount_percent"] = discount_percent
-            if product.discount_price:
-                meta["discount_price"] = str(int(product.discount_price))
-            product.metadata = meta
             product.save(update_fields=update_fields)
         try:
             from django.core.cache import cache
-            cache.clear()
+            cache.delete_pattern("luxe:products:*")
         except Exception:
             pass
         return {
@@ -435,27 +416,19 @@ class ProductService:
     @transaction.atomic
     def deactivate_discount_section(self) -> dict:
         """Bulk revert: clear discounts on every discounted product (prices restore automatically)."""
-        products = list(
-            Product.objects.select_for_update().filter(
-                deleted_at__isnull=True, discount_percent__isnull=False
-            )
+        qs = Product.objects.select_for_update().filter(
+            deleted_at__isnull=True, discount_percent__isnull=False
         )
-        count = len(products)
-        for product in products:
-            product.discount_percent = None
-            product.discount_price = None
-            product.discount_expires_at = None
-            if product.metadata:
-                meta = dict(product.metadata)
-                meta.pop("discount_percent", None)
-                meta.pop("discount_price", None)
-                product.metadata = meta
-            product.save(
-                update_fields=["discount_percent", "discount_price", "discount_expires_at", "metadata", "updated_at"]
-            )
+        count = qs.count()
+        qs.update(
+            discount_percent=None,
+            discount_price=None,
+            discount_expires_at=None,
+            updated_at=timezone.now(),
+        )
         try:
             from django.core.cache import cache
-            cache.clear()
+            cache.delete_pattern("luxe:products:*")
         except Exception:
             pass
         return {"message": f"Discount removed from {count} products.", "cleared_count": count}
