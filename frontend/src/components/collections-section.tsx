@@ -37,7 +37,11 @@ export function CollectionsSection({ initialCollections }: { initialCollections?
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {collections.map((collection, index) => {
-          const bannerUrl = collection.hero_banner || collection.image_url || collection.image;
+          const bannerUrl =
+            collection.hero_banner ||
+            collection.image_url ||
+            collection.image ||
+            (collection as any).seo_metadata?.hero_banner;
           const prodCount = collection.products?.length || 0;
 
           return (

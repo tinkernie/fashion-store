@@ -82,3 +82,12 @@ When `target_ids` is `[]`:
 - Cache keys for that product are invalidated.
 - Response returns `[]` with `HTTP 200 OK`.
 
+---
+
+## 4. [RESOLVED - Commit `33a208b`] Collection Hero Banner: Accept Media URL Strings on Serializer
+
+### Status: Resolved
+Implemented by TinkErnie in commit `33a208b` (`fix(collections): accept media-library URL or file upload for hero_banner`) via `HeroBannerField` in `backend/store_collections/serializers.py`. Handles both multipart file uploads and media-library/remote URL strings. Frontend passes `payload.hero_banner` directly alongside `seo_metadata.hero_banner` fallback.
+
+
+

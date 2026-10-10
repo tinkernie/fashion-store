@@ -41,7 +41,10 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
 
   const products = collection.products || [];
   const bannerImg =
-    collection.hero_banner || collection.image_url || collection.image;
+    collection.hero_banner ||
+    collection.image_url ||
+    collection.image ||
+    (collection as any).seo_metadata?.hero_banner;
   const siteUrl = getSiteBaseUrl();
 
   const jsonLd = {

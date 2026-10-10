@@ -420,7 +420,11 @@ export function buildCollectionMetadata(collection: any, slug: string): Metadata
     "مشاهده و خرید آنلاین محصولات کالکشن اختصاصی و استایل‌های منتخب ماوی (MAVI)";
   const canonical = `${siteUrl}/collections/${slug}`;
 
-  const banner = col.hero_banner || col.image_url || col.image;
+  const banner =
+    col.hero_banner ||
+    col.image_url ||
+    col.image ||
+    (col as any).seo_metadata?.hero_banner;
   const ogImages = banner ? [{ url: banner, alt: name }] : [];
 
   return {

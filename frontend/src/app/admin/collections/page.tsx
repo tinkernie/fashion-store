@@ -126,7 +126,7 @@ export default function AdminCollectionsPage() {
     setName(col.name || "");
     setSlug(col.slug || "");
     setDescription(col.description || "");
-    setHeroBanner(col.hero_banner || col.image_url || "");
+    setHeroBanner(col.hero_banner || col.image_url || (col as any).seo_metadata?.hero_banner || "");
     setPriority(String(col.priority ?? 0));
     setIsActive(col.is_active !== false);
     setIsFormModalOpen(true);
@@ -142,13 +142,19 @@ export default function AdminCollectionsPage() {
 
     setIsSubmitting(true);
     try {
+      const existingMeta = editingCollection?.seo_metadata || {};
       const payload: any = {
         name: name.trim(),
         slug: cleanSlug,
         description: description.trim(),
         priority: parseInt(priority, 10) || 0,
         is_active: isActive,
+        seo_metadata: {
+          ...existingMeta,
+          hero_banner: heroBanner.trim(),
+        },
       };
+
       if (heroBanner.trim()) {
         payload.hero_banner = heroBanner.trim();
       }
@@ -447,7 +453,7 @@ export default function AdminCollectionsPage() {
                 </tr>
               ) : (
                 filteredCollections.map((col) => {
-                  const bannerUrl = col.hero_banner || col.image_url || col.image;
+                  const bannerUrl = col.hero_banner || col.image_url || col.image || (col as any).seo_metadata?.hero_banner;
                   const prodCount = col.products?.length || 0;
 
                   return (
