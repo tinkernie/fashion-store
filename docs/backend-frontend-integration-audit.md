@@ -178,3 +178,12 @@ This audit evaluates nine consecutive backend commits made to the repository (`e
   - Output: `Compiled successfully in 3.6s`, `Finished TypeScript in 4.3s`, `Generating static pages (25/25) in 403ms`.
   - Zero lint/type errors across entire Next.js application.
 
+---
+
+## H. Explicit Non-Goals
+- **Backend Modifications**: Strictly zero edits to `backend/` Python, Django models, views, or database migrations. All backend contracts and behaviors were audited as the source of truth.
+- **Unrelated Visual Redesigns**: No cosmetic overhaul or gratuitous UI changes beyond integrating the two missing controls (`INT-001` auto-fill button and `INT-002` absolute stock setting mode).
+- **Dependency Upgrades**: Preserved existing package manifests (`package.json`) without adding third-party dependencies.
+- **Breaking API Changes**: Preserved all existing API routes, contracts, and interfaces for full backward compatibility.
+
+
