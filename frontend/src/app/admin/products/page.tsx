@@ -134,6 +134,14 @@ export default function AdminProductsPage() {
   const [newVariantStock, setNewVariantStock] = useState("10");
   const [selectedOptionValueIds, setSelectedOptionValueIds] = useState<Record<string, string>>({});
 
+  // Variant Edit State inside Variant Modal (Task 9)
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+  const [editVariantSku, setEditVariantSku] = useState("");
+  const [editVariantPrice, setEditVariantPrice] = useState("");
+  const [editVariantWeight, setEditVariantWeight] = useState("1");
+  const [editOptionValueIds, setEditOptionValueIds] = useState<Record<string, string>>({});
+  const [isSavingEditVariant, setIsSavingEditVariant] = useState(false);
+
   // Dedicated Category Manager Modal State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
@@ -451,6 +459,68 @@ export default function AdminProductsPage() {
       setProductVariants(vars);
     } catch {
       toast.error("خطا در حذف تنوع");
+    }
+  };
+
+  // Variant Edit Handlers (Task 9)
+  const startEditVariant = (v: any) => {
+    setEditingVariantId(v.id);
+    setEditVariantSku(v.sku || "");
+    setEditVariantPrice(formatPriceInput(String(v.price || 0)));
+    setEditVariantWeight(String(v.weight || 1));
+
+    const currentOptions: Record<string, string> = {};
+    if (Array.isArray(v.options)) {
+      v.options.forEach((opt: any) => {
+        if (opt.option_id && opt.value_id) {
+          currentOptions[opt.option_id] = opt.value_id;
+        }
+      });
+    }
+    setEditOptionValueIds(currentOptions);
+  };
+
+  const cancelEditVariant = () => {
+    setEditingVariantId(null);
+    setEditVariantSku("");
+    setEditVariantPrice("");
+    setEditVariantWeight("1");
+    setEditOptionValueIds({});
+  };
+
+  const handleSaveEditVariant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVariantId || !selectedProductForVariants) return;
+    if (!editVariantSku.trim() || !editVariantPrice) {
+      toast.error("کد SKU و قیمت تنوع الزامی است");
+      return;
+    }
+
+    const selectedEntries = Object.entries(editOptionValueIds).filter(
+      ([_, value_id]) => Boolean(value_id)
+    );
+
+    const optionValuesPayload = selectedEntries.map(([option_id, value_id]) => ({
+      option_id,
+      value_id,
+    }));
+
+    setIsSavingEditVariant(true);
+    try {
+      await adminApi.updateVariant(editingVariantId, {
+        sku: editVariantSku.trim().toUpperCase(),
+        price: parsePrice(editVariantPrice),
+        weight: Number(editVariantWeight) > 0 ? Number(editVariantWeight) : 1,
+        option_values: optionValuesPayload,
+      });
+      toast.success("تنوع با موفقیت به‌روزرسانی شد");
+      const vars = await adminApi.getVariants(selectedProductForVariants.id);
+      setProductVariants(vars);
+      cancelEditVariant();
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در ویرایش تنوع"));
+    } finally {
+      setIsSavingEditVariant(false);
     }
   };
 
@@ -1480,10 +1550,124 @@ export default function AdminProductsPage() {
                         const optSummary =
                           v.options?.map((o: any) => `${o.option_name}: ${o.value}`).join(" | ") ||
                           "تنوع عمومی";
+                        const isEditing = editingVariantId === v.id;
+
+                        if (isEditing) {
+                          return (
+                            <form
+                              key={v.id}
+                              onSubmit={handleSaveEditVariant}
+                              noValidate
+                              className="p-3.5 bg-[#202020] border border-amber-500/40 rounded-xl space-y-3 shadow-lg"
+                            >
+                              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                                <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                                  <Pencil className="w-3.5 h-3.5" />
+                                  ویرایش مشخصات تنوع: {v.sku}
+                                </span>
+                                <span className="text-[10px] text-gray-400 font-mono" dir="ltr">
+                                  {v.id.slice(0, 8)}...
+                                </span>
+                              </div>
+
+                              {/* Option Dropdowns for edit */}
+                              {productOptions.length > 0 && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                                  {productOptions.map((opt) => (
+                                    <div key={opt.id} className="space-y-1">
+                                      <label className="text-[10px] text-gray-400 font-bold">{opt.name}</label>
+                                      <select
+                                        value={editOptionValueIds[opt.id] || ""}
+                                        onChange={(e) =>
+                                          setEditOptionValueIds((prev) => ({
+                                            ...prev,
+                                            [opt.id]: e.target.value,
+                                          }))
+                                        }
+                                        className="w-full bg-black/60 border border-white/15 rounded-lg h-8 px-2 text-xs text-white outline-none focus:border-amber-400"
+                                      >
+                                        <option value="">انتخاب {opt.name} (اختیاری)...</option>
+                                        {opt.values?.map((val: any) => (
+                                          <option key={val.id} value={val.id}>
+                                            {val.value}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div className="space-y-1">
+                                  <label className="text-[10px] text-gray-400 font-bold">کد انبار (SKU)</label>
+                                  <Input
+                                    value={editVariantSku}
+                                    onChange={(e) => setEditVariantSku(e.target.value)}
+                                    placeholder="SKU-101"
+                                    className="bg-black/60 border-white/15 h-8 text-xs text-white rounded-lg font-mono text-left"
+                                    dir="ltr"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-[10px] text-gray-400 font-bold">قیمت تنوع (تومان)</label>
+                                  <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={editVariantPrice}
+                                    onChange={(e) => setEditVariantPrice(formatPriceInput(e.target.value))}
+                                    placeholder="۱,۲۰۰,۰۰۰"
+                                    className="bg-black/60 border-white/15 h-8 text-xs text-white rounded-lg font-mono text-left"
+                                    dir="ltr"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-[10px] text-gray-400 font-bold">وزن (گرم)</label>
+                                  <Input
+                                    type="number"
+                                    value={editVariantWeight}
+                                    onChange={(e) => setEditVariantWeight(e.target.value)}
+                                    placeholder="1"
+                                    min={1}
+                                    className="bg-black/60 border-white/15 h-8 text-xs text-white rounded-lg font-sans"
+                                    dir="ltr"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-end gap-2 pt-1 border-t border-white/5">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  onClick={cancelEditVariant}
+                                  disabled={isSavingEditVariant}
+                                  className="h-8 px-3 text-xs text-gray-400 hover:text-white hover:bg-white/5 rounded-lg"
+                                >
+                                  انصراف
+                                </Button>
+                                <Button
+                                  type="submit"
+                                  disabled={isSavingEditVariant}
+                                  className="h-8 px-4 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black rounded-lg flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  {isSavingEditVariant ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Check className="w-3.5 h-3.5" />
+                                  )}
+                                  ذخیره تغییرات
+                                </Button>
+                              </div>
+                            </form>
+                          );
+                        }
+
                         return (
                           <div
                             key={v.id}
-                            className="flex items-center justify-between p-3 bg-[#1a1a1a] border border-white/5 rounded-xl text-xs"
+                            className="flex items-center justify-between p-3 bg-[#1a1a1a] border border-white/5 rounded-xl text-xs hover:border-white/10 transition-colors"
                           >
                             <div className="space-y-0.5">
                               <span className="font-bold text-white block">{optSummary}</span>
@@ -1493,7 +1677,7 @@ export default function AdminProductsPage() {
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3">
                               <div className="text-left">
                                 <span className="font-black text-amber-400 block">
                                   {formatPrice(v.price)}
@@ -1502,13 +1686,24 @@ export default function AdminProductsPage() {
                                   وزن: {Number(v.weight || 500).toLocaleString("fa-IR")} گرم
                                 </span>
                               </div>
-                              <button
-                                onClick={() => handleDeleteVariant(v.id)}
-                                className="p-1.5 text-gray-500 hover:text-rose-400 transition-colors"
-                                title="حذف تنوع"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => startEditVariant(v)}
+                                  className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                                  title="ویرایش تنوع"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteVariant(v.id)}
+                                  className="p-1.5 text-gray-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                                  title="حذف تنوع"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         );
