@@ -244,23 +244,30 @@ export default function ProductDetailClient({
     }
   }, [initialProduct, productIdOrSlug]);
 
-  // Find matching variant based on currently selected options
+  // Find matching variant based on currently selected options (supports partial and universal variants)
   const matchedVariant = useMemo(() => {
     if (!variants || variants.length === 0) return null;
 
-    return (
-      variants.find((v) => {
-        const vOpts = getNormalizedOptions(v.options);
-        if (vOpts.length === 0) return false;
-        return Object.entries(selectedOptions).every(([optName, optVal]) => {
-          return vOpts.some(
-            (o: any) =>
-              o.option_name.toLowerCase() === optName.toLowerCase() &&
-              o.value.toLowerCase() === String(optVal).toLowerCase()
-          );
-        });
-      }) || variants[0]
-    );
+    // Filter to candidate variants whose assigned options all match the user's selected options
+    const candidates = variants.filter((v) => {
+      const vOpts = getNormalizedOptions(v.options);
+      if (vOpts.length === 0) return true; // Generic variant matches all selections as fallback
+      return vOpts.every((vOpt: any) => {
+        const userVal = selectedOptions[vOpt.option_name];
+        return !userVal || userVal.toLowerCase() === vOpt.value.toLowerCase();
+      });
+    });
+
+    if (candidates.length === 0) return variants[0];
+
+    // Sort candidates by specificity: highest number of defined matching options first
+    candidates.sort((a, b) => {
+      const aOpts = getNormalizedOptions(a.options).length;
+      const bOpts = getNormalizedOptions(b.options).length;
+      return bOpts - aOpts;
+    });
+
+    return candidates[0];
   }, [variants, selectedOptions]);
 
   // Calculate actual rating average and count
