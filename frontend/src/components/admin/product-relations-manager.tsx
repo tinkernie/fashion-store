@@ -503,8 +503,7 @@ export default function ProductRelationsManager({
                             ? lookItems.length >= 6
                             : relatedItems.length >= 8
                         }
-                        variant="outline"
-                        className="h-7 px-3 rounded-lg border-white/10 text-xs text-white hover:bg-amber-400 hover:text-black font-bold flex items-center gap-1 shrink-0"
+                        className="h-8 px-3.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-black font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer disabled:opacity-40"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         افزودن
