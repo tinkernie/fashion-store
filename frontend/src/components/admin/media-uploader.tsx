@@ -119,42 +119,83 @@ export default function MediaUploader({
 
           {value ? (
             /* Uploaded Image Preview */
-            <div className="flex items-start gap-4 p-4 bg-[#181818] border border-white/10 rounded-2xl">
-              <div className={`relative ${getAspectClass()} rounded-xl overflow-hidden bg-black/40 border border-white/10 shrink-0`}>
-                <img src={value} alt="Preview" className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 space-y-2">
-                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" />
-                  تصویر آماده است
-                </span>
-                <p className="text-[11px] text-gray-400 font-mono truncate max-w-xs" dir="ltr">
-                  {value}
-                </p>
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    variant="outline"
-                    className="h-8 text-xs border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl"
-                  >
-                    تغییر تصویر
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      onChange("");
-                      setUrlInput("");
-                    }}
-                    variant="ghost"
-                    className="h-8 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl"
-                  >
-                    حذف
-                  </Button>
+            aspectRatio === "banner" ? (
+              <div className="space-y-3 p-4 bg-[#181818] border border-white/10 rounded-2xl overflow-hidden">
+                <div className={`relative ${getAspectClass()} rounded-xl overflow-hidden bg-black/40 border border-white/10`}>
+                  <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-white/5">
+                  <div className="space-y-0.5 min-w-0">
+                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5" />
+                      تصویر آماده است
+                    </span>
+                    <p className="text-[11px] text-gray-400 font-mono truncate max-w-sm" dir="ltr">
+                      {value}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      variant="outline"
+                      className="h-8 px-3 text-xs border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl cursor-pointer"
+                    >
+                      تغییر تصویر
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        onChange("");
+                        setUrlInput("");
+                      }}
+                      variant="ghost"
+                      className="h-8 px-3 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl cursor-pointer"
+                    >
+                      حذف
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-[#181818] border border-white/10 rounded-2xl overflow-hidden">
+                <div className={`relative ${getAspectClass()} rounded-xl overflow-hidden bg-black/40 border border-white/10 shrink-0`}>
+                  <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 space-y-2 min-w-0">
+                  <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5" />
+                    تصویر آماده است
+                  </span>
+                  <p className="text-[11px] text-gray-400 font-mono truncate max-w-xs" dir="ltr">
+                    {value}
+                  </p>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      variant="outline"
+                      className="h-8 px-3 text-xs border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl cursor-pointer"
+                    >
+                      تغییر تصویر
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        onChange("");
+                        setUrlInput("");
+                      }}
+                      variant="ghost"
+                      className="h-8 px-3 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl cursor-pointer"
+                    >
+                      حذف
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )
           ) : (
             /* Drag and Drop Zone */
             <div

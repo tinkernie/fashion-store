@@ -575,7 +575,7 @@ export default function AdminCollectionsPage() {
       {/* --- Collection Create / Edit Modal --- */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
         <DialogContent
-          className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
+          className="bg-[#0f0f0f] border border-white/10 text-white w-[95vw] sm:max-w-xl md:max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
           dir="rtl"
         >
           <DialogHeader>
