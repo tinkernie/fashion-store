@@ -89,5 +89,63 @@ When `target_ids` is `[]`:
 ### Status: Resolved
 Implemented by TinkErnie in commit `33a208b` (`fix(collections): accept media-library URL or file upload for hero_banner`) via `HeroBannerField` in `backend/store_collections/serializers.py`. Handles both multipart file uploads and media-library/remote URL strings. Frontend passes `payload.hero_banner` directly alongside `seo_metadata.hero_banner` fallback.
 
+---
+
+## 5. Enrich Collection Detail Products with Category, Discount, and Stock Status
+
+### Objective
+In `GET /api/collections/<slug>/`, each item in the `products` list currently only returns basic fields (`id`, `title`, `name`, `slug`, `price`, `image_url`, `imageUrl`, `position`).
+Enrich the serialized products to include category details, discount information, and inventory/stock status so the frontend collection client can offer rich facet filtering (by category, in-stock, and discounts) and render accurate discount badges.
+
+### Target Location (`backend/store_collections/serializers.py`)
+In `CollectionDetailSerializer.get_products(self, obj)`:
+```python
+# Currently:
+results.append({
+    "id": str(p.id),
+    "title": p.title,
+    "name": p.title,
+    "slug": p.slug,
+    "price": price,
+    "image_url": image_url,
+    "imageUrl": image_url,
+    "position": link.position,
+})
+```
+
+### Required Fields to Add:
+1. **Category**:
+   ```python
+   category_data = None
+   if getattr(p, "category", None):
+       category_data = {
+           "id": str(p.category.id),
+           "name": p.category.name,
+           "slug": p.category.slug,
+       }
+   ```
+2. **Discounts**:
+   ```python
+   discount_percent = getattr(p, "discount_percent", None)
+   discount_price = str(p.discount_price) if getattr(p, "discount_price", None) else None
+   ```
+3. **Stock Status**:
+   ```python
+   # Determine if product has stock in any active variant
+   is_in_stock = True
+   if hasattr(p, "variants"):
+       active_variants = p.variants.filter(deleted_at__isnull=True)
+       if active_variants.exists():
+           is_in_stock = any(v.stock > 0 for v in active_variants if hasattr(v, "stock"))
+   ```
+4. **Created Timestamp**:
+   ```python
+   created_at = p.created_at.isoformat() if hasattr(p, "created_at") and p.created_at else None
+   ```
+
+### Query Optimization Hint
+Ensure `product_links.select_related("product", "product__category").prefetch_related("product__variants")` is used in `get_products` to prevent N+1 queries.
+
+
 
 

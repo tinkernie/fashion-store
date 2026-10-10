@@ -1,12 +1,11 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import {
   fetchCollection,
   buildCollectionMetadata,
   getSiteBaseUrl,
 } from "@/lib/server-api";
-import { formatPrice, getDiscountInfo } from "@/lib/price-utils";
+import CollectionProductsClient from "@/components/collections/collection-products-client";
 
 export const dynamic = "force-dynamic";
 
@@ -110,69 +109,11 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
           </div>
         )}
 
-        {products.length === 0 ? (
-          <div className="text-center text-slate-400 py-16 bg-white rounded-3xl border border-sky-100 p-8 shadow-sm">
-            محصولی در این کالکشن وجود ندارد.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {products.map((product: any) => {
-              const disc = getDiscountInfo(product);
-              const imgUrl =
-                product.imageUrl ||
-                product.image_url ||
-                (Array.isArray(product.images) && product.images[0]?.url) ||
-                (Array.isArray(product.images) && typeof product.images[0] === "string" ? product.images[0] : null) ||
-                "/placeholder-product.svg";
-
-              return (
-                <Link
-                  key={product.id || product.slug}
-                  href={`/products/${product.slug || product.id}`}
-                  className="group flex flex-col bg-white rounded-2xl border border-sky-100 hover:border-sky-300 shadow-sm hover:shadow-xl hover:shadow-sky-950/5 transition-all overflow-hidden"
-                >
-                  <div className="relative aspect-[3/4] bg-sky-50/50 overflow-hidden">
-                    <img
-                      src={imgUrl}
-                      alt={product.title || product.name}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {disc.hasDiscount && (
-                      <div className="absolute top-2.5 right-2.5 z-20">
-                        <span className="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black shadow-md">
-                          ٪{disc.discountPercent} تخفیف
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between space-y-2">
-                    <h3 className="text-xs sm:text-sm font-bold text-[#0B192C] group-hover:text-[#0082CA] transition-colors line-clamp-2">
-                      {product.name || product.title}
-                    </h3>
-                    <div className="flex flex-col">
-                      {disc.hasDiscount ? (
-                        <>
-                          <span className="text-[11px] text-slate-400 line-through">
-                            {formatPrice(product.price)}
-                          </span>
-                          <span className="text-xs sm:text-sm font-black text-[#0082CA]">
-                            {formatPrice(disc.discountPrice)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-xs sm:text-sm font-black text-[#0B192C]">
-                          {formatPrice(product.price)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        {/* Collection Products Client with Filter, Search and Sorting */}
+        <CollectionProductsClient
+          initialProducts={products}
+          collectionName={collection.name || collection.title || "کالکشن"}
+        />
       </main>
     </>
   );
