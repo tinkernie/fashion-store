@@ -37,17 +37,18 @@ class SiteContent(BaseModel):
     The latest updated record for each key is used.
     """
     HOMEPAGE = "homepage"
+    HERO = "hero"
     HEADER = "header"
     FOOTER = "footer"
     ANNOUNCEMENT = "announcement"
     DISCOUNT_SECTION = "discount_section"
 
-    ALLOWED_KEYS = (HOMEPAGE, HEADER, FOOTER, ANNOUNCEMENT, DISCOUNT_SECTION)
+    ALLOWED_KEYS = (HOMEPAGE, HERO, HEADER, FOOTER, ANNOUNCEMENT, DISCOUNT_SECTION)
 
     key = models.CharField(
         max_length=100,
         db_index=True,
-        help_text="One of: homepage, header, footer, announcement, discount_section",
+        help_text="One of: homepage, hero, header, footer, announcement, discount_section",
     )
     content = models.JSONField(default=dict, blank=True)
 

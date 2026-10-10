@@ -156,6 +156,16 @@ Ensure `product_links.select_related("product", "product__category").prefetch_re
 - `backend/store_collections/selectors.py`: `get_all_collections_admin` explicitly filters `deleted_at__isnull=True`.
 - `frontend/src/app/admin/collections/page.tsx`: Updated `handleDeleteCollection` with optimistic removal, updated Persian confirmation copy, and reactive UI re-sync.
 
+---
+
+## 7. [RESOLVED] CMS Site Content: Add Hero Key and Default Fallback Providers
+
+### Status: Resolved
+- `backend/cms/models.py`: Added `HERO = "hero"` to `SiteContent.ALLOWED_KEYS`.
+- `backend/cms/serializers.py`: Added `"hero"` to `ALLOWED_SITE_KEYS` and adjusted validator.
+- `backend/cms/services.py`: `CMSService.get_site_content(key)` now returns structured default fallback dictionaries for all allowed keys (`announcement`, `hero`, `footer`, `header`, `discount_section`, `homepage`) when unseeded, instead of throwing `400 Bad Request: "Content key not found."`.
+
+
 
 
 

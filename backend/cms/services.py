@@ -111,17 +111,56 @@ class CMSService:
         return PageSelector.list_all_pages(filters)
 
     # --- Site Content ---
+    @classmethod
+    def get_default_content(cls, key: str) -> dict:
+        if key == "announcement":
+            return {
+                "enabled": True,
+                "badge": "جشنواره",
+                "text": "ارسال رایگان برای تمام سفارش‌های بالای ۷۰۰ هزار تومان به سراسر کشور",
+                "link": "/women",
+            }
+        elif key in ("hero", "homepage"):
+            return {
+                "badge": "کالکشن جدید ۲۰۲۶",
+                "headline": "استایل لوکس و مینیمال برای زندگی مدرن",
+                "subtitle": "طراحی‌های اختصاصی و دوخت باکیفیت برای درخشش شما در هر موقعیت",
+                "cta_label": "مشاهده جدیدترین‌ها",
+                "cta_link": "/women",
+                "image_url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1200&auto=format&fit=crop",
+            }
+        elif key == "footer":
+            return {
+                "description": "فروشگاه تخصصی پوشاک مد و فشن با تمرکز بر کیفیت برتر، طراحی مدرن و ارسال سریع.",
+                "phone": "۰۲۱-۸۸۸۸۷۷۶۶",
+                "email": "info@fashionstore.com",
+                "address": "تهران، خیابان ولیعصر، برج مد و تجارت، طبقه ۵",
+                "working_hours": "شنبه تا پنج‌شنبه: ۹ صبح الی ۹ شب",
+            }
+        elif key == "header":
+            return {
+                "logo_text": "ماوی",
+                "menu_items": [],
+            }
+        elif key == "discount_section":
+            return cls.get_discount_section_default()
+        return {}
+
     def get_site_content(self, key: str) -> dict:
+        from .models import SiteContent as SiteContentModel
+
+        if key not in SiteContentModel.ALLOWED_KEYS:
+            raise BusinessException(
+                f"Unknown key '{key}'. Allowed: {', '.join(SiteContentModel.ALLOWED_KEYS)}."
+            )
+
         cache_key = f"cms:site:{key}"
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
         content = SiteContentSelector.get_by_key(key)
         if content is None:
-            # Discount section defaults to disabled instead of 404 so footer never breaks
-            if key == "discount_section":
-                return {key: self.get_discount_section_default()}
-            raise BusinessException("Content key not found.")
+            return {key: self.get_default_content(key)}
         data = {key: content}
         try:
             cache.set(cache_key, data, SITE_CACHE_TTL)

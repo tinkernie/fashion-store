@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 ALLOWED_BLOCK_TYPES = ("hero", "text", "product_grid", "team", "faq", "banner", "gallery")
 
-ALLOWED_SITE_KEYS = ("homepage", "header", "footer", "announcement", "discount_section")
+ALLOWED_SITE_KEYS = ("homepage", "hero", "header", "footer", "announcement", "discount_section")
 
 
 def validate_page_blocks(content):
@@ -40,14 +40,14 @@ def validate_site_content_by_key(key, content):
             content["collection_slug"], str
         ):
             raise serializers.ValidationError("discount_section.content.collection_slug must be string.")
-    elif key == "homepage":
+    elif key in ("homepage", "hero"):
         slides = content.get("slides")
         if slides is not None:
             if not isinstance(slides, list):
-                raise serializers.ValidationError("homepage.content.slides must be a list.")
+                raise serializers.ValidationError("slides must be a list.")
             for i, s in enumerate(slides):
                 if not isinstance(s, dict) or not s.get("image"):
-                    raise serializers.ValidationError(f"homepage slide #{i} needs image.")
+                    raise serializers.ValidationError(f"slide #{i} needs image.")
     return content
 
 
