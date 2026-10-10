@@ -14,6 +14,7 @@ class VariantService:
         option_assignments = data.pop("option_values", []) or []
         if option_assignments:
             self._validate_option_assignments(option_assignments, product_id=product_id)
+        self._ensure_unique_combination(product_id, option_assignments)
 
         try:
             variant = VariantRepository.create_variant(
@@ -39,6 +40,10 @@ class VariantService:
 
         if option_assignments is not None:
             self._validate_option_assignments(option_assignments, product_id=str(updated.product_id))
+            self._ensure_unique_combination(
+                str(updated.product_id), option_assignments,
+                exclude_variant_id=str(updated.id),
+            )
             VariantRepository.replace_option_assignments(updated, option_assignments)
             updated.refresh_from_db()  # to reload prefetched M2M
 
@@ -77,6 +82,66 @@ class VariantService:
             if not value or str(value.option_id) != str(option.id):
                 raise BusinessException(
                     f"Value {item['value_id']} does not belong to option {item['option_id']}."
+                )
+
+    @staticmethod
+    def _combination_signature(assignments: list[dict]) -> tuple:
+        """Canonical form of an option set: sorted (option_id, value_id)
+        pairs, so order-independent comparison is possible."""
+        return tuple(
+            sorted(
+                (str(a["option_id"]), str(a["value_id"])) for a in assignments
+            )
+        )
+
+    def _ensure_unique_combination(
+        self, product_id: str, assignments: list, exclude_variant_id: str = None
+    ) -> None:
+        """Reject a variant whose exact option set already exists on another
+        active variant of the same product (e.g. red+fabric+size2 twice).
+        Soft-deleted variants don't count. Empty sets count too: two plain
+        variants of one product are indistinguishable on the storefront.
+        """
+        from .models import VariantOption
+
+        signature = self._combination_signature(assignments or [])
+        qs = VariantOption.objects.filter(
+            variant__product_id=product_id,
+            variant__deleted_at__isnull=True,
+        )
+        if exclude_variant_id:
+            qs = qs.exclude(variant_id=exclude_variant_id)
+        rows = qs.values(
+            "variant_id", "variant__sku", "option_id", "option_value_id"
+        )
+        by_variant: dict = {}
+        for r in rows:
+            by_variant.setdefault((str(r["variant_id"]), r["variant__sku"]), []).append(
+                (str(r["option_id"]), str(r["option_value_id"]))
+            )
+        for (vid, sku), pairs in by_variant.items():
+            if tuple(sorted(pairs)) == signature:
+                raise BusinessException(
+                    "A variant with these exact options already exists "
+                    f"(SKU {sku}). Change the options or edit that variant."
+                )
+        # Variants with zero assignments have no VariantOption rows; compare
+        # against other assignment-less active variants explicitly.
+        if not signature:
+            qs = Variant.objects.filter(
+                product_id=product_id, deleted_at__isnull=True
+            )
+            if exclude_variant_id:
+                qs = qs.exclude(id=exclude_variant_id)
+            other_plain = (
+                qs.filter(variantoption__isnull=True)
+                .values_list("sku", flat=True)
+                .first()
+            )
+            if other_plain:
+                raise BusinessException(
+                    "A variant with these exact options already exists "
+                    f"(SKU {other_plain}). Change the options or edit that variant."
                 )
 
     def _serialize_variant(self, variant: Variant) -> dict:
