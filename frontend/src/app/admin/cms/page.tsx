@@ -937,12 +937,12 @@ export default function AdminCMSPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   onClick={() => setSelectedProductIds(productsList.map((p) => p.id))}
                   variant="outline"
                   size="sm"
-                  className="h-9 px-3 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 text-xs font-bold"
+                  className="h-9 px-3 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 text-xs font-bold cursor-pointer"
                 >
                   انتخاب همه
                 </Button>
@@ -950,9 +950,16 @@ export default function AdminCMSPage() {
                   onClick={() => setSelectedProductIds([])}
                   variant="outline"
                   size="sm"
-                  className="h-9 px-3 rounded-xl border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 text-xs font-bold"
+                  className="h-9 px-3 rounded-xl border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 text-xs font-bold cursor-pointer"
                 >
                   لغو انتخاب‌ها
+                </Button>
+                <Button
+                  onClick={handleActivateCampaign}
+                  disabled={isCampaignLoading || selectedProductIds.length === 0}
+                  className="h-9 px-4 rounded-xl bg-[#0082CA] hover:bg-[#006CA8] text-white text-xs font-bold shadow-md shadow-[#0082CA]/25 cursor-pointer"
+                >
+                  {isCampaignLoading ? "در حال ثبت..." : `اعمال تخفیف ${campaignPercent}٪ روی ${selectedProductIds.length} محصول`}
                 </Button>
               </div>
             </div>
@@ -1024,6 +1031,21 @@ export default function AdminCMSPage() {
                     </div>
                   );
                 })}
+            </div>
+
+            {/* Bottom Action Footer for Product Selection */}
+            <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <span className="text-xs text-gray-400">
+                تعداد <strong className="text-white">{selectedProductIds.length}</strong> محصول برای اعمال تخفیف{" "}
+                <strong className="text-amber-400 font-mono">{campaignPercent}٪</strong> انتخاب شده است.
+              </span>
+              <Button
+                onClick={handleActivateCampaign}
+                disabled={isCampaignLoading || selectedProductIds.length === 0}
+                className="h-10 px-6 rounded-xl bg-[#0082CA] hover:bg-[#006CA8] text-white text-xs font-bold shadow-lg shadow-[#0082CA]/25 cursor-pointer"
+              >
+                {isCampaignLoading ? "در حال ثبت تخفیف‌ها..." : `ذخیره و اعمال تخفیف ${campaignPercent}٪ روی محصولات انتخاب شده`}
+              </Button>
             </div>
           </div>
         </TabsContent>

@@ -158,12 +158,25 @@ class CollectionDetailSerializer(serializers.Serializer):
                     except Exception:
                         pass
 
+                is_discount_active = bool(p.is_discount_active)
+                disc_pct = p.discount_percent if is_discount_active else None
+                disc_price = int(p.discount_price) if (is_discount_active and p.discount_price is not None) else None
+                if is_discount_active and disc_price is None and disc_pct and price != "0":
+                    try:
+                        disc_price = int(round(float(price) * (100 - disc_pct) / 100.0))
+                    except Exception:
+                        pass
+
                 results.append({
                     "id": str(p.id),
                     "title": p.title,
                     "name": p.title,
                     "slug": p.slug,
                     "price": price,
+                    "discount_price": disc_price,
+                    "discount_percent": disc_pct,
+                    "discount_expires_at": p.discount_expires_at.isoformat() if p.discount_expires_at else None,
+                    "is_discount_active": is_discount_active,
                     "image_url": image_url,
                     "imageUrl": image_url,
                     "position": link.position,

@@ -93,6 +93,9 @@ interface ProductItem {
   collections?: string[];
   price?: string | number;
   discount_price?: string | number;
+  discount_percent?: number;
+  discount_expires_at?: string;
+  is_discount_active?: boolean;
   image?: string;
   imageUrl?: string;
   is_new?: boolean;
@@ -138,6 +141,7 @@ function SearchContent() {
   const maxPriceParam = searchParams.get("max_price") || "";
   const inStockParam = searchParams.get("in_stock") === "true";
   const sortParam = searchParams.get("sort") || "newest";
+  const hasDiscountParam = searchParams.get("has_discount") || "";
   const selectedOptionsParam = searchParams.get("options")
     ? JSON.parse(searchParams.get("options") || "{}")
     : {};
@@ -241,6 +245,9 @@ function SearchContent() {
       if (sortParam) {
         params.set("sort", sortParam);
         params.set("ordering", sortParam);
+      }
+      if (hasDiscountParam) {
+        params.set("has_discount", hasDiscountParam);
       }
 
       if (Object.keys(selectedOptionsParam).length > 0) {

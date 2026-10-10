@@ -63,6 +63,23 @@ class SearchService:
             if hasattr(v, "inventory") and v.inventory:
                 total_stock += v.inventory.available_quantity
 
+        # Discount fields
+        now = timezone.now()
+        is_expired = bool(product.discount_expires_at and product.discount_expires_at < now)
+        has_pct = bool(product.discount_percent and 1 <= product.discount_percent <= 99)
+
+        is_discount_active = bool(product.is_discount_active) or (has_pct and not is_expired and price and price != "0")
+        discount_percent = product.discount_percent if (has_pct and not is_expired) else None
+        discount_price = None
+        if is_discount_active:
+            if product.discount_price is not None and product.discount_price > 0:
+                discount_price = int(product.discount_price)
+            elif discount_percent and price and price != "0":
+                try:
+                    discount_price = int(round(float(price) * (100 - discount_percent) / 100.0))
+                except Exception:
+                    pass
+
         return {
             'id': str(product.id),
             'title': product.title,
@@ -74,6 +91,10 @@ class SearchService:
             'category_slug': product.category.slug if product.category else None,
             'collections': [c.name for c in product.collections.all()],
             'price': price,
+            'discount_price': discount_price,
+            'discount_percent': discount_percent,
+            'discount_expires_at': product.discount_expires_at.isoformat() if product.discount_expires_at else None,
+            'is_discount_active': is_discount_active,
             'image': img,
             'imageUrl': img,
             'is_new': (timezone.now() - product.created_at).days < 30,

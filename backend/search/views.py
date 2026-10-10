@@ -31,6 +31,8 @@ class SearchViewSet(viewsets.GenericViewSet):
             filters['options'] = data['options']
         if data.get('exclude_discounted'):
             filters['exclude_discounted'] = data['exclude_discounted']
+        if data.get('has_discount') or request.query_params.get('has_discount'):
+            filters['has_discount'] = data.get('has_discount') or request.query_params.get('has_discount')
 
         service = SearchService()
         result = service.search(
