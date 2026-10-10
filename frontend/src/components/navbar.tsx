@@ -351,15 +351,22 @@ export default function Navbar() {
               <DropdownMenuTrigger asChild>
                 <button 
                   className={cn(
-                    "p-2 hover:bg-white/20 rounded-full transition-colors outline-none cursor-pointer flex items-center relative text-white",
-                    isLoggedIn ? "bg-white/25 ring-1 ring-white/40" : "hover:bg-white/20"
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all outline-none cursor-pointer text-white text-xs font-semibold select-none shrink-0",
+                    isLoggedIn 
+                      ? "bg-white/20 hover:bg-white/30 ring-1 ring-white/30" 
+                      : "bg-white/10 hover:bg-white/20 border border-white/20"
                   )}
                   aria-label="User Account"
                 >
-                  <User className="w-5 h-5" />
-                  {isLoggedIn && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 absolute top-1.5 right-1.5 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                  )}
+                  <div className="relative flex items-center justify-center">
+                    <User className="w-4 h-4 shrink-0" />
+                    {isLoggedIn && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                    )}
+                  </div>
+                  <span className="truncate max-w-[110px]">
+                    {isLoggedIn ? (userDisplayName || "حساب کاربری") : "ورود / ثبت‌نام"}
+                  </span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white border border-sky-100 text-slate-800 w-52 rounded-2xl shadow-2xl mt-2 p-2 font-sans">

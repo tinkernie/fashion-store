@@ -116,6 +116,7 @@ The entire UI is built on a custom calibrated spectrum of **Mavi Blue (`#0082CA`
 ## 3. Typography & RTL Engineering
 
 - **Primary Font:** Vazirmatn (`--font-vazirmatn`, system-ui, sans-serif) for all Persian text and numerals.
+- **Language Separation:** Customer-facing interface copy is Persian (`dir="rtl"`, Vazirmatn); engineering conversations and planning remain in English.
 - **Secondary / Mono:** Geist Mono (`--font-mono`) for SKU codes, tracking numbers, and technical specifications.
 - **Direction:** Native `dir="rtl"` with logical CSS properties (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`).
 - **Purity Rule:** Headings are roman (`font-style: normal`). No italic emphasis inside Persian headlines (prevents clipping of Persian letters like `ی`, `گ`, `چ`).
@@ -161,6 +162,7 @@ The entire UI is built on a custom calibrated spectrum of **Mavi Blue (`#0082CA`
 - **Structure:** Floating island pill (`max-w-5xl rounded-full h-16`), centered horizontally with `top-6`.
 - **Palette:** Translucent white surface (`bg-white/90` with `backdrop-blur-2xl`), subtle border (`border-sky-100`), dark navy typography (`text-slate-800`), Mavi blue icon highlights (`hover:text-[#0082CA]`).
 - **Interactive:** Search expander smoothly stretches with spring physics; badges indicate active cart and notification count in vibrant Mavi blue with white numerals.
+- **User Account Trigger:** Compact pill (`rounded-full px-3 py-1.5`) pairing user avatar with Persian auth state label (`ورود / ثبت‌نام` for guest, user name or `حساب کاربری` with green status dot for authenticated users).
 
 ### 5.2 Hero Section
 - **Viewport Rule:** `min-h-[90vh] md:min-h-[100dvh]` (never bare `h-screen`).

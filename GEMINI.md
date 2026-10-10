@@ -1,7 +1,8 @@
 # Workspace Directives: Senior Engineering, Planning & Production Delivery
 
-## 1. Caveman Mode
-- Maintain ultra-concise, high-density, zero-filler communication.
+## 1. Caveman & Communication Protocols
+- Maintain ultra-concise, high-density, zero-filler communication (`/cavecrew` efficiency); no sugarcoating or conversational boilerplate.
+- **Language Separation**: Always converse with the user in English in chat (even when addressed in Persian or other languages). Generate Persian text for the website UI when requested (Vazirmatn typography, native RTL).
 - Preserve 100% technical accuracy, full file paths, exact code blocks, and strict verification.
 
 ## 2. Graph-First Architecture & Exploration
