@@ -241,28 +241,28 @@ export default function ProductRelationsManager({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="max-w-4xl max-h-[90vh] flex flex-col bg-[#0f0f0f] border border-white/10 text-white p-0 overflow-hidden rounded-2xl shadow-2xl"
+        className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[90vh] flex flex-col bg-[#0f0f0f] border border-white/10 text-white p-0 overflow-hidden rounded-2xl shadow-2xl"
         dir="rtl"
       >
         {/* Modal Header */}
         <DialogHeader className="p-6 border-b border-white/10 bg-white/[0.02]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/20 text-amber-400">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/20 text-amber-400 shrink-0">
                 <Sparkles className="w-5 h-5" />
               </span>
-              <div>
-                <DialogTitle className="text-xl font-black text-white">
+              <div className="min-w-0">
+                <DialogTitle className="text-lg sm:text-xl font-black text-white">
                   مدیریت ست لباس و محصولات مرتبط
                 </DialogTitle>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-zinc-400 mt-1 truncate">
                   محصول مبدا: <span className="text-white font-medium">{product?.title || product?.name}</span>
                 </p>
               </div>
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 p-1 rounded-xl">
+            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 p-1 rounded-xl shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveTab("complete_look")}
@@ -438,21 +438,21 @@ export default function ProductRelationsManager({
 
             {/* Candidate Product Picker */}
             <div className="space-y-3 pt-4 border-t border-white/10">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h3 className="text-sm font-bold text-white">افزودن محصول جدید به این بخش</h3>
-                <div className="relative w-64">
+                <div className="relative w-full sm:w-72">
                   <Search className="w-4 h-4 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2" />
                   <Input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="جستجو در محصولات..."
-                    className="h-8 pr-9 pl-3 text-xs bg-white/5 border-white/10 text-white rounded-xl focus:border-amber-400"
+                    className="h-9 pr-9 pl-3 text-xs bg-white/5 border-white/10 text-white rounded-xl focus:border-amber-400"
                   />
                 </div>
               </div>
 
-              <div className="max-h-56 overflow-y-auto border border-white/10 rounded-xl divide-y divide-white/5 bg-black/20">
+              <div className="max-h-64 sm:max-h-72 overflow-y-auto border border-white/10 rounded-xl divide-y divide-white/5 bg-black/20">
                 {filteredCandidates.length === 0 ? (
                   <div className="p-6 text-center text-xs text-zinc-500">
                     محصولی برای افزودن یافت نشد یا همه محصولات انتخاب شده‌اند.
