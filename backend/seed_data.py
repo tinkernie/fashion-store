@@ -251,13 +251,17 @@ def seed():
     coupons_data = [
         {"code": "WELCOME20", "discount_type": "percentage", "discount_value": Decimal("20"), "max_uses": 100, "is_active": True},
         {"code": "NOROOZ500", "discount_type": "fixed", "discount_value": Decimal("500000"), "min_purchase": Decimal("2000000"), "max_uses": 50, "is_active": True},
-        {"code": "LUXE10", "discount_type": "percentage", "discount_value": Decimal("10"), "max_uses": 500, "is_active": True},
+        {"code": "MAVI10", "discount_type": "percentage", "discount_value": Decimal("10"), "max_uses": 500, "is_active": True},
     ]
 
 
     for coup in coupons_data:
         Coupon.objects.get_or_create(code=coup["code"], defaults=coup)
         print(f"  [+] Coupon: {coup['code']}")
+    # Retire legacy brand coupons so they can no longer be applied.
+    retired = Coupon.objects.filter(code__in=["LUXE10", "MAMAD"], is_active=True).update(is_active=False)
+    if retired:
+        print(f"  [x] Retired legacy coupons: {retired}")
 
     # 5. CMS Content
     SiteContent.objects.get_or_create(

@@ -119,6 +119,24 @@ class PublicProductViewSet(viewsets.GenericViewSet):
 class AdminProductViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAdminUser]
 
+    def list(self, request):
+        """GET /api/admin/products/?search=&status= — full catalog for admins,
+        all statuses (draft/published/archived), soft-deleted excluded."""
+        filters = {}
+        search = request.query_params.get("search")
+        if search:
+            filters["search"] = search
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            filters["status"] = status_filter
+        queryset = ProductSelector.get_all_products_admin(filters or None)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = ProductDetailSerializer(page, many=True, context={"request": request})
+            return self.get_paginated_response(serializer.data)
+        serializer = ProductDetailSerializer(queryset, many=True, context={"request": request})
+        return Response(serializer.data)
+
     def create(self, request):
         serializer = ProductCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

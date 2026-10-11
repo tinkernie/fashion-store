@@ -4,7 +4,7 @@ from notifications.models import NotificationTemplate
 DEFAULT_TEMPLATES = [
     {
         'type': 'order_confirmation',
-        'subject_template': 'سفارش {{ order_number }} با موفقیت ثبت شد — فروشگاه لوکس',
+        'subject_template': 'سفارش {{ order_number }} با موفقیت ثبت شد — فروشگاه تخصصی ماوی',
         'body_template': '{{ user_name }} عزیز، سفارش شما به شماره {{ order_number }} با مبلغ {{ total }} تومان با موفقیت ثبت گردید و در حال آماده‌سازی است. مشاهده فاکتور: {{ invoice_url }}',
     },
     {
@@ -19,12 +19,12 @@ DEFAULT_TEMPLATES = [
     },
     {
         'type': 'welcome',
-        'subject_template': 'به فروشگاه لوکس فشن خوش آمدید',
+        'subject_template': 'به فروشگاه تخصصی ماوی خوش آمدید',
         'body_template': '{{ user_name }} عزیز، از اینکه به جمع مشتریان خاص لوکس پیوستید بسیار خرسندیم. برای مشاهده جدیدترین کالکشن‌های فصلی به وب‌سایت مراجعه فرمایید: {{ frontend_url }}/collections',
     },
     {
         'type': 'generic',
-        'subject_template': 'اطلاعیه سیستم — فروشگاه لوکس',
+        'subject_template': 'اطلاعیه سیستم — فروشگاه تخصصی ماوی',
         'body_template': 'کاربر گرامی، یک پیام سیستمی جدید برای شما ثبت شده است: {{ message|default:"" }}',
     },
 ]

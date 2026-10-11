@@ -21,7 +21,7 @@ class OrderSequence(models.Model):
             seq, _ = cls.objects.select_for_update().get_or_create(date=today)
             seq.last_sequence += 1
             seq.save()
-            return f"LUX-{today.strftime('%Y%m%d')}-{seq.last_sequence:06d}"
+            return f"MAVI-{today.strftime('%Y%m%d')}-{seq.last_sequence:06d}"
 
 
 class Order(BaseModel):

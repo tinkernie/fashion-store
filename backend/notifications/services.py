@@ -48,14 +48,14 @@ class NotificationService:
                     "order_confirmation": "سفارش {{ order_number }} با موفقیت ثبت شد",
                     "order_status_change": "وضعیت سفارش {{ order_number }}: {{ new_status_fa|default:new_status }}",
                     "shipping_update": "سفارش {{ order_number }} تحویل پست شد",
-                    "welcome": "به فروشگاه لوکس خوش آمدید",
+                    "welcome": "به فروشگاه تخصصی ماوی خوش آمدید",
                     "generic": "اطلاعیه سیستم",
                 }
                 fallback_bodies = {
                     "order_confirmation": "{{ user_name }} عزیز، سفارش {{ order_number }} به مبلغ {{ total }} تومان ثبت شد. فاکتور: {{ invoice_url }}",
                     "order_status_change": "{{ user_name }} عزیز، وضعیت سفارش {{ order_number }} به «{{ new_status_fa|default:new_status }}» تغییر یافت.",
                     "shipping_update": "{{ user_name }} عزیز، مرسوله سفارش {{ order_number }} تحویل شرکت پست گردید. کد رهگیری: {{ tracking_number|default:'---' }}",
-                    "welcome": "{{ user_name }} عزیز، به فروشگاه لوکس خوش آمدید!",
+                    "welcome": "{{ user_name }} عزیز، به فروشگاه تخصصی ماوی خوش آمدید!",
                     "generic": "{{ user_name }} عزیز، شما یک اعلان جدید دارید.",
                 }
                 subject = self._render_template_string(fallback_subjects.get(type, "اطلاعیه سیستم"), context)

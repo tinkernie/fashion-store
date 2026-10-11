@@ -183,9 +183,28 @@ class CartService:
                     pass
         CartRepository.clear_cart(cart)
 
-    @transaction.atomic
     def merge_carts(self, user, session_key: str):
-        """Merge guest cart into authenticated user's cart."""
+        """Merge guest cart into authenticated user's cart.
+
+        Retries on transient lock contention (e.g. SQLite
+        "database is locked" under concurrent merge traffic): each attempt
+        runs in its own atomic transaction.
+        """
+        import time
+        from django.db import OperationalError
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                return self._merge_carts_atomic(user, session_key)
+            except OperationalError as exc:
+                if "locked" in str(exc).lower() and attempt < max_retries - 1:
+                    time.sleep(0.2)
+                    continue
+                raise
+
+    @transaction.atomic
+    def _merge_carts_atomic(self, user, session_key: str):
         guest_cart = Cart.objects.select_for_update().filter(session_key=session_key).first()
         if not guest_cart or not guest_cart.items.exists():
             return

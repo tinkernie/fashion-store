@@ -93,6 +93,11 @@ if _DB_ENGINE == "sqlite":
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
+            "OPTIONS": {
+                # Wait up to 20s on locked tables (e.g. concurrent cart
+                # merge reads/writes) instead of raising immediately.
+                "timeout": 20,
+            },
         }
     }
 else:
