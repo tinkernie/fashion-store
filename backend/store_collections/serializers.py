@@ -134,7 +134,12 @@ class CollectionDetailSerializer(serializers.Serializer):
     def get_products(self, obj):
         if hasattr(obj, "product_links"):
             results = []
-            for link in obj.product_links.select_related("product").all():
+            links = obj.product_links.select_related(
+                "product", "product__category"
+            ).prefetch_related(
+                "product__variants", "product__variants__inventory"
+            ).order_by("position", "id")
+            for link in links:
                 p = link.product
                 price = "0"
                 if hasattr(p, "variants"):
@@ -158,12 +163,64 @@ class CollectionDetailSerializer(serializers.Serializer):
                     except Exception:
                         pass
 
+                category_data = None
+                if getattr(p, "category", None):
+                    category_data = {
+                        "id": str(p.category.id),
+                        "name": p.category.name,
+                        "slug": p.category.slug,
+                    }
+
+                try:
+                    is_discount_active = bool(p.is_discount_active)
+                except Exception:
+                    is_discount_active = False
+                disc_pct = p.discount_percent if is_discount_active else None
+                disc_price = None
+                if is_discount_active and p.discount_price is not None:
+                    try:
+                        disc_price = int(p.discount_price)
+                    except Exception:
+                        disc_price = None
+                if is_discount_active and disc_price is None and disc_pct and price != "0":
+                    try:
+                        disc_price = int(round(float(price) * (100 - disc_pct) / 100.0))
+                    except Exception:
+                        pass
+
+                stock_quantity = 0
+                try:
+                    for v in p.variants.all():
+                        inv = getattr(v, "inventory", None)
+                        if inv is not None and inv.available_quantity:
+                            stock_quantity += int(inv.available_quantity)
+                except Exception:
+                    pass
+
+                created_at = None
+                try:
+                    if getattr(p, "created_at", None):
+                        created_at = p.created_at.isoformat()
+                except Exception:
+                    pass
+
                 results.append({
                     "id": str(p.id),
                     "title": p.title,
                     "name": p.title,
                     "slug": p.slug,
                     "price": price,
+                    "discount_price": disc_price,
+                    "discount_percent": disc_pct,
+                    "discount_expires_at": (
+                        p.discount_expires_at.isoformat()
+                        if getattr(p, "discount_expires_at", None) else None
+                    ),
+                    "is_discount_active": is_discount_active,
+                    "category": category_data,
+                    "is_in_stock": stock_quantity > 0,
+                    "stock_quantity": stock_quantity,
+                    "created_at": created_at,
                     "image_url": image_url,
                     "imageUrl": image_url,
                     "position": link.position,

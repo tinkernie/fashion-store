@@ -6,7 +6,7 @@ User = get_user_model()
 class UserRepository:
     @staticmethod
     def update_user(user: User, **fields) -> User:
-        allowed_fields = {"first_name", "last_name", "is_active"}
+        allowed_fields = {"first_name", "last_name", "is_active", "email"}
         update_fields = {k: v for k, v in fields.items() if k in allowed_fields}
         for attr, value in update_fields.items():
             setattr(user, attr, value)

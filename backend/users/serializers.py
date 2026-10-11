@@ -7,6 +7,7 @@ User = get_user_model()
 class UserProfileSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     phone_number = serializers.CharField(read_only=True)
+    email = serializers.EmailField(read_only=True)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     is_active = serializers.BooleanField(read_only=True)
@@ -18,6 +19,7 @@ class UserProfileSerializer(serializers.Serializer):
 class UpdateProfileSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=False)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=False)
+    email = serializers.EmailField(required=False, allow_null=True, allow_blank=True)
 
     def validate_first_name(self, value):
         from .validators import UserValidator
