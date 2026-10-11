@@ -10,6 +10,7 @@ import {
   Trash2,
   Archive,
   Eye,
+  EyeOff,
   CheckCircle2,
   ExternalLink,
   Layers,
@@ -142,6 +143,7 @@ export default function AdminProductsPage() {
   const [editVariantStock, setEditVariantStock] = useState("10");
   const [editOptionValueIds, setEditOptionValueIds] = useState<Record<string, string>>({});
   const [isSavingEditVariant, setIsSavingEditVariant] = useState(false);
+  const [togglingStatusId, setTogglingStatusId] = useState<string | null>(null);
 
   // Dedicated Category Manager Modal State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -535,6 +537,27 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleToggleProductStatus = async (p: any) => {
+    const isCurrentlyPublished = p.status === "published" || p.status === "active";
+    const nextStatus = isCurrentlyPublished ? "draft" : "published";
+
+    setTogglingStatusId(p.id);
+    try {
+      await adminApi.updateProduct(p.id, { status: nextStatus });
+      toast.success(
+        nextStatus === "published"
+          ? `محصول «${p.name || p.title}» با موفقیت در فروشگاه منتشر شد.`
+          : `محصول «${p.name || p.title}» به وضعیت پیش‌نویس (غیرفعال) تغییر یافت.`
+      );
+      const updated = await adminApi.getProducts();
+      setProducts(updated);
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در تغییر وضعیت انتشار محصول"));
+    } finally {
+      setTogglingStatusId(null);
+    }
+  };
+
   // Generate Combinatorial Matrix for in-product form (Task 5 & 8: Flexible 1-, 2-, or 3-attributes)
   const handleGenerateClothingVariants = () => {
     const colors = clothingColor
@@ -639,15 +662,8 @@ export default function AdminProductsPage() {
     const finalRemaining = discountRemaining.trim() || "۴۸ ساعت";
     const primaryImg = imageUrls[0] || imageUrl || "";
 
-    // Task 7: Zero-variant publish guard
-    const hasVariants = variantsMatrix.length > 0 || (editingProduct?.variants && editingProduct.variants.length > 0);
-    let targetStatus = status === "active" ? "published" : status;
-    if (!hasVariants) {
-      targetStatus = "draft";
-      if (status === "active" || status === "published") {
-        toast.info("محصول به عنوان «پیش‌نویس» ذخیره شد؛ انتشار در فروشگاه نیازمند تعریف حداقل یک تنوع محصول است.");
-      }
-    }
+    // Product publication status follows explicit selection (published vs draft)
+    const targetStatus = status === "draft" ? "draft" : "published";
 
     const payload: any = {
       title,
@@ -1246,28 +1262,67 @@ export default function AdminProductsPage() {
 
                       {/* Status */}
                       <td className="py-4 px-4">
-                        {(!p.variants || p.variants.length === 0) ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-400 border-amber-500/20 whitespace-nowrap">
-                            پیش‌نویس (فاقد تنوع)
-                          </span>
-                        ) : (
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                              p.status === "published" || p.status === "active"
-                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                            }`}
-                          >
+                        <button
+                          type="button"
+                          disabled={togglingStatusId === p.id}
+                          onClick={() => handleToggleProductStatus(p)}
+                          className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap shadow-sm ${
+                            p.status === "published" || p.status === "active"
+                              ? "bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border-emerald-500/30"
+                              : "bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border-amber-500/40"
+                          }`}
+                          title={
+                            p.status === "published" || p.status === "active"
+                              ? "محصول در فروشگاه منتشر شده است. جهت تغییر به پیش‌نویس (غیرفعال) کلیک کنید."
+                              : "محصول در وضعیت پیش‌نویس است. جهت انتشار فوری در فروشگاه کلیک کنید."
+                          }
+                        >
+                          {togglingStatusId === p.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                p.status === "published" || p.status === "active"
+                                  ? "bg-emerald-400"
+                                  : "bg-amber-400"
+                              }`}
+                            />
+                          )}
+                          <span>
                             {p.status === "published" || p.status === "active"
                               ? "منتشر شده"
-                              : "پیش‌نویس / غیرفعال"}
+                              : "پیش‌نویس (کلیک جهت انتشار)"}
                           </span>
-                        )}
+                        </button>
                       </td>
 
                       {/* Actions */}
                       <td className="py-4 px-6 text-left">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            disabled={togglingStatusId === p.id}
+                            onClick={() => handleToggleProductStatus(p)}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              p.status === "published" || p.status === "active"
+                                ? "text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                                : "text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                            }`}
+                            title={
+                              p.status === "published" || p.status === "active"
+                                ? "غیرفعال‌سازی (انتقال به پیش‌نویس)"
+                                : "انتشار در فروشگاه"
+                            }
+                          >
+                            {togglingStatusId === p.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : p.status === "published" || p.status === "active" ? (
+                              <Eye className="w-4 h-4" />
+                            ) : (
+                              <EyeOff className="w-4 h-4" />
+                            )}
+                          </button>
+
                           <Link
                             href={`/products/${p.id}`}
                             target="_blank"
@@ -1310,11 +1365,49 @@ export default function AdminProductsPage() {
           dir="rtl"
         >
           <DialogHeader className="border-b border-white/10 pb-4">
-            <DialogTitle className="text-xl font-black flex items-center justify-between">
+            <DialogTitle className="text-xl font-black flex items-center justify-between flex-wrap gap-3">
               <span className="flex items-center gap-2">
-                <Boxes className="w-6 h-6 text-purple-400" />
+                <Boxes className="w-6 h-6 text-purple-400 shrink-0" />
                 مدیریت ویژگی‌ها و تنوع‌های کالای «{selectedProductForVariants?.name || selectedProductForVariants?.title}»
               </span>
+              {selectedProductForVariants && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!selectedProductForVariants?.id) return;
+                    const isPub = selectedProductForVariants.status === "published" || selectedProductForVariants.status === "active";
+                    const next = isPub ? "draft" : "published";
+                    try {
+                      await adminApi.updateProduct(selectedProductForVariants.id, { status: next });
+                      toast.success(next === "published" ? "محصول با موفقیت در فروشگاه منتشر شد." : "محصول به پیش‌نویس منتقل شد.");
+                      setSelectedProductForVariants((prev: any) => ({ ...prev, status: next }));
+                      const updated = await adminApi.getProducts();
+                      setProducts(updated);
+                    } catch (err: any) {
+                      toast.error(getApiErrorMessage(err, "خطا در تغییر وضعیت انتشار محصول"));
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selectedProductForVariants.status === "published" || selectedProductForVariants.status === "active"
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                      : "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 shadow-lg shadow-amber-500/10"
+                  }`}
+                  title="تغییر وضعیت انتشار این محصول"
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      selectedProductForVariants.status === "published" || selectedProductForVariants.status === "active"
+                        ? "bg-emerald-400"
+                        : "bg-amber-400"
+                    }`}
+                  />
+                  <span>
+                    {selectedProductForVariants.status === "published" || selectedProductForVariants.status === "active"
+                      ? "منتشر شده در فروشگاه"
+                      : "پیش‌نویس (انتشار فوری در فروشگاه)"}
+                  </span>
+                </button>
+              )}
             </DialogTitle>
           </DialogHeader>
 
@@ -2135,6 +2228,37 @@ export default function AdminProductsPage() {
                     className="w-full bg-[#181818] border border-white/10 text-xs text-white rounded-xl p-3 outline-none resize-none focus:border-amber-400/50"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Publication Status Selector */}
+            <div className="bg-[#141414] border border-white/10 rounded-2xl p-4 space-y-2">
+              <label className="text-xs font-bold text-gray-300 block">وضعیت انتشار محصول در فروشگاه:</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStatus("published")}
+                  className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
+                    status === "published" || status === "active"
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/10"
+                      : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  منتشر شده (قابل مشاهده و خرید در فروشگاه)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatus("draft")}
+                  className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
+                    status === "draft"
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/10"
+                      : "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  پیش‌نویس / غیرفعال (مخفی در فروشگاه)
+                </button>
               </div>
             </div>
 
