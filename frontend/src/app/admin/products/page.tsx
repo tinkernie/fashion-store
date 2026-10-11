@@ -139,6 +139,7 @@ export default function AdminProductsPage() {
   const [editVariantSku, setEditVariantSku] = useState("");
   const [editVariantPrice, setEditVariantPrice] = useState("");
   const [editVariantWeight, setEditVariantWeight] = useState("1");
+  const [editVariantStock, setEditVariantStock] = useState("10");
   const [editOptionValueIds, setEditOptionValueIds] = useState<Record<string, string>>({});
   const [isSavingEditVariant, setIsSavingEditVariant] = useState(false);
 
@@ -469,6 +470,8 @@ export default function AdminProductsPage() {
     setEditVariantSku(v.sku || "");
     setEditVariantPrice(formatPriceInput(String(v.price || 0)));
     setEditVariantWeight(String(v.weight || 1));
+    const currentStock = v.stock ?? v.inventory?.available_quantity ?? 0;
+    setEditVariantStock(String(currentStock));
 
     const currentOptions: Record<string, string> = {};
     if (Array.isArray(v.options)) {
@@ -486,6 +489,7 @@ export default function AdminProductsPage() {
     setEditVariantSku("");
     setEditVariantPrice("");
     setEditVariantWeight("1");
+    setEditVariantStock("0");
     setEditOptionValueIds({});
   };
 
@@ -514,6 +518,12 @@ export default function AdminProductsPage() {
         weight: Number(editVariantWeight) > 0 ? Number(editVariantWeight) : 1,
         option_values: optionValuesPayload,
       });
+
+      // Update absolute stock if provided
+      if (editVariantStock.trim() !== "" && !isNaN(Number(editVariantStock))) {
+        await adminApi.setStockQuantity(editingVariantId, Math.max(0, parseInt(editVariantStock, 10)));
+      }
+
       toast.success("تنوع با موفقیت به‌روزرسانی شد");
       const vars = await adminApi.getVariants(selectedProductForVariants.id);
       setProductVariants(vars);
@@ -1599,7 +1609,7 @@ export default function AdminProductsPage() {
                                 </div>
                               )}
 
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
                                 <div className="space-y-1">
                                   <label className="text-[10px] text-gray-400 font-bold">کد انبار (SKU)</label>
                                   <Input
@@ -1632,6 +1642,19 @@ export default function AdminProductsPage() {
                                     onChange={(e) => setEditVariantWeight(e.target.value)}
                                     placeholder="1"
                                     min={1}
+                                    className="bg-black/60 border-white/15 h-8 text-xs text-white rounded-lg font-sans"
+                                    dir="ltr"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-[10px] text-gray-400 font-bold">موجودی انبار</label>
+                                  <Input
+                                    type="number"
+                                    value={editVariantStock}
+                                    onChange={(e) => setEditVariantStock(e.target.value)}
+                                    placeholder="10"
+                                    min={0}
                                     className="bg-black/60 border-white/15 h-8 text-xs text-white rounded-lg font-sans"
                                     dir="ltr"
                                   />
@@ -1683,9 +1706,19 @@ export default function AdminProductsPage() {
                                 <span className="font-black text-amber-400 block">
                                   {formatPrice(v.price)}
                                 </span>
-                                <span className="text-[10px] text-gray-400 font-normal block">
-                                  وزن: {Number(v.weight || 500).toLocaleString("fa-IR")} گرم
-                                </span>
+                                <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-normal">
+                                  <span>وزن: {Number(v.weight || 500).toLocaleString("fa-IR")} گرم</span>
+                                  <span>•</span>
+                                  <span
+                                    className={
+                                      Number(v.stock ?? v.inventory?.available_quantity ?? 0) > 0
+                                        ? "text-emerald-400 font-bold"
+                                        : "text-rose-400 font-bold"
+                                    }
+                                  >
+                                    موجودی: {Number(v.stock ?? v.inventory?.available_quantity ?? 0).toLocaleString("fa-IR")} عدد
+                                  </span>
+                                </div>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 <button
