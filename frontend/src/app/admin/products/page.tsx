@@ -680,6 +680,15 @@ export default function AdminProductsPage() {
         discount_percent: finalDiscountPercent,
         discount_remaining: finalDiscountPercent ? finalRemaining : null,
         images: imageUrls,
+        color: clothingColor.trim() || undefined,
+        size: clothingSize.trim() || undefined,
+        material: clothingMaterial.trim() || undefined,
+        specifications: [
+          clothingMaterial.trim() && { label: "جنس و متریال", value: clothingMaterial.trim() },
+          clothingColor.trim() && { label: "رنگ‌بندی", value: clothingColor.trim() },
+          clothingSize.trim() && { label: "سایزبندی", value: clothingSize.trim() },
+          { label: "وزن خالص", value: `${parsedWeight} گرم` },
+        ].filter(Boolean),
       },
       seo_metadata: {
         meta_title: metaTitle.trim() || undefined,
@@ -698,6 +707,74 @@ export default function AdminProductsPage() {
       } else {
         savedProduct = await adminApi.createProduct(payload);
         toast.success("محصول جدید با موفقیت اضافه شد");
+
+        // Automatically provision clothing options & values for newly created product if entered
+        if (savedProduct?.id && (clothingColor.trim() || clothingSize.trim() || clothingMaterial.trim())) {
+          try {
+            const optionsToCreate: { name: string; values: string[] }[] = [];
+            if (clothingColor.trim()) {
+              optionsToCreate.push({
+                name: "رنگ",
+                values: clothingColor.split(/[,،]+/).map((s) => s.trim()).filter(Boolean),
+              });
+            }
+            if (clothingSize.trim()) {
+              optionsToCreate.push({
+                name: "سایز",
+                values: clothingSize.split(/[,،]+/).map((s) => s.trim()).filter(Boolean),
+              });
+            }
+            if (clothingMaterial.trim()) {
+              optionsToCreate.push({
+                name: "جنس",
+                values: clothingMaterial.split(/[,،]+/).map((s) => s.trim()).filter(Boolean),
+              });
+            }
+
+            const optionMap: Record<string, { optId: string; valMap: Record<string, string> }> = {};
+            for (const item of optionsToCreate) {
+              const createdOpt = await adminApi.createProductOption(savedProduct.id, { name: item.name });
+              const valMap: Record<string, string> = {};
+              for (const val of item.values) {
+                const createdVal = await adminApi.createOptionValue(savedProduct.id, createdOpt.id, { value: val });
+                valMap[val] = createdVal.id;
+              }
+              optionMap[item.name] = { optId: createdOpt.id, valMap };
+            }
+
+            // Provision variants if matrix exists
+            if (variantsMatrix.length > 0) {
+              for (const vItem of variantsMatrix) {
+                const parts = vItem.name.split(" / ").map((s) => s.trim());
+                const optValuesPayload: { option_id: string; value_id: string }[] = [];
+
+                parts.forEach((valPart) => {
+                  Object.values(optionMap).forEach(({ optId, valMap }) => {
+                    if (valMap[valPart]) {
+                      optValuesPayload.push({ option_id: optId, value_id: valMap[valPart] });
+                    }
+                  });
+                });
+
+                const createdVar = await adminApi.createVariant({
+                  product_id: savedProduct.id,
+                  sku: vItem.sku || `${(savedProduct.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`,
+                  price: parsePrice(vItem.price || String(basePriceNum)),
+                  weight: Number(vItem.weight) > 0 ? Number(vItem.weight) : parsedWeight,
+                  availability: "in_stock",
+                  status: targetStatus === "draft" ? "draft" : "published",
+                  option_values: optValuesPayload,
+                });
+
+                if (vItem.stock && Number(vItem.stock) > 0 && createdVar?.id) {
+                  await adminApi.adjustStock(createdVar.id, Number(vItem.stock));
+                }
+              }
+            }
+          } catch (optErr) {
+            console.warn("Auto-provisioning options/variants encountered an issue:", optErr);
+          }
+        }
       }
 
       // Wishlist Discount Notification Dispatch:

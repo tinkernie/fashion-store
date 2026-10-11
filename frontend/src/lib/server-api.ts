@@ -25,7 +25,7 @@ export async function fetchProduct(idOrSlug: string): Promise<any | null> {
 
   try {
     const res = await fetch(`${base}/api/products/${cleanId}/`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
       headers: {
         Accept: "application/json",
       },
@@ -49,11 +49,11 @@ export async function fetchProductFullData(idOrSlug: string) {
   const cleanId = encodeURIComponent(idOrSlug.trim());
 
   const [prodRes, optRes, varRes, revRes, relRes] = await Promise.allSettled([
-    fetch(`${base}/api/products/${cleanId}/`, { next: { revalidate: 60 } }),
-    fetch(`${base}/api/products/${cleanId}/options/`, { next: { revalidate: 60 } }),
-    fetch(`${base}/api/products/${cleanId}/variants/`, { next: { revalidate: 60 } }),
-    fetch(`${base}/api/products/${cleanId}/reviews/`, { next: { revalidate: 60 } }),
-    fetch(`${base}/api/products/${cleanId}/related/?limit=8`, { next: { revalidate: 60 } }),
+    fetch(`${base}/api/products/${cleanId}/`, { cache: "no-store" }),
+    fetch(`${base}/api/products/${cleanId}/options/`, { cache: "no-store" }),
+    fetch(`${base}/api/products/${cleanId}/variants/`, { cache: "no-store" }),
+    fetch(`${base}/api/products/${cleanId}/reviews/`, { cache: "no-store" }),
+    fetch(`${base}/api/products/${cleanId}/related/?limit=8`, { cache: "no-store" }),
   ]);
 
   let product: any = null;
@@ -88,6 +88,80 @@ export async function fetchProductFullData(idOrSlug: string) {
     } catch {}
   } else if (product?.variants && Array.isArray(product.variants)) {
     variants = product.variants;
+  }
+
+  // Fallback: If standalone options endpoint is empty, synthesize option definitions from variants
+  if (options.length === 0 && variants.length > 0) {
+    const optMap: Record<
+      string,
+      { id: string; name: string; values: { id: string; value: string; extra_data?: any }[] }
+    > = {};
+
+    for (const v of variants) {
+      if (Array.isArray(v.options)) {
+        for (const vo of v.options) {
+          const optName = vo.option_name || vo.name;
+          const optVal = vo.value || vo.val;
+          if (optName && optVal) {
+            if (!optMap[optName]) {
+              optMap[optName] = {
+                id: vo.option_id || `opt-${optName}`,
+                name: optName,
+                values: [],
+              };
+            }
+            if (!optMap[optName].values.some((vItem) => vItem.value === optVal)) {
+              optMap[optName].values.push({
+                id: vo.value_id || `val-${optVal}`,
+                value: optVal,
+                extra_data: vo.extra_data,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    options = Object.values(optMap);
+  }
+
+  // Fallback: Check metadata attributes if options still empty
+  if (options.length === 0 && product?.metadata) {
+    const meta = product.metadata;
+    const metaOpts: any[] = [];
+    if (meta.color) {
+      const vals = String(meta.color).split(/[,،]+/).map((s) => s.trim()).filter(Boolean);
+      if (vals.length > 0) {
+        metaOpts.push({
+          id: "meta-opt-color",
+          name: "رنگ",
+          values: vals.map((v, i) => ({ id: `val-color-${i}`, value: v })),
+        });
+      }
+    }
+    if (meta.size) {
+      const vals = String(meta.size).split(/[,،]+/).map((s) => s.trim()).filter(Boolean);
+      if (vals.length > 0) {
+        metaOpts.push({
+          id: "meta-opt-size",
+          name: "سایز",
+          values: vals.map((v, i) => ({ id: `val-size-${i}`, value: v })),
+        });
+      }
+    }
+    if (meta.material) {
+      const vals = String(meta.material).split(/[,،]+/).map((s) => s.trim()).filter(Boolean);
+      if (vals.length > 0) {
+        metaOpts.push({
+          id: "meta-opt-material",
+          name: "جنس",
+          values: vals.map((v, i) => ({ id: `val-mat-${i}`, value: v })),
+        });
+      }
+    }
+    if (metaOpts.length > 0) {
+      options = metaOpts;
+    }
   }
 
   let reviews: any[] = [];

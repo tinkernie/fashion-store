@@ -30,41 +30,70 @@ export default function ProductGallery({
   const images = useMemo(() => {
     const list: string[] = [];
 
-    // 1. Direct images array (if backend provides top-level)
-    if (Array.isArray(product?.images) && product.images.length > 0) {
-      list.push(
-        ...product.images
-          .map((i: any) => (typeof i === "string" ? i : i?.url))
-          .filter(Boolean)
-      );
+    const addImg = (item: any) => {
+      if (!item) return;
+      if (typeof item === "string" && item.trim()) {
+        list.push(item.trim());
+      } else if (typeof item === "object") {
+        const u =
+          item.url ||
+          item.image_url ||
+          item.image ||
+          item.src ||
+          item.file ||
+          item.path;
+        if (typeof u === "string" && u.trim()) {
+          list.push(u.trim());
+        }
+      }
+    };
+
+    // 0. If matched variant has its own assigned image, put it upfront
+    if (matchedVariant) {
+      addImg(matchedVariant.image);
+      addImg(matchedVariant.image_url);
+      addImg(matchedVariant.metadata?.image);
+      if (Array.isArray(matchedVariant.metadata?.images)) {
+        matchedVariant.metadata.images.forEach(addImg);
+      }
     }
 
-    // 2. Metadata images array (current immediate persistence)
-    if (
-      Array.isArray(product?.metadata?.images) &&
-      product.metadata.images.length > 0
-    ) {
-      list.push(
-        ...product.metadata.images
-          .map((i: any) => (typeof i === "string" ? i : i?.url))
-          .filter(Boolean)
-      );
+    // 1. Direct images array (from backend serializer or model)
+    if (Array.isArray(product?.images)) {
+      product.images.forEach(addImg);
     }
 
-    // 3. Fallback to primary image URL
-    if (list.length === 0) {
-      const single = product?.imageUrl || product?.image_url || product?.image;
-      if (single) list.push(single);
+    // 2. Metadata images array (persisted via multi-uploader)
+    if (Array.isArray(product?.metadata?.images)) {
+      product.metadata.images.forEach(addImg);
     }
 
-    // 4. Ultimate fallback placeholder
-    if (list.length === 0) {
-      list.push("/placeholder-product.svg");
+    // 3. Variant images from all available variants
+    if (Array.isArray(product?.variants)) {
+      product.variants.forEach((v: any) => {
+        addImg(v?.image);
+        addImg(v?.image_url);
+        addImg(v?.metadata?.image);
+        if (Array.isArray(v?.metadata?.images)) {
+          v.metadata.images.forEach(addImg);
+        }
+      });
     }
 
-    // Remove duplicates while preserving order
-    return Array.from(new Set(list));
-  }, [product]);
+    // 4. Primary image URLs
+    addImg(product?.imageUrl);
+    addImg(product?.image_url);
+    addImg(product?.image);
+
+    // 5. Deduplicate and clean URLs
+    const unique = Array.from(new Set(list));
+
+    if (unique.length === 0) {
+      unique.push("/placeholder-product.svg");
+    }
+
+    return unique;
+  }, [product, matchedVariant]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
