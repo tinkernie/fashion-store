@@ -550,7 +550,7 @@ export default function ProfilePage() {
               variant="outline"
               className="w-full text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 bg-white h-11 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-sm"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 rtl:rotate-180" />
               خروج از حساب کاربری
             </Button>
           </div>
@@ -570,19 +570,19 @@ export default function ProfilePage() {
                     id: "orders",
                     title: "سفارش‌های من",
                     icon: <Package className="w-4 h-4" />,
-                    badge: `(${orders.length})`,
+                    badge: `(${orders.length.toLocaleString("fa-IR")})`,
                   },
                   {
                     id: "wishlist",
                     title: "علاقه‌مندی‌ها",
                     icon: <Heart className="w-4 h-4" />,
-                    badge: `(${wishlistItems.length})`,
+                    badge: `(${wishlistItems.length.toLocaleString("fa-IR")})`,
                   },
                   {
                     id: "addresses",
                     title: "آدرس‌ها",
                     icon: <MapPin className="w-4 h-4" />,
-                    badge: `(${addresses.length})`,
+                    badge: `(${addresses.length.toLocaleString("fa-IR")})`,
                   },
                   {
                     id: "settings",

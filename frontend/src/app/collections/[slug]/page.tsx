@@ -21,7 +21,7 @@ export async function generateMetadata({
 
   if (!collection) {
     return {
-      title: "کالکشن یافت نشد | ماوی MAVI",
+      title: "کالکشن یافت نشد",
       description: "کالکشن مورد نظر در فروشگاه ماوی یافت نشد.",
       robots: { index: false, follow: false },
     };

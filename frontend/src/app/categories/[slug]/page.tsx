@@ -25,7 +25,7 @@ export async function generateMetadata({
 
   if (!category) {
     return {
-      title: "دسته‌بندی یافت نشد | ماوی MAVI",
+      title: "دسته‌بندی یافت نشد",
       description: "دسته‌بندی مورد نظر در فروشگاه ماوی یافت نشد.",
       robots: { index: false, follow: false },
     };

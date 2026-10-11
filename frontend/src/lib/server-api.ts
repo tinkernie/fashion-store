@@ -117,8 +117,11 @@ export async function fetchProductFullData(idOrSlug: string) {
 export function buildProductMetadata(product: any, idOrSlug: string): Metadata {
   const prod = product || {};
   const siteUrl = getSiteBaseUrl();
-  const rawTitle =
+  let rawTitle =
     prod.meta_title || `${prod.title || prod.name || "محصول"} | ماوی MAVI`;
+  if (rawTitle.includes("Luxe")) {
+    rawTitle = rawTitle.replace(/Luxe/gi, "ماوی MAVI");
+  }
   const rawDescription =
     prod.meta_description ||
     (prod.description

@@ -112,13 +112,21 @@ export default function HomeClient({
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {
     const unwrapped = initialHero?.hero || initialHero;
     let list: HeroSlide[] = [];
+    const sanitizeTitle = (t?: string) => {
+      if (!t || t.includes("ممد قلی")) return "فروشگاه تخصصی مد و پوشاک ماوی";
+      return t;
+    };
+
     if (unwrapped?.slides && Array.isArray(unwrapped.slides) && unwrapped.slides.length > 0) {
-      list = [...unwrapped.slides];
+      list = unwrapped.slides.map((s: any) => ({
+        ...s,
+        title: sanitizeTitle(s.title),
+      }));
     } else if (unwrapped?.image_url) {
       list = [
         {
           id: "hero-db-1",
-          title: unwrapped.headline || unwrapped.title || "فروشگاه تخصصی مد و پوشاک ماوی",
+          title: sanitizeTitle(unwrapped.headline || unwrapped.title),
           subtitle: unwrapped.subtitle || "طراحی‌های اختصاصی و دوخت باکیفیت برای درخشش شما در هر موقعیت",
           badge: unwrapped.badge || "کالکشن جدید ۲۰۲۶",
           cta_label: unwrapped.cta_label || "مشاهده جدیدترین‌ها",
@@ -255,13 +263,21 @@ export default function HomeClient({
         if (heroRes.status === "fulfilled" && heroRes.value?.data) {
           const heroData = heroRes.value.data.hero || heroRes.value.data;
           let list: HeroSlide[] = [];
+          const sanitizeTitle = (t?: string) => {
+            if (!t || t.includes("ممد قلی")) return "فروشگاه تخصصی مد و پوشاک ماوی";
+            return t;
+          };
+
           if (heroData?.slides && Array.isArray(heroData.slides) && heroData.slides.length > 0) {
-            list = [...heroData.slides];
+            list = heroData.slides.map((s: any) => ({
+              ...s,
+              title: sanitizeTitle(s.title),
+            }));
           } else if (heroData?.image_url) {
             list = [
               {
                 id: "hero-db-1",
-                title: heroData.headline || heroData.title || "فروشگاه تخصصی مد و پوشاک ماوی",
+                title: sanitizeTitle(heroData.headline || heroData.title),
                 subtitle: heroData.subtitle || "طراحی‌های اختصاصی و دوخت باکیفیت برای درخشش شما در هر موقعیت",
                 badge: heroData.badge || "کالکشن جدید ۲۰۲۶",
                 cta_label: heroData.cta_label || "مشاهده جدیدترین‌ها",
@@ -437,7 +453,7 @@ export default function HomeClient({
                     <div className="pt-2 md:pt-4">
                       <span className="inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-3.5 rounded-full bg-[#0082CA] text-white text-xs sm:text-sm md:text-base font-bold shadow-lg shadow-[#0082CA]/30 group-hover:bg-[#006CA8] transition-all transform group-hover:scale-105 active:scale-[0.98]">
                         {currentSlide.cta_label || "مشاهده و خرید"}
-                        <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" />
+                        <ArrowLeft className="w-4 h-4" />
                       </span>
                     </div>
                   </div>

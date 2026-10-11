@@ -181,7 +181,8 @@ export default function AdminProductsPage() {
       ]);
 
       if (prodsRes.status === "fulfilled") {
-        setProducts(prodsRes.value);
+        const val = prodsRes.value;
+        setProducts(Array.isArray(val) ? val : []);
       }
       if (catsRes.status === "fulfilled") {
         setCategories(catsRes.value);

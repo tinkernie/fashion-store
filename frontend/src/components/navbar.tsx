@@ -31,7 +31,7 @@ import { useNotifications } from "@/store/notifications";
 import NotificationDropdown from "@/components/notification-dropdown";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
-import { formatPrice, formatPriceNumber } from "@/lib/price-utils";
+import { formatPrice, formatPriceNumber, toPersianDigits } from "@/lib/price-utils";
 import { isTokenExpired, clearAuthSession, getStoredAuth, parseJwtPayload } from "@/lib/auth";
 
 const POPULAR_SEARCH_TAGS = [
@@ -250,33 +250,33 @@ export default function Navbar() {
   };
 
   return (
-    <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4" ref={searchContainerRef}>
+    <div className="fixed top-4 md:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4" ref={searchContainerRef}>
       <motion.nav
         layout
         transition={{ type: "spring", stiffness: 350, damping: 30 }}
-        className="w-full bg-[#0082CA] backdrop-blur-2xl border border-white/25 rounded-full h-16 flex items-center justify-between px-4 sm:px-6 md:px-7 text-white shadow-xl shadow-[#0082CA]/30 max-w-5xl transition-all duration-300"
+        className="w-full bg-white/90 backdrop-blur-2xl border border-sky-100 rounded-full h-16 flex items-center justify-between px-3 sm:px-5 md:px-7 text-slate-800 shadow-lg shadow-sky-950/5 max-w-5xl transition-all duration-300"
         dir="rtl"
       >
         {/* Right side: Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 text-white hover:text-sky-100 shrink-0 transition-all group">
-          <MaviWordmark className="h-5 sm:h-6 w-auto text-white drop-shadow-sm group-hover:scale-105 transition-transform" />
-          <span className="text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+        <Link href="/" className="flex items-center gap-2 text-slate-800 hover:text-[#0082CA] shrink-0 transition-all group">
+          <MaviWordmark className="h-5 sm:h-6 w-auto text-[#0082CA] drop-shadow-sm group-hover:scale-105 transition-transform" />
+          <span className="text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-50 border border-sky-100 text-[#0082CA] group-hover:bg-sky-100/60 transition-colors">
             ماوی
           </span>
         </Link>
 
-        {/* Center Section: Navigation Links */}
+        {/* Center Section: Navigation Links (hidden on <lg to prevent tablet squashing) */}
         <div className="flex-1 flex items-center justify-center px-2 md:px-6 relative min-w-0">
-          <div className="hidden md:flex items-center gap-1.5 lg:gap-3 text-sm font-medium">
-            <Link href="/products" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">فروشگاه و کاتالوگ</Link>
-            <Link href="/search?sort=newest" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">جدیدترین‌ها</Link>
-            <Link href="/search?sort=best_selling" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">پرفروش‌ترین‌ها</Link>
-            <Link href="/search?sort=trending" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs md:text-sm font-semibold">ترندها</Link>
+          <div className="hidden lg:flex items-center gap-1.5 xl:gap-3 text-sm font-medium">
+            <Link href="/products" className="text-slate-700 hover:text-[#0082CA] hover:bg-sky-50/80 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">فروشگاه و کاتالوگ</Link>
+            <Link href="/search?sort=newest" className="text-slate-700 hover:text-[#0082CA] hover:bg-sky-50/80 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">جدیدترین‌ها</Link>
+            <Link href="/search?sort=best_selling" className="text-slate-700 hover:text-[#0082CA] hover:bg-sky-50/80 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">پرفروش‌ترین‌ها</Link>
+            <Link href="/search?sort=trending" className="text-slate-700 hover:text-[#0082CA] hover:bg-sky-50/80 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">ترندها</Link>
           </div>
         </div>
 
         {/* Left Side: Actions (Search with Little Text Field, User, Cart Drawer, Mobile Menu) */}
-        <div className="flex items-center gap-2 md:gap-3 text-white shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 text-slate-800 shrink-0">
           {/* Animated Expanding Search Bar with Little Text Field */}
           <motion.form
             layout
@@ -290,8 +290,8 @@ export default function Navbar() {
             className={cn(
               "relative flex items-center h-10 rounded-full px-3 transition-colors duration-300 border overflow-hidden shrink-0 cursor-pointer group",
               isSearchExpanded
-                ? "w-48 sm:w-60 md:w-72 bg-white text-slate-900 border-white shadow-lg ring-2 ring-white/30"
-                : "w-24 sm:w-28 md:w-32 bg-white/15 hover:bg-white/25 text-white border-white/25"
+                ? "w-48 sm:w-60 md:w-72 bg-white text-slate-900 border-sky-300 shadow-md ring-2 ring-sky-100"
+                : "w-20 sm:w-24 md:w-28 bg-slate-100 hover:bg-slate-200/70 text-slate-700 border-slate-200/80"
             )}
           >
             <button
@@ -301,12 +301,12 @@ export default function Navbar() {
                 setIsSearchExpanded((prev) => !prev);
               }}
               className="p-0.5 text-inherit hover:opacity-85 transition-opacity cursor-pointer shrink-0 ml-1.5 flex items-center justify-center"
-              aria-label="Search"
+              aria-label="جستجو"
             >
               <Search
                 className={cn(
                   "w-4 h-4 transition-colors",
-                  isSearchExpanded ? "text-[#0082CA]" : "text-white"
+                  isSearchExpanded ? "text-[#0082CA]" : "text-slate-500"
                 )}
               />
             </button>
@@ -322,7 +322,7 @@ export default function Navbar() {
                 "flex-1 bg-transparent border-none outline-none text-xs font-medium min-w-0 transition-colors",
                 isSearchExpanded
                   ? "text-slate-900 placeholder:text-slate-400"
-                  : "text-white placeholder:text-white/75 cursor-pointer"
+                  : "text-slate-700 placeholder:text-slate-400 cursor-pointer"
               )}
             />
 
@@ -368,10 +368,10 @@ export default function Navbar() {
           {isLoggedIn && isSuperuser && (
             <Link
               href="/admin"
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 text-xs font-bold transition-all shadow-sm shrink-0"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all shadow-sm shrink-0"
               title="ورود به پنل مدیریت فروشگاه"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
               <span>پنل مدیریت</span>
             </Link>
           )}
@@ -382,17 +382,17 @@ export default function Navbar() {
               <DropdownMenuTrigger asChild>
                 <button 
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all outline-none cursor-pointer text-white text-xs font-semibold select-none shrink-0",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all outline-none cursor-pointer text-xs font-semibold select-none shrink-0",
                     isLoggedIn 
-                      ? "bg-white/20 hover:bg-white/30 ring-1 ring-white/30" 
-                      : "bg-white/10 hover:bg-white/20 border border-white/20"
+                      ? "bg-sky-50 text-[#0082CA] border border-sky-200 hover:bg-sky-100/70" 
+                      : "bg-slate-100 hover:bg-slate-200/70 text-slate-700 border border-slate-200/80"
                   )}
-                  aria-label="User Account"
+                  aria-label="حساب کاربری"
                 >
                   <div className="relative flex items-center justify-center">
                     <User className="w-4 h-4 shrink-0" />
                     {isLoggedIn && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
                     )}
                   </div>
                   <span className="truncate max-w-[110px]">
@@ -447,30 +447,38 @@ export default function Navbar() {
           {/* Shopping Cart Drawer */}
           <Sheet>
             <SheetTrigger asChild>
-              <button className="relative p-2 text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer outline-none flex items-center">
-                <ShoppingBag className="w-5 h-5" />
+              <button 
+                className="relative p-2 text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer outline-none flex items-center"
+                aria-label="سبد خرید"
+              >
+                <ShoppingBag className="w-5 h-5 text-slate-700" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-white text-[#0082CA] font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
-                    {itemCount}
+                  <span className="absolute -top-1 -right-1 bg-[#0082CA] text-white font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
+                    {toPersianDigits(itemCount)}
                   </span>
                 )}
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="bg-white border-r border-sky-100 text-slate-800 w-full sm:max-w-md flex flex-col p-6 font-sans" dir="rtl">
+            <SheetContent side="right" className="bg-white border-l border-sky-100 text-slate-800 w-full sm:max-w-md flex flex-col p-6 font-sans" dir="rtl">
               <SheetHeader className="text-right pb-4 border-b border-sky-100 flex flex-row items-center justify-between">
                 <SheetTitle className="text-[#0B192C] text-lg font-black font-sans flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
                     <ShoppingBag className="w-4 h-4 text-white" />
                   </div>
-                  سبد خرید ({itemCount})
+                  سبد خرید ({toPersianDigits(itemCount)})
                 </SheetTitle>
               </SheetHeader>
               
               <div className="flex-1 overflow-y-auto py-4 space-y-4">
                 {items.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center space-y-4 text-slate-400">
-                    <ShoppingBag className="w-12 h-12 opacity-30 text-[#0082CA]" />
+                  <div className="flex flex-col items-center justify-center h-full text-center space-y-4 text-slate-400 py-12">
+                    <ShoppingBag className="w-14 h-14 opacity-25 text-[#0082CA]" />
                     <p className="text-sm font-medium">سبد خرید شما در حال حاضر خالی است.</p>
+                    <SheetClose asChild>
+                      <Button asChild className="rounded-xl bg-[#0082CA] hover:bg-[#0072B5] text-white font-bold text-xs h-10 px-5 shadow-sm">
+                        <Link href="/products">مشاهده کاتالوگ فروشگاه</Link>
+                      </Button>
+                    </SheetClose>
                   </div>
                 ) : (
                   items.map((item) => (
@@ -568,11 +576,14 @@ export default function Navbar() {
             </SheetContent>
           </Sheet>
 
-          {/* Mobile Navigation Sheet */}
-          <div className="md:hidden flex items-center">
+          {/* Mobile Navigation Sheet (visible on <lg screens) */}
+          <div className="lg:hidden flex items-center">
             <Sheet>
               <SheetTrigger asChild>
-                <button className="p-2 text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer outline-none">
+                <button 
+                  className="p-2 text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer outline-none"
+                  aria-label="منوی ناوبری اصلی"
+                >
                   <Menu className="w-5 h-5" />
                 </button>
               </SheetTrigger>

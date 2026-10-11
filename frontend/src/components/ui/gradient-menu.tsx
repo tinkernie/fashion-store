@@ -33,51 +33,32 @@ export default function GradientMenu({
               key={id}
               onClick={() => onChange?.(id)}
               className={cn(
-                "relative h-12 rounded-full flex items-center justify-center transition-all duration-500 ease-out cursor-pointer select-none group shrink-0 overflow-hidden",
+                "relative h-11 sm:h-12 rounded-full flex items-center justify-center px-3.5 sm:px-5 transition-all duration-300 cursor-pointer select-none shrink-0 border gap-2",
                 isActive
-                  ? "w-auto min-w-[160px] px-6 bg-[#0082CA] text-white shadow-lg shadow-[#0082CA]/25 ring-1 ring-[#0082CA]/30 font-bold"
-                  : "w-12 hover:min-w-[160px] hover:px-6 bg-sky-50/60 hover:bg-sky-100/80 text-slate-500 hover:text-slate-900 border border-sky-100 hover:border-sky-200"
+                  ? "bg-[#0082CA] text-white border-[#0082CA] shadow-md shadow-[#0082CA]/20 font-bold"
+                  : "bg-sky-50/60 hover:bg-sky-100/80 text-slate-600 hover:text-slate-900 border-sky-100 hover:border-sky-200 font-medium"
               )}
             >
-              {/* Subtle luxury glow on hover/active */}
-              <span
-                className={cn(
-                  "absolute inset-0 rounded-full transition-opacity duration-500 pointer-events-none -z-10",
-                  isActive
-                    ? "bg-[#0082CA]/20 blur-md opacity-100"
-                    : "bg-sky-200/50 blur-md opacity-0 group-hover:opacity-60"
-                )}
-              />
-
-              {/* Icon Container: Visible when compact, scales slightly or centers */}
+              {/* Icon */}
               <div
                 className={cn(
-                  "flex items-center justify-center transition-all duration-500 shrink-0",
-                  isActive
-                    ? "opacity-100 ml-2 scale-100 text-white"
-                    : "group-hover:opacity-100 group-hover:ml-2 text-slate-500 group-hover:text-slate-900"
+                  "flex items-center justify-center shrink-0 text-base",
+                  isActive ? "text-white" : "text-slate-500"
                 )}
               >
-                <span className="text-lg flex items-center">{icon}</span>
+                {icon}
               </div>
 
-              {/* Title & Badge: Expands smoothly */}
-              <div
-                className={cn(
-                  "whitespace-nowrap font-bold text-xs md:text-sm transition-all duration-500 flex items-center gap-1.5",
-                  isActive
-                    ? "opacity-100 scale-100 text-white"
-                    : "opacity-0 w-0 group-hover:w-auto group-hover:opacity-100 scale-95 group-hover:scale-100 text-slate-900"
-                )}
-              >
+              {/* Title & Badge */}
+              <div className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm">
                 <span>{title}</span>
                 {badge !== undefined && (
                   <span
                     className={cn(
-                      "text-[10px] px-1.5 py-0.5 rounded-full font-bold transition-colors",
+                      "text-[10px] px-1.5 py-0.5 rounded-full font-bold",
                       isActive
                         ? "bg-white/20 text-white"
-                        : "bg-sky-100 text-slate-700 group-hover:bg-sky-200 group-hover:text-slate-900"
+                        : "bg-sky-100 text-[#006CA8]"
                     )}
                   >
                     {badge}

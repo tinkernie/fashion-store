@@ -101,7 +101,7 @@ export default function AdminDashboardPage() {
               مرکز مدیریت و کنترل هوشمند فروشگاه
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-white">
-              سلام مدیر عزیز، به پنل مدیریت خوش آمدید 👋
+              سلام مدیر گرامی، به پنل مدیریت خوش آمدید
             </h1>
             <p className="text-gray-400 text-xs md:text-sm leading-relaxed">
               از اینجا می‌توانید بدون نیاز به کدنویسی، بنرها، اطلاعیه‌ها، برگه‌ها، کاتالوگ محصولات و وضعیت سفارشات را به آسانی مدیریت کنید.

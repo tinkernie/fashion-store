@@ -22,7 +22,7 @@ export async function generateMetadata({
 
   if (!product) {
     return {
-      title: "محصول یافت نشد | ماوی MAVI",
+      title: "محصول یافت نشد",
       description: "متاسفانه محصول مورد نظر در فروشگاه ماوی یافت نشد یا حذف شده است.",
       robots: {
         index: false,

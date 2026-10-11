@@ -2,7 +2,7 @@ import SearchPage from "@/app/search/page";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "کاتالوگ و لیست محصولات | ماوی MAVI",
+  title: "کاتالوگ و لیست محصولات",
   description:
     "مشاهده، جستجو و خرید آنلاین جدیدترین کالکشن‌های پوشاک، پیراهن، شومیز، اکسسوری و استایل مدرن در فروشگاه ماوی (MAVI)",
   alternates: {

@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "کالکشن پوشاک و استایل زنانه | ماوی MAVI",
+  title: "کالکشن پوشاک و استایل زنانه",
   description:
     "مشاهده و خرید جدیدترین کالکشن‌های مد و پوشاک فاخر زنانه، پیراهن، شومیز، پالتو، بارانی و اکسسوری مدرن با بهترین کیفیت در فروشگاه ماوی (MAVI)",
   alternates: {

@@ -44,7 +44,7 @@ export async function generateMetadata({
   } catch {}
 
   return {
-    title: "برگه | ماوی MAVI",
+    title: "برگه",
     description: "فروشگاه تخصصی مد و پوشاک فاخر ماوی (MAVI)",
   };
 }

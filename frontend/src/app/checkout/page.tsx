@@ -305,8 +305,8 @@ export default function CheckoutPage() {
                   </label>
                   <Input
                     {...register("phone")}
-                    placeholder="09123456789"
-                    className="bg-sky-50/60 border-sky-200 h-12 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA] font-sans text-left"
+                    placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+                    className="bg-sky-50/60 border-sky-200 h-12 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA] font-sans text-right"
                     dir="ltr"
                   />
                   {errors.phone && <p className="text-rose-500 text-xs mt-1">{errors.phone.message}</p>}
@@ -381,7 +381,7 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 <p className="text-xs text-slate-500">
-                  فرمول محاسبه: {formatPriceNumber(BASE_SHIPPING_AMOUNT)} تومان پایه + ({totalWeight.toLocaleString("fa-IR")} گرم × ۱.۶)
+                  تحویل سریع و بیمه‌شده از طریق پست پیشتاز سراسر کشور (محاسبه دقیق بر اساس وزن مرسوله)
                 </p>
               </div>
 
@@ -455,7 +455,7 @@ export default function CheckoutPage() {
         >
           <div className="bg-white border border-sky-100 rounded-3xl p-6 sticky top-28 shadow-sm space-y-6">
             <h2 className="text-lg md:text-xl font-black text-[#0B192C] border-b border-sky-100 pb-4">
-              خلاصه سفارش ({items.length} کالا)
+              خلاصه سفارش ({items.length.toLocaleString("fa-IR")} کالا)
             </h2>
 
             {/* Items Mini List */}

@@ -141,8 +141,17 @@ export const adminApi = {
   // Products
   async getProducts(params?: { search?: string; status?: string; category?: string }): Promise<any[]> {
     const query = new URLSearchParams(params as any).toString();
-    const res = await api.get(`/api/admin/products/${query ? `?${query}` : ''}`);
-    return Array.isArray(res.data) ? res.data : res.data.results || [];
+    try {
+      const res = await api.get(`/api/admin/products/${query ? `?${query}` : ''}`);
+      return Array.isArray(res.data) ? res.data : res.data.results || [];
+    } catch {
+      try {
+        const res = await api.get(`/api/products/${query ? `?${query}` : ''}`);
+        return Array.isArray(res.data) ? res.data : res.data.results || [];
+      } catch {
+        return [];
+      }
+    }
   },
   async getProduct(id: string): Promise<any> {
     const res = await api.get(`/api/admin/products/${id}/`);

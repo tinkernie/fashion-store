@@ -63,7 +63,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-slate-900 font-bold mb-1 text-sm md:text-base">آدرس دفتر مرکزی</h3>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                  تهران، خیابان ولیعصر، بالاتر از میدان ونک، مجتمع تجاری فشن استور، طبقه پنجم، واحد ۵۰۲
+                  تهران، خیابان ولیعصر، بالاتر از میدان ونک، برج نگین ماوی (MAVI)، طبقه پنجم، واحد ۵۰۲
                 </p>
               </div>
             </div>
@@ -74,8 +74,8 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="text-slate-900 font-bold mb-1 text-sm md:text-base">شماره تماس</h3>
-                <p className="text-slate-700 text-xs md:text-sm dir-ltr text-right font-sans font-bold">
-                  021 - 8888 8888
+                <p className="text-slate-700 text-xs md:text-sm text-right font-bold">
+                  ۰۲۱ - ۸۸۸۸۸۸۸۸
                 </p>
                 <p className="text-slate-400 text-[10px] md:text-xs mt-1">پاسخگویی: شنبه تا چهارشنبه، ۹ صبح تا ۱۷ عصر</p>
               </div>
@@ -87,8 +87,8 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="text-slate-900 font-bold mb-1 text-sm md:text-base">پست الکترونیک</h3>
-                <p className="text-slate-600 text-xs md:text-sm font-sans">
-                  support@fashionstore.com
+                <p className="text-slate-600 text-xs md:text-sm font-sans" dir="ltr">
+                  support@mavi.ir
                 </p>
               </div>
             </div>

@@ -19,10 +19,26 @@ import { Button } from "@/components/ui/button";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { formatPrice } from "@/lib/price-utils";
 
+import { useState, useEffect } from "react";
+
 function SuccessContent() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get("order_id") || "ORD-" + Math.floor(100000 + Math.random() * 900000);
-  const refCode = searchParams.get("ref") || "REF-" + Math.floor(100000 + Math.random() * 900000);
+  const [mounted, setMounted] = useState(false);
+  const [fallbackIds, setFallbackIds] = useState({
+    orderId: "MAVI-100001",
+    refCode: "REF-100001",
+  });
+
+  useEffect(() => {
+    setMounted(true);
+    setFallbackIds({
+      orderId: "MAVI-" + Math.floor(100000 + Math.random() * 900000),
+      refCode: "REF-" + Math.floor(100000 + Math.random() * 900000),
+    });
+  }, []);
+
+  const orderId = searchParams.get("order_id") || (mounted ? fallbackIds.orderId : "MAVI-100001");
+  const refCode = searchParams.get("ref") || (mounted ? fallbackIds.refCode : "REF-100001");
   const amount = searchParams.get("amount") ? parseFloat(searchParams.get("amount")!) : null;
 
   return (

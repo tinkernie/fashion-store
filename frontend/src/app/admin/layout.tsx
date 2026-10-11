@@ -598,14 +598,14 @@ export default function AdminLayout({
                 onClick={() => setIsSidebarOpen(false)}
                 className={`flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all group ${
                   isActive
-                    ? "bg-white text-black shadow-lg font-bold"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    ? "bg-[#0082CA] text-white shadow-lg shadow-[#0082CA]/25 font-bold"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon
                     className={`w-4 h-4 transition-colors ${
-                      isActive ? "text-black" : "text-gray-400 group-hover:text-white"
+                      isActive ? "text-white" : "text-slate-400 group-hover:text-white"
                     }`}
                   />
                   <span>{item.title}</span>
@@ -614,7 +614,7 @@ export default function AdminLayout({
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                       isActive
-                        ? "bg-black/10 text-black"
+                        ? "bg-white/20 text-white"
                         : "bg-white/10 text-gray-300"
                     }`}
                   >
@@ -675,7 +675,7 @@ export default function AdminLayout({
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="hidden sm:flex items-center gap-2 text-xs font-bold bg-white text-black hover:bg-gray-200 px-4 py-2 rounded-xl transition-all"
+              className="hidden sm:flex items-center gap-2 text-xs font-bold bg-[#0082CA] text-white hover:bg-[#0072B5] px-4 py-2 rounded-xl transition-all shadow-md shadow-[#0082CA]/20"
             >
               <Store className="w-3.5 h-3.5" />
               فروشگاه

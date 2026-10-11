@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "درباره ما | ماوی MAVI",
+  title: "درباره ما",
   description:
     "آشنایی با خانه مد و پوشاک فاخر ماوی (MAVI)؛ رسالت ما در ارائه اصالت، طراحی مینیمال و متریال لوکس ارگانیک برای نسل جدید.",
   alternates: {

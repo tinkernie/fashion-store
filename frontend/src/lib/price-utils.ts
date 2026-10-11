@@ -225,4 +225,12 @@ export function getDiscountInfo(product: any): ProductDiscountInfo {
   };
 }
 
-
+/**
+ * Converts English/ASCII digits (0-9) to Persian Eastern Arabic numerals (۰-۹).
+ */
+export function toPersianDigits(val: any): string {
+  if (val === null || val === undefined) return "";
+  const str = String(val);
+  const persianDigits = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+  return str.replace(/[0-9]/g, (w) => persianDigits[+w]);
+}
