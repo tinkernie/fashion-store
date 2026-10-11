@@ -1324,7 +1324,7 @@ export default function AdminProductsPage() {
                           </button>
 
                           <Link
-                            href={`/products/${p.id}`}
+                            href={`/products/${p.slug || p.id}`}
                             target="_blank"
                             className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                             title="مشاهده در فروشگاه"

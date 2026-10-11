@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   fetchProduct,
   fetchProductFullData,
@@ -31,7 +31,7 @@ export async function generateMetadata({
     };
   }
 
-  return buildProductMetadata(product, id);
+  return buildProductMetadata(product, product.slug || id);
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -41,6 +41,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   if (!product) {
     notFound();
+  }
+
+  // Canonicalize raw UUID URLs to clean SEO English slug
+  if (product.slug && id === product.id) {
+    redirect(`/products/${product.slug}`);
   }
 
   const jsonLd = buildProductJsonLd(product, id);

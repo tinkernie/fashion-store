@@ -235,10 +235,10 @@ export default function Navbar() {
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
 
-  const handleProductClick = (id: string) => {
+  const handleProductClick = (slugOrId: string) => {
     setIsSearchExpanded(false);
     setSearchQuery("");
-    router.push(`/products/${id}`);
+    router.push(`/products/${slugOrId}`);
   };
 
   const handleSearchSubmit = (e?: React.FormEvent) => {
@@ -680,7 +680,7 @@ export default function Navbar() {
                 {searchResults.slice(0, 5).map((product) => (
                   <div
                     key={product.id}
-                    onClick={() => handleProductClick(product.id)}
+                    onClick={() => handleProductClick(product.slug || product.id)}
                     className="flex items-center gap-4 p-2.5 hover:bg-sky-50 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-sky-100"
                   >
                     <img

@@ -635,7 +635,7 @@ export default function HomeClient({
                   className="group flex flex-col bg-white rounded-2xl md:rounded-3xl border border-sky-100/80 p-2 sm:p-2.5 shadow-sm hover:shadow-xl hover:border-sky-300 hover:-translate-y-1 transition-all duration-300"
                 >
                   <Link
-                    href={`/products/${product.id}`}
+                    href={`/products/${product.slug || product.id}`}
                     className="block relative aspect-[3/4] overflow-hidden rounded-xl md:rounded-2xl bg-slate-50 mb-2 sm:mb-2.5"
                   >
                     {disc.hasDiscount && (

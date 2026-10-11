@@ -6,6 +6,7 @@ import { formatPrice, getDiscountInfo } from "@/lib/price-utils";
 
 interface ProductCardProps {
   id: string;
+  slug?: string;
   name: string;
   price: string | number;
   category: string;
@@ -18,6 +19,7 @@ interface ProductCardProps {
 
 export default function ProductCard({
   id,
+  slug,
   name,
   price,
   category,
@@ -36,7 +38,7 @@ export default function ProductCard({
   });
 
   return (
-    <Link href={`/products/${id}`} className="group block cursor-pointer">
+    <Link href={`/products/${slug || id}`} className="group block cursor-pointer">
       <div className="relative aspect-[3/4] overflow-hidden bg-white rounded-2xl border border-sky-100 shadow-sm group-hover:shadow-xl group-hover:border-[#0082CA] transition-all">
         <div className="absolute inset-0 bg-[#0B192C]/5 group-hover:bg-transparent transition-colors duration-500 z-10" />
         

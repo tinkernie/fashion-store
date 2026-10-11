@@ -723,7 +723,7 @@ function SearchContent() {
                     >
                       {/* Image Thumbnail */}
                       <div className="relative aspect-[3/4] overflow-hidden bg-sky-50">
-                        <Link href={`/products/${product.id}`} className="block h-full w-full">
+                        <Link href={`/products/${product.slug || product.id}`} className="block h-full w-full">
                           <img
                             src={img}
                             alt={product.title || product.name || "محصول"}
@@ -788,7 +788,7 @@ function SearchContent() {
                           <span className="text-[11px] font-bold text-[#0082CA]">
                             {product.category || "پوشاک"}
                           </span>
-                          <Link href={`/products/${product.id}`} className="block">
+                          <Link href={`/products/${product.slug || product.id}`} className="block">
                             <h3 className="text-sm font-bold text-[#0B192C] group-hover:text-[#0082CA] transition-colors line-clamp-1">
                               {product.title || product.name}
                             </h3>
@@ -812,7 +812,7 @@ function SearchContent() {
                             </span>
                           )}
                           <Link
-                            href={`/products/${product.id}`}
+                            href={`/products/${product.slug || product.id}`}
                             className="text-xs text-[#0082CA] hover:text-[#006CA8] transition-colors font-bold"
                           >
                             مشاهده
