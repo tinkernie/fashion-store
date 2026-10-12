@@ -95,12 +95,12 @@ export default function Navbar() {
 
       if (user) {
         setUserDisplayName(
-          [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email || "کاربر گرامی"
+          [user.first_name, user.last_name].filter(Boolean).join(" ") || user.phone_number || user.email || "کاربر گرامی"
         );
       } else if (accessToken) {
         try {
           const payload = parseJwtPayload(accessToken);
-          setUserDisplayName(payload?.email || "کاربر گرامی");
+          setUserDisplayName(payload?.phone_number || payload?.phone || payload?.email || "کاربر گرامی");
         } catch {
           setUserDisplayName("کاربر گرامی");
         }

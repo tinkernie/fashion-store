@@ -528,7 +528,7 @@ export default function ProductDetailClient({
     try {
       const { user } = getStoredAuth();
       const displayName = user
-        ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email
+        ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.phone_number || user.email
         : undefined;
 
       await api.post(`/api/products/${productIdOrSlug}/reviews/`, {

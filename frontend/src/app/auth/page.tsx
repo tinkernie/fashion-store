@@ -70,12 +70,6 @@ const passwordLoginSchema = z.object({
   password: z.string().min(1, "رمز عبور را وارد کنید"),
 });
 
-const passwordRegisterSchema = z.object({
-  fullName: z.string().min(3, "نام و نام خانوادگی باید حداقل ۳ کاراکتر باشد"),
-  phone: phoneValidator,
-  password: passwordSchema,
-});
-
 const resetPasswordOtpSchema = z.object({
   phone: phoneValidator,
   code: z
@@ -88,7 +82,6 @@ const resetPasswordOtpSchema = z.object({
 type OtpRequestForm = z.infer<typeof otpRequestSchema>;
 type OtpVerifyForm = z.infer<typeof otpVerifySchema>;
 type PasswordLoginForm = z.infer<typeof passwordLoginSchema>;
-type PasswordRegisterForm = z.infer<typeof passwordRegisterSchema>;
 type ResetPasswordOtpForm = z.infer<typeof resetPasswordOtpSchema>;
 
 export default function AuthPage() {
@@ -125,11 +118,7 @@ export default function AuthPage() {
     formState: { errors: passLoginErrors },
   } = useForm<PasswordLoginForm>({ resolver: zodResolver(passwordLoginSchema) });
 
-  const {
-    register: regPassReg,
-    handleSubmit: handlePassRegSubmit,
-    formState: { errors: passRegErrors },
-  } = useForm<PasswordRegisterForm>({ resolver: zodResolver(passwordRegisterSchema) });
+
 
   const {
     register: regReset,
@@ -264,34 +253,7 @@ export default function AuthPage() {
     }
   };
 
-  // 5. Password Register
-  const onPasswordRegister = async (data: PasswordRegisterForm) => {
-    setIsLoading(true);
-    const normalized = normalizePersianDigits(data.phone);
-    const [firstName, ...lastNames] = data.fullName.trim().split(" ");
-    const fName = (firstName || "").trim();
-    const lName = (lastNames.join(" ") || "").trim() || fName;
 
-    try {
-      await api.post("/api/auth/register/", {
-        phone_number: normalized,
-        password: data.password,
-        first_name: fName,
-        last_name: lName,
-      });
-
-      // Automatically login with password
-      const loginRes = await api.post("/api/auth/login/", {
-        phone_number: normalized,
-        password: data.password,
-      });
-      await finishLogin(loginRes.data);
-    } catch (error: any) {
-      toast.error(getApiErrorMessage(error, "خطا در ثبت‌نام کاربر"));
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // 6. Reset Password via OTP
   const onResetPassword = async (data: ResetPasswordOtpForm) => {
@@ -698,7 +660,7 @@ export default function AuthPage() {
                         ثبت‌نام سریع با شماره موبایل
                       </p>
                       <p className="text-[11px] text-slate-500 leading-relaxed">
-                        ثبت‌نام در فروشگاه ماوی با پیامک تایید (OTP) انجام می‌شود. پس از ورود، می‌توانید رمز عبور و اطلاعات پروفایل خود را تکمیل نمایید.
+                        ثبت‌نام در فروشگاه ماوی تنها با شماره موبایل و کد تایید پیامکی (OTP) انجام می‌شود. پس از ورود، می‌توانید در بخش پروفایل رمز عبور خود را تعیین کرده تا در دفعات بعدی با شماره و رمز عبور نیز وارد شوید.
                       </p>
                     </div>
 

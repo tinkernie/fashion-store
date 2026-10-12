@@ -27,7 +27,6 @@ import {
   ShoppingBag,
   ArrowRight,
   Sparkles,
-  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -311,7 +310,6 @@ export default function ProfilePage() {
 
     const formData = new FormData(e.currentTarget);
     const fullName = ((formData.get("fullName") as string) || "").trim();
-    const rawEmail = ((formData.get("email") as string) || "").trim();
 
     if (!fullName) {
       toast.error("نام و نام خانوادگی نمی‌تواند خالی باشد");
@@ -327,18 +325,6 @@ export default function ProfilePage() {
       return;
     }
 
-    // Email format validation when provided
-    let normalizedEmail: string | null = null;
-    if (rawEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(rawEmail)) {
-        toast.error("فرمت آدرس ایمیل نامعتبر است");
-        setIsLoading(false);
-        return;
-      }
-      normalizedEmail = rawEmail.toLowerCase();
-    }
-
     const [firstName, ...lastNames] = fullName.split(" ");
     const fName = (firstName || "").trim();
     const lName = (lastNames.join(" ") || "").trim() || fName;
@@ -347,14 +333,12 @@ export default function ProfilePage() {
       const res = await api.patch("/api/users/me/", {
         first_name: fName,
         last_name: lName,
-        email: normalizedEmail,
       });
 
       const updatedProfile = res.data || {
         ...userProfile,
         first_name: fName,
         last_name: lName,
-        email: normalizedEmail,
       };
 
       setUserProfile(updatedProfile);
@@ -369,12 +353,7 @@ export default function ProfilePage() {
 
       toast.success("اطلاعات کاربری با موفقیت بروزرسانی شد");
     } catch (error: any) {
-      const errDetail = error?.response?.data?.detail || error?.response?.data?.message || "";
-      if (typeof errDetail === "string" && errDetail.toLowerCase().includes("already exists")) {
-        toast.error("این آدرس ایمیل قبلاً توسط کاربر دیگری ثبت شده است");
-      } else {
-        toast.error(getApiErrorMessage(error, "خطا در بروزرسانی اطلاعات"));
-      }
+      toast.error(getApiErrorMessage(error, "خطا در بروزرسانی اطلاعات"));
     } finally {
       setIsLoading(false);
     }
@@ -510,7 +489,7 @@ export default function ProfilePage() {
   const displayName =
     profileFullName ||
     userProfile?.phone_number ||
-    (userProfile?.email ? userProfile.email.split("@")[0] : "کاربر گرامی");
+    "کاربر گرامی";
 
   if (!mounted) return null;
 
@@ -535,7 +514,7 @@ export default function ProfilePage() {
               {displayName}
             </h2>
             <p className="text-xs text-slate-500 font-sans mb-6" dir="ltr">
-              {userProfile?.phone_number || userProfile?.email || ""}
+              {userProfile?.phone_number || ""}
             </p>
 
             {/* Quick Stats Grid */}
@@ -928,25 +907,6 @@ export default function ProfilePage() {
                       placeholder="مثال: علی رضایی"
                       className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                      <span>پست الکترونیک (ایمیل)</span>
-                      <span className="text-[10px] text-slate-400 font-normal">اختیاری</span>
-                    </label>
-                    <div className="relative">
-                      <Input
-                        key={`profile-email-${userProfile?.email || "none"}`}
-                        name="email"
-                        type="email"
-                        defaultValue={userProfile?.email || ""}
-                        placeholder="example@domain.com"
-                        className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl pr-4 pl-10 focus-visible:ring-2 focus-visible:ring-[#0082CA] font-sans"
-                        dir="ltr"
-                      />
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
                   </div>
 
                   <Button disabled={isLoading} type="submit" className="w-full h-12 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20">

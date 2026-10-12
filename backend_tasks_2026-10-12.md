@@ -5,7 +5,7 @@
 - **Related Backend Commit SHAs:**
   - `03edfe680aa55f721b86b8de842aed65e3b2d5ae` (feat(remediation): cart-merge resilience, MAVI order prefix, admin product list, brand seeds)
   - `5ab531b237b0cedf880fa34482a407655308ef2e` (یک مایگریشن کوچک)
-  - `f1d39f8988a141e9ad0e5220bc77807fce367c55` (feat(backend-tasks): profile email, clearable relations, rich collection cards, discount plumbing)
+  - `f1d39f8988a141e9ad0e5220bc77807fce367c55` (feat(backend-tasks): clearable relations, rich collection cards, discount plumbing)
 - **Overall Status:** Open / Action Required by Backend Engineer
 - **Overall Priority:** Medium-High
 
@@ -140,7 +140,6 @@ Resolving these two items will ensure seamless catalog management and robust inv
 
 ## 7. Frontend Impact and Follow-Up
 - Frontend has been synchronized to pass `category` and pagination parameters in `adminApi.getProducts({ category, page, page_size })`.
-- Frontend profile page has been updated to support `email` viewing and updates via `PATCH /api/users/me/`.
 - Notification parser has been updated to recognize `MAVI-` order identifiers.
 
 ---
