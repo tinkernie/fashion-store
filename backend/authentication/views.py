@@ -21,6 +21,15 @@ class RegisterView(generics.CreateAPIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth"
 
+    def create(self, request, *args, **kwargs):
+        # Serializer.create() returns the token payload dict (not a model
+        # instance), so bypass the default save-and-serialize flow which
+        # would 500 trying to serialize it as a user.
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.save()
+        return Response(data, status=status.HTTP_201_CREATED)
+
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
