@@ -1,44 +1,36 @@
-# Workspace Directives: Senior Engineering, Planning & Production Delivery
+# Workspace Directives: Operational Runtime Protocol
 
-## 1. Caveman & Communication Protocols
-- Maintain ultra-concise, high-density, zero-filler communication (`/cavecrew` efficiency); no sugarcoating or conversational boilerplate.
-- **Language Separation**: Always converse with the user in English in chat (even when addressed in Persian or other languages). Generate Persian text for the website UI when requested (Vazirmatn typography, native RTL).
-- Preserve 100% technical accuracy, full file paths, exact code blocks, and strict verification.
+## 1. Operating Authority & Instruction Hierarchy
+This file defines the agent runtime protocol for `fashion-store`. The authoritative references are:
+- **[AGENTS.md](AGENTS.md)**: Master engineering directives, 10-phase task lifecycle, scope preservation, verification standards, and Git/production deployment rules.
+- **[DESIGN.md](DESIGN.md)** & **[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)**: Visual identity, MAVi Mediterranean Azure Blue tokens, typography, component standards, and anti-AI-slop rules.
 
-## 2. Graph-First Architecture & Exploration
-- Consult the graphify knowledge graph (`graphify-out/`) before reading source files to map dependencies, community hubs, and data flow.
-- Target investigations strictly to affected modules; verify graph findings against active source lines before finalizing plans.
-- Refresh graph via `graphify update .` when graph drift affects target areas.
+All agent operations MUST strictly comply with [AGENTS.md](AGENTS.md). Avoid creating competing or conflicting instructions.
 
-## 3. Mandatory Planning & Approval Workflow
-- **Phase 1 — Understand & Interview**: Clarify ambiguities, edge cases, and constraints with the user using `/grill-me`. Never make unverified assumptions on consequential decisions.
-- **Phase 2 — Investigate**: Trace graph and source files, identify potential regressions, integration risks, and dependencies.
-- **Phase 3 — Implementation Walkthrough**: Before modifying files, provide a structured plan containing:
-  1. Task understanding & acceptance criteria
-  2. Current-state analysis & findings
-  3. Proposed solution & technical rationale
-  4. Exact files to modify, create, or delete
-  5. Ordered implementation steps
-  6. Risk assessment & mitigation strategies
-  7. Verification & testing strategy (commands, manual checks)
-- **Phase 4 — Explicit Approval Gate**: **NEVER modify code, configurations, or docs before receiving explicit user approval.** Present the walkthrough as an artifact with feedback enabled so the user can review and click Proceed. Silence or ambiguity is not approval.
-- **Phase 5 — Implement, Validate & Deliver**: Execute approved plan only. Test locally, verify against regressions, and follow Section 6.
+## 2. Mandatory Communication Protocols
+- **English-Only Chat**: Always converse with the user in English in chat, regardless of the language used in prompts. Generate Persian text for the website UI when requested (Vazirmatn typography, native RTL).
+- **Caveman Conciseness**: Maintain ultra-concise, high-density, zero-filler communication (`/cavecrew` efficiency).
+- **Absolute Technical Honesty**: Never report any test, build, commit, push, or deployment as successful without direct command verification. Clearly distinguish confirmed facts from assumptions.
 
-## 4. Feature Preservation & Scope Integrity
-- Never remove, disable, replace, or degrade existing functionality without explicit user authorization.
-- Prefer targeted, backward-compatible modifications over broad rewrites.
-- Preserve existing component behaviors, routes, and API contracts.
+## 3. Operational Task Execution Protocol
+Execute every incoming task strictly following the 10-phase lifecycle in [AGENTS.md](AGENTS.md):
+1. **Understand**: Clarify the core objective, affected modules, and constraints.
+2. **Interview (`/grill-me`)**: Interview the user on meaningful ambiguities, edge cases, and architectural choices. Skip redundant questions when requirements are clear.
+3. **Investigate**: Consult documentation first, then inspect `graphify-out/` before source files. Verify findings against active code. Run `graphify update .` when graph drift occurs.
+4. **Walkthrough (MANDATORY)**: Create a task walkthrough artifact containing the 15 mandatory sections defined in [AGENTS.md Section 3](AGENTS.md#3-mandatory-10-phase-task-lifecycle).
+5. **Approval Gate (MANDATORY)**: Set `RequestFeedback: true` on the walkthrough artifact and **STOP**. Do not modify application source files or configurations until the user explicitly selects Proceed or grants written approval.
+6. **Implement**: Apply the minimal, backward-compatible set of changes strictly adhering to the approved plan.
+7. **Verify**: Execute automated tests, type-checks, linters, API contracts, console/network audit, and a11y tests. Fix task-related failures.
+8. **Final Review**: Evaluate the final diff against the 10 pre-commit gates in [AGENTS.md Section 3](AGENTS.md#3-mandatory-10-phase-task-lifecycle).
+9. **Commit & Push**: Create an atomic Conventional Commit with a 4-part description (What, Why, Details, Verification), commit directly to `main`, and push safely to `origin/main`.
+10. **Production Deployment & Report**: Deploy to `37.32.31.95` per `docs/DEPLOYMENT_GUIDE.md` when applicable, and output the structured 8-field completion report.
 
-## 5. Design System Compliance & Anti-AI-Slop Standards
-- Strictly adhere to [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) and [DESIGN.md](DESIGN.md): MAVi Mediterranean Azure Blue (`#0082CA` / `#0091DF`), crisp white surfaces, Vazirmatn Persian typography, RTL mechanics, and the 8-state interactive checklist.
-- Ban generic AI slop: no purple/violet glows, excessive blur/glassmorphism, arbitrary pill wrappers, unstyled raw emojis, or layout-shifting hovers.
-- Apply specialized design skills when relevant: `/hallmark`, `/design-taste-frontend`, `/impeccable`, `/high-end-visual-design`, `/ui-ux-pro-max`, `/ux-ui-agent-skills`.
-- Ensure human-written copy via `/humanizer` for all user-facing strings (headings, labels, empty states, error messages).
-- Never redesign working interfaces merely for aesthetic novelty; every UI change must have a justified functional or UX purpose.
-
-## 6. Git Workflow, Commits & Production Sync
-- **Local Verification**: Run all relevant tests, builds, and linting before staging changes.
-- **Atomic Commit**: Generate Conventional Commit title with concise, informative rationale and scope.
-- **Automatic Push**: After successful verification and commit on `main`, push safely to `origin/main`. Never force-push or bypass protections.
-- **Detailed Commit Summary in Chat**: Always output full commit title, rationale, modified paths, and functional changes in conversation.
-- **Production Deployment**: Following push, deploy to live production server (`37.32.31.95`) per `docs/DEPLOYMENT_GUIDE.md`: pull latest commit to `/var/www/fashion-store`, run migrations/builds, apply Iranian DPI middlebox patch (`static/assets`), set permissions (`chown -R www-data:www-data`), and restart PM2 / Gunicorn / Celery.
+## 4. Skill Dispatch Matrix
+| Task Domain | Primary Skill | Trigger Condition |
+| :--- | :--- | :--- |
+| Codebase architecture & dependencies | `graphify` | First step of every task; consult `graphify-out/` |
+| Requirement clarification | `grill-me` | Ambiguous requirements, edge cases, competing technical options |
+| User-facing frontend copy | `humanizer` | Any visible UI text (headings, buttons, alerts, error messages) |
+| Interface design & visual polish | `impeccable`, `hallmark`, `taste` (`design-taste-frontend`) | Creating or refining UI components, page layouts, visual styling |
+| Design systems, responsive & a11y | `ui-ux-pro-max`, `ux-ui-agent-skills`, `high-end-visual-design` | Component architectures, WCAG AA audits, touch targets, mobile layouts |
+| Terse output & token efficiency | `caveman`, `cavecrew` | Continuous chat communication |
