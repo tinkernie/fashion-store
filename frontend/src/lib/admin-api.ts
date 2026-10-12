@@ -139,18 +139,72 @@ export const adminApi = {
   },
 
   // Products
-  async getProducts(params?: { search?: string; status?: string; category?: string }): Promise<any[]> {
-    const query = new URLSearchParams(params as any).toString();
+  async getProducts(params?: {
+    search?: string;
+    status?: string;
+    category?: string;
+    page?: number | string;
+    page_size?: number | string;
+  }): Promise<any[]> {
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          cleanParams[k] = String(v);
+        }
+      });
+    }
+    const query = new URLSearchParams(cleanParams).toString();
     try {
-      const res = await api.get(`/api/admin/products/${query ? `?${query}` : ''}`);
+      const res = await api.get(`/api/admin/products/${query ? `?${query}` : ""}`);
       return Array.isArray(res.data) ? res.data : res.data.results || [];
     } catch {
       try {
-        const res = await api.get(`/api/products/${query ? `?${query}` : ''}`);
+        const res = await api.get(`/api/products/${query ? `?${query}` : ""}`);
         return Array.isArray(res.data) ? res.data : res.data.results || [];
       } catch {
         return [];
       }
+    }
+  },
+  async getProductsPaginated(params?: {
+    search?: string;
+    status?: string;
+    category?: string;
+    page?: number | string;
+    page_size?: number | string;
+  }): Promise<{ count: number; next: string | null; previous: string | null; results: any[] }> {
+    const cleanParams: Record<string, string> = {};
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== "") {
+          cleanParams[k] = String(v);
+        }
+      });
+    }
+    const query = new URLSearchParams(cleanParams).toString();
+    try {
+      const res = await api.get(`/api/admin/products/${query ? `?${query}` : ""}`);
+      if (Array.isArray(res.data)) {
+        return { count: res.data.length, next: null, previous: null, results: res.data };
+      }
+      return {
+        count: res.data.count ?? (res.data.results ? res.data.results.length : 0),
+        next: res.data.next || null,
+        previous: res.data.previous || null,
+        results: res.data.results || [],
+      };
+    } catch {
+      const res = await api.get(`/api/products/${query ? `?${query}` : ""}`);
+      if (Array.isArray(res.data)) {
+        return { count: res.data.length, next: null, previous: null, results: res.data };
+      }
+      return {
+        count: res.data.count ?? (res.data.results ? res.data.results.length : 0),
+        next: res.data.next || null,
+        previous: res.data.previous || null,
+        results: res.data.results || [],
+      };
     }
   },
   async getProduct(id: string): Promise<any> {

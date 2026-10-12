@@ -91,9 +91,14 @@ export function localizeNotification(notif: any): LocalizedNotification {
     "";
 
   if (!orderNumber) {
-    const match = `${rawSubject} ${rawBody}`.match(/(?:ORD-|LUXE-|order\s+|سفارش\s+)([A-Za-z0-9-]+)/i);
-    if (match) {
-      orderNumber = match[1].trim();
+    const fullPrefixMatch = `${rawSubject} ${rawBody}`.match(/\b((?:MAVI|LUX|LUXE|ORD)-[A-Za-z0-9-]+)\b/i);
+    if (fullPrefixMatch) {
+      orderNumber = fullPrefixMatch[1].trim();
+    } else {
+      const match = `${rawSubject} ${rawBody}`.match(/(?:order\s+|سفارش\s+|شماره\s+)([A-Za-z0-9-]+)/i);
+      if (match) {
+        orderNumber = match[1].trim();
+      }
     }
   }
 
