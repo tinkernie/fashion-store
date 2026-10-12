@@ -9,7 +9,12 @@ class OtpCode(UUIDPrimaryKeyMixin, TimestampedModel):
 
     PURPOSE_LOGIN = "login"
     PURPOSE_RESET = "reset"
-    PURPOSE_CHOICES = ((PURPOSE_LOGIN, "Login"), (PURPOSE_RESET, "Reset"))
+    PURPOSE_SIGNUP = "signup"
+    PURPOSE_CHOICES = (
+        (PURPOSE_LOGIN, "Login"),
+        (PURPOSE_RESET, "Reset"),
+        (PURPOSE_SIGNUP, "Signup"),
+    )
 
     phone_number = models.CharField(max_length=15, db_index=True)
     code_hash = models.CharField(max_length=128)

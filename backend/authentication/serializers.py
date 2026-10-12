@@ -44,7 +44,7 @@ class LoginSerializer(serializers.Serializer):
 
 class OtpRequestSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
-    purpose = serializers.ChoiceField(choices=["login", "reset"], default="login", required=False)
+    purpose = serializers.ChoiceField(choices=["login", "reset", "signup"], default="login", required=False)
 
     def validate_phone_number(self, value):
         return PhoneValidator.validate(value)
@@ -53,10 +53,43 @@ class OtpRequestSerializer(serializers.Serializer):
 class OtpVerifySerializer(serializers.Serializer):
     phone_number = serializers.CharField()
     code = serializers.CharField(min_length=4, max_length=8)
-    purpose = serializers.ChoiceField(choices=["login", "reset"], default="login", required=False)
+    purpose = serializers.ChoiceField(choices=["login", "reset", "signup"], default="login", required=False)
 
     def validate_phone_number(self, value):
         return PhoneValidator.validate(value)
+
+
+class SignupCompleteSerializer(serializers.Serializer):
+    """Second half of OTP-first signup: called AFTER otp/verify with
+    purpose=signup. Creates the account and logs the user in."""
+
+    phone_number = serializers.CharField()
+    signup_token = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    password_confirm = serializers.CharField(write_only=True)
+    first_name = serializers.CharField()
+    last_name = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate_phone_number(self, value):
+        return PhoneValidator.validate(value)
+
+    def validate_first_name(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Name is required.")
+        return value
+
+    def validate_password(self, value):
+        PasswordValidator.validate(value)
+        return value
+
+    def validate(self, attrs):
+        if attrs.get("password") != attrs.get("password_confirm"):
+            raise serializers.ValidationError(
+                {"password_confirm": "Password confirmation does not match."}
+            )
+        attrs.pop("password_confirm", None)
+        return attrs
 
 
 class PasswordResetViaOtpSerializer(serializers.Serializer):

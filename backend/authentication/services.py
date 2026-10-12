@@ -57,6 +57,26 @@ def _generate_code() -> str:
     return "".join(secrets.choice("0123456789") for _ in range(length))
 
 
+SIGNUP_TICKET_SALT = "otp-signup-ticket"
+SIGNUP_TICKET_MAX_AGE = 10 * 60  # the name+password form must follow OTP promptly
+
+
+def _make_signup_token(phone_number: str) -> str:
+    from django.core.signing import TimestampSigner
+
+    return TimestampSigner(salt=SIGNUP_TICKET_SALT).sign(phone_number)
+
+
+def _read_signup_token(token: str):
+    """Return the phone bound to a signup ticket, or None if forged/expired."""
+    from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
+
+    try:
+        return TimestampSigner(salt=SIGNUP_TICKET_SALT).unsign(token, max_age=SIGNUP_TICKET_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return None
+
+
 def _stored_token_sid(stored_token: str):
     """Read the sid claim from a persisted OutstandingToken string without
     verifying the signature (read-only lookup; unparseable rows match
@@ -116,7 +136,7 @@ class AuthService:
         from .models import OtpCode
 
         phone_number = PhoneValidator.validate(phone_number)
-        if purpose not in (OtpCode.PURPOSE_LOGIN, OtpCode.PURPOSE_RESET):
+        if purpose not in (OtpCode.PURPOSE_LOGIN, OtpCode.PURPOSE_RESET, OtpCode.PURPOSE_SIGNUP):
             purpose = OtpCode.PURPOSE_LOGIN
         # Per-phone hourly cap (Redis, shared across workers) — protects SMS credit.
         # DRF throttle is per-IP; this is per-target-number: max 5 sends/hour.
@@ -150,12 +170,12 @@ class AuthService:
         transaction.on_commit(lambda: send_otp_sms.delay(phone_number, raw_code))
         return {"message": "If the number is valid, an OTP has been sent."}
 
-    def verify_otp(self, phone_number: str, code: str, purpose: str = "login") -> dict:
+    @staticmethod
+    def _load_valid_otp(phone_number: str, purpose: str):
+        """Shared OTP check (expiry, lockout, attempts accounting). Returns
+        the valid OtpCode row WITHOUT consuming it; callers decide."""
         from .models import OtpCode
 
-        phone_number = PhoneValidator.validate(phone_number)
-        if purpose not in (OtpCode.PURPOSE_LOGIN, OtpCode.PURPOSE_RESET):
-            purpose = OtpCode.PURPOSE_LOGIN
         with transaction.atomic():
             otp = (
                 OtpCode.objects.select_for_update()
@@ -173,6 +193,18 @@ class AuthService:
                 otp.is_used = True
                 otp.save(update_fields=["is_used", "updated_at"])
                 raise BusinessException("Too many attempts.", code="otp_locked")
+            return otp
+
+    @staticmethod
+    def _consume_code(phone_number: str, purpose: str, code: str):
+        """Validate a code against the latest OTP and consume it. Returns row."""
+        from .models import OtpCode
+
+        otp = AuthService._load_valid_otp(phone_number, purpose)
+        with transaction.atomic():
+            otp = OtpCode.objects.select_for_update().get(id=otp.id)
+            if otp.is_used:
+                raise BusinessException("Invalid or expired code.", code="invalid_otp")
             if not otp.check_code(code):
                 otp.attempts += 1
                 if otp.attempts >= otp.max_attempts:
@@ -181,10 +213,72 @@ class AuthService:
                 raise BusinessException("Invalid code.", code="invalid_otp")
             otp.is_used = True
             otp.save(update_fields=["is_used", "updated_at"])
+            return otp
+
+    def verify_otp(self, phone_number: str, code: str, purpose: str = "login") -> dict:
+        from .models import OtpCode
+
+        phone_number = PhoneValidator.validate(phone_number)
+        if purpose not in (OtpCode.PURPOSE_LOGIN, OtpCode.PURPOSE_RESET, OtpCode.PURPOSE_SIGNUP):
+            purpose = OtpCode.PURPOSE_LOGIN
+        self._consume_code(phone_number, purpose, code)
+        with transaction.atomic():
+            if purpose == OtpCode.PURPOSE_SIGNUP:
+                # Signup step 1 of 2: prove the number, create NOTHING yet.
+                # The client then shows the name+password form and calls
+                # signup/complete with the returned ticket.
+                if UserSelector.get_user_by_phone(phone_number):
+                    raise BusinessException(
+                        "This number is already registered. Please log in.",
+                        code="phone_exists",
+                    )
+                return {
+                    "phone_number": phone_number,
+                    "signup_token": _make_signup_token(phone_number),
+                    "message": "Code verified. Complete your registration.",
+                }
+            if purpose == OtpCode.PURPOSE_RESET:
+                # Reset codes only authorize the password-reset-otp call;
+                # they never open a session by themselves.
+                return {"phone_number": phone_number, "message": "Code verified."}
             user, _ = UserRepository.get_or_create_for_otp(phone_number)
             if not user.is_active:
                 raise BusinessException("Account is not active.", code="inactive_account")
         return _issue_tokens(user)
+
+    def complete_signup(self, phone_number: str, signup_token: str,
+                        password: str, first_name: str = "", last_name: str = "") -> dict:
+        """Signup step 2 of 2: consume a verified signup ticket, create the
+        account with name+password, and log the user in."""
+        from .models import OtpCode
+
+        phone_number = PhoneValidator.validate(phone_number)
+        PasswordValidator.validate(password)
+        ticket_phone = _read_signup_token(signup_token)
+        if ticket_phone is None:
+            raise BusinessException("Signup session expired. Please request a new code.", code="invalid_token")
+        if ticket_phone != phone_number:
+            raise BusinessException("Signup session does not match this number.", code="invalid_token")
+        try:
+            with transaction.atomic():
+                if UserSelector.get_user_by_phone(phone_number):
+                    raise BusinessException(
+                        "This number is already registered. Please log in.", code="phone_exists"
+                    )
+                user = UserRepository.create_user(
+                    phone_number=phone_number,
+                    password=password,
+                    first_name=(first_name or "").strip(),
+                    last_name=(last_name or "").strip(),
+                    is_active=True,
+                )
+        except IntegrityError:
+            raise BusinessException(
+                "This number is already registered. Please log in.", code="phone_exists"
+            )
+        data = _issue_tokens(user)
+        data["message"] = "Account created successfully."
+        return data
 
     def reset_password_with_otp(self, phone_number: str, code: str, new_password: str) -> dict:
         """Verify OTP (purpose=reset) then set new password and blacklist sessions."""

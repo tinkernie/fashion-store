@@ -8,6 +8,7 @@ from .serializers import (
     LoginSerializer,
     OtpRequestSerializer,
     OtpVerifySerializer,
+    SignupCompleteSerializer,
     PasswordResetViaOtpSerializer,
     ChangePasswordSerializer,
 )
@@ -75,6 +76,28 @@ class OtpVerifyView(APIView):
             serializer.validated_data.get("purpose", "login"),
         )
         return Response(data, status=status.HTTP_200_OK)
+
+
+class SignupCompleteView(APIView):
+    """Signup step 2 of 2 (OTP-first flow): create the account with
+    name+password after otp/verify with purpose=signup, and log in."""
+
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
+
+    def post(self, request):
+        serializer = SignupCompleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = AuthService()
+        data = service.complete_signup(
+            phone_number=serializer.validated_data["phone_number"],
+            signup_token=serializer.validated_data["signup_token"],
+            password=serializer.validated_data["password"],
+            first_name=serializer.validated_data.get("first_name", ""),
+            last_name=serializer.validated_data.get("last_name", ""),
+        )
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class PasswordResetViaOtpView(APIView):
