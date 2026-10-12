@@ -5,6 +5,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAdminUser
+from core.pagination import AdminPagination
 from .services import ProductService
 from .selectors import ProductSelector
 from .serializers import (
@@ -118,24 +119,7 @@ class PublicProductViewSet(viewsets.GenericViewSet):
 
 class AdminProductViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAdminUser]
-
-    def list(self, request):
-        """GET /api/admin/products/?search=&status= — full catalog for admins,
-        all statuses (draft/published/archived), soft-deleted excluded."""
-        filters = {}
-        search = request.query_params.get("search")
-        if search:
-            filters["search"] = search
-        status_filter = request.query_params.get("status")
-        if status_filter:
-            filters["status"] = status_filter
-        queryset = ProductSelector.get_all_products_admin(filters or None)
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = ProductDetailSerializer(page, many=True, context={"request": request})
-            return self.get_paginated_response(serializer.data)
-        serializer = ProductDetailSerializer(queryset, many=True, context={"request": request})
-        return Response(serializer.data)
+    pagination_class = AdminPagination
 
     def create(self, request):
         serializer = ProductCreateSerializer(data=request.data)
@@ -322,7 +306,8 @@ class AdminProductViewSet(viewsets.GenericViewSet):
         return Response(result, status=status.HTTP_200_OK)
 
     def list(self, request):
-        # Direct admin list with full filter support per spec
+        # Direct admin list with full filter support per spec.
+        # category accepts a UUID or a slug; category_id is an alias.
         filters = {}
         if "status" in request.query_params:
             filters["status"] = request.query_params["status"]
@@ -330,6 +315,8 @@ class AdminProductViewSet(viewsets.GenericViewSet):
             filters["search"] = request.query_params["search"]
         if "category" in request.query_params:
             filters["category"] = request.query_params["category"]
+        elif "category_id" in request.query_params:
+            filters["category"] = request.query_params["category_id"]
         if "ordering" in request.query_params:
             filters["ordering"] = request.query_params["ordering"]
         if "has_discount" in request.query_params:
@@ -355,6 +342,8 @@ class AdminProductViewSet(viewsets.GenericViewSet):
             filters["search"] = request.query_params["search"]
         if "category" in request.query_params:
             filters["category"] = request.query_params["category"]
+        elif "category_id" in request.query_params:
+            filters["category"] = request.query_params["category_id"]
         if "ordering" in request.query_params:
             filters["ordering"] = request.query_params["ordering"]
         if "has_discount" in request.query_params:
