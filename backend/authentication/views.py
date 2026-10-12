@@ -129,6 +129,16 @@ class ChangePasswordView(APIView):
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        # sid of the calling access token: its login session (including its
+        # sibling refresh token) survives the rotation; others are logged out.
+        current_sid = None
+        try:
+            current_sid = (request.auth.payload or {}).get("sid")
+        except Exception:
+            current_sid = None
         service = AuthService()
-        result = service.change_password(user=request.user, **serializer.validated_data)
+        result = service.change_password(
+            user=request.user, current_sid=current_sid,
+            **serializer.validated_data
+        )
         return Response(result)

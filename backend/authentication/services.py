@@ -16,13 +16,28 @@ from django.contrib.auth import get_user_model
 
 
 def _issue_tokens(user):
+    # sid binds the access+refresh pair into one login session. It is
+    # persisted inside OutstandingToken.token, so later rotations (which
+    # mutate the same object) keep it — enabling per-session logout.
+    import uuid as _uuid
+
+    sid = _uuid.uuid4().hex
     refresh = RefreshToken.for_user(user)
+    refresh["sid"] = sid
     refresh["is_staff"] = user.is_staff
     refresh["is_superuser"] = user.is_superuser
     refresh["phone_number"] = user.phone_number
+    refresh.access_token["sid"] = sid
     refresh.access_token["is_staff"] = user.is_staff
     refresh.access_token["is_superuser"] = user.is_superuser
     refresh.access_token["phone_number"] = user.phone_number
+    # for_user() persists the Outstanding row BEFORE custom claims are set;
+    # refresh the stored string so the sid is actually recorded for later
+    # session matching (e.g. change-password keeps own session alive).
+    try:
+        OutstandingToken.objects.filter(jti=refresh["jti"]).update(token=str(refresh))
+    except Exception:
+        pass
     return {
         "access": str(refresh.access_token),
         "refresh": str(refresh),
@@ -40,6 +55,21 @@ def _issue_tokens(user):
 def _generate_code() -> str:
     length = max(4, min(int(getattr(settings, "OTP_LENGTH", 5)), 8))
     return "".join(secrets.choice("0123456789") for _ in range(length))
+
+
+def _stored_token_sid(stored_token: str):
+    """Read the sid claim from a persisted OutstandingToken string without
+    verifying the signature (read-only lookup; unparseable rows match
+    nothing and are therefore blacklisted by callers)."""
+    try:
+        import base64 as _b64
+        import json as _json
+
+        payload_b64 = stored_token.split(".")[1]
+        payload_b64 += "=" * (-len(payload_b64) % 4)
+        return _json.loads(_b64.urlsafe_b64decode(payload_b64).decode("utf-8")).get("sid")
+    except Exception:
+        return None
 
 
 class AuthService:
@@ -203,7 +233,7 @@ class AuthService:
     def refresh_token(self, refresh_token: str) -> dict:
         pass  # handled in view directly
 
-    def change_password(self, user, old_password: str, new_password: str):
+    def change_password(self, user, old_password: str, new_password: str, current_sid: str = None):
         # For phone+password users; OTP-only users have unusable password
         if not user.has_usable_password() or not user.check_password(old_password):
             # Allow setting first password via old='' for OTP users
@@ -214,6 +244,14 @@ class AuthService:
         PasswordValidator.validate(new_password)
         with transaction.atomic():
             UserRepository.change_password(user, new_password)
-            for outstanding in OutstandingToken.objects.filter(user=user):
-                BlacklistedToken.objects.get_or_create(token=outstanding)
+            # Log out OTHER sessions, but keep the session that made this
+            # request alive: otherwise the profile page's success toast is
+            # immediately followed by a forced logout (all tokens dead).
+            # Sessions are identified by the sid claim minted at login
+            # (rotations preserve it); rows without a matching sid —
+            # including pre-sid legacy sessions — are blacklisted.
+            for token in OutstandingToken.objects.filter(user=user):
+                if current_sid and _stored_token_sid(token.token) == current_sid:
+                    continue
+                BlacklistedToken.objects.get_or_create(token=token)
         return {"message": "Password changed successfully."}
