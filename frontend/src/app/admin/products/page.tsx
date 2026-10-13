@@ -414,8 +414,8 @@ export default function AdminProductsPage() {
         option_values: optionValuesPayload,
       });
 
-      if (Number(newVariantStock) > 0 && createdVar.id) {
-        await adminApi.adjustStock(createdVar.id, Number(newVariantStock));
+      if (newVariantStock.trim() !== "" && !isNaN(Number(newVariantStock)) && createdVar?.id) {
+        await adminApi.setStockQuantity(createdVar.id, Math.max(0, parseInt(newVariantStock, 10)));
       }
 
       toast.success("تنوع جدید با موفقیت ایجاد شد");
@@ -766,8 +766,8 @@ export default function AdminProductsPage() {
                   option_values: optValuesPayload,
                 });
 
-                if (vItem.stock && Number(vItem.stock) > 0 && createdVar?.id) {
-                  await adminApi.adjustStock(createdVar.id, Number(vItem.stock));
+                if (vItem.stock !== undefined && vItem.stock !== null && String(vItem.stock).trim() !== "" && !isNaN(Number(vItem.stock)) && createdVar?.id) {
+                  await adminApi.setStockQuantity(createdVar.id, Math.max(0, parseInt(String(vItem.stock), 10)));
                 }
               }
             }
