@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { AuthRequiredDialog } from "@/components/ui/auth-required-dialog";
 
 export default function LayoutShell({
   children,
@@ -21,6 +22,7 @@ export default function LayoutShell({
       <Navbar />
       <div className="flex-1 w-full min-w-0">{children}</div>
       <Footer />
+      <AuthRequiredDialog />
     </>
   );
 }

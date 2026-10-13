@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { api } from "@/lib/api";
-import { getStoredAuth, isTokenExpired } from "@/lib/auth";
+import { hasValidAuthSession } from "@/lib/auth";
 import { parsePrice } from "@/lib/price-utils";
+import { useAuthModal } from "@/store/auth-modal";
 
 export interface WishlistItem {
   id: string;
@@ -41,20 +42,12 @@ const saveWishlist = (items: WishlistItem[]) => {
   }
 };
 
-const checkHasAuth = (): boolean => {
-  const { accessToken, refreshToken } = getStoredAuth();
-  return Boolean(
-    (accessToken && !isTokenExpired(accessToken, 0)) ||
-    (refreshToken && !isTokenExpired(refreshToken, 0))
-  );
-};
-
 export const useWishlist = create<WishlistStore>((set, get) => ({
-  items: getSavedWishlist(),
+  items: typeof window !== "undefined" && hasValidAuthSession() ? getSavedWishlist() : [],
 
   fetchWishlist: async () => {
     if (typeof window === "undefined") return;
-    if (!checkHasAuth()) {
+    if (!hasValidAuthSession()) {
       set({ items: [] });
       saveWishlist([]);
       return;
@@ -75,7 +68,7 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
       }
     } catch {
       // If unauthorized or backend offline, reset if unauthenticated
-      if (!checkHasAuth()) {
+      if (!hasValidAuthSession()) {
         set({ items: [] });
         saveWishlist([]);
       }
@@ -83,37 +76,44 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
   },
 
   addItem: async (item) => {
+    if (!hasValidAuthSession()) {
+      useAuthModal.getState().openAuthModal("برای افزودن به علاقه مندی ها باید ابتدا وارد حساب کاربری خود شوید.");
+      return;
+    }
+
     const sanitizedItem = { ...item, price: parsePrice(item.price) };
     if (!get().items.find((i) => i.id === sanitizedItem.id)) {
       const updated = [...get().items, sanitizedItem];
       set({ items: updated });
       saveWishlist(updated);
 
-      if (checkHasAuth()) {
-        try {
-          await api.post('/api/wishlist/add_item/', {
-            product_id: item.id,
-          });
-        } catch {
-          // Silent local fallback
-        }
+      try {
+        await api.post('/api/wishlist/add_item/', {
+          product_id: item.id,
+        });
+      } catch {
+        // Silent local fallback
       }
     }
   },
 
   removeItem: async (id) => {
+    if (!hasValidAuthSession()) {
+      set({ items: [] });
+      saveWishlist([]);
+      return;
+    }
+
     const updated = get().items.filter((i) => i.id !== id);
     set({ items: updated });
     saveWishlist(updated);
 
-    if (checkHasAuth()) {
-      try {
-        await api.post('/api/wishlist/remove-item/', {
-          product_id: id,
-        });
-      } catch {
-        // Silent local fallback
-      }
+    try {
+      await api.post('/api/wishlist/remove-item/', {
+        product_id: id,
+      });
+    } catch {
+      // Silent local fallback
     }
   },
 
@@ -130,7 +130,7 @@ export const useWishlist = create<WishlistStore>((set, get) => ({
 // Automatically synchronize wishlist state on login or logout across window and storage events
 if (typeof window !== "undefined") {
   const syncWishlistWithAuth = () => {
-    if (!checkHasAuth()) {
+    if (!hasValidAuthSession()) {
       useWishlist.getState().resetWishlist();
     } else {
       useWishlist.getState().fetchWishlist();

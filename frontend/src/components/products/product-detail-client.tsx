@@ -31,7 +31,8 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/error-utils";
-import { getStoredAuth } from "@/lib/auth";
+import { getStoredAuth, hasValidAuthSession } from "@/lib/auth";
+import { useAuthModal } from "@/store/auth-modal";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { getColorBackground } from "@/lib/color-utils";
 import { formatPrice, formatPriceNumber, parsePrice, getDiscountInfo } from "@/lib/price-utils";
@@ -502,6 +503,11 @@ export default function ProductDetailClient({
   };
 
   const toggleWishlist = () => {
+    if (!hasValidAuthSession()) {
+      useAuthModal.getState().openAuthModal("برای افزودن به علاقه مندی ها باید ابتدا وارد حساب کاربری خود شوید.");
+      return;
+    }
+
     if (isSaved) {
       removeFromWishlist(product.id);
       toast.success("از علاقه‌مندی‌ها حذف شد");

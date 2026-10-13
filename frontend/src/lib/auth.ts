@@ -226,3 +226,15 @@ export async function getValidAccessToken(): Promise<string | null> {
   }
   return null;
 }
+
+/**
+ * Synchronous client-side check if user currently holds an unexpired auth session.
+ */
+export function hasValidAuthSession(): boolean {
+  if (typeof window === "undefined") return false;
+  const { accessToken, refreshToken } = getStoredAuth();
+  return Boolean(
+    (accessToken && !isTokenExpired(accessToken, 0)) ||
+    (refreshToken && !isTokenExpired(refreshToken, 0))
+  );
+}

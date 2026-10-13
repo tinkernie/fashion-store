@@ -52,6 +52,8 @@ import { formatPrice as formatPriceUtil, parsePrice, getDiscountInfo } from "@/l
 import { GooeySearchBar } from "@/components/ui/animated-search-bar";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { useWishlist } from "@/store/wishlist";
+import { hasValidAuthSession } from "@/lib/auth";
+import { useAuthModal } from "@/store/auth-modal";
 
 function generatePaginationPages(currentPage: number, totalPages: number): (number | string)[] {
   if (totalPages <= 7) {
@@ -740,6 +742,10 @@ function SearchContent() {
                         {/* Wishlist Button */}
                         <button
                           onClick={() => {
+                            if (!hasValidAuthSession()) {
+                              useAuthModal.getState().openAuthModal("برای افزودن به علاقه مندی ها باید ابتدا وارد حساب کاربری خود شوید.");
+                              return;
+                            }
                             if (isWishlisted) {
                               removeWishlist(product.id);
                               toast.info("از لیست علاقه‌مندی‌ها حذف شد");
