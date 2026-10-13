@@ -11,7 +11,7 @@
 ## 1. Core Visual Principles
 - **Mediterranean Clarity:** High-end, contemporary fashion house fusing Mediterranean clarity with modern minimalist precision.
 - **Locked Accent Palette:** Centered on MAVi Blue (`#0082CA` / `#0091DF`) and luminous white surfaces, avoiding pure monochrome black/white or generic palettes.
-- **RTL-First Mechanics:** Flawless right-to-left layout alignment with Vazirmatn Persian typography.
+- **RTL-First Mechanics & Universal RTL Preservation:** Flawless right-to-left layout alignment with Vazirmatn Persian typography. ALWAYS preserve native RTL (`dir="rtl"`) across all components, modal dialogs, popovers, select dropdowns, and date pickers. Floating portals must explicitly declare or inherit `dir="rtl"`, and calendar grids must strictly order days from Saturday (`ش`) to Friday (`ج`).
 - **Interactive Discipline:** Strict adherence to the 8-state interactive checklist (default, hover, active/pressed, focus-visible, disabled, loading, empty, error) defined in [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
 
 ---

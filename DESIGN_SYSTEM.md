@@ -120,6 +120,13 @@ The entire UI is built on a custom calibrated spectrum of **Mavi Blue (`#0082CA`
 - **Secondary / Mono:** Geist Mono (`--font-mono`) for SKU codes, tracking numbers, and technical specifications.
 - **Direction:** Native `dir="rtl"` with logical CSS properties (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`).
 - **Purity Rule:** Headings are roman (`font-style: normal`). No italic emphasis inside Persian headlines (prevents clipping of Persian letters like `ی`, `گ`, `چ`).
+
+### 3.1 Strict Invariant: Always Preserve Native RTL (`dir="rtl"`)
+- **Universal Rule:** Every UI component, modal dialog, popover, tooltip, dropdown menu, date picker, form input, and table MUST strictly enforce and preserve native RTL layout (`dir="rtl"`).
+- **Floating Overlays & Portals:** Any component rendering via a React Portal (such as Radix Popover, Dialog, or Tooltip) must explicitly declare `dir="rtl"` on its overlay content container to ensure consistent alignment and prevent LTR regression when rendered into `document.body`.
+- **Calendar & Matrix Direction:** Solar Hijri (Shamsi) date pickers and calendars must order days horizontally from Right to Left: Saturday (`ش`), Sunday (`ی`), Monday (`د`), Tuesday (`س`), Wednesday (`چ`), Thursday (`پ`), and Friday (`ج`).
+- **Logical Flow:** Always prefer CSS logical properties (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`) over physical left/right rules so all layouts remain naturally bidirectional and immune to RTL inversion bugs.
+
 - **Hierarchy Scale:**
 
 | Level | Size (Desktop / Mobile) | Weight | Line Height | Tracking | Usage |
