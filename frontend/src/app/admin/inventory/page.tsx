@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
+import { cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/price-utils";
 
 export default function AdminInventoryPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -67,7 +69,24 @@ export default function AdminInventoryPage() {
 
   const getItemStock = (item: any): number => {
     if (!item) return 0;
-    return item.stock_quantity ?? item.inventory_count ?? item.inventory?.quantity ?? item.stock ?? 0;
+    return (
+      item.stock_quantity ??
+      item.inventory_count ??
+      item.inventory?.available_quantity ??
+      item.inventory?.quantity ??
+      item.stock ??
+      0
+    );
+  };
+
+  const formatVariantTitle = (item: any, fallback = "کالای انتخابی"): string => {
+    if (!item) return fallback;
+    if (Array.isArray(item.options) && item.options.length > 0) {
+      return item.options
+        .map((o: any) => `${o.option_name || "ویژگی"}: ${o.value || ""}`)
+        .join(" | ");
+    }
+    return item.name || item.title || (item.sku ? `تنوع با کد ${item.sku}` : fallback);
   };
 
   const handleOpenSafetyStock = (item: any) => {
@@ -190,11 +209,11 @@ export default function AdminInventoryPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs table-fixed min-w-[880px]">
             <colgroup>
-              <col className="w-[30%]" />
-              <col className="w-[15%]" />
+              <col className="w-[28%]" />
               <col className="w-[14%]" />
-              <col className="w-[17%]" />
-              <col className="w-[24%]" />
+              <col className="w-[15%]" />
+              <col className="w-[16%]" />
+              <col className="w-[27%]" />
             </colgroup>
             <thead className="bg-[#161616] text-gray-400 border-b border-white/10">
               <tr>
@@ -202,7 +221,7 @@ export default function AdminInventoryPage() {
                 <th className="p-4 md:p-5 font-bold text-right">دسته‌بندی</th>
                 <th className="p-4 md:p-5 font-bold text-right">موجودی کل انبار</th>
                 <th className="p-4 md:p-5 font-bold text-right">وضعیت تامین</th>
-                <th className="p-4 md:p-5 font-bold text-left">عملیات سریع موجودی</th>
+                <th className="p-4 md:p-5 font-bold text-left">عملیات موجودی</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -215,11 +234,18 @@ export default function AdminInventoryPage() {
               ) : (
                 filteredProducts.map((p) => {
                   const prodName = p.name || p.title || "محصول";
-                  const stock = p.stock_quantity ?? p.inventory_count ?? 15;
+                  const hasVariants = Array.isArray(p.variants) && p.variants.length > 0;
+                  const isMultiVariant = Array.isArray(p.variants) && p.variants.length > 1;
+                  const isExpanded = expandedRow === p.id;
+
+                  // Aggregate stock if multi-variant, otherwise single stock
+                  const stock = isMultiVariant
+                    ? p.variants.reduce((acc: number, v: any) => acc + getItemStock(v), 0)
+                    : (p.stock_quantity ?? p.inventory_count ?? getItemStock(p.variants?.[0]) ?? 0);
+
                   const isLow = stock <= 5 && stock > 0;
                   const isOut = stock <= 0;
-                  const hasVariants = Array.isArray(p.variants) && p.variants.length > 0;
-                  const isExpanded = expandedRow === p.id;
+                  const singleItemId = p.variants?.[0]?.id || p.id;
 
                   return (
                     <Fragment key={p.id}>
@@ -243,7 +269,7 @@ export default function AdminInventoryPage() {
                                 {hasVariants && (
                                   <button
                                     onClick={() => setExpandedRow(isExpanded ? null : p.id)}
-                                    className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-0.5 font-bold"
+                                    className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-0.5 font-bold cursor-pointer"
                                   >
                                     <Boxes className="w-3 h-3" />
                                     {p.variants.length} تنوع
@@ -260,10 +286,17 @@ export default function AdminInventoryPage() {
                         </td>
 
                         <td className="p-4 md:p-5 text-right">
-                          <span className="text-sm font-black text-white">
-                            {stock.toLocaleString("fa-IR")}{" "}
-                            <span className="text-[10px] text-gray-400 font-normal">عدد</span>
-                          </span>
+                          <div className="space-y-0.5">
+                            <span className="text-sm font-black text-white">
+                              {stock.toLocaleString("fa-IR")}{" "}
+                              <span className="text-[10px] text-gray-400 font-normal">عدد</span>
+                            </span>
+                            {isMultiVariant && (
+                              <span className="text-[10px] text-purple-400/90 font-medium block">
+                                (مجموع {p.variants.length.toLocaleString("fa-IR")} تنوع)
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         <td className="p-4 md:p-5 text-right">
@@ -286,99 +319,219 @@ export default function AdminInventoryPage() {
                         </td>
 
                         <td className="p-4 md:p-5 text-left">
-                          <div className="flex items-center justify-end gap-1.5 flex-nowrap">
-                            <button
-                              onClick={() => handleOpenCustomStock(p)}
-                              className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-black text-[11px] font-bold border border-amber-500/20 hover:border-transparent transition-all flex items-center gap-1 shrink-0"
-                              title="افزایش یا کاهش به تعداد دلخواه"
-                            >
-                              <PackagePlus className="w-3.5 h-3.5" />
-                              <span>دلخواه</span>
-                            </button>
-                            <button
-                              onClick={() => handleAdjustStock(p.id, 20)}
-                              disabled={adjustingId === p.id}
-                              className="px-2.5 py-1.5 rounded-lg bg-white/10 text-white hover:bg-white hover:text-black text-[11px] font-bold transition-all shrink-0"
-                              title="افزایش ۲۰ عدد"
-                            >
-                              +۲۰
-                            </button>
-                            <button
-                              onClick={() => handleAdjustStock(p.id, 5)}
-                              disabled={adjustingId === p.id}
-                              className="px-2.5 py-1.5 rounded-lg bg-white/10 text-white hover:bg-white hover:text-black text-[11px] font-bold transition-all shrink-0"
-                              title="افزایش ۵ عدد"
-                            >
-                              +۵
-                            </button>
-                            <button
-                              onClick={() => handleAdjustStock(p.id, -1)}
-                              disabled={adjustingId === p.id || stock <= 0}
-                              className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors shrink-0"
-                              title="کاهش یک عدد"
-                            >
-                              <Minus className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleOpenSafetyStock(p)}
-                              className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-amber-400 hover:bg-white/10 transition-colors shrink-0"
-                              title="تنظیم حد هشدار موجودی (Safety Stock)"
-                            >
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                          {isMultiVariant ? (
+                            <div className="flex items-center justify-end">
+                              <button
+                                onClick={() => setExpandedRow(isExpanded ? null : p.id)}
+                                className={cn(
+                                  "px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm cursor-pointer",
+                                  isExpanded
+                                    ? "bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-purple-500/10"
+                                    : "bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border-white/10"
+                                )}
+                                title="مشاهده و مدیریت تنوع‌های کالا"
+                              >
+                                <Boxes className="w-4 h-4 text-purple-400" />
+                                <span>{isExpanded ? "بستن فهرست تنوع‌ها" : `مدیریت ${p.variants.length.toLocaleString("fa-IR")} تنوع`}</span>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1.5 flex-nowrap">
+                              <button
+                                onClick={() => handleOpenCustomStock(p.variants?.[0] || p)}
+                                className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-black text-[11px] font-bold border border-amber-500/20 hover:border-transparent transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                                title="افزایش یا کاهش به تعداد دلخواه"
+                              >
+                                <PackagePlus className="w-3.5 h-3.5" />
+                                <span>دلخواه</span>
+                              </button>
+                              <button
+                                onClick={() => handleAdjustStock(singleItemId, 20)}
+                                disabled={adjustingId === singleItemId}
+                                className="px-2.5 py-1.5 rounded-lg bg-white/10 text-white hover:bg-white hover:text-black text-[11px] font-bold transition-all shrink-0 cursor-pointer"
+                                title="افزایش ۲۰ عدد"
+                              >
+                                +۲۰
+                              </button>
+                              <button
+                                onClick={() => handleAdjustStock(singleItemId, 5)}
+                                disabled={adjustingId === singleItemId}
+                                className="px-2.5 py-1.5 rounded-lg bg-white/10 text-white hover:bg-white hover:text-black text-[11px] font-bold transition-all shrink-0 cursor-pointer"
+                                title="افزایش ۵ عدد"
+                              >
+                                +۵
+                              </button>
+                              <button
+                                onClick={() => handleAdjustStock(singleItemId, -1)}
+                                disabled={adjustingId === singleItemId || stock <= 0}
+                                className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-colors shrink-0 cursor-pointer"
+                                title="کاهش یک عدد"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleOpenSafetyStock(p.variants?.[0] || p)}
+                                className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-amber-400 hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+                                title="تنظیم حد هشدار موجودی (Safety Stock)"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
 
                       {/* Nested Variant Rows */}
                       {hasVariants && isExpanded && (
                         <tr className="bg-[#141414]">
-                          <td colSpan={5} className="p-4 md:p-6 space-y-3 border-t border-white/5">
-                            <span className="text-xs font-bold text-gray-300 block">
-                              تنوع‌ها و مشخصات انبار برای «{prodName}»:
-                            </span>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          <td colSpan={5} className="p-4 md:p-6 space-y-4 border-t border-white/5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-gray-200 flex items-center gap-2">
+                                <Boxes className="w-4 h-4 text-purple-400" />
+                                تنوع‌ها و موجودی انبار برای «{prodName}»:
+                              </span>
+                              <span className="text-[11px] text-gray-400">
+                                تعداد کل تنوع‌ها: {p.variants.length.toLocaleString("fa-IR")} مورد
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
                               {p.variants.map((v: any) => {
                                 const vStock = getItemStock(v);
+                                const safetyVal = v.safety_stock ?? v.inventory?.safety_stock ?? 5;
+                                const vIsLow = vStock <= safetyVal && vStock > 0;
+                                const vIsOut = vStock <= 0;
+                                const hasOpts = Array.isArray(v.options) && v.options.length > 0;
+
                                 return (
-                                  <div key={v.id} className="bg-[#1a1a1a] border border-white/5 p-3 rounded-2xl flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                      <span className="font-bold text-white text-xs">{v.title || v.name || "تنوع"}</span>
-                                      <span className="text-[10px] text-gray-500 block font-mono" dir="ltr">{v.sku}</span>
+                                  <div
+                                    key={v.id}
+                                    className="bg-[#181818] border border-white/10 p-4 rounded-2xl shadow-lg flex flex-col justify-between gap-3 group hover:border-white/20 transition-all"
+                                  >
+                                    {/* Top: Attributes & SKU & Price */}
+                                    <div className="space-y-2">
+                                      <div className="flex items-start justify-between gap-2">
+                                        {/* Options badges */}
+                                        <div className="flex-1 min-w-0">
+                                          {hasOpts ? (
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                              {v.options.map((opt: any, optIdx: number) => (
+                                                <span
+                                                  key={optIdx}
+                                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/5 text-gray-200 border border-white/10 shadow-sm"
+                                                >
+                                                  <span className="text-gray-400 font-medium">{opt.option_name}:</span>
+                                                  <span className="text-white font-black">{opt.value}</span>
+                                                </span>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/5 text-gray-400 border border-white/10">
+                                              تنوع عمومی (پیش‌فرض)
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {/* SKU Pill */}
+                                        <span
+                                          className="text-[10px] font-mono text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md shrink-0"
+                                          dir="ltr"
+                                        >
+                                          {v.sku}
+                                        </span>
+                                      </div>
+
+                                      {/* Price & Safety stock info row */}
+                                      <div className="flex items-center justify-between text-[11px] text-gray-400 pt-0.5">
+                                        {v.price ? (
+                                          <span className="font-bold text-gray-300">
+                                            قیمت: {formatPrice(v.price)}
+                                          </span>
+                                        ) : (
+                                          <span className="text-gray-500">—</span>
+                                        )}
+                                        <span className="text-[10px] text-gray-400">
+                                          حد هشدار: {safetyVal.toLocaleString("fa-IR")} عدد
+                                        </span>
+                                      </div>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-xs font-black text-amber-400 ml-1">{vStock.toLocaleString("fa-IR")} عدد</span>
-                                      <button
-                                        onClick={() => handleOpenSafetyStock(v)}
-                                        className="p-1.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-amber-400 rounded-lg text-[10px]"
-                                        title="حداقل موجودی هشدار"
-                                      >
-                                        <ShieldCheck className="w-3 h-3" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleAdjustStock(v.id, -1)}
-                                        disabled={adjustingId === v.id || vStock <= 0}
-                                        className="p-1.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white disabled:opacity-30 rounded-lg text-[10px]"
-                                        title="کاهش ۱ عدد"
-                                      >
-                                        <Minus className="w-3 h-3" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleAdjustStock(v.id, 5)}
-                                        disabled={adjustingId === v.id}
-                                        className="px-2 py-1 bg-white/10 hover:bg-white hover:text-black rounded-lg text-[10px] font-bold transition-all"
-                                        title="افزایش ۵ عدد"
-                                      >
-                                        +۵
-                                      </button>
-                                      <button
-                                        onClick={() => handleOpenCustomStock(v)}
-                                        className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500 hover:text-black text-amber-400 rounded-lg text-[10px] font-bold transition-all flex items-center gap-0.5"
-                                        title="تنظیم موجودی دلخواه"
-                                      >
-                                        <Plus className="w-3 h-3" />
-                                        <span>دلخواه</span>
-                                      </button>
+
+                                    {/* Middle: Stock status display */}
+                                    <div className="bg-[#121212] border border-white/5 rounded-xl p-2.5 flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-black text-white">
+                                          {vStock.toLocaleString("fa-IR")}{" "}
+                                          <span className="text-[10px] text-gray-400 font-normal">عدد موجود</span>
+                                        </span>
+                                      </div>
+
+                                      <div>
+                                        {vIsOut ? (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                            <AlertTriangle className="w-2.5 h-2.5" />
+                                            ناموجود
+                                          </span>
+                                        ) : vIsLow ? (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                            <AlertTriangle className="w-2.5 h-2.5" />
+                                            رو به اتمام
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                            <CheckCircle2 className="w-2.5 h-2.5" />
+                                            موجود
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Bottom: Action Controls */}
+                                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-white/5">
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          onClick={() => handleAdjustStock(v.id, -1)}
+                                          disabled={adjustingId === v.id || vStock <= 0}
+                                          className="p-1.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white disabled:opacity-30 rounded-lg text-xs transition-colors cursor-pointer"
+                                          title="کاهش ۱ عدد"
+                                        >
+                                          <Minus className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleAdjustStock(v.id, 5)}
+                                          disabled={adjustingId === v.id}
+                                          className="px-2.5 py-1 bg-white/10 hover:bg-white hover:text-black text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+                                          title="افزایش ۵ عدد"
+                                        >
+                                          +۵
+                                        </button>
+                                        <button
+                                          onClick={() => handleAdjustStock(v.id, 20)}
+                                          disabled={adjustingId === v.id}
+                                          className="px-2.5 py-1 bg-white/10 hover:bg-white hover:text-black text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+                                          title="افزایش ۲۰ عدد"
+                                        >
+                                          +۲۰
+                                        </button>
+                                      </div>
+
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          onClick={() => handleOpenCustomStock(v)}
+                                          className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500 hover:text-black text-amber-400 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                          title="تنظیم موجودی دلخواه"
+                                        >
+                                          <PackagePlus className="w-3.5 h-3.5" />
+                                          <span>دلخواه</span>
+                                        </button>
+                                        <button
+                                          onClick={() => handleOpenSafetyStock(v)}
+                                          className="p-1.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-amber-400 rounded-lg text-xs transition-colors cursor-pointer"
+                                          title="تنظیم حد هشدار موجودی"
+                                        >
+                                          <ShieldCheck className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -408,7 +561,7 @@ export default function AdminInventoryPage() {
 
           <form onSubmit={handleSaveSafetyStock} className="space-y-4 mt-4">
             <p className="text-xs text-gray-400 leading-relaxed">
-              کالا: <strong className="text-white">{safetyItem?.name || safetyItem?.title || safetyItem?.sku || "محصول انتخابی"}</strong>
+              کالا: <strong className="text-white">{formatVariantTitle(safetyItem)}</strong>
               <br />
               هنگامی که موجودی انبار به کمتر از این مقدار برسد، اعلان هشدار کمبود موجودی در سیستم ثبت می‌گردد.
             </p>
@@ -460,8 +613,8 @@ export default function AdminInventoryPage() {
             {/* Item info banner */}
             <div className="bg-[#161616] border border-white/5 p-3.5 rounded-2xl flex items-center justify-between">
               <div className="min-w-0 pr-1">
-                <span className="font-bold text-white text-xs block truncate max-w-[220px]">
-                  {customStockItem?.name || customStockItem?.title || customStockItem?.sku || "محصول انتخابی"}
+                <span className="font-bold text-white text-xs block truncate max-w-[260px]">
+                  {formatVariantTitle(customStockItem)}
                 </span>
                 {customStockItem?.sku && (
                   <span className="text-[10px] text-gray-500 font-mono block mt-0.5" dir="ltr">
