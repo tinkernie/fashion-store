@@ -33,6 +33,7 @@ import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatPrice, formatPriceNumber, toPersianDigits } from "@/lib/price-utils";
 import { isTokenExpired, clearAuthSession, getStoredAuth, parseJwtPayload } from "@/lib/auth";
+import { LogoutConfirmationDialog } from "@/components/ui/logout-confirmation-dialog";
 
 const POPULAR_SEARCH_TAGS = [
   "پالتو کشمیر",
@@ -62,6 +63,7 @@ export default function Navbar() {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSuperuser, setIsSuperuser] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
 
   const checkAuth = () => {
@@ -429,7 +431,7 @@ export default function Navbar() {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-sky-100" />
                     <DropdownMenuItem
-                      onClick={handleLogout}
+                      onClick={() => setIsLogoutDialogOpen(true)}
                       className="focus:bg-rose-50 text-rose-500 hover:text-rose-600 cursor-pointer rounded-xl text-right font-bold text-xs"
                     >
                       خروج از حساب کاربری
@@ -621,7 +623,7 @@ export default function Navbar() {
                         <SheetClose asChild><Link href="/profile" className="hover:text-[#0082CA] transition-colors text-slate-700">پروفایل کاربری</Link></SheetClose>
                         <SheetClose asChild>
                           <button
-                            onClick={handleLogout}
+                            onClick={() => setIsLogoutDialogOpen(true)}
                             className="text-right text-rose-500 hover:text-rose-600 transition-colors font-bold text-sm cursor-pointer"
                           >
                             خروج از حساب کاربری
@@ -735,6 +737,12 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <LogoutConfirmationDialog
+        open={isLogoutDialogOpen}
+        onOpenChange={setIsLogoutDialogOpen}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 }

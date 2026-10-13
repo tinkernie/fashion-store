@@ -42,6 +42,7 @@ import { formatShamsiDate } from "@/lib/jalali";
 import { cn } from "@/lib/utils";
 import { isTokenExpired, clearAuthSession, parseJwtPayload } from "@/lib/auth";
 import { formatPrice, parsePrice, getDiscountInfo } from "@/lib/price-utils";
+import { LogoutConfirmationDialog } from "@/components/ui/logout-confirmation-dialog";
 
 
 const getUserIdFromToken = () => {
@@ -108,6 +109,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("orders");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
@@ -547,7 +549,7 @@ export default function ProfilePage() {
             )}
 
             <Button
-              onClick={handleLogout}
+              onClick={() => setIsLogoutDialogOpen(true)}
               variant="outline"
               className="w-full text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 bg-white h-11 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-sm"
             >
@@ -1322,6 +1324,12 @@ export default function ProfilePage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <LogoutConfirmationDialog
+        open={isLogoutDialogOpen}
+        onOpenChange={setIsLogoutDialogOpen}
+        onConfirm={handleLogout}
+      />
     </main>
   );
 }

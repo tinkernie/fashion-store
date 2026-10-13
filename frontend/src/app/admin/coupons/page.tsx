@@ -25,11 +25,13 @@ import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
 import { ShamsiDatePicker } from "@/components/ui/shamsi-date-picker";
 import { formatPrice } from "@/lib/price-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteConfirmCoupon, setDeleteConfirmCoupon] = useState<{ id: string; codeName: string } | null>(null);
 
   // Form
   const [code, setCode] = useState("");
@@ -86,8 +88,13 @@ export default function AdminCouponsPage() {
     }
   };
 
-  const handleDeleteCoupon = async (id: string, codeName: string) => {
-    if (!confirm(`آیا از حذف کد تخفیف "${codeName}" مطمئن هستید؟`)) return;
+  const handleDeleteCoupon = (id: string, codeName: string) => {
+    setDeleteConfirmCoupon({ id, codeName });
+  };
+
+  const executeDeleteCoupon = async () => {
+    if (!deleteConfirmCoupon) return;
+    const { id } = deleteConfirmCoupon;
     try {
       await adminApi.deleteCoupon(id);
       toast.success("کد تخفیف حذف شد");
@@ -319,6 +326,17 @@ export default function AdminCouponsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteConfirmCoupon}
+        onOpenChange={(open) => !open && setDeleteConfirmCoupon(null)}
+        title="حذف کد تخفیف"
+        description={`آیا از حذف کد تخفیف «${deleteConfirmCoupon?.codeName || ""}» مطمئن هستید؟ این عملیات غیرقابل بازگشت است.`}
+        confirmText="حذف تخفیف"
+        cancelText="انصراف"
+        variant="destructive"
+        onConfirm={executeDeleteCoupon}
+      />
     </div>
   );
 }

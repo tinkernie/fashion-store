@@ -36,11 +36,13 @@ import { toast } from "sonner";
 import { adminApi, CMSPage } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function AdminCMSPage() {
 
   const [activeTab, setActiveTab] = useState("site-content");
   const [isLoading, setIsLoading] = useState(false);
+  const [deleteConfirmSlug, setDeleteConfirmSlug] = useState<string | null>(null);
 
   // Pages state
   const [pages, setPages] = useState<CMSPage[]>([]);
@@ -355,8 +357,13 @@ export default function AdminCMSPage() {
     }
   };
 
-  const handleDeletePage = async (slug: string) => {
-    if (!confirm(`آیا از حذف برگه "${slug}" مطمئن هستید؟`)) return;
+  const handleDeletePage = (slug: string) => {
+    setDeleteConfirmSlug(slug);
+  };
+
+  const executeDeletePage = async () => {
+    if (!deleteConfirmSlug) return;
+    const slug = deleteConfirmSlug;
     try {
       await adminApi.deletePage(slug);
       toast.success("برگه با موفقیت حذف شد");
@@ -1343,6 +1350,17 @@ export default function AdminCMSPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteConfirmSlug}
+        onOpenChange={(open) => !open && setDeleteConfirmSlug(null)}
+        title="حذف برگه"
+        description={`آیا از حذف برگه «${deleteConfirmSlug || ""}» مطمئن هستید؟ این عملیات غیرقابل بازگشت است.`}
+        confirmText="حذف برگه"
+        cancelText="انصراف"
+        variant="destructive"
+        onConfirm={executeDeletePage}
+      />
     </div>
   );
 }

@@ -42,6 +42,7 @@ import { getApiErrorMessage } from "@/lib/error-utils";
 import MediaUploader from "@/components/admin/media-uploader";
 import MultiMediaUploader from "@/components/admin/multi-media-uploader";
 import ProductRelationsManager from "@/components/admin/product-relations-manager";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   formatPrice,
   formatPriceNumber,
@@ -161,6 +162,20 @@ export default function AdminProductsPage() {
   const [editCatDesc, setEditCatDesc] = useState("");
   const [editCatMetaTitle, setEditCatMetaTitle] = useState("");
   const [editCatMetaDesc, setEditCatMetaDesc] = useState("");
+
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmText: string;
+    onConfirm: () => Promise<void> | void;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    confirmText: "حذف",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     loadCatalogData();
@@ -347,16 +362,23 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDeleteProductOption = async (optionId: string) => {
-    if (!confirm("آیا از حذف این ویژگی و مقادیر آن مطمئن هستید؟")) return;
-    try {
-      await adminApi.deleteProductOption(selectedProductForVariants.id, optionId);
-      toast.success("ویژگی حذف شد");
-      const opts = await adminApi.getProductOptions(selectedProductForVariants.id);
-      setProductOptions(opts);
-    } catch {
-      toast.error("خطا در حذف ویژگی");
-    }
+  const handleDeleteProductOption = (optionId: string) => {
+    setConfirmState({
+      isOpen: true,
+      title: "حذف ویژگی محصول",
+      description: "آیا از حذف این ویژگی و تمامی مقادیر آن مطمئن هستید؟",
+      confirmText: "حذف ویژگی",
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteProductOption(selectedProductForVariants.id, optionId);
+          toast.success("ویژگی حذف شد");
+          const opts = await adminApi.getProductOptions(selectedProductForVariants.id);
+          setProductOptions(opts);
+        } catch {
+          toast.error("خطا در حذف ویژگی");
+        }
+      },
+    });
   };
 
   const handleAddOptionValue = async (optionId: string) => {
@@ -454,16 +476,23 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDeleteVariant = async (variantId: string) => {
-    if (!confirm("آیا از حذف این تنوع کالا مطمئن هستید؟")) return;
-    try {
-      await adminApi.deleteVariant(variantId);
-      toast.success("تنوع حذف شد");
-      const vars = await adminApi.getVariants(selectedProductForVariants.id);
-      setProductVariants(vars);
-    } catch {
-      toast.error("خطا در حذف تنوع");
-    }
+  const handleDeleteVariant = (variantId: string) => {
+    setConfirmState({
+      isOpen: true,
+      title: "حذف تنوع کالا",
+      description: "آیا از حذف این تنوع کالا مطمئن هستید؟",
+      confirmText: "حذف تنوع",
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteVariant(variantId);
+          toast.success("تنوع حذف شد");
+          const vars = await adminApi.getVariants(selectedProductForVariants.id);
+          setProductVariants(vars);
+        } catch {
+          toast.error("خطا در حذف تنوع");
+        }
+      },
+    });
   };
 
   // Variant Edit Handlers (Task 9)
@@ -810,15 +839,22 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`آیا از حذف محصول "${name}" مطمئن هستید؟`)) return;
-    try {
-      await adminApi.deleteProduct(id);
-      toast.success("محصول با موفقیت حذف شد");
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, "خطا در حذف محصول"));
-    }
+  const handleDelete = (id: string, name: string) => {
+    setConfirmState({
+      isOpen: true,
+      title: "حذف محصول",
+      description: `آیا از حذف محصول «${name}» مطمئن هستید؟ این عملیات غیرقابل بازگشت است.`,
+      confirmText: "حذف محصول",
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteProduct(id);
+          toast.success("محصول با موفقیت حذف شد");
+          setProducts((prev) => prev.filter((p) => p.id !== id));
+        } catch (err) {
+          toast.error(getApiErrorMessage(err, "خطا در حذف محصول"));
+        }
+      },
+    });
   };
 
 
@@ -900,18 +936,25 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDeleteCat = async (id: string, name: string) => {
-    if (!confirm(`آیا از حذف دسته‌بندی «${name}» اطمینان دارید؟`)) return;
-    try {
-      await adminApi.deleteCategory(id);
-      toast.success(`دسته‌بندی «${name}» حذف شد`);
-      const updatedCats = await adminApi.getCategories();
-      setCategories(updatedCats);
-      if (selectedCategory === id) setSelectedCategory("all");
-      if (categoryId === id) setCategoryId(updatedCats[0]?.id || "");
-    } catch (err: any) {
-      toast.error(getApiErrorMessage(err, "خطا در حذف دسته‌بندی"));
-    }
+  const handleDeleteCat = (id: string, name: string) => {
+    setConfirmState({
+      isOpen: true,
+      title: "حذف دسته‌بندی",
+      description: `آیا از حذف دسته‌بندی «${name}» اطمینان دارید؟`,
+      confirmText: "حذف دسته‌بندی",
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteCategory(id);
+          toast.success(`دسته‌بندی «${name}» حذف شد`);
+          const updatedCats = await adminApi.getCategories();
+          setCategories(updatedCats);
+          if (selectedCategory === id) setSelectedCategory("all");
+          if (categoryId === id) setCategoryId(updatedCats[0]?.id || "");
+        } catch (err: any) {
+          toast.error(getApiErrorMessage(err, "خطا در حذف دسته‌بندی"));
+        }
+      },
+    });
   };
 
   const filteredProducts = products.filter((p) => {
@@ -2602,6 +2645,17 @@ export default function AdminProductsPage() {
         product={selectedProductForRelations}
         allProducts={products}
         onSaved={loadCatalogData}
+      />
+
+      <ConfirmDialog
+        open={confirmState.isOpen}
+        onOpenChange={(open) => setConfirmState((prev) => ({ ...prev, isOpen: open }))}
+        title={confirmState.title}
+        description={confirmState.description}
+        confirmText={confirmState.confirmText}
+        cancelText="انصراف"
+        variant="destructive"
+        onConfirm={confirmState.onConfirm}
       />
     </div>
   );

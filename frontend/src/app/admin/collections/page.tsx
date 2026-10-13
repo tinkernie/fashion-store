@@ -38,6 +38,7 @@ import { adminApi } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import MediaUploader from "@/components/admin/media-uploader";
 import { formatPrice, parsePrice } from "@/lib/price-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 
 interface CollectionItem {
@@ -79,6 +80,10 @@ export default function AdminCollectionsPage() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [productActionLoading, setProductActionLoading] = useState<string | null>(null);
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    isOpen: boolean;
+    collection: CollectionItem | null;
+  }>({ isOpen: false, collection: null });
 
   useEffect(() => {
     loadData();
@@ -177,10 +182,13 @@ export default function AdminCollectionsPage() {
     }
   };
 
-  const handleDeleteCollection = async (col: CollectionItem) => {
-    if (!confirm(`آیا از حذف کامل کالکشن «${col.name}» اطمینان دارید؟ این عملیات غیرقابل بازگشت است.`)) {
-      return;
-    }
+  const handleDeleteCollection = (col: CollectionItem) => {
+    setDeleteConfirmState({ isOpen: true, collection: col });
+  };
+
+  const executeDeleteCollection = async () => {
+    if (!deleteConfirmState.collection) return;
+    const col = deleteConfirmState.collection;
     try {
       setCollections((prev) => prev.filter((c) => c.id !== col.id));
       await adminApi.deleteCollection(col.id);
@@ -920,6 +928,17 @@ export default function AdminCollectionsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteConfirmState.isOpen}
+        onOpenChange={(open) => setDeleteConfirmState((prev) => ({ ...prev, isOpen: open }))}
+        title="حذف کالکشن"
+        description={`آیا از حذف کامل کالکشن «${deleteConfirmState.collection?.name || ""}» اطمینان دارید؟ این عملیات غیرقابل بازگشت است.`}
+        confirmText="حذف کالکشن"
+        cancelText="انصراف"
+        variant="destructive"
+        onConfirm={executeDeleteCollection}
+      />
     </div>
   );
 }

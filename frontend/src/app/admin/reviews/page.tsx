@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { adminApi, ProductReview } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<ProductReview[]>([]);
@@ -30,6 +31,7 @@ export default function AdminReviewsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<string>("all");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -87,8 +89,13 @@ export default function AdminReviewsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("آیا از حذف این دیدگاه مطمئن هستید؟")) return;
+  const handleDelete = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
     setActionLoadingId(id);
     try {
       await adminApi.deleteReview(id);
@@ -414,6 +421,17 @@ export default function AdminReviewsPage() {
           })
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="حذف دیدگاه کاربر"
+        description="آیا از حذف این دیدگاه مطمئن هستید؟ این عملیات غیرقابل بازگشت است."
+        confirmText="حذف دیدگاه"
+        cancelText="انصراف"
+        variant="destructive"
+        onConfirm={executeDelete}
+      />
     </div>
   );
 }

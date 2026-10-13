@@ -36,6 +36,7 @@ import { getApiErrorMessage } from "@/lib/error-utils";
 import { HoneycombLoader } from "@/components/ui/honeycomb-loader";
 import { isTokenExpired, clearAuthSession, getStoredAuth, setAuthSession } from "@/lib/auth";
 import { normalizePersianDigits } from "@/lib/utils";
+import { LogoutConfirmationDialog } from "@/components/ui/logout-confirmation-dialog";
 
 const NAV_ITEMS = [
   {
@@ -111,6 +112,7 @@ export default function AdminLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   // Admin Auth States - fully synchronized with backend contracts (phone_number + password / OTP)
   const [authMode, setAuthMode] = useState<"password" | "otp">("password");
@@ -336,7 +338,7 @@ export default function AdminLayout({
                 </div>
                 <button
                   type="button"
-                  onClick={handleLogout}
+                  onClick={() => setIsLogoutDialogOpen(true)}
                   className="text-[11px] underline text-amber-200 hover:text-white transition-colors cursor-pointer"
                 >
                   خروج و ورود با حساب مدیر
@@ -638,7 +640,7 @@ export default function AdminLayout({
           </Link>
 
           <button
-            onClick={handleLogout}
+            onClick={() => setIsLogoutDialogOpen(true)}
             className="w-full flex items-center justify-center gap-2 h-11 rounded-xl text-red-400 hover:bg-red-500/10 text-xs font-bold transition-all"
           >
             <LogOut className="w-4 h-4" />
@@ -688,6 +690,14 @@ export default function AdminLayout({
           {children}
         </main>
       </div>
+
+      <LogoutConfirmationDialog
+        open={isLogoutDialogOpen}
+        onOpenChange={setIsLogoutDialogOpen}
+        onConfirm={handleLogout}
+        title="خروج از پنل مدیریت"
+        description="آیا برای خروج از پنل مدیریت اطمینان دارید؟ برای دسترسی مجدد نیاز به ورود با شماره موبایل مدیر خواهید داشت."
+      />
     </div>
   );
 }
