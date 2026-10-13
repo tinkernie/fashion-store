@@ -26,7 +26,7 @@ export function CollectionsSection({ initialCollections }: { initialCollections?
   if (collections.length === 0) return null;
 
   return (
-    <section className="py-16 px-4 md:px-12 max-w-7xl mx-auto" dir="rtl">
+    <section className="pt-6 sm:pt-8 pb-4 sm:pb-6 px-4 md:px-12 max-w-7xl mx-auto" dir="rtl">
       <div className="flex items-center justify-between mb-8 border-b border-sky-100 pb-6">
         <div className="flex items-center gap-2.5 md:gap-3">
           <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">

@@ -579,7 +579,7 @@ export default function HomeClient({
       {/* ----------------------------------------------------------------- */}
       {/* 3. NEWEST PRODUCTS GRID (6 per row, 4 rows = 24 items)            */}
       {/* ----------------------------------------------------------------- */}
-      <section className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 sm:py-16">
+      <section className="w-full max-w-7xl mx-auto px-4 md:px-6 pt-4 sm:pt-6 pb-12 sm:pb-16">
         {/* Section Header */}
         <div className="flex items-end justify-between mb-8 border-b border-sky-100 pb-4">
           <div>
