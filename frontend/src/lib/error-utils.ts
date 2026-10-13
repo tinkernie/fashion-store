@@ -58,6 +58,22 @@ const errorMap: Record<string, string> = {
   "not_found": "مورد درخواستی یافت نشد.",
   "self_deactivate": "امکان غیرفعال‌سازی حساب کاربری خود وجود ندارد.",
 
+  // Mobile OTP & Ticketed Signup Errors
+  "phone_exists": "این شماره موبایل قبلاً در سیستم ثبت شده است. لطفاً وارد شوید.",
+  "This number is already registered. Please log in.": "این شماره موبایل قبلاً در سیستم ثبت شده است. لطفاً وارد حساب خود شوید.",
+  "A user with this phone already exists.": "کاربری با این شماره موبایل قبلاً ثبت‌نام کرده است.",
+  "Signup session expired. Please request a new code.": "نشست ثبت‌نام منقضی شده است. لطفاً مجدداً کد تأیید دریافت کنید.",
+  "Signup session does not match this number.": "کد تأیید با این شماره موبایل مطابقت ندارد.",
+  "Password confirmation does not match.": "تکرار رمز عبور با رمز عبور مطابقت ندارد.",
+  "Name is required.": "وارد کردن نام الزامی است.",
+  "Too many attempts.": "تعداد دفعات تلاش بیش از حد مجاز است. لطفاً کمی صبر کنید.",
+  "otp_locked": "حساب یا کد پیامکی به دلیل تلاش‌های مکرر موقتاً مسدود شده است.",
+  "otp_expired": "کد تأیید پیامک‌شده منقضی شده است. لطفاً کد جدید درخواست دهید.",
+  "invalid_otp": "کد تأیید پیامکی وارد شده نادرست است.",
+  "Code expired.": "کد تأیید منقضی شده است.",
+  "Invalid code.": "کد تأیید نادرست است.",
+  "Invalid or expired code.": "کد تأیید نادرست یا منقضی شده است.",
+
   // Cart & Inventory (Messages & Codes)
   "Item not in cart.": "این کالا در سبد خرید شما یافت نشد.",
   "Insufficient stock.": "موجودی انبار برای این کالا کافی نیست.",

@@ -114,6 +114,7 @@ export default function ProfilePage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [orders, setOrders] = useState<any[]>([]);
   const [orderFilter, setOrderFilter] = useState<"all" | "active" | "delivered" | "cancelled">("all");
@@ -448,6 +449,7 @@ export default function ProfilePage() {
     const formData = new FormData(e.currentTarget);
     const oldPassword = (formData.get("oldPassword") as string || "").trim();
     const newPassword = (formData.get("newPassword") as string || "").trim();
+    const confirmPassword = (formData.get("confirmPassword") as string || "").trim();
 
     if (!newPassword) {
       toast.error("لطفاً رمز عبور جدید را وارد کنید");
@@ -461,10 +463,17 @@ export default function ProfilePage() {
       return;
     }
 
+    if (newPassword !== confirmPassword) {
+      toast.error("تکرار رمز عبور با رمز عبور جدید مطابقت ندارد");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await api.post("/api/auth/change-password/", {
         old_password: oldPassword || "",
         new_password: newPassword,
+        new_password_confirm: confirmPassword,
       });
       toast.success("رمز عبور جدید با موفقیت ثبت و ذخیره شد", {
         description: "اکنون می‌توانید در مراجعات بعدی با شماره موبایل و این رمز عبور وارد شوید.",
@@ -1040,6 +1049,26 @@ export default function ProfilePage() {
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                       >
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-700">تکرار رمز عبور جدید</label>
+                    <div className="relative">
+                      <Input
+                        name="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl pr-4 pl-11 focus-visible:ring-2 focus-visible:ring-[#0082CA]"
+                        dir="ltr"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>

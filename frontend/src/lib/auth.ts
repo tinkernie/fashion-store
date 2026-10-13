@@ -17,6 +17,7 @@ export interface StoredUser {
 
 export interface JWTPayload {
   exp?: number;
+  sid?: string;
   user_id?: string | number;
   id?: string | number;
   phone_number?: string;

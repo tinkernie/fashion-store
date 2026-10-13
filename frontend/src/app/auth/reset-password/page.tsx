@@ -18,8 +18,10 @@ function ResetPasswordForm() {
   const [phone, setPhone] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
@@ -71,12 +73,18 @@ function ResetPasswordForm() {
       return;
     }
 
+    if (newPassword !== confirmPassword) {
+      toast.error("تکرار رمز عبور با رمز عبور جدید مطابقت ندارد");
+      return;
+    }
+
     setIsLoading(true);
     try {
       await api.post("/api/auth/password-reset-otp/", {
         phone_number: cleanPhone,
         code: cleanCode,
         new_password: newPassword,
+        new_password_confirm: confirmPassword,
       });
       toast.success("رمز عبور با موفقیت تغییر یافت", {
         description: "اکنون می‌توانید با رمز عبور جدید وارد حساب خود شوید.",
@@ -187,6 +195,33 @@ function ResetPasswordForm() {
             aria-label={showPassword ? "پنهان کردن رمز" : "نمایش رمز"}
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-[#0082CA]" />
+          <span>تکرار رمز عبور جدید</span>
+        </label>
+        <div className="relative">
+          <Input
+            type={showConfirmPassword ? "text" : "password"}
+            required
+            placeholder="حداقل ۸ کاراکتر"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="bg-sky-50/40 border-sky-200 h-12 text-slate-900 pr-4 pl-11 focus-visible:ring-2 focus-visible:ring-[#0082CA] text-sm"
+            dir="ltr"
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((prev) => !prev)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1"
+            tabIndex={-1}
+            aria-label={showConfirmPassword ? "پنهان کردن رمز" : "نمایش رمز"}
+          >
+            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
       </div>
