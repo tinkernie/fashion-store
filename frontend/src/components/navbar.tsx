@@ -254,13 +254,13 @@ export default function Navbar() {
       <motion.nav
         layout
         transition={{ type: "spring", stiffness: 350, damping: 30 }}
-        className="w-full bg-white/90 backdrop-blur-2xl border border-sky-100 rounded-full h-16 flex items-center justify-between px-3 sm:px-5 md:px-7 text-slate-800 shadow-lg shadow-sky-950/5 max-w-5xl transition-all duration-300"
+        className="w-full bg-[#0082CA] backdrop-blur-2xl border border-white/25 rounded-full h-16 flex items-center justify-between px-3 sm:px-5 md:px-7 text-white shadow-xl shadow-[#0082CA]/30 max-w-5xl transition-all duration-300"
         dir="rtl"
       >
         {/* Right side: Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 text-slate-800 hover:text-[#0082CA] shrink-0 transition-all group">
-          <MaviWordmark className="h-5 sm:h-6 w-auto text-[#0082CA] drop-shadow-sm group-hover:scale-105 transition-transform" />
-          <span className="text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-50 border border-sky-100 text-[#0082CA] group-hover:bg-sky-100/60 transition-colors">
+        <Link href="/" className="flex items-center gap-2 text-white hover:text-sky-100 shrink-0 transition-all group">
+          <MaviWordmark className="h-5 sm:h-6 w-auto text-white drop-shadow-sm group-hover:scale-105 transition-transform" />
+          <span className="text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-sm group-hover:bg-white/30 transition-colors">
             ماوی
           </span>
         </Link>
@@ -268,15 +268,15 @@ export default function Navbar() {
         {/* Center Section: Navigation Links (hidden on <lg to prevent tablet squashing) */}
         <div className="flex-1 flex items-center justify-center px-2 md:px-6 relative min-w-0">
           <div className="hidden lg:flex items-center gap-1.5 xl:gap-3 text-sm font-medium">
-            <Link href="/products" className="text-slate-700 hover:text-[#0082CA] hover:bg-sky-50/80 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">فروشگاه و کاتالوگ</Link>
-            <Link href="/search?sort=newest" className="text-slate-700 hover:text-[#0082CA] hover:bg-sky-50/80 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">جدیدترین‌ها</Link>
-            <Link href="/search?sort=best_selling" className="text-slate-700 hover:text-[#0082CA] hover:bg-sky-50/80 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">پرفروش‌ترین‌ها</Link>
-            <Link href="/search?sort=trending" className="text-slate-700 hover:text-[#0082CA] hover:bg-sky-50/80 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">ترندها</Link>
+            <Link href="/products" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">فروشگاه و کاتالوگ</Link>
+            <Link href="/search?sort=newest" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">جدیدترین‌ها</Link>
+            <Link href="/search?sort=best_selling" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">پرفروش‌ترین‌ها</Link>
+            <Link href="/search?sort=trending" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">ترندها</Link>
           </div>
         </div>
 
         {/* Left Side: Actions (Search with Little Text Field, User, Cart Drawer, Mobile Menu) */}
-        <div className="flex items-center gap-2 md:gap-3 text-slate-800 shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 text-white shrink-0">
           {/* Animated Expanding Search Bar with Little Text Field */}
           <motion.form
             layout
@@ -290,8 +290,8 @@ export default function Navbar() {
             className={cn(
               "relative flex items-center h-10 rounded-full px-3 transition-colors duration-300 border overflow-hidden shrink-0 cursor-pointer group",
               isSearchExpanded
-                ? "w-48 sm:w-60 md:w-72 bg-white text-slate-900 border-sky-300 shadow-md ring-2 ring-sky-100"
-                : "w-20 sm:w-24 md:w-28 bg-slate-100 hover:bg-slate-200/70 text-slate-700 border-slate-200/80"
+                ? "w-48 sm:w-60 md:w-72 bg-white text-slate-900 border-white shadow-lg ring-2 ring-white/30"
+                : "w-20 sm:w-24 md:w-28 bg-white/15 hover:bg-white/25 text-white border-white/25"
             )}
           >
             <button
@@ -306,7 +306,7 @@ export default function Navbar() {
               <Search
                 className={cn(
                   "w-4 h-4 transition-colors",
-                  isSearchExpanded ? "text-[#0082CA]" : "text-slate-500"
+                  isSearchExpanded ? "text-[#0082CA]" : "text-white"
                 )}
               />
             </button>
@@ -322,7 +322,7 @@ export default function Navbar() {
                 "flex-1 bg-transparent border-none outline-none text-xs font-medium min-w-0 transition-colors",
                 isSearchExpanded
                   ? "text-slate-900 placeholder:text-slate-400"
-                  : "text-slate-700 placeholder:text-slate-400 cursor-pointer"
+                  : "text-white placeholder:text-white/75 cursor-pointer"
               )}
             />
 
@@ -368,10 +368,10 @@ export default function Navbar() {
           {isLoggedIn && isSuperuser && (
             <Link
               href="/admin"
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all shadow-sm shrink-0"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 text-xs font-bold transition-all shadow-sm shrink-0"
               title="ورود به پنل مدیریت فروشگاه"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
               <span>پنل مدیریت</span>
             </Link>
           )}
@@ -384,15 +384,15 @@ export default function Navbar() {
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all outline-none cursor-pointer text-xs font-semibold select-none shrink-0",
                     isLoggedIn 
-                      ? "bg-sky-50 text-[#0082CA] border border-sky-200 hover:bg-sky-100/70" 
-                      : "bg-slate-100 hover:bg-slate-200/70 text-slate-700 border border-slate-200/80"
+                      ? "bg-white/20 hover:bg-white/30 ring-1 ring-white/30 text-white" 
+                      : "bg-white/10 hover:bg-white/20 border border-white/20 text-white"
                   )}
                   aria-label="حساب کاربری"
                 >
                   <div className="relative flex items-center justify-center">
                     <User className="w-4 h-4 shrink-0" />
                     {isLoggedIn && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
                     )}
                   </div>
                   <span className="truncate max-w-[110px]">
@@ -448,12 +448,12 @@ export default function Navbar() {
           <Sheet>
             <SheetTrigger asChild>
               <button 
-                className="relative p-2 text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer outline-none flex items-center"
+                className="relative p-2 text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer outline-none flex items-center"
                 aria-label="سبد خرید"
               >
-                <ShoppingBag className="w-5 h-5 text-slate-700" />
+                <ShoppingBag className="w-5 h-5 text-white" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#0082CA] text-white font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
+                  <span className="absolute -top-1 -right-1 bg-white text-[#0082CA] font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
                     {toPersianDigits(itemCount)}
                   </span>
                 )}
@@ -581,10 +581,10 @@ export default function Navbar() {
             <Sheet>
               <SheetTrigger asChild>
                 <button 
-                  className="p-2 text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer outline-none"
+                  className="p-2 text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer outline-none"
                   aria-label="منوی ناوبری اصلی"
                 >
-                  <Menu className="w-5 h-5" />
+                  <Menu className="w-5 h-5 text-white" />
                 </button>
               </SheetTrigger>
               <SheetContent side="right" className="bg-white border-l border-sky-100 text-slate-800 w-[280px] flex flex-col p-6 font-sans" dir="rtl">

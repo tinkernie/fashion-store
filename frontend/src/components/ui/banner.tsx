@@ -110,8 +110,10 @@ export function Banner({
           className={cn(
             bannerButtonVariants({
               variant: "ghost",
-              className:
-                "absolute cursor-pointer end-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white hover:bg-white/10 p-1.5 rounded-full",
+              className: cn(
+                "absolute cursor-pointer end-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-colors",
+                xColor || "text-slate-500 hover:text-slate-800 hover:bg-slate-200/60"
+              ),
               size: "icon",
             }),
           )}
