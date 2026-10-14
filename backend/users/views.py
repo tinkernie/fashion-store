@@ -121,6 +121,32 @@ class AdminUserViewSet(viewsets.GenericViewSet):
         output_serializer = self.get_serializer(updated_user)
         return Response(output_serializer.data)
 
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request):
+        """Download customer phones:
+        GET /api/admin/users/export/?filetype=csv|xlsx (same search/is_active
+        filters as the list). The future front-end button calls this URL
+        directly; the file downloads as an attachment.
+
+        NOTE: the parameter is named `filetype`, not `format` — DRF reserves
+        ?format= for content-negotiation overrides and 404s unknown formats.
+        """
+        from django.http import HttpResponse
+
+        from .services import UserExportService
+
+        filters = {}
+        if "is_active" in request.query_params:
+            filters["is_active"] = request.query_params["is_active"].lower() == "true"
+        if "search" in request.query_params:
+            filters["search"] = request.query_params["search"]
+        content, content_type, filename = UserExportService.export(
+            filters or None, fmt=request.query_params.get("filetype", "csv")
+        )
+        response = HttpResponse(content, content_type=content_type)
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
     @action(detail=True, methods=["post"])
     def deactivate(self, request, pk=None):
         service = UserService()
