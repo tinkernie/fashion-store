@@ -128,8 +128,10 @@ class AdminUserViewSet(viewsets.GenericViewSet):
         filters as the list). The future front-end button calls this URL
         directly; the file downloads as an attachment.
 
-        NOTE: the parameter is named `filetype`, not `format` — DRF reserves
-        ?format= for content-negotiation overrides and 404s unknown formats.
+        NOTE: the parameter is strictly `filetype`. A `format` query
+        parameter, if ever sent, is ignored (URL_FORMAT_OVERRIDE is
+        disabled globally, so ?format= is an inert ordinary parameter
+        that changes nothing and breaks nothing).
         """
         from django.http import HttpResponse
 

@@ -130,6 +130,11 @@ SIMPLE_JWT = {
 
 # DRF
 REST_FRAMEWORK = {
+    # Disabled: a ?format=<name> query param otherwise hijacks content
+    # negotiation platform-wide and 404s unknown formats (e.g. ?format=csv
+    # broke even unrelated list endpoints). Format suffixes in the path
+    # (.json/.api) keep working; query params are now ordinary params.
+    "URL_FORMAT_OVERRIDE": None,
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "core.authentication.ResilientJWTAuthentication",
     ),
