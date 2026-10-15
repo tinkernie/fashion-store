@@ -270,10 +270,10 @@ export default function Navbar() {
         {/* Center Section: Navigation Links (hidden on <lg to prevent tablet squashing) */}
         <div className="flex-1 flex items-center justify-center px-2 md:px-6 relative min-w-0">
           <div className="hidden lg:flex items-center gap-1.5 xl:gap-3 text-sm font-medium">
-            <Link href="/products" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">فروشگاه و کاتالوگ</Link>
-            <Link href="/search?sort=newest" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">جدیدترین‌ها</Link>
-            <Link href="/search?sort=best_selling" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">پرفروش‌ترین‌ها</Link>
-            <Link href="/search?sort=trending" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold">ترندها</Link>
+            <Link href="/products" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold whitespace-nowrap">فروشگاه و کاتالوگ</Link>
+            <Link href="/search?sort=newest" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold whitespace-nowrap">جدیدترین‌ها</Link>
+            <Link href="/search?sort=best_selling" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold whitespace-nowrap">پرفروش‌ترین‌ها</Link>
+            <Link href="/search?sort=trending" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold whitespace-nowrap">ترندها</Link>
           </div>
         </div>
 
@@ -364,18 +364,6 @@ export default function Navbar() {
           {/* Customer Notifications (Strictly visible only when logged in, hidden for guests) */}
           {isLoggedIn && (
             <NotificationDropdown />
-          )}
-
-          {/* Superuser Admin Panel Shortcut Button */}
-          {isLoggedIn && isSuperuser && (
-            <Link
-              href="/admin"
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 text-xs font-bold transition-all shadow-sm shrink-0"
-              title="ورود به پنل مدیریت فروشگاه"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
-              <span>پنل مدیریت</span>
-            </Link>
           )}
 
           {/* User Dropdown */}
