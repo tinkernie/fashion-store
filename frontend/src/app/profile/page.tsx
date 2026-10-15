@@ -27,6 +27,7 @@ import {
   ShoppingBag,
   ArrowRight,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,17 @@ import { cn } from "@/lib/utils";
 import { isTokenExpired, clearAuthSession, parseJwtPayload } from "@/lib/auth";
 import { formatPrice, parsePrice, getDiscountInfo } from "@/lib/price-utils";
 import { LogoutConfirmationDialog } from "@/components/ui/logout-confirmation-dialog";
+import {
+  UserAddress,
+  Province,
+  City,
+  fetchUserAddresses,
+  createUserAddress,
+  updateUserAddress,
+  deleteUserAddress,
+  setDefaultUserAddress,
+} from "@/lib/address-shipping-api";
+import { IranGeoSelect } from "@/components/ui/iran-geo-select";
 
 
 const getUserIdFromToken = () => {
@@ -119,7 +131,7 @@ export default function ProfilePage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [orderFilter, setOrderFilter] = useState<"all" | "active" | "delivered" | "cancelled">("all");
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [addresses, setAddresses] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [preferences, setPreferences] = useState<any>({
     sms_order_updates: true,
@@ -137,8 +149,19 @@ export default function ProfilePage() {
   const [isPhoneChangeStepTwo, setIsPhoneChangeStepTwo] = useState(false);
   const [isSubmittingPhoneChange, setIsSubmittingPhoneChange] = useState(false);
 
+  // Address Modal and Form State
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState<any>(null);
+  const [editingAddress, setEditingAddress] = useState<UserAddress | null>(null);
+  const [addressRecipientName, setAddressRecipientName] = useState("");
+  const [addressRecipientPhone, setAddressRecipientPhone] = useState("");
+  const [addressProvince, setAddressProvince] = useState<Province | null>(null);
+  const [addressCity, setAddressCity] = useState<City | null>(null);
+  const [addressStreet, setAddressStreet] = useState("");
+  const [addressBuildingNo, setAddressBuildingNo] = useState("");
+  const [addressPostalCode, setAddressPostalCode] = useState("");
+  const [addressIsDefault, setAddressIsDefault] = useState(false);
+  const [addressFormErrors, setAddressFormErrors] = useState<Record<string, string>>({});
+  const [isSubmittingAddress, setIsSubmittingAddress] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -155,23 +178,14 @@ export default function ProfilePage() {
       return;
     }
 
-    // Load addresses
-    const saved = localStorage.getItem(`user_addresses_${userId}`);
-    if (saved) {
-      try {
-        setAddresses(JSON.parse(saved));
-      } catch (e) {
-        setAddresses([]);
-      }
-    }
-
     const fetchData = async () => {
       try {
-        const [ordersRes, profileRes, notifsRes, prefsRes] = await Promise.allSettled([
+        const [ordersRes, profileRes, notifsRes, prefsRes, addressesRes] = await Promise.allSettled([
           api.get("/api/orders/"),
           api.get("/api/users/me/"),
           api.get("/api/notifications/"),
           api.get("/api/notifications/preferences/"),
+          fetchUserAddresses(),
         ]);
 
         const isAuth401 = (res: PromiseSettledResult<any>) =>
@@ -188,30 +202,10 @@ export default function ProfilePage() {
             ? ordersRes.value.data
             : ordersRes.value.data.results || [];
           setOrders(fetchedOrders);
+        }
 
-          // Populate initial addresses from order history if empty
-          if (!saved && fetchedOrders.length > 0) {
-            const extracted: any[] = [];
-            fetchedOrders.forEach((ord: any, idx: number) => {
-              const ship = ord.shipping_address;
-              if (ship && ship.address && !extracted.some((a) => a.address === ship.address)) {
-                extracted.push({
-                  id: `ord-addr-${idx}-${Date.now()}`,
-                  title: ship.city ? `آدرس ${ship.city}` : `آدرس سفارش ${ord.order_number || idx + 1}`,
-                  fullName: ship.full_name || "",
-                  phone: ship.phone || "",
-                  province: ship.province || "",
-                  city: ship.city || "",
-                  address: ship.address,
-                  postalCode: ship.postal_code || "",
-                });
-              }
-            });
-            if (extracted.length > 0) {
-              setAddresses(extracted);
-              localStorage.setItem(`user_addresses_${userId}`, JSON.stringify(extracted));
-            }
-          }
+        if (addressesRes.status === "fulfilled") {
+          setAddresses(addressesRes.value);
         }
 
         if (profileRes.status === "fulfilled") {
@@ -236,58 +230,117 @@ export default function ProfilePage() {
     fetchData();
   }, [router]);
 
-
   const handleOpenAddAddress = () => {
+    if (addresses.length >= 3) {
+      toast.error("حداکثر ۳ آدرس مجاز است. برای ثبت آدرس جدید، یکی از آدرس‌های قبلی را حذف کنید.");
+      return;
+    }
     setEditingAddress(null);
+    setAddressRecipientName(
+      userProfile ? `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim() : ""
+    );
+    setAddressRecipientPhone(userProfile?.phone || "");
+    setAddressProvince(null);
+    setAddressCity(null);
+    setAddressStreet("");
+    setAddressBuildingNo("");
+    setAddressPostalCode("");
+    setAddressIsDefault(addresses.length === 0);
+    setAddressFormErrors({});
     setIsAddressModalOpen(true);
   };
 
-  const handleOpenEditAddress = (addr: any) => {
+  const handleOpenEditAddress = (addr: UserAddress) => {
     setEditingAddress(addr);
+    setAddressRecipientName(addr.recipient_name);
+    setAddressRecipientPhone(addr.recipient_phone);
+    setAddressProvince({ id: addr.province_id, name: addr.province_name });
+    setAddressCity({ id: addr.city_id, name: addr.city_name });
+    setAddressStreet(addr.street);
+    setAddressBuildingNo(addr.building_no);
+    setAddressPostalCode(addr.postal_code);
+    setAddressIsDefault(addr.is_default);
+    setAddressFormErrors({});
     setIsAddressModalOpen(true);
   };
 
-  const handleDeleteAddress = (id: string | number) => {
-    const userId = getUserIdFromToken();
-    const updated = addresses.filter((a) => a.id !== id);
-    setAddresses(updated);
-    if (userId) {
-      localStorage.setItem(`user_addresses_${userId}`, JSON.stringify(updated));
+  const handleDeleteAddress = async (id: string) => {
+    try {
+      await deleteUserAddress(id);
+      toast.success("آدرس با موفقیت حذف شد");
+      const refreshed = await fetchUserAddresses();
+      setAddresses(refreshed);
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در حذف آدرس"));
     }
-    toast.success("آدرس با موفقیت حذف شد");
   };
 
-  const handleSaveAddress = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSetDefaultAddress = async (id: string) => {
+    try {
+      await setDefaultUserAddress(id);
+      toast.success("آدرس به عنوان پیش‌فرض تنظیم شد");
+      const refreshed = await fetchUserAddresses();
+      setAddresses(refreshed);
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در تنظیم آدرس پیش‌فرض"));
+    }
+  };
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    const userId = getUserIdFromToken();
-    const formData = new FormData(e.currentTarget);
+    const errors: Record<string, string> = {};
+    if (!addressRecipientName.trim()) errors.recipientName = "نام تحویل‌گیرنده الزامی است.";
+    const cleanPhone = addressRecipientPhone.replace(/\D/g, "");
+    if (!cleanPhone || cleanPhone.length < 8 || cleanPhone.length > 15) {
+      errors.recipientPhone = "شماره تماس معتبر نیست (۸ تا ۱۵ رقم).";
+    }
+    if (!addressProvince) errors.province = "انتخاب استان الزامی است.";
+    if (!addressCity) errors.city = "انتخاب شهر الزامی است.";
+    if (!addressStreet.trim()) errors.street = "نشانی و خیابان الزامی است.";
+    if (!addressBuildingNo.trim()) errors.buildingNo = "پلاک الزامی است.";
+    const cleanPostal = addressPostalCode.replace(/\D/g, "");
+    if (cleanPostal.length !== 10) errors.postalCode = "کد پستی باید ۱۰ رقم باشد.";
 
-    const newAddr = {
-      id: editingAddress ? editingAddress.id : `addr-${Date.now()}`,
-      title: (formData.get("title") as string) || "آدرس من",
-      fullName: (formData.get("fullName") as string) || "",
-      phone: (formData.get("phone") as string) || "",
-      province: (formData.get("province") as string) || "",
-      city: (formData.get("city") as string) || "",
-      address: formData.get("address") as string,
-      postalCode: (formData.get("postalCode") as string) || "",
-    };
-
-    let updatedList;
-    if (editingAddress) {
-      updatedList = addresses.map((a) => (a.id === editingAddress.id ? newAddr : a));
-      toast.success("آدرس با موفقیت ویرایش شد");
-    } else {
-      updatedList = [...addresses, newAddr];
-      toast.success("آدرس جدید با موفقیت افزوده شد");
+    if (Object.keys(errors).length > 0) {
+      setAddressFormErrors(errors);
+      return;
     }
 
-    setAddresses(updatedList);
-    if (userId) {
-      localStorage.setItem(`user_addresses_${userId}`, JSON.stringify(updatedList));
+    if (!editingAddress && addresses.length >= 3) {
+      toast.error("حداکثر ۳ آدرس مجاز است. برای ثبت آدرس جدید، ابتدا یکی از آدرس‌ها را حذف کنید.");
+      return;
     }
-    setIsAddressModalOpen(false);
-    setEditingAddress(null);
+
+    setIsSubmittingAddress(true);
+    try {
+      const payload = {
+        recipient_name: addressRecipientName.trim(),
+        recipient_phone: addressRecipientPhone.trim(),
+        province_id: addressProvince!.id,
+        city_id: addressCity!.id,
+        street: addressStreet.trim(),
+        building_no: addressBuildingNo.trim(),
+        postal_code: addressPostalCode.trim(),
+        is_default: addressIsDefault,
+      };
+
+      if (editingAddress) {
+        await updateUserAddress(editingAddress.id, payload);
+        toast.success("آدرس با موفقیت ویرایش شد");
+      } else {
+        await createUserAddress(payload);
+        toast.success("آدرس جدید با موفقیت افزوده شد");
+      }
+
+      const refreshed = await fetchUserAddresses();
+      setAddresses(refreshed);
+      setIsAddressModalOpen(false);
+      setEditingAddress(null);
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در ذخیره آدرس"));
+    } finally {
+      setIsSubmittingAddress(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -823,14 +876,24 @@ export default function ProfilePage() {
 
             {/* --- 3. Addresses Tab --- */}
             <TabsContent value="addresses" className="space-y-6 outline-none mt-0">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                  <h3 className="text-lg font-black text-slate-900">دفترچه آدرس‌ها</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-black text-slate-900">دفترچه آدرس‌ها</h3>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-50 text-[#0082CA] border border-sky-200 font-bold">
+                      {addresses.length.toLocaleString("fa-IR")} از ۳ آدرس مجاز
+                    </span>
+                  </div>
                   <p className="text-xs text-slate-500 mt-0.5">آدرس‌های ارسال سفارش‌های خود را مدیریت کنید</p>
                 </div>
                 <Button
                   onClick={handleOpenAddAddress}
-                  className="h-10 px-4 rounded-xl bg-[#0082CA] text-white font-bold text-xs flex items-center gap-1.5 hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20"
+                  disabled={addresses.length >= 3}
+                  className={`h-10 px-4 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+                    addresses.length >= 3
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                      : "bg-[#0082CA] text-white hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20"
+                  }`}
                 >
                   <Plus className="w-4 h-4" />
                   افزودن آدرس جدید
@@ -852,12 +915,19 @@ export default function ProfilePage() {
                       key={addr.id}
                       className="bg-white border border-sky-100 hover:border-sky-300 rounded-3xl p-6 flex flex-col justify-between space-y-4 transition-all shadow-sm"
                     >
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-[#0082CA]" />
-                            {addr.title || "آدرس من"}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                              <MapPin className="w-4 h-4 text-[#0082CA]" />
+                              {addr.recipient_name}
+                            </span>
+                            {addr.is_default && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                                پیش‌فرض
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleOpenEditAddress(addr)}
@@ -875,28 +945,37 @@ export default function ProfilePage() {
                             </button>
                           </div>
                         </div>
-                        <p className="text-xs text-slate-600 leading-relaxed">{addr.address}</p>
-                        {(addr.province || addr.city) && (
-                          <p className="text-xs text-slate-400">
-                            استان {addr.province} - شهر {addr.city}
-                          </p>
-                        )}
-                        {addr.fullName && (
-                          <p className="text-xs text-slate-500">
-                            تحویل‌گیرنده: <strong className="text-slate-800">{addr.fullName}</strong>{" "}
-                            {addr.phone && `(${addr.phone})`}
-                          </p>
-                        )}
+
+                        <p className="text-xs text-slate-700 leading-relaxed">
+                          استان {addr.province_name}، شهر {addr.city_name} — {addr.street}، پلاک {addr.building_no}
+                        </p>
+
+                        <p className="text-xs text-slate-500">
+                          شماره تماس:{" "}
+                          <span className="font-mono text-slate-800 font-medium" dir="ltr">
+                            {addr.recipient_phone}
+                          </span>
+                        </p>
                       </div>
 
-                      {addr.postalCode && (
-                        <div className="pt-3 border-t border-sky-100 text-[11px] text-slate-400 flex justify-between">
+                      <div className="pt-3 border-t border-sky-100 flex items-center justify-between gap-2">
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1">
                           <span>کد پستی:</span>
-                          <span className="font-mono text-slate-700" dir="ltr">
-                            {addr.postalCode}
+                          <span className="font-mono text-slate-700 font-semibold" dir="ltr">
+                            {addr.postal_code}
                           </span>
                         </div>
-                      )}
+
+                        {!addr.is_default && (
+                          <button
+                            type="button"
+                            onClick={() => handleSetDefaultAddress(addr.id)}
+                            className="text-[11px] font-bold text-[#0082CA] hover:text-[#006CA8] hover:underline transition-colors cursor-pointer"
+                          >
+                            تنظیم به عنوان پیش‌فرض
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1267,79 +1346,124 @@ export default function ProfilePage() {
               {editingAddress ? "ویرایش آدرس" : "افزودن آدرس جدید"}
             </DialogTitle>
           </DialogHeader>
+
           <form onSubmit={handleSaveAddress} className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700">عنوان آدرس (خانه، محل کار)</label>
-              <Input
-                name="title"
-                defaultValue={editingAddress?.title || "خانه"}
-                required
-                className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
-              />
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700">نام تحویل‌گیرنده</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">نام و نام خانوادگی تحویل‌گیرنده</label>
                 <Input
-                  name="fullName"
-                  defaultValue={
-                    editingAddress?.fullName ||
-                    (userProfile ? `${userProfile?.first_name || ""} ${userProfile?.last_name || ""}`.trim() : "")
-                  }
+                  value={addressRecipientName}
+                  onChange={(e) => setAddressRecipientName(e.target.value)}
+                  placeholder="مثال: علی رضایی"
                   className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                 />
+                {addressFormErrors.recipientName && (
+                  <p className="text-rose-500 text-xs">{addressFormErrors.recipientName}</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700">شماره موبایل</label>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">شماره موبایل / تماس</label>
                 <Input
-                  name="phone"
-                  defaultValue={editingAddress?.phone || ""}
+                  value={addressRecipientPhone}
+                  onChange={(e) => setAddressRecipientPhone(e.target.value)}
+                  placeholder="۰۹۱۲۳۴۵۶۷۸۹"
                   className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl font-sans text-left focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                   dir="ltr"
                 />
+                {addressFormErrors.recipientPhone && (
+                  <p className="text-rose-500 text-xs">{addressFormErrors.recipientPhone}</p>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700">استان</label>
+
+            {/* Cascading Iran Geo Select */}
+            <IranGeoSelect
+              provinceId={addressProvince?.id}
+              cityId={addressCity?.id}
+              onProvinceChange={(p) => setAddressProvince(p)}
+              onCityChange={(c) => setAddressCity(c)}
+              provinceError={addressFormErrors.province}
+              cityError={addressFormErrors.city}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">خیابان، کوچه و نشانی دقیق</label>
                 <Input
-                  name="province"
-                  defaultValue={editingAddress?.province || ""}
-                  required
+                  value={addressStreet}
+                  onChange={(e) => setAddressStreet(e.target.value)}
+                  placeholder="خیابان اصلی، کوچه فرعی، طبقه..."
                   className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                 />
+                {addressFormErrors.street && (
+                  <p className="text-rose-500 text-xs">{addressFormErrors.street}</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700">شهر</label>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">پلاک</label>
                 <Input
-                  name="city"
-                  defaultValue={editingAddress?.city || ""}
-                  required
+                  value={addressBuildingNo}
+                  onChange={(e) => setAddressBuildingNo(e.target.value)}
+                  placeholder="۱۲"
                   className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                 />
+                {addressFormErrors.buildingNo && (
+                  <p className="text-rose-500 text-xs">{addressFormErrors.buildingNo}</p>
+                )}
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700">آدرس پستی کامل</label>
-              <Input
-                name="address"
-                defaultValue={editingAddress?.address || ""}
-                required
-                className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">کد پستی (۱۰ رقمی)</label>
+                <Input
+                  value={addressPostalCode}
+                  onChange={(e) => setAddressPostalCode(e.target.value)}
+                  placeholder="1234567890"
+                  maxLength={10}
+                  className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl font-sans text-left focus-visible:ring-2 focus-visible:ring-[#0082CA]"
+                  dir="ltr"
+                />
+                {addressFormErrors.postalCode && (
+                  <p className="text-rose-500 text-xs">{addressFormErrors.postalCode}</p>
+                )}
+              </div>
+
+              <div className="pt-4 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="profile-default-address-chk"
+                  checked={addressIsDefault}
+                  onChange={(e) => setAddressIsDefault(e.target.checked)}
+                  className="w-4 h-4 rounded text-[#0082CA] border-sky-300 focus:ring-[#0082CA] cursor-pointer"
+                />
+                <label
+                  htmlFor="profile-default-address-chk"
+                  className="text-xs font-bold text-slate-700 cursor-pointer select-none"
+                >
+                  تنظیم به عنوان آدرس پیش‌فرض
+                </label>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700">کد پستی (۱۰ رقمی)</label>
-              <Input
-                name="postalCode"
-                defaultValue={editingAddress?.postalCode || ""}
-                className="bg-sky-50/50 border-sky-200 h-11 text-slate-900 text-sm rounded-xl font-sans text-left focus-visible:ring-2 focus-visible:ring-[#0082CA]"
-                dir="ltr"
-              />
-            </div>
+
             <div className="flex gap-3 pt-4">
-              <Button type="submit" className="flex-1 h-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold text-xs shadow-md shadow-[#0082CA]/20">
-                {editingAddress ? "ذخیره تغییرات آدرس" : "ثبت آدرس جدید"}
+              <Button
+                type="submit"
+                disabled={isSubmittingAddress}
+                className="flex-1 h-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#0072B5] font-bold text-xs shadow-md shadow-[#0082CA]/20 flex items-center justify-center gap-1.5"
+              >
+                {isSubmittingAddress ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin ml-1.5" />
+                    در حال ذخیره اطلاعات...
+                  </>
+                ) : editingAddress ? (
+                  "ذخیره تغییرات آدرس"
+                ) : (
+                  "ثبت آدرس جدید"
+                )}
               </Button>
               <Button
                 type="button"

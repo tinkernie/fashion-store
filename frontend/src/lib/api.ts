@@ -27,7 +27,8 @@ function isPublicReadEndpoint(url?: string, method?: string): boolean {
     url.includes('/api/store-collections/') ||
     url.includes('/api/search/') ||
     url.includes('/api/site-content/') ||
-    url.includes('/api/cms/')
+    url.includes('/api/cms/') ||
+    url.includes('/api/geo/')
   );
 }
 
