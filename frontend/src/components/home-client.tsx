@@ -134,15 +134,12 @@ export default function HomeClient({
           image_url: unwrapped.image_url,
         },
       ];
+      if (list.length === 1) {
+        list = [...list, ...DEFAULT_ADDITIONAL_SLIDES];
+      }
     }
     if (list.length === 0) {
       return [PLACEHOLDER_HERO_SLIDE, ...DEFAULT_ADDITIONAL_SLIDES];
-    }
-    if (list.length === 1) {
-      return [...list, ...DEFAULT_ADDITIONAL_SLIDES];
-    }
-    if (list.length === 2) {
-      return [...list, DEFAULT_ADDITIONAL_SLIDES[1]];
     }
     return list;
   });
@@ -285,11 +282,9 @@ export default function HomeClient({
                 image_url: heroData.image_url,
               },
             ];
-          }
-          if (list.length === 1) {
-            list = [...list, ...DEFAULT_ADDITIONAL_SLIDES];
-          } else if (list.length === 2) {
-            list = [...list, DEFAULT_ADDITIONAL_SLIDES[1]];
+            if (list.length === 1) {
+              list = [...list, ...DEFAULT_ADDITIONAL_SLIDES];
+            }
           }
           if (list.length > 0) {
             setHeroSlides(list);

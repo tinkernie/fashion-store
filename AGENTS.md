@@ -99,6 +99,10 @@ Every task MUST follow the 10-phase lifecycle. No implementation may begin befor
   4. Specialized design skills (`/impeccable`, `/hallmark`, `/design-taste-frontend`, `/ui-ux-pro-max`, `/ux-ui-agent-skills`, `/high-end-visual-design`).
   5. Established accessibility (WCAG AA/AAA) and engineering standards.
 - Never redesign working interfaces merely for aesthetic novelty; every UI change must have a justified functional or UX purpose.
+- **Mandatory CMS Dynamic Customization for Banners & Announcements**:
+  - All banners (header slider banners, promotional ribbons, campaign hero strips, announcements, and any future marketing banners) MUST be fully dynamic and manageable via CMS (`SiteContent` / Admin CMS).
+  - Hardcoding banner copy, links, or image URLs directly in frontend code is strictly forbidden. When introducing any new banner or announcement in the storefront, you MUST simultaneously add corresponding CMS schema, API support, and admin controls.
+  - All banner media inputs must support dual-mode: direct file upload (server-converted to WebP) or CDN link, with client-side horizontal/landscape validation (`width > height`) and 16:9 target ratio guidance.
 
 ## 7. Git Workflow, Commits & Production Sync
 - **Local Verification**: Run all relevant tests, builds, and linting before staging changes.

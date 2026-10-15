@@ -22,6 +22,12 @@ import {
   Search,
   Check,
   X,
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon,
+  Sliders,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,10 +39,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { adminApi, CMSPage } from "@/lib/admin-api";
+import { adminApi, CMSPage, HeroSlideData } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import MediaUploader from "@/components/admin/media-uploader";
 
 export default function AdminCMSPage() {
 
@@ -68,14 +75,36 @@ export default function AdminCMSPage() {
     link: "/women",
   });
 
-  const [heroBanner, setHeroBanner] = useState({
-    badge: "کالکشن جدید ۲۰۲۶",
-    headline: "استایل لوکس و مینیمال برای زندگی مدرن",
-    subtitle: "طراحی‌های اختصاصی و دوخت باکیفیت برای درخشش شما در هر موقعیت",
-    cta_label: "مشاهده جدیدترین‌ها",
-    cta_link: "/women",
-    image_url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1200&auto=format&fit=crop",
-  });
+  const [heroSlides, setHeroSlides] = useState<HeroSlideData[]>([
+    {
+      id: "slide-1",
+      title: "استایل لوکس و مینیمال برای زندگی مدرن",
+      subtitle: "طراحی‌های اختصاصی و دوخت باکیفیت برای درخشش شما در هر موقعیت",
+      badge: "کالکشن جدید ۲۰۲۶",
+      cta_label: "مشاهده جدیدترین‌ها",
+      cta_link: "/products",
+      image_url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1600&auto=format&fit=crop",
+    },
+    {
+      id: "slide-2",
+      title: "کالکشن شیک و بهاره ماوی",
+      subtitle: "ترکیب اصالت و مینیمالیسم مدرن با پارچه‌های فوق‌العاده باکیفیت و تن‌خور عالی",
+      badge: "استایل برتر فصل",
+      cta_label: "مشاهده کالکشن بهاره",
+      cta_link: "/collections/spring-2026",
+      image_url: "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=1600&auto=format&fit=crop",
+    },
+    {
+      id: "slide-3",
+      title: "استایل مینیمال و پرفروش",
+      subtitle: "ظرافت در جزئیات، راحتی در هر حرکت و طراحی بدون تاریخ انقضا برای خاص‌پسندان",
+      badge: "منتخب استایلیست‌ها",
+      cta_label: "خرید پرفروش‌ترین‌ها",
+      cta_link: "/collections/best-sellers",
+      image_url: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1600&auto=format&fit=crop",
+    },
+  ]);
+  const [previewSlideIndex, setPreviewSlideIndex] = useState(0);
 
   const [footerInfo, setFooterInfo] = useState({
     description: "فروشگاه تخصصی پوشاک مد و فشن با تمرکز بر کیفیت برتر، طراحی مدرن و ارسال سریع.",
@@ -131,7 +160,22 @@ export default function AdminCMSPage() {
         }
       }
       if (heroData.status === "fulfilled" && heroData.value) {
-        setHeroBanner((prev) => ({ ...prev, ...heroData.value }));
+        const val = heroData.value;
+        if (val.slides && Array.isArray(val.slides) && val.slides.length > 0) {
+          setHeroSlides(val.slides);
+        } else if (val.image_url || val.headline || val.title) {
+          setHeroSlides([
+            {
+              id: "hero-slide-1",
+              title: val.headline || val.title || "استایل لوکس و مینیمال برای زندگی مدرن",
+              subtitle: val.subtitle || "طراحی‌های اختصاصی و دوخت باکیفیت برای درخشش شما در هر موقعیت",
+              badge: val.badge || "کالکشن جدید ۲۰۲۶",
+              cta_label: val.cta_label || "مشاهده جدیدترین‌ها",
+              cta_link: val.cta_link || "/products",
+              image_url: val.image_url || "",
+            },
+          ]);
+        }
         if (typeof window !== "undefined") {
           try {
             localStorage.setItem("fashion_hero_content", JSON.stringify(heroData.value));
@@ -184,18 +228,89 @@ export default function AdminCMSPage() {
     }
   };
 
-  const saveHeroBanner = async () => {
+  const handleAddSlide = () => {
+    const newSlide: HeroSlideData = {
+      id: `slide-${Date.now()}`,
+      title: "عنوان اسلاید جدید",
+      subtitle: "توضیحات کوتاه یا ترغیب‌کننده برای این اسلاید",
+      badge: "پیشنهاد ویژه",
+      cta_label: "مشاهده و خرید",
+      cta_link: "/products",
+      image_url: "",
+    };
+    const updated = [...heroSlides, newSlide];
+    setHeroSlides(updated);
+    setPreviewSlideIndex(updated.length - 1);
+    toast.info("اسلاید جدید ایجاد شد. لطفاً تصویر و مشخصات آن را تنظیم کنید.");
+  };
+
+  const handleUpdateSlide = (index: number, field: keyof HeroSlideData, value: string) => {
+    setHeroSlides((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const handleMoveSlide = (index: number, direction: -1 | 1) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= heroSlides.length) return;
+    const copy = [...heroSlides];
+    const [moved] = copy.splice(index, 1);
+    copy.splice(targetIndex, 0, moved);
+    setHeroSlides(copy);
+    setPreviewSlideIndex(targetIndex);
+  };
+
+  const handleDeleteSlide = (index: number) => {
+    if (heroSlides.length <= 1) {
+      toast.error("حداقل یک اسلاید برای اسلایدر صفحه نخست باید باقی بماند.");
+      return;
+    }
+    const copy = heroSlides.filter((_, i) => i !== index);
+    setHeroSlides(copy);
+    if (previewSlideIndex >= copy.length) {
+      setPreviewSlideIndex(Math.max(0, copy.length - 1));
+    }
+    toast.success("اسلاید با موفقیت حذف شد");
+  };
+
+  const saveHeroSlides = async () => {
+    if (heroSlides.length === 0) {
+      toast.error("حداقل یک اسلاید برای اسلایدر اصلی الزامی است.");
+      return;
+    }
+
+    for (let i = 0; i < heroSlides.length; i++) {
+      const s = heroSlides[i];
+      if (!s.image_url && !(s as any).image) {
+        toast.error(`تصویر اسلاید شماره ${i + 1} الزامی است. لطفاً فایل تصویر افقی بارگذاری کنید یا لینک CDN معتبر وارد نمایید.`);
+        setPreviewSlideIndex(i);
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
-      await adminApi.updateSiteContent("hero", heroBanner);
+      const payload = {
+        slides: heroSlides,
+        // Top-level fallbacks for backwards compatibility
+        headline: heroSlides[0]?.title || "",
+        subtitle: heroSlides[0]?.subtitle || "",
+        badge: heroSlides[0]?.badge || "",
+        cta_label: heroSlides[0]?.cta_label || "",
+        cta_link: heroSlides[0]?.cta_link || "",
+        image_url: heroSlides[0]?.image_url || "",
+      };
+      await adminApi.updateSiteContent("hero", payload);
       if (typeof window !== "undefined") {
         try {
-          localStorage.setItem("fashion_hero_content", JSON.stringify(heroBanner));
+          localStorage.setItem("fashion_hero_content", JSON.stringify(payload));
         } catch {}
       }
-      toast.success("تنظیمات بنر صفحه نخست با موفقیت ذخیره شد");
+      toast.success("تنظیمات اسلایدر بنرهای صفحه نخست با موفقیت ذخیره شد");
     } catch (e: any) {
-      const msg = e?.response?.data?.detail || e?.response?.data?.error?.message || "خطا در ذخیره بنر صفحه نخست. اطمینان حاصل کنید با حساب ادمین وارد شده‌اید.";
+      const msg = e?.response?.data?.detail || e?.response?.data?.error?.message || "خطا در ذخیره اسلایدر بنرها. اطمینان حاصل کنید با حساب ادمین وارد شده‌اید.";
       toast.error(msg);
     } finally {
       setIsLoading(false);
@@ -536,122 +651,266 @@ export default function AdminCMSPage() {
             </div>
           </div>
 
-          {/* Section 2: Hero Banner */}
+          {/* Section 2: Hero Banner Slider */}
           <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
-                <Sparkles className="w-5 h-5" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+                    اسلایدر و بنرهای صفحه نخست
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/10 text-gray-300">
+                      {heroSlides.length} اسلاید
+                    </span>
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    مدیریت اسلایدهای متحرک بالای سایت با امکان آپلود تصویر افقی (۱۶:۹) یا درج لینک CDN
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base md:text-lg font-bold text-white">بنر اصلی صفحه اول (Hero Banner)</h3>
-                <p className="text-xs text-gray-400">تنظیم عنوان اصلی، تصویر جذاب پس‌زمینه و دکمه ورود به کالکشن</p>
-              </div>
+
+              <Button
+                type="button"
+                onClick={handleAddSlide}
+                className="h-10 px-4 rounded-xl bg-[#0082CA] hover:bg-[#0072b2] text-white text-xs font-bold flex items-center gap-2 self-start md:self-auto cursor-pointer shadow-md"
+              >
+                <Plus className="w-4 h-4" />
+                افزودن اسلاید جدید
+              </Button>
             </div>
 
             {/* Live Preview Card */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1.5">
-                <Eye className="w-3.5 h-3.5" />
-                پیش‌نمایش بنر صفحه نخست:
-              </span>
-              <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0a0a0a] h-48 md:h-56 p-6 flex flex-col justify-end">
-                {heroBanner.image_url && (
-                  <img
-                    src={heroBanner.image_url}
-                    alt="Banner preview"
-                    className="absolute inset-0 w-full h-full object-cover opacity-40"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                <div className="relative z-10 space-y-2 max-w-lg">
-                  {heroBanner.badge && (
-                    <span className="inline-block bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                      {heroBanner.badge}
-                    </span>
-                  )}
-                  <h4 className="text-lg md:text-xl font-black text-white">{heroBanner.headline || "تیتر بنر"}</h4>
-                  <p className="text-xs text-gray-300 line-clamp-1">{heroBanner.subtitle || "توضیحات کوتاه"}</p>
-                  <button className="bg-white text-black font-bold text-xs px-4 py-1.5 rounded-lg w-max mt-2">
-                    {heroBanner.cta_label || "خرید"}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-[#0082CA]" />
+                  پیش‌نمایش زنده اسلاید {previewSlideIndex + 1} از {heroSlides.length}:
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewSlideIndex((prev) => (prev > 0 ? prev - 1 : heroSlides.length - 1))}
+                    className="p-1 rounded-md text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                    title="اسلاید قبلی"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <span className="text-[11px] text-gray-400 font-mono px-1">
+                    {previewSlideIndex + 1} / {heroSlides.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewSlideIndex((prev) => (prev < heroSlides.length - 1 ? prev + 1 : 0))}
+                    className="p-1 rounded-md text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                    title="اسلاید بعدی"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
                 </div>
               </div>
+
+              {heroSlides[previewSlideIndex] && (
+                <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0a0a0a] min-h-[220px] md:min-h-[260px] p-6 md:p-8 flex flex-col justify-end">
+                  {heroSlides[previewSlideIndex].image_url ? (
+                    <img
+                      src={heroSlides[previewSlideIndex].image_url}
+                      alt={heroSlides[previewSlideIndex].title || "Banner preview"}
+                      className="absolute inset-0 w-full h-full object-cover opacity-50"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-500 bg-white/[0.02]">
+                      تصویر برای این اسلاید تنظیم نشده است
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none" />
+
+                  <div className="relative z-10 space-y-2 max-w-xl">
+                    {heroSlides[previewSlideIndex].badge && (
+                      <span className="inline-block bg-[#0082CA]/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                        {heroSlides[previewSlideIndex].badge}
+                      </span>
+                    )}
+                    <h4 className="text-lg md:text-2xl font-black text-white">
+                      {heroSlides[previewSlideIndex].title || "تیتر اسلاید"}
+                    </h4>
+                    <p className="text-xs md:text-sm text-gray-300 line-clamp-2">
+                      {heroSlides[previewSlideIndex].subtitle || "توضیحات اسلاید..."}
+                    </p>
+                    {heroSlides[previewSlideIndex].cta_label && (
+                      <div className="pt-2">
+                        <span className="inline-flex items-center gap-1.5 bg-white text-black font-bold text-xs px-4 py-2 rounded-xl shadow-lg">
+                          {heroSlides[previewSlideIndex].cta_label}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Indicators */}
+                  <div className="absolute bottom-3 left-4 z-10 flex items-center gap-1.5">
+                    {heroSlides.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setPreviewSlideIndex(i)}
+                        className={`h-1.5 rounded-full transition-all ${
+                          i === previewSlideIndex ? "w-6 bg-[#0082CA]" : "w-1.5 bg-white/40 hover:bg-white/70"
+                        }`}
+                        title={`رفتن به اسلاید ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">برچسب کوچک بالای تیتر</label>
-                <Input
-                  value={heroBanner.badge}
-                  onChange={(e) => setHeroBanner({ ...heroBanner, badge: e.target.value })}
-                  placeholder="مثال: کالکشن جدید"
-                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-                />
-              </div>
+            {/* Slide Configuration Cards */}
+            <div className="space-y-4 pt-2">
+              <h4 className="text-xs font-bold text-gray-300 flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-[#0082CA]" />
+                فهرست و ویرایش اسلایدها:
+              </h4>
 
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">تیتر اصلی و بزرگ</label>
-                <Input
-                  value={heroBanner.headline}
-                  onChange={(e) => setHeroBanner({ ...heroBanner, headline: e.target.value })}
-                  placeholder="تیتر جذاب صفحه نخست..."
-                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-                />
-              </div>
-            </div>
+              {heroSlides.map((slide, index) => (
+                <div
+                  key={slide.id || index}
+                  className={`bg-[#0a0a0a] border rounded-2xl p-5 md:p-6 transition-all space-y-4 ${
+                    previewSlideIndex === index ? "border-[#0082CA]/60 shadow-lg shadow-[#0082CA]/5" : "border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  {/* Slide Card Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-lg bg-white/10 text-white font-bold text-xs flex items-center justify-center">
+                        {index + 1}
+                      </span>
+                      <span className="text-xs font-bold text-white">
+                        {slide.title ? (slide.title.length > 35 ? `${slide.title.slice(0, 35)}...` : slide.title) : `اسلاید شماره ${index + 1}`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewSlideIndex(index)}
+                        className={`text-[10px] px-2 py-0.5 rounded-full transition-colors ${
+                          previewSlideIndex === index
+                            ? "bg-[#0082CA] text-white"
+                            : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {previewSlideIndex === index ? "در حال پیش‌نمایش" : "مشاهده در پیش‌نمایش"}
+                      </button>
+                    </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-300">متن زیرین و توضیحات</label>
-              <Input
-                value={heroBanner.subtitle}
-                onChange={(e) => setHeroBanner({ ...heroBanner, subtitle: e.target.value })}
-                placeholder="توضیحات تکمیلی..."
-                className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-              />
-            </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleMoveSlide(index, -1)}
+                        disabled={index === 0}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        title="انتقال به بالا (اسلاید قبلی)"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveSlide(index, 1)}
+                        disabled={index === heroSlides.length - 1}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        title="انتقال به پایین (اسلاید بعدی)"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSlide(index)}
+                        disabled={heroSlides.length <= 1}
+                        className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 disabled:opacity-30 disabled:pointer-events-none transition-colors mr-1"
+                        title="حذف این اسلاید"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">متن روی دکمه (CTA)</label>
-                <Input
-                  value={heroBanner.cta_label}
-                  onChange={(e) => setHeroBanner({ ...heroBanner, cta_label: e.target.value })}
-                  placeholder="مثال: مشاهده محصولات"
-                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-                />
-              </div>
+                  {/* Slide Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-300">تیتر اصلی اسلاید</label>
+                      <Input
+                        value={slide.title}
+                        onChange={(e) => handleUpdateSlide(index, "title", e.target.value)}
+                        placeholder="استایل لوکس و مینیمال..."
+                        className="bg-[#111111] border-white/10 h-11 text-white text-xs"
+                      />
+                    </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">لینک دکمه</label>
-                <Input
-                  value={heroBanner.cta_link}
-                  onChange={(e) => setHeroBanner({ ...heroBanner, cta_link: e.target.value })}
-                  placeholder="/women"
-                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-                  dir="ltr"
-                />
-              </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-300">برچسب کوچک بالای تیتر (Badge)</label>
+                      <Input
+                        value={slide.badge || ""}
+                        onChange={(e) => handleUpdateSlide(index, "badge", e.target.value)}
+                        placeholder="مثال: کالکشن جدید ۲۰۲۶"
+                        className="bg-[#111111] border-white/10 h-11 text-white text-xs"
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">آدرس اینترنتی تصویر (Image URL)</label>
-                <Input
-                  value={heroBanner.image_url}
-                  onChange={(e) => setHeroBanner({ ...heroBanner, image_url: e.target.value })}
-                  placeholder="https://..."
-                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-                  dir="ltr"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-300">متن توضیحات اسلاید</label>
+                    <Input
+                      value={slide.subtitle}
+                      onChange={(e) => handleUpdateSlide(index, "subtitle", e.target.value)}
+                      placeholder="توضیحات تکمیلی یا پیام ترغیب‌کننده..."
+                      className="bg-[#111111] border-white/10 h-11 text-white text-xs"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-300">متن روی دکمه (CTA)</label>
+                      <Input
+                        value={slide.cta_label}
+                        onChange={(e) => handleUpdateSlide(index, "cta_label", e.target.value)}
+                        placeholder="مشاهده محصولات"
+                        className="bg-[#111111] border-white/10 h-11 text-white text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-gray-300">لینک مقصد کلیک دکمه</label>
+                      <Input
+                        value={slide.cta_link}
+                        onChange={(e) => handleUpdateSlide(index, "cta_link", e.target.value)}
+                        placeholder="/products یا /collections/spring"
+                        className="bg-[#111111] border-white/10 h-11 text-white text-xs font-mono"
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Media Uploader for this Slide */}
+                  <div>
+                    <MediaUploader
+                      value={slide.image_url || (slide as any).image || ""}
+                      onChange={(url) => handleUpdateSlide(index, "image_url", url)}
+                      label={`تصویر بنر اسلاید شماره ${index + 1} (الزاماً افقی - نسبت ۱۶:۹)`}
+                      aspectRatio="banner"
+                      requiredLandscape={true}
+                      helperText="تصویر باید افقی (Landscape) باشد. تصاویر عمودی یا مربعی به عنوان بنر پذیرفته نمی‌شوند."
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="flex justify-end pt-2">
               <Button
-                onClick={saveHeroBanner}
+                onClick={saveHeroSlides}
                 disabled={isLoading}
-                className="h-11 px-6 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs flex items-center gap-2"
+                className="h-11 px-6 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs flex items-center gap-2 cursor-pointer shadow-lg"
               >
                 <Save className="w-4 h-4" />
-                ذخیره تغییرات بنر
+                ذخیره تغییرات اسلایدر بنرها
               </Button>
             </div>
           </div>
@@ -904,14 +1163,14 @@ export default function AdminCMSPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-300">آدرس تصویر پس‌زمینه (اختیاری)</label>
-                  <Input
+                <div>
+                  <MediaUploader
                     value={discountSection.background_image || ""}
-                    onChange={(e) => setDiscountSection({ ...discountSection, background_image: e.target.value })}
-                    placeholder="https://... یا /media/..."
-                    className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs font-mono"
-                    dir="ltr"
+                    onChange={(url) => setDiscountSection({ ...discountSection, background_image: url })}
+                    label="تصویر پس‌زمینه بنر جشنواره (الزاماً افقی - نسبت ۱۶:۹)"
+                    aspectRatio="banner"
+                    requiredLandscape={true}
+                    helperText="تصویر بنر جشنواره باید افقی (Landscape) باشد. می‌توانید فایل جدید آپلود کنید یا آدرس CDN وارد نمایید."
                   />
                 </div>
 

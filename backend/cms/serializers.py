@@ -46,8 +46,8 @@ def validate_site_content_by_key(key, content):
             if not isinstance(slides, list):
                 raise serializers.ValidationError("slides must be a list.")
             for i, s in enumerate(slides):
-                if not isinstance(s, dict) or not s.get("image"):
-                    raise serializers.ValidationError(f"slide #{i} needs image.")
+                if not isinstance(s, dict) or not (s.get("image") or s.get("image_url")):
+                    raise serializers.ValidationError(f"slide #{i} needs image or image_url.")
     return content
 
 

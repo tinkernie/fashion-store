@@ -121,13 +121,43 @@ class CMSService:
                 "link": "/women",
             }
         elif key in ("hero", "homepage"):
+            default_slides = [
+                {
+                    "id": "hero-slide-1",
+                    "title": "استایل لوکس و مینیمال برای زندگی مدرن",
+                    "subtitle": "طراحی‌های اختصاصی و دوخت باکیفیت برای درخشش شما در هر موقعیت",
+                    "badge": "کالکشن جدید ۲۰۲۶",
+                    "cta_label": "مشاهده جدیدترین‌ها",
+                    "cta_link": "/products",
+                    "image_url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1600&auto=format&fit=crop",
+                },
+                {
+                    "id": "hero-slide-2",
+                    "title": "کالکشن شیک و بهاره ماوی",
+                    "subtitle": "ترکیب اصالت و مینیمالیسم مدرن با پارچه‌های فوق‌العاده باکیفیت و تن‌خور عالی",
+                    "badge": "استایل برتر فصل",
+                    "cta_label": "مشاهده کالکشن بهاره",
+                    "cta_link": "/collections/spring-2026",
+                    "image_url": "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=1600&auto=format&fit=crop",
+                },
+                {
+                    "id": "hero-slide-3",
+                    "title": "استایل مینیمال و پرفروش",
+                    "subtitle": "ظرافت در جزئیات، راحتی در هر حرکت و طراحی بدون تاریخ انقضا برای خاص‌پسندان",
+                    "badge": "منتخب استایلیست‌ها",
+                    "cta_label": "خرید پرفروش‌ترین‌ها",
+                    "cta_link": "/collections/best-sellers",
+                    "image_url": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1600&auto=format&fit=crop",
+                },
+            ]
             return {
-                "badge": "کالکشن جدید ۲۰۲۶",
-                "headline": "استایل لوکس و مینیمال برای زندگی مدرن",
-                "subtitle": "طراحی‌های اختصاصی و دوخت باکیفیت برای درخشش شما در هر موقعیت",
-                "cta_label": "مشاهده جدیدترین‌ها",
-                "cta_link": "/women",
-                "image_url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1200&auto=format&fit=crop",
+                "slides": default_slides,
+                "badge": default_slides[0]["badge"],
+                "headline": default_slides[0]["title"],
+                "subtitle": default_slides[0]["subtitle"],
+                "cta_label": default_slides[0]["cta_label"],
+                "cta_link": default_slides[0]["cta_link"],
+                "image_url": default_slides[0]["image_url"],
             }
         elif key == "footer":
             return {

@@ -248,3 +248,22 @@ Before committing any UI code:
 - [ ] No hardcoded English numbers where Persian localized formatting is required.
 - [ ] Responsive behavior tested and validated at 375px, 768px, 1024px, and 1440px.
 - [ ] No horizontal scrollbars (`overflow-x: clip` or `hidden` on container).
+
+---
+
+## 10. Dynamic Banners & Marketing CMS Architecture
+
+1. **Zero-Hardcoding Policy**: Every banner, announcement ribbon, carousel slide, or seasonal marketing graphic must be powered by the CMS (`SiteContent` model) and editable by store administrators via the Admin CMS panel. Hardcoding marketing copy, campaign dates, or image assets directly into Next.js components is strictly prohibited.
+2. **Aspect Ratio & Orientation Rules**:
+   - Storefront banners are designed for horizontal landscape rendering.
+   - All banner image inputs must strictly enforce **horizontal orientation (`width > height`)**. Square (1:1) and vertical portrait (e.g. 3:4, 9:16) images are rejected by the media uploader to prevent broken layout proportions.
+   - Recommended ratio is **16:9** (minimum recommended dimensions: `1600×900` or `1920×1080` for desktop carousels, responsive down to mobile).
+3. **Dual Media Ingestion**:
+   - Media uploaders for banners must support both:
+     1. Direct file upload (automatically validated and converted to optimized WebP on the backend).
+     2. Remote CDN image URL input.
+   - Client-side validation inspects image width and height in real time before submission or upload.
+4. **Multi-Slide Carousel Standards**:
+   - Header hero slider must support unlimited slides dynamically ordered by priority/position.
+   - Each slide contains: Title/Headline, Subtitle, Badge/Tag, CTA Button Label, CTA Link URL, and Banner Image.
+   - In the absence of configured slides, a graceful fallback is displayed without breaking the layout.

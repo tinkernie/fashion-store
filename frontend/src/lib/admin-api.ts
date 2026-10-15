@@ -19,6 +19,16 @@ export interface CMSPage {
   updated_at?: string;
 }
 
+export interface HeroSlideData {
+  id?: string | number;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  cta_label?: string;
+  cta_link?: string;
+  image_url: string;
+}
+
 export interface SiteContentData {
   announcement?: {
     enabled?: boolean;
@@ -33,6 +43,7 @@ export interface SiteContentData {
     cta_label?: string;
     cta_link?: string;
     image_url?: string;
+    slides?: HeroSlideData[];
   };
   footer?: {
     description?: string;

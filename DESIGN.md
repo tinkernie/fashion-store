@@ -47,3 +47,10 @@ Every UI change must render cleanly without layout breaks across:
 
 ## 5. Token & Component Implementation
 For complete OKLCH semantic mappings, Tailwind utilities, and component specifications, refer directly to [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+
+---
+
+## 6. Dynamic Storefront Banners & CMS Integration
+- **Zero-Hardcoding Floor**: Every banner, carousel slide, promotional ribbon, or announcement rendered on the storefront must be dynamically driven from CMS (`SiteContent`). Hardcoding promotional copy or image URLs in templates is strictly prohibited.
+- **Aspect Ratio Standard**: All banner images must strictly follow a horizontal landscape orientation (`width > height`), with a recommended 16:9 aspect ratio (or wider, e.g. 21:9 for wide hero scrims). Square and portrait images are blocked.
+- **Dual Ingestion**: Admin CMS interfaces must support both direct image upload (with backend WebP optimization) and CDN/external image URL entry, with client-side dimension and orientation validation.
