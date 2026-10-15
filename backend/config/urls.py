@@ -51,6 +51,7 @@ urlpatterns = [
     path('api/', include('coupons.urls')),
     path('api/', include('payments.urls')),
     path('api/', include('media_libm.urls')),
+    path('api/', include('common.urls')),
 ]
 
 from django.conf import settings

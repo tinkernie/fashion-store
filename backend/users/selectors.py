@@ -24,6 +24,21 @@ class UserSelector:
         return User.objects.filter(is_active=True).select_related()
 
     @staticmethod
+    def get_address_by_id(user, address_id):
+        from .models import Address
+
+        try:
+            return Address.objects.filter(user=user, id=address_id).first()
+        except Exception:
+            return None
+
+    @staticmethod
+    def list_addresses(user) -> QuerySet:
+        from .models import Address
+
+        return Address.objects.filter(user=user).order_by("-is_default", "-created_at")
+
+    @staticmethod
     def list_users(filters: dict = None) -> QuerySet[User]:
         qs = User.objects.all().select_related()
         if filters:

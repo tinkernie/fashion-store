@@ -14,6 +14,9 @@ from .serializers import (
     AdminUserSerializer,
     AdminUserUpdateSerializer,
     AssignGroupsSerializer,
+    AddressSerializer,
+    AddressCreateSerializer,
+    AddressUpdateSerializer,
 )
 from .permissions import IsSelf
 
@@ -80,6 +83,61 @@ class UserProfileViewSet(
             serializer.validated_data["code"],
         )
         return Response(result)
+
+
+class UserAddressViewSet(viewsets.GenericViewSet):
+    """Owner-scoped address book (max 3, one default)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def _get_address(self, request, pk):
+        from .selectors import UserSelector as _US
+
+        address = _US.get_address_by_id(request.user, pk)
+        return address
+
+    def list(self, request):
+        from .selectors import UserSelector as _US
+
+        addresses = _US.list_addresses(request.user)
+        return Response(AddressSerializer(addresses, many=True).data)
+
+    def create(self, request):
+        from .services import AddressService
+
+        serializer = AddressCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        address = AddressService().create_address(request.user, serializer.validated_data)
+        return Response(AddressSerializer(address).data, status=status.HTTP_201_CREATED)
+
+    def partial_update(self, request, pk=None):
+        from .services import AddressService
+
+        address = self._get_address(request, pk)
+        if not address:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = AddressUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated = AddressService().update_address(address, serializer.validated_data)
+        return Response(AddressSerializer(updated).data)
+
+    def destroy(self, request, pk=None):
+        from .services import AddressService
+
+        address = self._get_address(request, pk)
+        if not address:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(AddressService().delete_address(address))
+
+    @action(detail=True, methods=["post"], url_path="default")
+    def set_default(self, request, pk=None):
+        from .services import AddressService
+
+        address = self._get_address(request, pk)
+        if not address:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        updated = AddressService().set_default(address)
+        return Response(AddressSerializer(updated).data)
 
 
 class AdminUserViewSet(viewsets.GenericViewSet):

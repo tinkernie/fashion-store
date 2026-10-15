@@ -133,6 +133,140 @@ class UserService:
             )
         return UserRepository.update_user(user, **update_data)
 
+class AddressService:
+    """User address book: max 3 active addresses, exactly one default.
+
+    Province/city are validated against the vendored iran_geo dataset
+    (ids in, names resolved server-side). Postal code is strictly 10
+    digits; recipient phone accepts 8-15 digits (mobile or landline).
+    """
+
+    MAX_ADDRESSES = 3
+
+    @staticmethod
+    def _validate_geo(province_id, city_id) -> tuple:
+        from common import geo_iran
+        from common.exceptions import BusinessException as _BE
+
+        province_name = geo_iran.province_name(province_id)
+        if not province_name:
+            raise _BE("Unknown province selected.")
+        city_name = geo_iran.city_belongs(province_id, city_id)
+        if not city_name:
+            raise _BE("Selected city does not belong to the province.")
+        return province_name, city_name
+
+    @staticmethod
+    def _normalize_phone(value: str) -> str:
+        from common.exceptions import BusinessException as _BE
+
+        digits = "".join(ch for ch in str(value or "") if ch.isdigit())
+        if digits.startswith("98") and len(digits) == 12:
+            digits = "0" + digits[2:]
+        if not (8 <= len(digits) <= 15):
+            raise _BE("Recipient phone must be 8-15 digits.")
+        return digits
+
+    @staticmethod
+    def _validate_postal(value: str) -> str:
+        from common.exceptions import BusinessException as _BE
+        import re
+
+        code = "".join(ch for ch in str(value or "") if ch.isdigit())
+        if not re.fullmatch(r"\d{10}", code):
+            raise _BE("Postal code must be exactly 10 digits.")
+        return code
+
+    def create_address(self, user, data: dict):
+        from django.db import transaction as _tx
+        from .models import Address
+
+        if Address.objects.filter(user=user).count() >= self.MAX_ADDRESSES:
+            raise BusinessException(
+                f"At most {self.MAX_ADDRESSES} addresses. Delete one to add another."
+            )
+        province_name, city_name = self._validate_geo(data["province_id"], data["city_id"])
+        for field in ("recipient_name", "street", "building_no"):
+            if not str(data.get(field) or "").strip():
+                raise BusinessException(f"{field} is required.")
+        with _tx.atomic():
+            address = Address.objects.create(
+                user=user,
+                recipient_name=str(data["recipient_name"]).strip(),
+                recipient_phone=self._normalize_phone(data.get("recipient_phone")),
+                province_id=int(data["province_id"]),
+                province_name=province_name,
+                city_id=int(data["city_id"]),
+                city_name=city_name,
+                street=str(data["street"]).strip(),
+                building_no=str(data["building_no"]).strip(),
+                postal_code=self._validate_postal(data.get("postal_code")),
+            )
+            # First address, or explicitly chosen, becomes the default.
+            if data.get("is_default") or not Address.objects.filter(
+                user=user, is_default=True
+            ).exclude(id=address.id).exists():
+                Address.objects.filter(user=user).exclude(id=address.id).update(is_default=False)
+                address.is_default = True
+                address.save(update_fields=["is_default", "updated_at"])
+        address.refresh_from_db()
+        return address
+
+    def update_address(self, address, data: dict):
+        from django.db import transaction as _tx
+        from .models import Address
+
+        if "province_id" in data or "city_id" in data:
+            if "province_id" not in data or "city_id" not in data:
+                raise BusinessException("province_id and city_id must be sent together.")
+            province_name, city_name = self._validate_geo(data["province_id"], data["city_id"])
+            address.province_id = int(data["province_id"])
+            address.province_name = province_name
+            address.city_id = int(data["city_id"])
+            address.city_name = city_name
+        for field in ("recipient_name", "street", "building_no"):
+            if field in data:
+                if not str(data[field] or "").strip():
+                    raise BusinessException(f"{field} must not be empty.")
+                setattr(address, field, str(data[field]).strip())
+        if "recipient_phone" in data:
+            address.recipient_phone = self._normalize_phone(data["recipient_phone"])
+        if "postal_code" in data:
+            address.postal_code = self._validate_postal(data["postal_code"])
+        with _tx.atomic():
+            if data.get("is_default") is True:
+                Address.objects.filter(user=address.user).exclude(id=address.id).update(is_default=False)
+                address.is_default = True
+            address.save()
+        address.refresh_from_db()
+        return address
+
+    def delete_address(self, address) -> dict:
+        from django.db import transaction as _tx
+        from .models import Address
+
+        was_default = address.is_default
+        address.delete()  # soft delete; order snapshots keep their copies
+        if was_default:
+            nxt = Address.objects.filter(user=address.user).order_by("-created_at").first()
+            if nxt:
+                with _tx.atomic():
+                    Address.objects.filter(user=address.user).update(is_default=False)
+                    nxt.is_default = True
+                    nxt.save(update_fields=["is_default", "updated_at"])
+        return {"message": "Address deleted."}
+
+    def set_default(self, address):
+        from django.db import transaction as _tx
+        from .models import Address
+
+        with _tx.atomic():
+            Address.objects.filter(user=address.user).exclude(id=address.id).update(is_default=False)
+            address.is_default = True
+            address.save(update_fields=["is_default", "updated_at"])
+        address.refresh_from_db()
+        return address
+
     def assign_groups(self, user_id: str, group_ids: list, requested_by: User):
         user = UserSelector.get_user_by_id(user_id)
         if not user:

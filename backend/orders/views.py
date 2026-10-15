@@ -35,9 +35,10 @@ class UserOrderViewSet(viewsets.GenericViewSet):
         )
         order = self.service.create_order_from_cart(
             user=request.user,
-            shipping_address=serializer.validated_data["shipping_address"],
+            shipping_address=serializer.validated_data.get("shipping_address"),
             billing_address=serializer.validated_data.get("billing_address"),
             session_key=session_key,
+            address_id=serializer.validated_data.get("address_id"),
         )
         return Response(order, status=status.HTTP_201_CREATED)
 

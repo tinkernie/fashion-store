@@ -3,9 +3,19 @@ from .models import Order
 
 
 class CreateOrderSerializer(serializers.Serializer):
-    shipping_address = serializers.JSONField()
+    # Either a saved address-book id (new flow) or the legacy raw JSON
+    # (current storefront keeps sending this — still accepted as-is).
+    address_id = serializers.UUIDField(required=False, allow_null=True)
+    shipping_address = serializers.JSONField(required=False)
     billing_address = serializers.JSONField(required=False)
     session_key = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if not attrs.get("address_id") and not attrs.get("shipping_address"):
+            raise serializers.ValidationError(
+                {"detail": "address_id or shipping_address is required."}
+            )
+        return attrs
 
 
 class StatusTransitionSerializer(serializers.Serializer):

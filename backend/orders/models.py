@@ -57,6 +57,15 @@ class Order(BaseModel):
 
     shipping_address = models.JSONField(default=dict)
     billing_address = models.JSONField(default=dict, blank=True)
+    # Optional link to the address-book entry the snapshot was built from
+    # (traceability only — the JSON snapshot above stays the legal record).
+    address = models.ForeignKey(
+        "users.Address",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+    )
 
     coupon = models.ForeignKey(
         "coupons.Coupon",

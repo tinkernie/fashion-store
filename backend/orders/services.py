@@ -41,10 +41,41 @@ class OrderService:
     def __init__(self):
         self.inventory_service = InventoryService()
 
+    @staticmethod
+    def _snapshot_from_address(address) -> dict:
+        """Build the legacy-shaped address snapshot from an address-book row."""
+        return {
+            "full_name": address.recipient_name,
+            "phone": address.recipient_phone,
+            "province": address.province_name,
+            "province_id": address.province_id,
+            "city": address.city_name,
+            "city_id": address.city_id,
+            "address": address.street,
+            "building_no": address.building_no,
+            "postal_code": address.postal_code,
+        }
+
     @transaction.atomic
     def create_order_from_cart(
-        self, user, shipping_address: dict, billing_address: dict = None, session_key: str = None
+        self, user, shipping_address: dict = None, billing_address: dict = None,
+        session_key: str = None, address_id: str = None,
     ) -> dict:
+        address = None
+        if address_id:
+            from users.selectors import UserSelector as _US
+
+            address = _US.get_address_by_id(user, address_id)
+            if not address:
+                raise BusinessException(
+                    "Address not found in your address book.", code="address_not_found"
+                )
+            shipping_address = self._snapshot_from_address(address)
+            billing_address = billing_address or dict(shipping_address)
+        if not shipping_address:
+            raise BusinessException(
+                "address_id or shipping_address is required.", code="address_required"
+            )
         # H5/H8: lock cart row to prevent duplicate order creation
         cart = Cart.objects.select_for_update().filter(user=user).first()
         
@@ -178,6 +209,7 @@ class OrderService:
             "total": total,
             "shipping_address": shipping_address,
             "billing_address": billing_address or shipping_address,
+            "address": address,
             "placed_at": timezone.now(),
         }
 
@@ -359,6 +391,7 @@ class OrderService:
             "total": int(round(float(order.total))) if order.total is not None else 0,
             "shipping_address": order.shipping_address,
             "billing_address": order.billing_address,
+            "address_id": str(order.address_id) if order.address_id else None,
             "placed_at": order.placed_at.isoformat(),
             "paid_at": order.paid_at.isoformat() if order.paid_at else None,
             "shipped_at": order.shipped_at.isoformat() if order.shipped_at else None,

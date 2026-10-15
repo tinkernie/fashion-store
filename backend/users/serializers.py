@@ -34,6 +34,43 @@ class UpdateProfileSerializer(serializers.Serializer):
         return value.strip()
 
 
+class AddressSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    recipient_name = serializers.CharField(read_only=True)
+    recipient_phone = serializers.CharField(read_only=True)
+    province_id = serializers.IntegerField(read_only=True)
+    province_name = serializers.CharField(read_only=True)
+    city_id = serializers.IntegerField(read_only=True)
+    city_name = serializers.CharField(read_only=True)
+    street = serializers.CharField(read_only=True)
+    building_no = serializers.CharField(read_only=True)
+    postal_code = serializers.CharField(read_only=True)
+    is_default = serializers.BooleanField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+
+class AddressCreateSerializer(serializers.Serializer):
+    recipient_name = serializers.CharField(max_length=150)
+    recipient_phone = serializers.CharField(max_length=15)
+    province_id = serializers.IntegerField(min_value=1)
+    city_id = serializers.IntegerField(min_value=1)
+    street = serializers.CharField(max_length=500)
+    building_no = serializers.CharField(max_length=50)
+    postal_code = serializers.CharField(max_length=10)
+    is_default = serializers.BooleanField(required=False, default=False)
+
+
+class AddressUpdateSerializer(serializers.Serializer):
+    recipient_name = serializers.CharField(max_length=150, required=False)
+    recipient_phone = serializers.CharField(max_length=15, required=False)
+    province_id = serializers.IntegerField(min_value=1, required=False)
+    city_id = serializers.IntegerField(min_value=1, required=False)
+    street = serializers.CharField(max_length=500, required=False)
+    building_no = serializers.CharField(max_length=50, required=False)
+    postal_code = serializers.CharField(max_length=10, required=False)
+    is_default = serializers.BooleanField(required=False)
+
+
 class ChangePhoneSerializer(serializers.Serializer):
     new_phone = serializers.CharField()
     password = serializers.CharField(required=False, allow_blank=True)
