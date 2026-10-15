@@ -397,6 +397,33 @@ export const adminApi = {
     const res = await api.get(`/api/admin/users/${query ? `?${query}` : ''}`);
     return Array.isArray(res.data) ? res.data : res.data.results || [];
   },
+  async exportUsers(
+    filetype: 'csv' | 'xlsx' = 'xlsx',
+    params?: { search?: string; is_active?: boolean }
+  ): Promise<{ blob: Blob; filename: string }> {
+    const searchParams = new URLSearchParams();
+    searchParams.set('filetype', filetype);
+    if (params?.search) {
+      searchParams.set('search', params.search);
+    }
+    if (params?.is_active !== undefined) {
+      searchParams.set('is_active', String(params.is_active));
+    }
+
+    const res = await api.get(`/api/admin/users/export/?${searchParams.toString()}`, {
+      responseType: 'blob',
+    });
+
+    let filename = `mavi-customers.${filetype}`;
+    const disposition = res.headers['content-disposition'] || res.headers['Content-Disposition'];
+    if (disposition) {
+      const match = String(disposition).match(/filename="?([^";]+)"?/i);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+    return { blob: res.data as Blob, filename };
+  },
   async toggleUserActive(userId: string, activate: boolean): Promise<any> {
     const action = activate ? 'activate' : 'deactivate';
     const res = await api.post(`/api/admin/users/${userId}/${action}/`);

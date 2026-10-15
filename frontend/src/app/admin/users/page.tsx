@@ -25,6 +25,9 @@ import {
   Phone,
   ArrowRight,
   ExternalLink,
+  FileSpreadsheet,
+  Download,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -110,6 +113,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isExporting, setIsExporting] = useState<"xlsx" | "csv" | null>(null);
 
   // User Details & Orders Modal State
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
@@ -133,6 +137,35 @@ export default function AdminUsersPage() {
       toast.error(getApiErrorMessage(e, "خطا در دریافت لیست کاربران"));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleExport = async (format: "xlsx" | "csv") => {
+    setIsExporting(format);
+    try {
+      const { blob, filename } = await adminApi.exportUsers(format, {
+        search: searchQuery.trim() || undefined,
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      toast.success(
+        format === "xlsx"
+          ? "فایل اکسل مشخصات و شماره موبایل کاربران با موفقیت دانلود شد."
+          : "فایل CSV مشخصات و شماره موبایل کاربران با موفقیت دانلود شد."
+      );
+    } catch (err: any) {
+      console.error("Export error:", err);
+      toast.error(getApiErrorMessage(err, "خطا در دریافت فایل خروجی کاربران"));
+    } finally {
+      setIsExporting(null);
     }
   };
 
@@ -202,6 +235,40 @@ export default function AdminUsersPage() {
           <p className="text-xs md:text-sm text-gray-400 mt-1">
             برای مشاهده سوابق خرید، مجموع مبالغ پرداختی و وضعیت مراحل سفارشات، روی هر کاربر کلیک کنید.
           </p>
+        </div>
+
+        {/* Export Buttons */}
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <Button
+            type="button"
+            onClick={() => handleExport("xlsx")}
+            disabled={isExporting !== null || users.length === 0}
+            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer disabled:opacity-50"
+            title="دانلود فایل اکسل شماره موبایل و اطلاعات کاربران"
+          >
+            {isExporting === "xlsx" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-white" />
+            )}
+            <span>خروجی اکسل (XLSX)</span>
+          </Button>
+
+          <Button
+            type="button"
+            onClick={() => handleExport("csv")}
+            disabled={isExporting !== null || users.length === 0}
+            variant="outline"
+            className="h-10 px-4 rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-gray-200 hover:text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            title="دانلود فایل متنی CSV با کدگذاری UTF-8"
+          >
+            {isExporting === "csv" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 text-gray-300" />
+            )}
+            <span>خروجی متنی (CSV)</span>
+          </Button>
         </div>
       </div>
 
