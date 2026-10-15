@@ -8,6 +8,9 @@ class CreateOrderSerializer(serializers.Serializer):
     address_id = serializers.UUIDField(required=False, allow_null=True)
     shipping_address = serializers.JSONField(required=False)
     billing_address = serializers.JSONField(required=False)
+    shipping_method = serializers.ChoiceField(
+        choices=["pishtaz", "vizheh"], required=False, default="pishtaz"
+    )
     session_key = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):

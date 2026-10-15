@@ -39,6 +39,7 @@ class UserOrderViewSet(viewsets.GenericViewSet):
             billing_address=serializer.validated_data.get("billing_address"),
             session_key=session_key,
             address_id=serializer.validated_data.get("address_id"),
+            shipping_method=serializer.validated_data.get("shipping_method", "pishtaz"),
         )
         return Response(order, status=status.HTTP_201_CREATED)
 

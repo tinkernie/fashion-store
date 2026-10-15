@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "notifications",
     "analytics",
     "search",
+    "shipping",
     "coupons",
     "media_libm",
 ]

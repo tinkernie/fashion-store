@@ -52,6 +52,7 @@ urlpatterns = [
     path('api/', include('payments.urls')),
     path('api/', include('media_libm.urls')),
     path('api/', include('common.urls')),
+    path('api/', include('shipping.urls')),
 ]
 
 from django.conf import settings

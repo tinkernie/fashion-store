@@ -60,6 +60,7 @@ class OrderService:
     def create_order_from_cart(
         self, user, shipping_address: dict = None, billing_address: dict = None,
         session_key: str = None, address_id: str = None,
+        shipping_method: str = "pishtaz",
     ) -> dict:
         address = None
         if address_id:
@@ -144,7 +145,20 @@ class OrderService:
                 coupon = None
                 discount_amount = Decimal('0.00')
 
-        shipping_cost = Decimal("0.00")
+        # Server-side shipping: never trust client totals. Priced from the
+        # destination province + weighed cart via the Post tariff engine.
+        from shipping import services as shipping_services
+
+        ship_quote = shipping_services.quote(
+            province_name=(shipping_address or {}).get("province"),
+            weight_grams=sum(
+                int(getattr(item.variant, "weight", 0) or 0) * int(item.quantity)
+                for item in cart_items
+            ),
+            subtotal_tomans=subtotal,
+            method_code=shipping_method or "pishtaz",
+        )["selected"]
+        shipping_cost = Decimal(str(ship_quote["total"]))
         tax_amount = Decimal("0.00")
         total = subtotal - discount_amount + shipping_cost + tax_amount
         if total < Decimal("0.00"):
@@ -210,6 +224,8 @@ class OrderService:
             "shipping_address": shipping_address,
             "billing_address": billing_address or shipping_address,
             "address": address,
+            "shipping_method": ship_quote["method"],
+            "shipping_detail": ship_quote,
             "placed_at": timezone.now(),
         }
 
@@ -392,6 +408,8 @@ class OrderService:
             "shipping_address": order.shipping_address,
             "billing_address": order.billing_address,
             "address_id": str(order.address_id) if order.address_id else None,
+            "shipping_method": order.shipping_method,
+            "shipping_detail": order.shipping_detail,
             "placed_at": order.placed_at.isoformat(),
             "paid_at": order.paid_at.isoformat() if order.paid_at else None,
             "shipped_at": order.shipped_at.isoformat() if order.shipped_at else None,

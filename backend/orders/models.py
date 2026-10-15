@@ -57,6 +57,14 @@ class Order(BaseModel):
 
     shipping_address = models.JSONField(default=dict)
     billing_address = models.JSONField(default=dict, blank=True)
+    shipping_method = models.CharField(
+        max_length=20, default="pishtaz", db_index=True,
+        help_text="pishtaz (D+3 default) or vizheh (D+1 upgrade)",
+    )
+    shipping_detail = models.JSONField(
+        default=dict, blank=True,
+        help_text="Toman breakdown {base_fare, surcharge, insurance, packaging, total, zone, ...}",
+    )
     # Optional link to the address-book entry the snapshot was built from
     # (traceability only — the JSON snapshot above stays the legal record).
     address = models.ForeignKey(
