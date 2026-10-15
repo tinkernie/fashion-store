@@ -57,9 +57,12 @@ class ConfirmPhoneSerializer(serializers.Serializer):
 class AdminUserSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
     phone_number = serializers.CharField()
+    email = serializers.EmailField(read_only=True, required=False, allow_null=True)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     is_active = serializers.BooleanField(required=False)
+    is_staff = serializers.BooleanField(read_only=True)
+    is_superuser = serializers.BooleanField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
     groups = serializers.SerializerMethodField()
     total_spent = serializers.SerializerMethodField()

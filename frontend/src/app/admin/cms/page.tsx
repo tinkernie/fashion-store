@@ -163,7 +163,7 @@ export default function AdminCMSPage() {
         const val = heroData.value;
         if (val.slides && Array.isArray(val.slides) && val.slides.length > 0) {
           setHeroSlides(val.slides);
-        } else if (val.image_url || val.headline || val.title) {
+        } else if (val.image_url) {
           setHeroSlides([
             {
               id: "hero-slide-1",
@@ -172,7 +172,7 @@ export default function AdminCMSPage() {
               badge: val.badge || "کالکشن جدید ۲۰۲۶",
               cta_label: val.cta_label || "مشاهده جدیدترین‌ها",
               cta_link: val.cta_link || "/products",
-              image_url: val.image_url || "",
+              image_url: val.image_url,
             },
           ]);
         }
@@ -577,17 +577,18 @@ export default function AdminCMSPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-300 font-medium cursor-pointer">
-                  {announcement.enabled ? "فعال" : "غیرفعال"}
-                </label>
-                <input
-                  type="checkbox"
-                  checked={announcement.enabled}
-                  onChange={(e) => setAnnouncement({ ...announcement, enabled: e.target.checked })}
-                  className="w-5 h-5 accent-white rounded cursor-pointer"
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => setAnnouncement({ ...announcement, enabled: !announcement.enabled })}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-bold transition-all cursor-pointer ${
+                  announcement.enabled
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-sm"
+                    : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${announcement.enabled ? "bg-emerald-400 animate-pulse" : "bg-gray-500"}`} />
+                <span>{announcement.enabled ? "نوار اطلاعیه فعال است" : "نوار اطلاعیه غیرفعال است"}</span>
+              </button>
             </div>
 
             {/* Live Preview Box */}

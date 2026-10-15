@@ -28,6 +28,7 @@ import {
   FileSpreadsheet,
   Download,
   Loader2,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -223,13 +224,20 @@ export default function AdminUsersPage() {
     );
   });
 
+  const userStats = useMemo(() => {
+    const total = users.length;
+    const staff = users.filter((u) => u.is_staff || u.is_superuser).length;
+    const active = users.filter((u) => u.is_active !== false).length;
+    return { total, staff, active };
+  }, [users]);
+
   return (
     <div className="space-y-8" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-white flex items-center gap-3">
-            <Users className="w-8 h-8 text-blue-400" />
+            <Users className="w-8 h-8 text-[#0082CA]" />
             مشتریان و حساب‌های کاربری
           </h1>
           <p className="text-xs md:text-sm text-gray-400 mt-1">
@@ -243,7 +251,7 @@ export default function AdminUsersPage() {
             type="button"
             onClick={() => handleExport("xlsx")}
             disabled={isExporting !== null || users.length === 0}
-            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer disabled:opacity-50"
+            className="h-10 px-4 rounded-xl bg-[#0082CA] hover:bg-[#0072b2] text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-[#0082CA]/20 transition-all cursor-pointer disabled:opacity-50"
             title="دانلود فایل اکسل شماره موبایل و اطلاعات کاربران"
           >
             {isExporting === "xlsx" ? (
@@ -269,6 +277,45 @@ export default function AdminUsersPage() {
             )}
             <span>خروجی متنی (CSV)</span>
           </Button>
+        </div>
+      </div>
+
+      {/* Overview Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-[#111111] border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <span className="text-xs text-gray-400 font-medium block">کل مشتریان و حساب‌ها</span>
+            <span className="text-xl md:text-2xl font-black text-white mt-1 block font-mono">
+              {isLoading ? "—" : userStats.total.toLocaleString("fa-IR")}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
+            <Users className="w-5 h-5 text-[#0082CA]" />
+          </div>
+        </div>
+
+        <div className="bg-[#111111] border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <span className="text-xs text-gray-400 font-medium block">مدیران و پرسنل سیستم</span>
+            <span className="text-xl md:text-2xl font-black text-white mt-1 block font-mono">
+              {isLoading ? "—" : userStats.staff.toLocaleString("fa-IR")}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5 text-amber-400" />
+          </div>
+        </div>
+
+        <div className="bg-[#111111] border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <span className="text-xs text-gray-400 font-medium block">حساب‌های فعال</span>
+            <span className="text-xl md:text-2xl font-black text-white mt-1 block font-mono">
+              {isLoading ? "—" : userStats.active.toLocaleString("fa-IR")}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <UserCheck className="w-5 h-5 text-emerald-400" />
+          </div>
         </div>
       </div>
 
@@ -343,13 +390,20 @@ export default function AdminUsersPage() {
                       </td>
 
                       <td className="p-4 md:p-5">
-                        {isStaff ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                            <Shield className="w-3 h-3" />
+                        {user.is_superuser ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 shadow-sm">
+                            <Crown className="w-3 h-3 text-amber-400" />
+                            مدیر ارشد
+                          </span>
+                        ) : user.is_staff ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-sm">
+                            <Shield className="w-3 h-3 text-sky-400" />
                             مدیر سیستم
                           </span>
                         ) : (
-                          <span className="text-gray-400 text-xs">مشتری عادی</span>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-white/5 text-gray-400 border border-white/10">
+                            مشتری
+                          </span>
                         )}
                       </td>
 
@@ -445,9 +499,9 @@ export default function AdminUsersPage() {
                       <span className="font-mono text-gray-300" dir="ltr">
                         {selectedUser.email || "بدون ایمیل"}
                       </span>
-                      {selectedUser.phone && (
+                      {(selectedUser.phone_number || selectedUser.phone) && (
                         <span className="font-mono text-gray-400" dir="ltr">
-                          {selectedUser.phone}
+                          {selectedUser.phone_number || selectedUser.phone}
                         </span>
                       )}
                     </div>
@@ -464,9 +518,19 @@ export default function AdminUsersPage() {
                   >
                     {selectedUser.is_active !== false ? "حساب فعال" : "حساب مسدود"}
                   </span>
-                  {selectedUser.is_staff && (
-                    <span className="text-[11px] px-3 py-1 rounded-full font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  {selectedUser.is_superuser ? (
+                    <span className="text-[11px] px-3 py-1 rounded-full font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <Crown className="w-3.5 h-3.5 text-amber-400" />
+                      مدیر ارشد
+                    </span>
+                  ) : selectedUser.is_staff ? (
+                    <span className="text-[11px] px-3 py-1 rounded-full font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1">
+                      <Shield className="w-3.5 h-3.5 text-sky-400" />
                       مدیر سیستم
+                    </span>
+                  ) : (
+                    <span className="text-[11px] px-3 py-1 rounded-full font-medium bg-white/5 text-gray-400 border border-white/10">
+                      مشتری
                     </span>
                   )}
                 </div>

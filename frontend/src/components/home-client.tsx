@@ -425,7 +425,7 @@ export default function HomeClient({
                   loading="eager"
                   decoding="async"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/90 via-[#0B192C]/35 to-transparent md:bg-gradient-to-r md:from-[#0B192C]/90 md:via-[#0B192C]/40 md:to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/90 via-[#0B192C]/35 to-transparent md:bg-gradient-to-l md:from-[#0B192C]/95 md:via-[#0B192C]/50 md:to-transparent" />
 
                 {/* Banner Editorial Typography & Actions */}
                 <div className="absolute inset-0 flex flex-col justify-end md:justify-center px-6 sm:px-12 md:px-16 lg:px-20 text-right z-10 pointer-events-none">
