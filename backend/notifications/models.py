@@ -9,6 +9,7 @@ class NotificationTemplate(BaseModel):
         ('shipping_update', 'Shipping Update'),
         ('welcome', 'Welcome'),
         ('wishlist_discount', 'Wishlist Product Discount'),
+        ('back_in_stock', 'Back In Stock'),
         ('generic', 'Generic'),
     ]
     type = models.CharField(max_length=50, choices=TYPE_CHOICES, db_index=True)
@@ -57,6 +58,34 @@ class Notification(BaseModel):
     class Meta:
         db_table = 'notification'
         ordering = ['-created_at']
+
+
+class BackInStockAlert(BaseModel):
+    """'Notify me when available' subscription: one user watching one
+    variant. Max 5 active per user (any products). Fires once per
+    out-of-stock -> in-stock transition, then re-arms automatically.
+    Soft-deleted rows (removed alerts, stale cleanups) never block
+    re-subscribing thanks to the partial unique constraint."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                             related_name='stock_alerts')
+    variant = models.ForeignKey('variants.Variant', on_delete=models.CASCADE,
+                                related_name='stock_alerts')
+    last_notified_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'user_stock_alert'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'variant'],
+                condition=models.Q(deleted_at__isnull=True),
+                name='uq_stockalert_user_variant_active',
+            )
+        ]
+
+    def __str__(self):
+        return f"Stock alert for {self.user.phone_number} on {self.variant.sku}"
 
     def __str__(self):
         return f"Notification {self.type} for {self.user.phone_number}"

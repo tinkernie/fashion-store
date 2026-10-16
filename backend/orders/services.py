@@ -255,6 +255,18 @@ class OrderService:
         cart.coupon = None
         cart.save(update_fields=["coupon", "updated_at"])
 
+        # Buyer got the item: drop their back-in-stock alerts for it.
+        try:
+            from notifications.models import BackInStockAlert
+
+            BackInStockAlert.objects.filter(
+                user=user,
+                variant_id__in=[i["variant_id"] for i in items_data],
+                deleted_at__isnull=True,
+            ).update(deleted_at=timezone.now(), updated_at=timezone.now())
+        except Exception:
+            pass
+
         # Log initial status
         OrderRepository.update_status(order, Order.Status.PENDING)
 

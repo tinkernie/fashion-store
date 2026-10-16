@@ -49,6 +49,7 @@ class NotificationService:
                     "order_status_change": "وضعیت سفارش {{ order_number }}: {{ new_status_fa|default:new_status }}",
                     "shipping_update": "سفارش {{ order_number }} تحویل پست شد",
                     "welcome": "به فروشگاه تخصصی ماوی خوش آمدید",
+                    "back_in_stock": "{{ product_title }} دوباره موجود شد",
                     "generic": "اطلاعیه سیستم",
                 }
                 fallback_bodies = {
@@ -56,6 +57,7 @@ class NotificationService:
                     "order_status_change": "{{ user_name }} عزیز، وضعیت سفارش {{ order_number }} به «{{ new_status_fa|default:new_status }}» تغییر یافت.",
                     "shipping_update": "{{ user_name }} عزیز، مرسوله سفارش {{ order_number }} تحویل شرکت پست گردید. کد رهگیری: {{ tracking_number|default:'---' }}",
                     "welcome": "{{ user_name }} عزیز، به فروشگاه تخصصی ماوی خوش آمدید!",
+                    "back_in_stock": "{{ product_title }} ({{ options }}) هم‌اکنون موجود است.",
                     "generic": "{{ user_name }} عزیز، شما یک اعلان جدید دارید.",
                 }
                 subject = self._render_template_string(fallback_subjects.get(type, "اطلاعیه سیستم"), context)
@@ -163,3 +165,82 @@ class NotificationService:
         t = Template(template_str)
         c = Context(context)
         return t.render(c)
+
+
+class StockAlertService:
+    """'Notify me when available' subscriptions: max 5 active per user,
+    any mix of products. Only subscribable while actually out of stock."""
+
+    MAX_ALERTS = 5
+
+    def list_alerts(self, user) -> list:
+        from .models import BackInStockAlert
+
+        alerts = (
+            BackInStockAlert.objects.filter(user=user, deleted_at__isnull=True)
+            .select_related("variant__product")
+            .order_by("-created_at")
+        )
+        return [self._serialize(a) for a in alerts]
+
+    def add_alert(self, user, variant_id: str) -> dict:
+        from django.db import IntegrityError, transaction as _tx
+        from .models import BackInStockAlert
+        from variants.selectors import VariantSelector
+
+        variant = VariantSelector.get_variant_by_id(variant_id)
+        if not variant:
+            raise BusinessException("Variant not found.")
+        try:
+            inv = variant.inventory
+            sellable = (inv.available_quantity or 0) - (inv.reserved_quantity or 0)
+        except Exception:
+            sellable = 0
+        if sellable > 0:
+            raise BusinessException("This variant is already available.")
+        if BackInStockAlert.objects.filter(user=user).count() >= self.MAX_ALERTS:
+            raise BusinessException(
+                f"At most {self.MAX_ALERTS} alerts. Remove one to add another."
+            )
+        if BackInStockAlert.objects.filter(user=user, variant=variant).exists():
+            raise BusinessException("You are already watching this variant.")
+        try:
+            with _tx.atomic():
+                alert = BackInStockAlert.objects.create(user=user, variant=variant)
+        except IntegrityError:
+            raise BusinessException("You are already watching this variant.")
+        return self._serialize(alert)
+
+    def remove_alert(self, user, alert_id: str) -> dict:
+        from .models import BackInStockAlert
+
+        alert = BackInStockAlert.objects.filter(user=user, id=alert_id).first()
+        if not alert:
+            raise BusinessException("Alert not found.")
+        alert.delete()  # soft delete; re-subscribing later is allowed
+        return {"message": "Alert removed."}
+
+    def _serialize(self, alert) -> dict:
+        variant = alert.variant
+        product = variant.product
+        try:
+            inv = variant.inventory
+            sellable = max(0, (inv.available_quantity or 0) - (inv.reserved_quantity or 0))
+        except Exception:
+            sellable = 0
+        return {
+            "id": str(alert.id),
+            "variant_id": str(variant.id),
+            "sku": variant.sku,
+            "product_id": str(product.id),
+            "product_title": product.title,
+            "product_slug": product.slug,
+            "options": [
+                {"option_name": vo.option.name, "value": vo.option_value.value}
+                for vo in variant.variantoption_set.select_related("option", "option_value").all()
+            ],
+            "in_stock_now": sellable > 0,
+            "current_sellable": sellable,
+            "last_notified_at": alert.last_notified_at.isoformat() if alert.last_notified_at else None,
+            "created_at": alert.created_at.isoformat(),
+        }

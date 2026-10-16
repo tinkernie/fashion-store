@@ -28,6 +28,10 @@ app.conf.beat_schedule = {
         "task": "authentication.tasks.cleanup_expired_otps",
         "schedule": crontab(hour=2, minute=0),
     },
+    "cleanup-stale-stock-alerts-daily": {
+        "task": "notifications.tasks.cleanup_stale_stock_alerts",
+        "schedule": crontab(hour=3, minute=0),
+    },
 }
 # Note: inventory.tasks.release_expired_reservations is an alias for
 # expire_reservations_task (same service call) — available for manual .delay()

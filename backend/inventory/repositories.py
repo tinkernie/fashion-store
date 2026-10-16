@@ -22,11 +22,25 @@ class InventoryRepository:
             "status",
             "reservation_expiration_minutes",
         }
+        old_sellable = (inventory.available_quantity or 0) - (inventory.reserved_quantity or 0)
         for key, value in fields.items():
             if key in allowed:
                 setattr(inventory, key, value)
         inventory.version += 1
         inventory.save(update_fields=list(fields.keys()) + ["version", "updated_at"])
+        new_sellable = (inventory.available_quantity or 0) - (inventory.reserved_quantity or 0)
+        # Every stock mutation funnels through here: a 0 -> positive
+        # transition means a restock — notify "notify me" subscribers once
+        # the surrounding transaction commits.
+        if old_sellable <= 0 < new_sellable:
+            try:
+                from django.db import transaction as _tx
+                from notifications.tasks import notify_stock_alerts
+
+                _variant_id = str(inventory.variant_id)
+                _tx.on_commit(lambda: notify_stock_alerts.delay(_variant_id))
+            except Exception:
+                pass
         return inventory
 
     @staticmethod

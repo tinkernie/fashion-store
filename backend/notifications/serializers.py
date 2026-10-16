@@ -10,6 +10,10 @@ class MarkReadSerializer(serializers.Serializer):
     notification_id = serializers.UUIDField()
 
 
+class StockAlertCreateSerializer(serializers.Serializer):
+    variant_id = serializers.UUIDField()
+
+
 class PreferenceSerializer(serializers.Serializer):
     sms_order_updates = serializers.BooleanField(required=False)
     sms_promotions = serializers.BooleanField(required=False)

@@ -82,6 +82,111 @@ def send_sms(self, phone_number: str, message: str, notification_id: str = None)
 @shared_task(
     bind=True,
     acks_late=True,
+    time_limit=120,
+    soft_time_limit=90,
+    autoretry_for=(OperationalError, ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=2,
+)
+def notify_stock_alerts(self, variant_id: str):
+    """Fire 'back in stock' alerts for one variant (called on 0 -> sellable
+    transitions). Re-checks availability at run time under an inventory
+    row-lock (serializes concurrent restocks); per-alert rows are locked
+    and an alert notified within the last 10 minutes is skipped, so a
+    burst of admin clicks yields one SMS, while a genuinely later
+    restock notifies again. Always safe to re-run."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from django.db import transaction as _tx
+    from inventory.models import Inventory
+    from .models import BackInStockAlert
+    from .repositories import NotificationRepository
+
+    try:
+        from variants.models import Variant
+
+        with _tx.atomic():
+            try:
+                inv = Inventory.objects.select_for_update().get(
+                    variant_id=variant_id, variant__deleted_at__isnull=True
+                )
+            except Inventory.DoesNotExist:
+                return
+            sellable = (inv.available_quantity or 0) - (inv.reserved_quantity or 0)
+            if sellable <= 0:
+                return  # sold out again before the task ran
+            variant = inv.variant
+            product = (
+                variant.product
+                if variant.product and variant.product.deleted_at is None
+                else None
+            )
+            if product is None or product.status != "published":
+                return
+            option_summary = ", ".join(
+                f"{vo.option.name}: {vo.option_value.value}"
+                for vo in variant.variantoption_set.select_related("option", "option_value").all()
+            )
+            subject = f"{product.title} دوباره موجود شد"
+            body = (
+                f"{product.title} ({option_summary}) هم‌اکنون موجود است. "
+                f"موجودی محدود است — زودتر سفارش دهید: /products/{product.slug}"
+            )
+            window_start = timezone.now() - timedelta(minutes=10)
+            locked = list(
+                BackInStockAlert.objects.select_for_update()
+                .filter(variant=variant, deleted_at__isnull=True)
+                .select_related("user")
+            )
+            for alert in locked:
+                user = alert.user
+                if not user or not user.is_active or not user.phone_number:
+                    continue
+                if alert.last_notified_at and alert.last_notified_at >= window_start:
+                    continue
+                notification = NotificationRepository.create_notification(
+                    user=user,
+                    type="back_in_stock",
+                    subject=subject,
+                    body=body,
+                    context={"variant_id": str(variant.id), "sku": variant.sku},
+                )
+                send_sms.delay(user.phone_number, body, str(notification.id))
+                alert.last_notified_at = timezone.now()
+                alert.save(update_fields=["last_notified_at", "updated_at"])
+    except Exception as exc:
+        logger.exception("notify_stock_alerts failed for %s: %s", variant_id, exc)
+
+
+@shared_task(
+    bind=True,
+    acks_late=True,
+    time_limit=120,
+    soft_time_limit=90,
+    autoretry_for=(OperationalError, ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=2,
+)
+def cleanup_stale_stock_alerts(self):
+    """Soft-delete stock alerts older than 90 days (stale numbers, bounded SMS)."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from .models import BackInStockAlert
+
+    cutoff = timezone.now() - timedelta(days=90)
+    stale = BackInStockAlert.objects.filter(created_at__lt=cutoff, deleted_at__isnull=True)
+    count = stale.count()
+    if count:
+        stale.update(deleted_at=timezone.now(), updated_at=timezone.now())
+    logger.info("cleanup_stale_stock_alerts: retired %d alerts", count)
+    return {"retired_count": count}
+
+
+@shared_task(
+    bind=True,
+    acks_late=True,
     time_limit=30,
     soft_time_limit=20,
     autoretry_for=(ConnectionError, TimeoutError, OperationalError),

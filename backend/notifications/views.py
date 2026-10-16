@@ -42,6 +42,71 @@ class UserNotificationViewSet(viewsets.GenericViewSet):
             return Response(data)
 
 
+class UserStockAlertViewSet(viewsets.GenericViewSet):
+    """'Back in Stock Alerts' profile section (max 5 per user)."""
+
+    permission_classes = [IsAuthenticated]
+    service = None  # bound per-request (stateless service)
+
+    def list(self, request):
+        from .services import StockAlertService
+
+        return Response(StockAlertService().list_alerts(request.user))
+
+    def create(self, request):
+        from .serializers import StockAlertCreateSerializer
+        from .services import StockAlertService
+
+        serializer = StockAlertCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = StockAlertService().add_alert(
+            request.user, str(serializer.validated_data["variant_id"])
+        )
+        return Response(result, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        from .models import BackInStockAlert
+        from .services import StockAlertService
+
+        try:
+            exists = BackInStockAlert.objects.filter(user=request.user, id=pk).exists()
+        except Exception:
+            exists = False
+        if not exists:
+            return Response({"detail": "Alert not found."}, status=status.HTTP_404_NOT_FOUND)
+        result = StockAlertService().remove_alert(request.user, pk)
+        return Response(result)
+
+
+class AdminStockAlertViewSet(viewsets.GenericViewSet):
+    """Restock demand intel: most-awaited variants first."""
+
+    permission_classes = [IsAdminUser]
+
+    @action(detail=False, methods=["get"], url_path="demand")
+    def demand(self, request):
+        from django.db.models import Count
+        from .models import BackInStockAlert
+
+        rows = (
+            BackInStockAlert.objects.filter(deleted_at__isnull=True)
+            .values("variant_id", "variant__sku", "variant__product__title",
+                    "variant__product__slug")
+            .annotate(waiting=Count("id"))
+            .order_by("-waiting", "-variant__product__title")
+        )
+        return Response([
+            {
+                "variant_id": str(r["variant_id"]),
+                "sku": r["variant__sku"],
+                "product_title": r["variant__product__title"],
+                "product_slug": r["variant__product__slug"],
+                "waiting_count": r["waiting"],
+            }
+            for r in rows
+        ])
+
+
 class AdminNotificationViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAdminUser]
     pagination_class = None  # will use manual pagination via paginator

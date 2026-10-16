@@ -27,6 +27,11 @@ DEFAULT_TEMPLATES = [
         'subject_template': 'اطلاعیه سیستم — فروشگاه تخصصی ماوی',
         'body_template': 'کاربر گرامی، یک پیام سیستمی جدید برای شما ثبت شده است: {{ message|default:"" }}',
     },
+    {
+        'type': 'back_in_stock',
+        'subject_template': '{{ product_title }} دوباره موجود شد — فروشگاه تخصصی ماوی',
+        'body_template': '{{ product_title }} ({{ options }}) هم‌اکنون موجود است. موجودی محدود است — زودتر سفارش دهید: {{ frontend_url }}/products/{{ product_slug }}',
+    },
 ]
 
 
