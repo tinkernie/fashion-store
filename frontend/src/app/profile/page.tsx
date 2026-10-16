@@ -55,6 +55,11 @@ import {
   setDefaultUserAddress,
 } from "@/lib/address-shipping-api";
 import { IranGeoSelect } from "@/components/ui/iran-geo-select";
+import {
+  StockAlert,
+  fetchUserStockAlerts,
+  deleteStockAlert,
+} from "@/lib/stock-alerts-api";
 
 
 const getUserIdFromToken = () => {
@@ -133,6 +138,8 @@ export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [stockAlerts, setStockAlerts] = useState<StockAlert[]>([]);
+  const [isRemovingAlertId, setIsRemovingAlertId] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<any>({
     sms_order_updates: true,
     sms_promotions: true,
@@ -180,12 +187,13 @@ export default function ProfilePage() {
 
     const fetchData = async () => {
       try {
-        const [ordersRes, profileRes, notifsRes, prefsRes, addressesRes] = await Promise.allSettled([
+        const [ordersRes, profileRes, notifsRes, prefsRes, addressesRes, alertsRes] = await Promise.allSettled([
           api.get("/api/orders/"),
           api.get("/api/users/me/"),
           api.get("/api/notifications/"),
           api.get("/api/notifications/preferences/"),
           fetchUserAddresses(),
+          fetchUserStockAlerts(),
         ]);
 
         const isAuth401 = (res: PromiseSettledResult<any>) =>
@@ -206,6 +214,10 @@ export default function ProfilePage() {
 
         if (addressesRes.status === "fulfilled") {
           setAddresses(addressesRes.value);
+        }
+
+        if (alertsRes.status === "fulfilled") {
+          setStockAlerts(alertsRes.value);
         }
 
         if (profileRes.status === "fulfilled") {
@@ -229,6 +241,19 @@ export default function ProfilePage() {
     };
     fetchData();
   }, [router]);
+
+  const handleRemoveStockAlert = async (alertId: string) => {
+    setIsRemovingAlertId(alertId);
+    try {
+      await deleteStockAlert(alertId);
+      setStockAlerts((prev) => prev.filter((a) => a.id !== alertId));
+      toast.success("اطلاع‌رسانی موجودی برای این کالا حذف شد.");
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در حذف اطلاع‌رسانی موجودی"));
+    } finally {
+      setIsRemovingAlertId(null);
+    }
+  };
 
   const handleOpenAddAddress = () => {
     if (addresses.length >= 3) {
@@ -644,6 +669,12 @@ export default function ProfilePage() {
                     badge: `(${wishlistItems.length.toLocaleString("fa-IR")})`,
                   },
                   {
+                    id: "stock_alerts",
+                    title: "اطلاع‌رسانی موجودی",
+                    icon: <Bell className="w-4 h-4" />,
+                    badge: `(${stockAlerts.length.toLocaleString("fa-IR")})`,
+                  },
+                  {
                     id: "addresses",
                     title: "آدرس‌ها",
                     icon: <MapPin className="w-4 h-4" />,
@@ -870,6 +901,126 @@ export default function ProfilePage() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* --- 2.5 Stock Alerts Tab --- */}
+            <TabsContent value="stock_alerts" className="space-y-6 outline-none mt-0">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-black text-slate-900">اطلاع‌رسانی موجودی کالا</h3>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-50 text-[#0082CA] border border-sky-200 font-bold">
+                      {stockAlerts.length.toLocaleString("fa-IR")} از ۵ مورد مجاز
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    به محض شارژ مجدد کالاهای ناموجود در انبار، برای شماره موبایل شما پیامک اطلاع‌رسانی ارسال می‌شود.
+                  </p>
+                </div>
+              </div>
+
+              {stockAlerts.length === 0 ? (
+                <div className="bg-white border border-sky-100 rounded-3xl p-12 text-center space-y-4 shadow-sm">
+                  <div className="w-16 h-16 rounded-full bg-sky-50 text-[#0082CA] border border-sky-200 flex items-center justify-center mx-auto shadow-inner">
+                    <Bell className="w-8 h-8 stroke-[1.5]" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-base font-bold text-slate-800">هیچ کالایی در لیست اطلاع‌رسانی شما نیست</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                      اگر کالایی ناموجود بود، با کلیک روی «موجود شد به من اطلاع بده» در صفحه محصول، آن را ثبت کنید تا با پیامک از شارژ مجدد آن باخبر شوید.
+                    </p>
+                  </div>
+                  <Button
+                    asChild
+                    className="h-11 px-6 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#006CA8] shadow-md shadow-[#0082CA]/25 cursor-pointer"
+                  >
+                    <Link href="/products">مشاهده کاتالوگ فروشگاه</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {stockAlerts.map((alert) => (
+                    <div
+                      key={alert.id}
+                      className="bg-white border border-sky-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-sky-200 transition-all flex flex-col justify-between space-y-4"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          {alert.in_stock_now ? (
+                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              هم‌اکنون موجود است ({alert.current_sellable.toLocaleString("fa-IR")} عدد)
+                            </span>
+                          ) : (
+                            <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-amber-600" />
+                              در انتظار شارژ مجدد در انبار
+                            </span>
+                          )}
+                          <span className="text-[11px] text-slate-400 font-mono" dir="ltr">
+                            {alert.sku}
+                          </span>
+                        </div>
+
+                        <div>
+                          <Link
+                            href={`/products/${alert.product_slug || alert.product_id}`}
+                            className="text-sm font-bold text-slate-900 hover:text-[#0082CA] transition-colors line-clamp-1"
+                          >
+                            {alert.product_title}
+                          </Link>
+                          {alert.options && alert.options.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {alert.options.map((opt, i) => (
+                                <span
+                                  key={i}
+                                  className="bg-sky-50 text-[#006CA8] border border-sky-100 px-2 py-0.5 rounded-md text-[10px] font-medium"
+                                >
+                                  {opt.option_name}: {opt.value}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-sky-100 flex items-center justify-between gap-2 text-xs">
+                        <span className="text-[11px] text-slate-400">
+                          ثبت: {formatShamsiDate(alert.created_at)}
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          {alert.in_stock_now && (
+                            <Button
+                              asChild
+                              size="sm"
+                              className="h-8 px-3 rounded-lg bg-[#0082CA] text-white hover:bg-[#006CA8] text-xs font-bold shadow-sm"
+                            >
+                              <Link href={`/products/${alert.product_slug || alert.product_id}`}>
+                                خرید سریع
+                              </Link>
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveStockAlert(alert.id)}
+                            disabled={isRemovingAlertId === alert.id}
+                            className="h-8 px-2.5 rounded-lg border-sky-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 text-xs gap-1 cursor-pointer"
+                          >
+                            {isRemovingAlertId === alert.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                            لغو
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </TabsContent>

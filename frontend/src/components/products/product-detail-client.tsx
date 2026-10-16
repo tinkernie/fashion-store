@@ -27,6 +27,9 @@ import {
   Sparkles,
   Sliders,
   FileText,
+  Bell,
+  BellRing,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -38,6 +41,12 @@ import { getColorBackground } from "@/lib/color-utils";
 import { formatPrice, formatPriceNumber, parsePrice, getDiscountInfo } from "@/lib/price-utils";
 import ProductGallery from "@/components/products/product-gallery";
 import RelatedProductsSlider, { RelatedProductItem } from "@/components/products/related-products-slider";
+import {
+  fetchUserStockAlerts,
+  createStockAlert,
+  deleteStockAlert,
+  StockAlert,
+} from "@/lib/stock-alerts-api";
 
 export interface ProductOptionValue {
   id: string;
@@ -250,9 +259,20 @@ export default function ProductDetailClient({
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [userStockAlerts, setUserStockAlerts] = useState<StockAlert[]>([]);
+  const [isTogglingAlert, setIsTogglingAlert] = useState(false);
 
   const { addItem: addToCart } = useCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlist();
+
+  // Load user's stock alert subscriptions if authenticated
+  useEffect(() => {
+    if (hasValidAuthSession()) {
+      fetchUserStockAlerts()
+        .then((alerts) => setUserStockAlerts(alerts))
+        .catch(() => {});
+    }
+  }, []);
 
   // Client-side fallback if initial product wasn't provided or changed
   useEffect(() => {
@@ -523,6 +543,50 @@ export default function ProductDetailClient({
     }
   };
 
+  const currentVariantId =
+    matchedVariant?.id ||
+    (variants && variants.length > 0 ? variants[0].id : null) ||
+    product?.default_variant_id ||
+    null;
+
+  const activeStockAlert = useMemo(() => {
+    if (!currentVariantId || !userStockAlerts.length) return null;
+    return userStockAlerts.find((a) => a.variant_id === currentVariantId) || null;
+  }, [currentVariantId, userStockAlerts]);
+
+  const isSubscribedToActiveVariant = Boolean(activeStockAlert);
+
+  const handleToggleStockAlert = async () => {
+    if (!hasValidAuthSession()) {
+      useAuthModal
+        .getState()
+        .openAuthModal("برای ثبت اطلاع‌رسانی پیامکی موجودی کالا، لطفاً ابتدا وارد حساب کاربری خود شوید.");
+      return;
+    }
+
+    if (!currentVariantId) {
+      toast.error("امکان ثبت اطلاع‌رسانی برای این گزینه وجود ندارد.");
+      return;
+    }
+
+    setIsTogglingAlert(true);
+    try {
+      if (activeStockAlert) {
+        await deleteStockAlert(activeStockAlert.id);
+        setUserStockAlerts((prev) => prev.filter((a) => a.id !== activeStockAlert.id));
+        toast.success("اطلاع‌رسانی پیامکی موجودی برای این کالا لغو گردید.");
+      } else {
+        const newAlert = await createStockAlert(currentVariantId);
+        setUserStockAlerts((prev) => [newAlert, ...prev]);
+        toast.success("به محض موجود شدن کالا در انبار، از طریق پیامک به شما اطلاع داده خواهد شد.");
+      }
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در تغییر وضعیت اطلاع‌رسانی موجودی"));
+    } finally {
+      setIsTogglingAlert(false);
+    }
+  };
+
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (reviewText.trim().length < 4) {
@@ -779,14 +843,32 @@ export default function ProductDetailClient({
           {/* Quantity & Stock Control */}
           <div className="pt-4 border-t border-sky-100 space-y-4">
             {isOutOfStock ? (
-              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+              <div
+                className={`border rounded-2xl p-4 flex items-center gap-3 transition-colors ${
+                  isSubscribedToActiveVariant
+                    ? "bg-sky-50/80 border-sky-200"
+                    : "bg-rose-50 border-rose-200"
+                }`}
+              >
+                {isSubscribedToActiveVariant ? (
+                  <BellRing className="w-5 h-5 text-[#0082CA] shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                )}
                 <div className="space-y-0.5 text-right">
-                  <span className="text-xs font-bold text-rose-700 block">
-                    این کالا در حال حاضر در انبار موجود نمی‌باشد
+                  <span
+                    className={`text-xs font-bold block ${
+                      isSubscribedToActiveVariant ? "text-[#006CA8]" : "text-rose-700"
+                    }`}
+                  >
+                    {isSubscribedToActiveVariant
+                      ? "اطلاع‌رسانی پیامکی موجودی برای شما فعال است"
+                      : "این کالا در حال حاضر در انبار موجود نمی‌باشد"}
                   </span>
                   <span className="text-[11px] text-slate-500 block">
-                    به محض شارژ مجدد کالا در انبار، امکان ثبت سفارش مجدداً فعال خواهد شد.
+                    {isSubscribedToActiveVariant
+                      ? "به محض شارژ مجدد کالا در انبار، پیامک اطلاع‌رسانی به شماره موبایل شما ارسال خواهد شد."
+                      : "می‌توانید با فعال‌سازی اطلاع‌رسانی، به محض شارژ مجدد کالا از طریق پیامک باخبر شوید."}
                   </span>
                 </div>
               </div>
@@ -818,14 +900,41 @@ export default function ProductDetailClient({
 
             {/* Desktop Action Buttons */}
             <div className="hidden md:flex gap-3 pt-2">
-              <Button
-                onClick={handleAddToCart}
-                disabled={isOutOfStock}
-                className="flex-1 h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#006CA8] text-sm font-black transition-all shadow-md shadow-[#0082CA]/25 gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                {isOutOfStock ? "ناموجود در انبار" : "افزودن به سبد خرید"}
-              </Button>
+              {isOutOfStock ? (
+                <Button
+                  onClick={handleToggleStockAlert}
+                  disabled={isTogglingAlert}
+                  className={`flex-1 h-14 rounded-2xl text-sm font-black transition-all shadow-md gap-2.5 cursor-pointer ${
+                    isSubscribedToActiveVariant
+                      ? "bg-sky-50 text-[#0082CA] border border-sky-300 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 shadow-sky-500/10 group"
+                      : "bg-[#0082CA] text-white hover:bg-[#006CA8] shadow-[#0082CA]/25 active:scale-[0.98]"
+                  }`}
+                >
+                  {isTogglingAlert ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isSubscribedToActiveVariant ? (
+                    <>
+                      <Check className="w-4 h-4 text-[#0082CA] group-hover:hidden" />
+                      <Bell className="w-4 h-4 hidden text-rose-600 group-hover:inline" />
+                      <span className="group-hover:hidden">اطلاع‌رسانی پیامکی فعال است</span>
+                      <span className="hidden group-hover:inline">لغو اطلاع‌رسانی موجودی</span>
+                    </>
+                  ) : (
+                    <>
+                      <BellRing className="w-4 h-4" />
+                      <span>موجود شد به من اطلاع بده</span>
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleAddToCart}
+                  className="flex-1 h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#006CA8] text-sm font-black transition-all shadow-md shadow-[#0082CA]/25 gap-2 cursor-pointer active:scale-[0.98]"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  افزودن به سبد خرید
+                </Button>
+              )}
 
               <Button
                 onClick={toggleWishlist}
@@ -1106,14 +1215,39 @@ export default function ProductDetailClient({
         >
           <Heart className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
         </Button>
-        <Button
-          onClick={handleAddToCart}
-          disabled={isOutOfStock}
-          className="flex-1 h-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#006CA8] text-xs sm:text-sm font-black transition-all shadow-md shadow-[#0082CA]/25 gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 cursor-pointer"
-        >
-          <ShoppingBag className="w-4 h-4" />
-          {isOutOfStock ? "ناموجود در انبار" : `افزودن به سبد (${formatPrice(currentPrice)})`}
-        </Button>
+        {isOutOfStock ? (
+          <Button
+            onClick={handleToggleStockAlert}
+            disabled={isTogglingAlert}
+            className={`flex-1 h-12 rounded-xl text-xs sm:text-sm font-black transition-all shadow-md gap-2 cursor-pointer ${
+              isSubscribedToActiveVariant
+                ? "bg-sky-50 text-[#0082CA] border border-sky-300 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300"
+                : "bg-[#0082CA] text-white hover:bg-[#006CA8] shadow-[#0082CA]/25 active:scale-[0.98]"
+            }`}
+          >
+            {isTogglingAlert ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isSubscribedToActiveVariant ? (
+              <>
+                <Check className="w-4 h-4 text-[#0082CA]" />
+                <span>اطلاع پیامکی فعال است</span>
+              </>
+            ) : (
+              <>
+                <BellRing className="w-4 h-4" />
+                <span>موجود شد به من اطلاع بده</span>
+              </>
+            )}
+          </Button>
+        ) : (
+          <Button
+            onClick={handleAddToCart}
+            className="flex-1 h-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#006CA8] text-xs sm:text-sm font-black transition-all shadow-md shadow-[#0082CA]/25 gap-2 cursor-pointer active:scale-[0.98]"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            {`افزودن به سبد (${formatPrice(currentPrice)})`}
+          </Button>
+        )}
       </div>
     </main>
   );

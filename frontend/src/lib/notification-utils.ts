@@ -27,6 +27,7 @@ export const NOTIFICATION_TYPE_MAP_FA: Record<string, string> = {
   password_reset: "بازیابی رمز عبور",
   welcome: "خوش‌آمدگویی",
   wishlist_discount: "تخفیف کالای مورد علاقه",
+  back_in_stock: "موجودی مجدد کالا",
   generic: "پیام سیستم",
 };
 
@@ -250,6 +251,13 @@ export function localizeNotification(notif: any): LocalizedNotification {
   else if (rawType === "password_reset" || rawSubject.toLowerCase().includes("password")) {
     title = "درخواست بازیابی رمز عبور";
     body = "لینک تغییر رمز عبور حساب کاربری شما با موفقیت صادر گردید.";
+  }
+
+  // 7. Back in stock restock alert
+  else if (rawType === "back_in_stock" || rawSubject.includes("دوباره موجود شد") || rawBody.includes("مجدداً موجود شد")) {
+    title = rawSubject || "موجودی مجدد کالا در انبار";
+    body = rawBody || "محصول مورد نظر شما مجدداً در انبار موجود شد و هم‌اکنون قابل سفارش است.";
+    statusLabel = "موجود شد";
   }
 
   // Fallback: If text still contains dominant English characters and generic fallback fits
