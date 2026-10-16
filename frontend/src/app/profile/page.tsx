@@ -16,6 +16,7 @@ import {
   Plus,
   Pencil,
   Bell,
+  BellRing,
   CheckCircle2,
   Clock,
   Truck,
@@ -944,51 +945,61 @@ export default function ProfilePage() {
                   {stockAlerts.map((alert) => (
                     <div
                       key={alert.id}
-                      className="bg-white border border-sky-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-sky-200 transition-all flex flex-col justify-between space-y-4"
+                      className="bg-white border border-sky-100/90 rounded-3xl p-5 sm:p-6 shadow-sm hover:shadow-md hover:border-sky-300 transition-all flex flex-col justify-between space-y-4 group"
                     >
-                      <div className="space-y-3">
+                      <div className="space-y-3.5">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           {alert.in_stock_now ? (
-                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               هم‌اکنون موجود است ({alert.current_sellable.toLocaleString("fa-IR")} عدد)
                             </span>
                           ) : (
-                            <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <span className="bg-amber-50/80 text-amber-800 border border-amber-200/90 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5 text-amber-600" />
                               در انتظار شارژ مجدد در انبار
                             </span>
                           )}
-                          <span className="text-[11px] text-slate-400 font-mono" dir="ltr">
+                          <span className="text-[11px] text-slate-400 font-mono tracking-wider bg-slate-50 px-2 py-0.5 rounded border border-slate-100" dir="ltr">
                             {alert.sku}
                           </span>
                         </div>
 
-                        <div>
-                          <Link
-                            href={`/products/${alert.product_slug || alert.product_id}`}
-                            className="text-sm font-bold text-slate-900 hover:text-[#0082CA] transition-colors line-clamp-1"
-                          >
-                            {alert.product_title}
-                          </Link>
-                          {alert.options && alert.options.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {alert.options.map((opt, i) => (
-                                <span
-                                  key={i}
-                                  className="bg-sky-50 text-[#006CA8] border border-sky-100 px-2 py-0.5 rounded-md text-[10px] font-medium"
-                                >
-                                  {opt.option_name}: {opt.value}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                        <div className="flex items-start gap-3.5 pt-1">
+                          <div className="w-12 h-12 rounded-2xl bg-sky-50/80 border border-sky-100 flex items-center justify-center shrink-0 text-[#0082CA] shadow-inner group-hover:bg-sky-100/80 transition-colors">
+                            {alert.in_stock_now ? (
+                              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                            ) : (
+                              <BellRing className="w-5 h-5 text-[#0082CA]" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              href={`/products/${alert.product_slug || alert.product_id}`}
+                              className="text-sm font-bold text-slate-900 group-hover:text-[#0082CA] transition-colors line-clamp-2 leading-relaxed"
+                            >
+                              {alert.product_title}
+                            </Link>
+                            {alert.options && alert.options.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {alert.options.map((opt, i) => (
+                                  <span
+                                    key={i}
+                                    className="bg-sky-50 text-[#006CA8] border border-sky-100/90 px-2 py-0.5 rounded-md text-[10px] font-medium"
+                                  >
+                                    {opt.option_name}: {opt.value}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-sky-100 flex items-center justify-between gap-2 text-xs">
-                        <span className="text-[11px] text-slate-400">
-                          ثبت: {formatShamsiDate(alert.created_at)}
+                      <div className="pt-3.5 border-t border-sky-100/80 flex items-center justify-between gap-2 text-xs">
+                        <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                          <span>ثبت اشتراک:</span>
+                          <span className="font-medium text-slate-500">{formatShamsiDate(alert.created_at)}</span>
                         </span>
 
                         <div className="flex items-center gap-2">
@@ -996,7 +1007,7 @@ export default function ProfilePage() {
                             <Button
                               asChild
                               size="sm"
-                              className="h-8 px-3 rounded-lg bg-[#0082CA] text-white hover:bg-[#006CA8] text-xs font-bold shadow-sm"
+                              className="h-8 px-3 rounded-lg bg-[#0082CA] text-white hover:bg-[#006CA8] text-xs font-bold shadow-sm shadow-[#0082CA]/20"
                             >
                               <Link href={`/products/${alert.product_slug || alert.product_id}`}>
                                 خرید سریع
@@ -1008,7 +1019,7 @@ export default function ProfilePage() {
                             size="sm"
                             onClick={() => handleRemoveStockAlert(alert.id)}
                             disabled={isRemovingAlertId === alert.id}
-                            className="h-8 px-2.5 rounded-lg border-sky-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 text-xs gap-1 cursor-pointer"
+                            className="h-8 px-2.5 rounded-lg border-sky-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 text-xs gap-1 cursor-pointer transition-colors"
                           >
                             {isRemovingAlertId === alert.id ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />

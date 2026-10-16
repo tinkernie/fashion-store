@@ -25,7 +25,7 @@ export default function GradientMenu({
 }: GradientMenuProps) {
   return (
     <div className={cn("flex items-center w-full overflow-x-auto hide-scrollbar py-2", className)} dir="rtl">
-      <ul className="flex items-center gap-3 md:gap-4 p-2 bg-white/95 backdrop-blur-xl border border-sky-100 rounded-full shadow-lg shadow-sky-950/5">
+      <ul className="flex items-center gap-1.5 sm:gap-2.5 p-1.5 bg-white/95 backdrop-blur-xl border border-sky-100 rounded-full shadow-lg shadow-sky-950/5">
         {items.map(({ id, title, icon, badge }) => {
           const isActive = activeId === id;
           return (
@@ -33,7 +33,7 @@ export default function GradientMenu({
               key={id}
               onClick={() => onChange?.(id)}
               className={cn(
-                "relative h-11 sm:h-12 rounded-full flex items-center justify-center px-3.5 sm:px-5 transition-all duration-300 cursor-pointer select-none shrink-0 border gap-2",
+                "relative h-10 sm:h-11 rounded-full flex items-center justify-center px-3 sm:px-3.5 transition-all duration-300 cursor-pointer select-none shrink-0 border gap-1.5",
                 isActive
                   ? "bg-[#0082CA] text-white border-[#0082CA] shadow-md shadow-[#0082CA]/20 font-bold"
                   : "bg-sky-50/60 hover:bg-sky-100/80 text-slate-600 hover:text-slate-900 border-sky-100 hover:border-sky-200 font-medium"
@@ -42,7 +42,7 @@ export default function GradientMenu({
               {/* Icon */}
               <div
                 className={cn(
-                  "flex items-center justify-center shrink-0 text-base",
+                  "flex items-center justify-center shrink-0 text-sm",
                   isActive ? "text-white" : "text-slate-500"
                 )}
               >
@@ -50,7 +50,7 @@ export default function GradientMenu({
               </div>
 
               {/* Title & Badge */}
-              <div className="flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm">
+              <div className="flex items-center gap-1 whitespace-nowrap text-xs">
                 <span>{title}</span>
                 {badge !== undefined && (
                   <span
