@@ -174,6 +174,12 @@ class CMSService:
             }
         elif key == "discount_section":
             return cls.get_discount_section_default()
+        elif key == "homepage_blog_section":
+            return {
+                "enabled": False,
+                "titles": {"fa": "آخرین مقالات", "en": "Latest Posts", "ar": "أحدث المقالات"},
+                "max_items": 4,
+            }
         return {}
 
     def get_site_content(self, key: str) -> dict:

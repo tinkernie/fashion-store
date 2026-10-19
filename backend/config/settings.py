@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     "shipping",
     "coupons",
     "media_libm",
+    "blog",
 ]
 
 MIDDLEWARE = [

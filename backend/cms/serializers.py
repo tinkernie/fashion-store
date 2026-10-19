@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 ALLOWED_BLOCK_TYPES = ("hero", "text", "product_grid", "team", "faq", "banner", "gallery")
 
-ALLOWED_SITE_KEYS = ("homepage", "hero", "header", "footer", "announcement", "discount_section")
+ALLOWED_SITE_KEYS = ("homepage", "hero", "header", "footer", "announcement", "discount_section", "homepage_blog_section")
 
 
 def validate_page_blocks(content):
@@ -40,6 +40,23 @@ def validate_site_content_by_key(key, content):
             content["collection_slug"], str
         ):
             raise serializers.ValidationError("discount_section.content.collection_slug must be string.")
+    elif key == "homepage_blog_section":
+        if "enabled" in content and not isinstance(content["enabled"], bool):
+            raise serializers.ValidationError("homepage_blog_section.content.enabled must be boolean.")
+        titles = content.get("titles")
+        if titles is not None:
+            if not isinstance(titles, dict):
+                raise serializers.ValidationError("homepage_blog_section.content.titles must be an object (fa/en/ar).")
+            for code, val in titles.items():
+                if code not in ("fa", "en", "ar"):
+                    raise serializers.ValidationError(
+                        "homepage_blog_section.content.titles supports keys fa/en/ar, got '{}'.".format(code)
+                    )
+                if not isinstance(val, str):
+                    raise serializers.ValidationError("homepage_blog_section.content.titles.{} must be string.".format(code))
+        if "max_items" in content and content["max_items"] is not None:
+            if not isinstance(content["max_items"], int) or not (1 <= content["max_items"] <= 12):
+                raise serializers.ValidationError("homepage_blog_section.content.max_items must be int in 1..12.")
     elif key in ("homepage", "hero"):
         slides = content.get("slides")
         if slides is not None:
