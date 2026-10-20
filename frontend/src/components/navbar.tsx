@@ -292,7 +292,7 @@ export default function Navbar() {
             className={cn(
               "relative flex items-center h-10 rounded-full px-3 transition-colors duration-300 border overflow-hidden shrink-0 cursor-pointer group",
               isSearchExpanded
-                ? "w-48 sm:w-60 md:w-72 bg-white text-slate-900 border-white shadow-lg ring-2 ring-white/30"
+                ? "w-44 sm:w-60 md:w-72 bg-white text-slate-900 border-white shadow-lg ring-2 ring-white/30"
                 : "w-20 sm:w-24 md:w-28 bg-white/15 hover:bg-white/25 text-white border-white/25"
             )}
           >
@@ -435,136 +435,149 @@ export default function Navbar() {
           </div>
 
           {/* Shopping Cart Drawer */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <button 
-                className="relative p-2 text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer outline-none flex items-center"
-                aria-label="سبد خرید"
+          <AnimatePresence>
+            {!isSearchExpanded && (
+              <motion.div
+                key="cart-drawer-wrapper"
+                initial={{ opacity: 0, scale: 0.8, width: 0 }}
+                animate={{ opacity: 1, scale: 1, width: "auto" }}
+                exit={{ opacity: 0, scale: 0.8, width: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className="flex items-center overflow-hidden shrink-0"
               >
-                <ShoppingBag className="w-5 h-5 text-white" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-white text-[#0082CA] font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
-                    {toPersianDigits(itemCount)}
-                  </span>
-                )}
-              </button>
-            </SheetTrigger>
-            <SheetContent side="right" className="bg-white border-l border-sky-100 text-slate-800 w-full sm:max-w-md flex flex-col p-6 font-sans" dir="rtl">
-              <SheetHeader className="text-right pb-4 border-b border-sky-100 flex flex-row items-center justify-between">
-                <SheetTitle className="text-[#0B192C] text-lg font-black font-sans flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
-                    <ShoppingBag className="w-4 h-4 text-white" />
-                  </div>
-                  سبد خرید ({toPersianDigits(itemCount)})
-                </SheetTitle>
-              </SheetHeader>
-              
-              <div className="flex-1 overflow-y-auto py-4 space-y-4">
-                {items.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center space-y-4 text-slate-400 py-12">
-                    <ShoppingBag className="w-14 h-14 opacity-25 text-[#0082CA]" />
-                    <p className="text-sm font-medium">سبد خرید شما در حال حاضر خالی است.</p>
-                    <SheetClose asChild>
-                      <Button asChild className="rounded-xl bg-[#0082CA] hover:bg-[#0072B5] text-white font-bold text-xs h-10 px-5 shadow-sm">
-                        <Link href="/products">مشاهده کاتالوگ فروشگاه</Link>
-                      </Button>
-                    </SheetClose>
-                  </div>
-                ) : (
-                  items.map((item) => (
-                    <div key={item.id} className="flex gap-4 items-center bg-sky-50/50 p-3 rounded-2xl border border-sky-100">
-                      <img src={item.imageUrl} alt={item.name} className="w-16 h-20 object-cover rounded-xl border border-sky-100 shadow-sm" />
-                      <div className="flex-1 space-y-1">
-                        <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{item.name}</h4>
-                        {item.size && (
-                          <div className="text-xs text-slate-500">
-                            سایز: {item.size}
-                          </div>
-                        )}
-                        <div className="text-xs text-[#006CA8] font-bold">
-                          {formatPriceNumber(item.price)} تومان × {item.quantity}
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <button 
+                      className="relative p-2 text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer outline-none flex items-center shrink-0"
+                      aria-label="سبد خرید"
+                    >
+                      <ShoppingBag className="w-5 h-5 text-white" />
+                      {itemCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-white text-[#0082CA] font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
+                          {toPersianDigits(itemCount)}
+                        </span>
+                      )}
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="bg-white border-l border-sky-100 text-slate-800 w-full sm:max-w-md flex flex-col p-6 font-sans" dir="rtl">
+                    <SheetHeader className="text-right pb-4 border-b border-sky-100 flex flex-row items-center justify-between">
+                      <SheetTitle className="text-[#0B192C] text-lg font-black font-sans flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
+                          <ShoppingBag className="w-4 h-4 text-white" />
                         </div>
+                        سبد خرید ({toPersianDigits(itemCount)})
+                      </SheetTitle>
+                    </SheetHeader>
+                    
+                    <div className="flex-1 overflow-y-auto py-4 space-y-4">
+                      {items.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4 text-slate-400 py-12">
+                          <ShoppingBag className="w-14 h-14 opacity-25 text-[#0082CA]" />
+                          <p className="text-sm font-medium">سبد خرید شما در حال حاضر خالی است.</p>
+                          <SheetClose asChild>
+                            <Button asChild className="rounded-xl bg-[#0082CA] hover:bg-[#0072B5] text-white font-bold text-xs h-10 px-5 shadow-sm">
+                              <Link href="/products">مشاهده کاتالوگ فروشگاه</Link>
+                            </Button>
+                          </SheetClose>
+                        </div>
+                      ) : (
+                        items.map((item) => (
+                          <div key={item.id} className="flex gap-4 items-center bg-sky-50/50 p-3 rounded-2xl border border-sky-100">
+                            <img src={item.imageUrl} alt={item.name} className="w-16 h-20 object-cover rounded-xl border border-sky-100 shadow-sm" />
+                            <div className="flex-1 space-y-1">
+                              <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{item.name}</h4>
+                              {item.size && (
+                                <div className="text-xs text-slate-500">
+                                  سایز: {item.size}
+                                </div>
+                              )}
+                              <div className="text-xs text-[#006CA8] font-bold">
+                                {formatPriceNumber(item.price)} تومان × {item.quantity}
+                              </div>
+                            </div>
+                            <button onClick={() => removeItem(item.id, item.size, item.variant_id)} className="text-slate-400 hover:text-rose-500 transition-colors p-2 cursor-pointer">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {items.length > 0 && (
+                      <div className="border-t border-sky-100 pt-4 space-y-4">
+                        {/* Coupon Box */}
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="کد تخفیف..."
+                            value={couponInput}
+                            onChange={(e) => setCouponInput(e.target.value)}
+                            disabled={!!coupon}
+                            className="bg-sky-50/60 border-sky-200 text-slate-800 rounded-xl text-xs h-10 placeholder:text-slate-400"
+                          />
+                          {coupon ? (
+                            <Button
+                              onClick={() => removeCoupon()}
+                              variant="destructive"
+                              size="sm"
+                              className="rounded-xl text-xs shrink-0 cursor-pointer"
+                            >
+                              حذف کد
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={async () => {
+                                if (!couponInput.trim()) return;
+                                setIsApplyingCoupon(true);
+                                try {
+                                  await applyCoupon(couponInput.trim());
+                                  toast.success("کد تخفیف اعمال شد");
+                                  setCouponInput("");
+                                } catch (err) {
+                                  toast.error(getApiErrorMessage(err, "کد تخفیف نامعتبر است"));
+                                } finally {
+                                  setIsApplyingCoupon(false);
+                                }
+                              }}
+                              disabled={isApplyingCoupon || !couponInput.trim()}
+                              variant="secondary"
+                              size="sm"
+                              className="rounded-xl text-xs shrink-0 cursor-pointer bg-sky-100 text-[#006CA8] hover:bg-sky-200 border border-sky-200"
+                            >
+                              {isApplyingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "اعمال"}
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Summary Details */}
+                        <div className="space-y-1.5 text-xs text-slate-500">
+                          <div className="flex justify-between">
+                            <span>جمع اقلام:</span>
+                            <span className="font-semibold text-slate-700">{formatPrice(getTotal())}</span>
+                          </div>
+                          {coupon && (
+                            <div className="flex justify-between text-emerald-600 font-medium">
+                              <span>تخفیف ({coupon.code}):</span>
+                              <span>- {formatPrice(getDiscountAmount())}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-sky-100">
+                            <span>مبلغ قابل پرداخت:</span>
+                            <span className="text-[#0082CA] text-base">{formatPrice(getFinalTotal())}</span>
+                          </div>
+                        </div>
+
+                        <SheetClose asChild>
+                          <Button asChild className="w-full bg-[#0082CA] text-white hover:bg-[#006CA8] font-bold rounded-2xl h-12 shadow-lg shadow-[#0082CA]/25 cursor-pointer">
+                            <Link href="/checkout">ثبت سفارش و پرداخت</Link>
+                          </Button>
+                        </SheetClose>
                       </div>
-                      <button onClick={() => removeItem(item.id, item.size, item.variant_id)} className="text-slate-400 hover:text-rose-500 transition-colors p-2 cursor-pointer">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {items.length > 0 && (
-                <div className="border-t border-sky-100 pt-4 space-y-4">
-                  {/* Coupon Box */}
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="کد تخفیف..."
-                      value={couponInput}
-                      onChange={(e) => setCouponInput(e.target.value)}
-                      disabled={!!coupon}
-                      className="bg-sky-50/60 border-sky-200 text-slate-800 rounded-xl text-xs h-10 placeholder:text-slate-400"
-                    />
-                    {coupon ? (
-                      <Button
-                        onClick={() => removeCoupon()}
-                        variant="destructive"
-                        size="sm"
-                        className="rounded-xl text-xs shrink-0 cursor-pointer"
-                      >
-                        حذف کد
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={async () => {
-                          if (!couponInput.trim()) return;
-                          setIsApplyingCoupon(true);
-                          try {
-                            await applyCoupon(couponInput.trim());
-                            toast.success("کد تخفیف اعمال شد");
-                            setCouponInput("");
-                          } catch (err) {
-                            toast.error(getApiErrorMessage(err, "کد تخفیف نامعتبر است"));
-                          } finally {
-                            setIsApplyingCoupon(false);
-                          }
-                        }}
-                        disabled={isApplyingCoupon || !couponInput.trim()}
-                        variant="secondary"
-                        size="sm"
-                        className="rounded-xl text-xs shrink-0 cursor-pointer bg-sky-100 text-[#006CA8] hover:bg-sky-200 border border-sky-200"
-                      >
-                        {isApplyingCoupon ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "اعمال"}
-                      </Button>
                     )}
-                  </div>
-
-                  {/* Summary Details */}
-                  <div className="space-y-1.5 text-xs text-slate-500">
-                    <div className="flex justify-between">
-                      <span>جمع اقلام:</span>
-                      <span className="font-semibold text-slate-700">{formatPrice(getTotal())}</span>
-                    </div>
-                    {coupon && (
-                      <div className="flex justify-between text-emerald-600 font-medium">
-                        <span>تخفیف ({coupon.code}):</span>
-                        <span>- {formatPrice(getDiscountAmount())}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-sky-100">
-                      <span>مبلغ قابل پرداخت:</span>
-                      <span className="text-[#0082CA] text-base">{formatPrice(getFinalTotal())}</span>
-                    </div>
-                  </div>
-
-                  <SheetClose asChild>
-                    <Button asChild className="w-full bg-[#0082CA] text-white hover:bg-[#006CA8] font-bold rounded-2xl h-12 shadow-lg shadow-[#0082CA]/25 cursor-pointer">
-                      <Link href="/checkout">ثبت سفارش و پرداخت</Link>
-                    </Button>
-                  </SheetClose>
-                </div>
-              )}
-            </SheetContent>
-          </Sheet>
+                  </SheetContent>
+                </Sheet>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Mobile Navigation Sheet (visible on <lg screens) */}
           <div className="lg:hidden flex items-center">
