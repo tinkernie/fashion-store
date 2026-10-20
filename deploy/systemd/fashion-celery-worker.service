@@ -1,0 +1,22 @@
+[Unit]
+Description=Celery worker for Fashion Store (queues: default, sms, inventory, media)
+After=network.target redis-server.service postgresql.service
+Wants=redis-server.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/fashion-store/backend
+EnvironmentFile=/var/www/fashion-store/backend/.env
+Environment=DJANGO_SETTINGS_MODULE=config.settings
+ExecStart=/var/www/fashion-store/backend/venv/bin/celery -A config worker \
+          -l info \
+          -Q default,sms,inventory,media \
+          --concurrency=2 \
+          --max-tasks-per-child=1000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

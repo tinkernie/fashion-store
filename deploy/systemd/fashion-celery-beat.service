@@ -1,0 +1,22 @@
+[Unit]
+Description=Celery beat scheduler for Fashion Store (DatabaseScheduler)
+After=network.target redis-server.service postgresql.service
+Wants=redis-server.service
+# Postgres required at boot: DatabaseScheduler reads its schedule from it
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/fashion-store/backend
+EnvironmentFile=/var/www/fashion-store/backend/.env
+Environment=DJANGO_SETTINGS_MODULE=config.settings
+ExecStart=/var/www/fashion-store/backend/venv/bin/celery -A config beat \
+          -l info \
+          --scheduler django_celery_beat.schedulers:DatabaseScheduler
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

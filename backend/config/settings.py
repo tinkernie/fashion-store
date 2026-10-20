@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load local .env file if present
 _env_file = BASE_DIR / ".env"
 if _env_file.exists():
     try:
@@ -17,19 +17,63 @@ if _env_file.exists():
     except Exception:
         pass
 
-SECRET_KEY = "12345"
-DEBUG = True  # overridden in dev/prod
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhost",
-    "testserver",
-    "*",
-]
+
+def _env_bool(name, default=False):
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    return raw.lower() in ("true", "1", "yes", "on")
+
+
+def _env_list(name, default=""):
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return [part.strip() for part in default.split(",") if part.strip()]
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+DEBUG = _env_bool("DEBUG", False)
+
+_SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
+if not _SECRET_KEY and not DEBUG:
+    raise ImproperlyConfigured(
+        "SECRET_KEY is required in production (DEBUG=False). "
+        "Set it in the server-side .env, e.g. openssl rand -base64 60."
+    )
+SECRET_KEY = _SECRET_KEY or "dev-only-insecure-key"
+
+_HOSTS = _env_list("ALLOWED_HOSTS")
+if not _HOSTS and not DEBUG:
+    raise ImproperlyConfigured(
+        "ALLOWED_HOSTS is required in production (DEBUG=False)."
+    )
+ALLOWED_HOSTS = _HOSTS or ["127.0.0.1", "localhost", "testserver", "*"]
 
 # CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = _env_bool("CORS_ALLOW_ALL_ORIGINS", False)
 CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ["Content-Disposition"]
+CORS_ALLOWED_ORIGINS = _env_list(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001",
+)
+
+# Security flags - production values arrive via .env (see .env.example)
+SECURE_SSL_REDIRECT = _env_bool("SECURE_SSL_REDIRECT", False)
+SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0") or 0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool(
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS", False
+)
+SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE", False)
+CSRF_COOKIE_SECURE = _env_bool("CSRF_COOKIE_SECURE", False)
+CSRF_TRUSTED_ORIGINS = [
+    origin for origin in _env_list("CSRF_TRUSTED_ORIGINS")
+    if origin.startswith(("http://", "https://"))
+]
+if _env_bool("SECURE_PROXY_SSL_HEADER", SECURE_SSL_REDIRECT):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+else:
+    SECURE_PROXY_SSL_HEADER = None
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -254,23 +298,11 @@ CELERY_TASK_COMPRESSION = "gzip"
 # Security
 SECURE_BROWSER_XSS_FILTER = False
 SECURE_CONTENT_TYPE_NOSNIFF = False
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = False
-SECURE_PROXY_SSL_HEADER = None
 from corsheaders.defaults import default_headers
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-cart-session-key",
 ]
-
-CORS_ALLOW_CREDENTIALS = True
 
 # Internationalization
 LANGUAGE_CODE = "en-us"
@@ -280,6 +312,7 @@ USE_TZ = True
 
 # Static / Media
 STATIC_URL = "static/"
+STATIC_ROOT = Path(os.environ.get("STATIC_ROOT", BASE_DIR / "staticfiles"))
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {

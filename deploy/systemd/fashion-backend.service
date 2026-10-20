@@ -1,0 +1,33 @@
+# =====================================================================
+# fashion-store backend units (placed on the VPS under /etc/systemd/system/)
+# Replace ${ARG} placeholders or use the bootstrap in DEPLOYMENT_GUIDE.md.
+# Runs as SERVICE_USER (www-data), never root.
+# =====================================================================
+[Unit]
+Description=Gunicorn daemon for Fashion Store backend
+After=network.target redis-server.service postgresql.service
+Wants=redis-server.service postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/fashion-store/backend
+EnvironmentFile=/var/www/fashion-store/backend/.env
+Environment=DJANGO_SETTINGS_MODULE=config.settings
+ExecStart=/var/www/fashion-store/backend/venv/bin/gunicorn config.wsgi:application \
+          --bind 127.0.0.1:8000 \
+          --workers 3 --threads 2 \
+          --timeout 120 \
+          --access-logfile - --error-logfile -
+Restart=always
+RestartSec=5
+# hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/www/fashion-store/backend
+
+[Install]
+WantedBy=multi-user.target

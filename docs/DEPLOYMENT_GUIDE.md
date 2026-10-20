@@ -1,449 +1,230 @@
-Only deploy on the server when task done, if the SERVER_ON below is true, if not skip deploying on the server.
-SERVER_ON : FALSE
+# Production Deployment Guide: Fashion Store (target-state)
 
-# Production Deployment Guide: Fashion Store on Ubuntu
+> **Status: prepared, not triggered.** This document describes the *final* target state.
+> All fabrication is done in the repo (`deploy/`); the server session is a short,
+> mechanical bootstrap. The historical situation that superseded this guide
+> (SQLite, root services, self-signed IP, DPI `/chunks` workaround) is documented
+> in the appendix — read it only when debugging older deployments.
 
-This guide documents the full setup, production configuration, and troubleshooting history for running the Fashion Store project on an Ubuntu Linux server.
-
-- Target server IP: `37.32.31.95`
-- Database: SQLite (`backend/db.sqlite3`)
-- Frontend: Next.js 16 (React 19) managed by PM2 on port 3000
-- Backend: Django 4.2 REST Framework managed by Gunicorn on port 8000
-- Cache and message broker: Redis on port 6379
-- Background tasks: Celery Worker and Celery Beat
-- Web server and reverse proxy: Nginx on ports 80 (HTTP) and 443 (HTTPS)
-- Firewall: Ubuntu UFW (ports 22, 80, 443 open)
+- Target server: `37.32.31.95` (Ubuntu)
+- Domain: **purchased** — set `<YOUR_DOMAIN>` everywhere below
+- Database: **PostgreSQL** (fresh cluster, no data migration — local data was test-only)
+- Backend: Django 4.2 + DRF via Gunicorn (systemd, `www-data`, port 8000 internal)
+- Background: Celery worker (queues `default,sms,inventory,media`) + beat (systemd)
+- Frontend: Next.js 16 via PM2 (port 3000 internal)
+- TLS: Let's Encrypt via certbot (HTTPS-only; HSTS on)
+- Firewall: UFW — 22, 80, 443 only
+- Config: single source of truth `backend/.env` on the server (chmod 600, never committed,
+  never uploaded). The tracked `backend/.env.example` is the structural contract.
 
 ---
 
-## 1. Server initialization and networking
+## 0. Two provider-dependent states (temporary, by design)
 
-### Connect to the server
+| Concern | State until provider approval | Flip line after approval |
+|---|---|---|
+| SMS (OTP) | `SMS_IR_API_KEY=` **empty** → codes are logged server-side only: `journalctl -u fashion-celery-worker -f | grep -i otp` | set real key + line number in `.env`, `systemctl restart fashion-celery-worker` |
+| Payments | `ALLOW_DUMMY_GATEWAY=True` → checkout can complete **without real money**. Acceptable ONLY during the approval window and only with the owner's knowledge | `False` in `.env` + `systemctl restart fashion-backend` (and a real gateway integration when available) |
+
+Both states are approvals held by the store owner; neither is a technical unknown.
+
+## 1. Local-provided assets (already in repo `deploy/`)
+
+- `deploy/deploy.sh` — deploy/update runbook (`--dry-run` supported)
+- `deploy/backup_db.sh` — `pg_dump` snapshot + retention (14 daily)
+- `deploy/nginx/fashion-store.conf` — server block (HTTP side; certbot injects TLS)
+- `deploy/systemd/fashion-backend.service` — Gunicorn (www-data, hardened)
+- `deploy/systemd/fashion-celery-worker.service` + `fashion-celery-beat.service`
+- `deploy/frontend/env.production.example` — frontend build env template
+
+## 2. One-time server bootstrap (the only heavy session)
+
+### 2.1 DNS + TLS prerequisites (owner does, ~10 min)
+1. Point an **A record** for `<YOUR_DOMAIN>` (and `www.`) to `37.32.31.95`.
+   DNS-only / no CDN proxying — ArvanCloud-style proxying breaks Let's Encrypt HTTP-01.
+2. Verify: `dig +short <YOUR_DOMAIN>` from the server returns the IP **and** from an external
+   resolver (`dig @8.8.8.8 +short <YOUR_DOMAIN>`), since Let's Encrypt checks from outside.
+
+### 2.2 Packages
 ```bash
 ssh root@37.32.31.95
-```
+apt update && apt upgrade -y
+apt install -y python3-venv python3-dev build-essential libpq-dev \
+               postgresql postgresql-contrib redis-server nginx git curl ufw
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt install -y nodejs
+npm install -g pm2
 
-### Fix DNS resolution
-On some datacenter providers, default DNS configurations fail to resolve external domains like `security.ubuntu.com`. If `apt update` hangs or fails with temporary resolution errors, set static nameservers:
-
-```bash
-cat << 'EOF' > /etc/resolv.conf
-nameserver 8.8.8.8
-nameserver 1.1.1.1
-EOF
-```
-
-If operating within restricted networks where global DNS is blocked, use domestic resolvers such as Shecan:
-```bash
-cat << 'EOF' > /etc/resolv.conf
+# If DNS resolution to Ubuntu mirrors fails (some datacenter resolvers):
+cat <<'EOF' > /etc/resolv.conf
 nameserver 178.22.122.100
 nameserver 185.51.200.2
 EOF
 ```
 
-### Create swap memory
-Next.js builds require significant RAM during compilation. To prevent the build process from crashing with out-of-memory errors, configure a 4 GB swap file:
-
+### 2.3 Swap (frontend builds on 8 GB VPS)
 ```bash
-fallocate -l 4G /swapfile
-chmod 600 /swapfile
-mkswap /swapfile
-swapon /swapfile
+fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
 grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
 ```
 
-### Install required packages
+### 2.4 PostgreSQL fresh cluster
 ```bash
-# Update repository lists
-apt update && apt upgrade -y
-
-# Core development and runtime tools
-apt install -y python3 python3-pip python3-venv python3-dev redis-server nginx git curl ufw
-
-# Node.js 20 LTS and PM2 process manager
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt install -y nodejs
-npm install -g pm2
-
-# Start and enable Redis
-systemctl enable --now redis-server
-redis-cli ping  # Must return PONG
+systemctl enable --now postgresql
+sudo -u postgres psql <<'SQL'
+CREATE ROLE store_user LOGIN PASSWORD '<RANDOM_DB_PASSWORD>';
+CREATE DATABASE webstore OWNER store_user;
+SQL
+# Optional belt-and-suspenders:
+sudo -u postgres psql -c "ALTER SYSTEM SET password_encryption = 'scram-sha-256';"
+mkdir -p /var/backups/fashion-store
 ```
 
----
-
-## 2. Codebase installation
-
-Clone the project into `/var/www/fashion-store`:
-
+### 2.5 Redis harden (bind-only + password)
 ```bash
-mkdir -p /var/www
-cd /var/www
-git clone https://github.com/tinkernie/fashion-store.git
-cd /var/www/fashion-store
+sudo sed -i 's/^# *bind 127\.0\.0\.1/bind 127.0.0.1 -::1/' /etc/redis/redis.conf
+REDIS_PASS="$(openssl rand -hex 24)"
+echo "requirepass ${REDIS_PASS}" >> /etc/redis/redis.conf
+systemctl restart redis-server
+# .env URLs become: redis://:${REDIS_PASS}@127.0.0.1:6379/{0,1}
 ```
 
----
-
-## 3. Backend setup
-
-### Virtual environment and dependencies
+### 2.6 Code + service user
 ```bash
+usermod -a -G www-data www-data 2>/dev/null || true
+mkdir -p /var/www && cd /var/www
+git clone https://github.com/tinkernie/fashion-store.git   # fresh deploys
 cd /var/www/fashion-store/backend
 python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+venv/bin/pip install --upgrade pip && venv/bin/pip install -r requirements.txt
 ```
 
-### Configure static files root
-Django requires `STATIC_ROOT` defined to run `collectstatic`. Check `backend/config/settings.py` around line 248. If missing, ensure it is set:
-
-```python
-STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-```
-
-### Create environment file
-Create `/var/www/fashion-store/backend/.env`:
-
-```ini
-SECRET_KEY=luxe-secret-prod-key-xyz-9876543210-secure
-DEBUG=False
-ALLOWED_HOSTS=37.32.31.95,localhost,127.0.0.1
+### 2.7 Server-side `.env` (create with editor on the server; never upload)
+```bash
+cat > /var/www/fashion-store/backend/.env <<'EOF'
 DJANGO_SETTINGS_MODULE=config.settings
+SECRET_KEY=<openssl rand -base64 60>
+DEBUG=False
+ALLOWED_HOSTS=<YOUR_DOMAIN>,www.<YOUR_DOMAIN>
+STATIC_ROOT=/var/www/fashion-store/backend/staticfiles
 
-# Redis cache and Celery broker
-REDIS_URL=redis://127.0.0.1:6379/1
-CACHE_REDIS_URL=redis://127.0.0.1:6379/1
-CELERY_BROKER_URL=redis://127.0.0.1:6379/0
-CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
+DB_ENGINE=postgres
+POSTGRES_DB=webstore
+POSTGRES_USER=store_user
+POSTGRES_PASSWORD=<RANDOM_DB_PASSWORD>
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+POSTGRES_CONN_MAX_AGE=60
+
+REDIS_URL=redis://:<REDIS_PASS>@127.0.0.1:6379/1
+CACHE_REDIS_URL=redis://:<REDIS_PASS>@127.0.0.1:6379/1
+CELERY_BROKER_URL=redis://:<REDIS_PASS>@127.0.0.1:6379/0
+CELERY_RESULT_BACKEND=redis://:<REDIS_PASS>@127.0.0.1:6379/0
 CELERY_TASK_ALWAYS_EAGER=False
 
-# Frontend URL and CORS
-FRONTEND_URL=http://37.32.31.95
-CORS_ALLOWED_ORIGINS=http://37.32.31.95,http://localhost:3000
-```
+SECURE_SSL_REDIRECT=True
+SECURE_HSTS_SECONDS=31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+SECURE_PROXY_SSL_HEADER=1
+CSRF_TRUSTED_ORIGINS=https://<YOUR_DOMAIN>,https://www.<YOUR_DOMAIN>
 
-### Run database migrations and static files
+FRONTEND_URL=https://<YOUR_DOMAIN>
+CORS_ALLOWED_ORIGINS=https://<YOUR_DOMAIN>
+
+SMS_IR_API_KEY=
+ALLOW_DUMMY_GATEWAY=True
+EOF
+chmod 600 /var/www/fashion-store/backend/.env
+chown root:root /var/www/fashion-store/backend/.env
+```
+(Leave mock lines' values exactly as §0 — flip lines double as approval-day checklist.)
+
+### 2.8 Django migration + superuser (production cluster)
 ```bash
-python manage.py migrate
-python manage.py collectstatic --noinput
-python manage.py createsuperuser
-# Optional: seed catalog data
-python seed_data.py
+cd /var/www/fashion-store/backend
+venv/bin/python manage.py check --deploy
+venv/bin/python manage.py migrate --noinput
+venv/bin/python manage.py collectstatic --noinput
+venv/bin/python manage.py createsuperuser
+deploy/backup_db.sh   # baseline snapshot on day 0
 ```
 
----
-
-## 4. Systemd services for the backend
-
-Create systemd unit files to keep the API server, Celery worker, and Celery beat scheduler running continuously with automatic restarts.
-
-### 1. Gunicorn backend (`/etc/systemd/system/fashion-backend.service`)
-```ini
-[Unit]
-Description=Gunicorn daemon for Fashion Store Backend
-After=network.target redis-server.service
-
-[Service]
-User=root
-WorkingDirectory=/var/www/fashion-store/backend
-EnvironmentFile=/var/www/fashion-store/backend/.env
-ExecStart=/var/www/fashion-store/backend/venv/bin/gunicorn config.wsgi:application \
-          --workers 3 \
-          --threads 2 \
-          --bind 127.0.0.1:8000
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 2. Celery worker (`/etc/systemd/system/fashion-celery-worker.service`)
-Tasks in this project are explicitly routed across multiple queues (`default`, `emails`, `sms`, `inventory`, `media`). The worker must listen to all of them:
-
-```ini
-[Unit]
-Description=Celery Worker for Fashion Store
-After=network.target redis-server.service
-
-[Service]
-User=root
-WorkingDirectory=/var/www/fashion-store/backend
-EnvironmentFile=/var/www/fashion-store/backend/.env
-ExecStart=/var/www/fashion-store/backend/venv/bin/celery -A config worker \
-          -l info \
-          -Q default,emails,sms,inventory,media \
-          --concurrency=2
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 3. Celery beat (`/etc/systemd/system/fashion-celery-beat.service`)
-```ini
-[Unit]
-Description=Celery Beat Scheduler for Fashion Store
-After=network.target redis-server.service
-
-[Service]
-User=root
-WorkingDirectory=/var/www/fashion-store/backend
-EnvironmentFile=/var/www/fashion-store/backend/.env
-ExecStart=/var/www/fashion-store/backend/venv/bin/celery -A config beat \
-          -l info \
-          --scheduler django_celery_beat.schedulers:DatabaseScheduler
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### Enable and start backend services
+### 2.9 Nginx + units + certbot
 ```bash
+sed "s|<YOUR_DOMAIN>|store.example.ir|g" deploy/nginx/fashion-store.conf \
+  > /etc/nginx/sites-available/fashion-store
+ln -sf /etc/nginx/sites-available/fashion-store /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+nginx -t && systemctl reload nginx
+
+mkdir -p /var/www/certbot
+apt install -y certbot python3-certbot-nginx
+certbot --nginx -d <YOUR_DOMAIN> -d www.<YOUR_DOMAIN> --redirect --agree-tos -m <owner_email>
+
+cp deploy/systemd/*.service /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now fashion-backend fashion-celery-worker fashion-celery-beat
+# enabled but only `start`ed on trigger day:
+systemctl enable fashion-backend fashion-celery-worker fashion-celery-beat
 
-# Verify all return "active"
-systemctl is-active fashion-backend fashion-celery-worker fashion-celery-beat
+ufw allow OpenSSH && ufw allow 'Nginx Full' && ufw --force enable
 ```
 
----
-
-## 5. Frontend configuration and the build-time IP trap
-
-### The build-time variable pitfall
-Next.js compiles all variables prefixed with `NEXT_PUBLIC_` into the static JavaScript bundles during `next build`. If built with an outdated IP address (such as `85.198.49.43`), the client browser will try to send API requests to that old IP, causing `AxiosError: Network Error` and crashing React hydration.
-
-Additionally, Next.js server-side rendering (SSR) in `app/page.tsx` needs to query the API from inside the server. If it tries to reach its own public IP without NAT loopback support, the request can hang. We solve this by setting an internal API URL for SSR.
-
-Create `/var/www/fashion-store/frontend/.env.production`:
-```ini
-NEXT_PUBLIC_API_URL=http://37.32.31.95
-INTERNAL_API_URL=http://127.0.0.1:8000
-```
-
-### Build the frontend
+### 2.10 Frontend
 ```bash
 cd /var/www/fashion-store/frontend
-npm install
-npm run build
-```
-
----
-
-## 6. The DPI firewall inspection trap and the `/chunks/` fix
-
-### The root problem
-In Iran, network-level Deep Packet Inspection (DPI) monitors cleartext HTTP traffic on port 80. When an HTTP GET request contains the path segment `/chunks/`, the firewall intercepts the TCP stream and injects:
-```http
-HTTP/1.1 302 Found
-Location: http://10.10.34.35:80
-```
-This redirects the browser to the national filter landing page (`Peyvandha`).
-
-Because Next.js bundles all CSS stylesheets and JavaScript modules into `/_next/static/chunks/`, browsers attempting to load the site over plain HTTP were blocked from downloading any assets. This caused two distinct failures:
-1. When stylesheets were blocked, the site rendered as raw, unstyled HTML.
-2. When JavaScript was blocked, client-side hydration failed. Because `app/template.tsx` wraps the page in a Framer Motion `motion.div` starting at `opacity: 0`, failed hydration left the body hidden at zero opacity, showing only the navbar.
-
-### The solution: Rename `chunks` to `assets` across the build output
-Both words (`chunks` and `assets`) have exactly 6 characters. The paths `static/chunks` and `static/assets` both have exactly 13 characters. This means replacing the string across build files preserves exact file byte lengths and source-map alignment without breaking syntax.
-
-Apply the patch to the `.next` directory:
-```bash
-cd /var/www/fashion-store/frontend/.next
-
-# Symlink static/assets to static/chunks so Nginx can resolve either path
-ln -sfn chunks static/assets
-
-# Replace all occurrences inside compiled files
-find . -type f \( -name '*.js' -o -name '*.json' -o -name '*.html' -o -name '*.css' \) \
-  -exec sed -i 's/static\/chunks/static\/assets/g' {} +
-```
-
-### File permissions for Nginx
-Nginx worker processes run as `www-data`. When files are created by `root`, Nginx gets `403 Forbidden` if permissions do not allow reading and traversing directories:
-
-```bash
-chown -R www-data:www-data /var/www/fashion-store
-chmod -R 755 /var/www/fashion-store
-```
-
-### Start the frontend with PM2
-```bash
-cd /var/www/fashion-store/frontend
-pm2 start npm --name "fashion-frontend" -- start -- -p 3000
-pm2 startup
+cp ../deploy/frontend/env.production.example .env.production
+sed -i "s|<YOUR_DOMAIN>|store.example.ir|g" .env.production
+npm ci && npm run build
+pm2 start npm --name fashion-frontend -- start -- -p 3000
 pm2 save
 ```
 
----
-
-## 7. Nginx reverse proxy configuration
-
-Create `/etc/nginx/sites-available/fashion-store`:
-
-```nginx
-server {
-    listen 80 default_server;
-    listen 443 ssl default_server;
-    server_name 37.32.31.95 _;
-
-    ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
-    ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    client_max_body_size 50M;
-
-    # DPI bypass: serve static/assets from the chunks folder
-    location /_next/static/assets/ {
-        alias /var/www/fashion-store/frontend/.next/static/chunks/;
-        expires 365d;
-        access_log off;
-    }
-
-    # Backward compatibility for any direct files/ references
-    location /_next/static/files/ {
-        alias /var/www/fashion-store/frontend/.next/static/chunks/;
-        expires 365d;
-        access_log off;
-    }
-
-    # General Next.js static files (fonts, media)
-    location /_next/static/ {
-        alias /var/www/fashion-store/frontend/.next/static/;
-        expires 365d;
-        access_log off;
-    }
-
-    # Public folder assets
-    location /public/ {
-        alias /var/www/fashion-store/frontend/public/;
-        expires 30d;
-        access_log off;
-    }
-
-    # Django collected static files
-    location /static/ {
-        alias /var/www/fashion-store/backend/staticfiles/;
-        expires 30d;
-        add_header Cache-Control "public, max-age=2592000";
-    }
-
-    # Product media uploads
-    location /media_libm/ {
-        alias /var/www/fashion-store/backend/media_libm/;
-        expires 30d;
-        add_header Cache-Control "public, max-age=2592000";
-    }
-
-    # Django API and Admin
-    location ~ ^/(api|admin)/ {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Next.js frontend application
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-### Self-signed SSL certificate setup
+### 2.11 Cron (daily backups)
 ```bash
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout /etc/ssl/private/nginx-selfsigned.key \
-  -out /etc/ssl/certs/nginx-selfsigned.crt \
-  -subj "/CN=37.32.31.95"
+( crontab -l 2>/dev/null; echo '30 3 * * * /var/www/fashion-store/deploy/backup_db.sh >/dev/null 2>&1' ) | crontab -
 ```
 
-### Activate Nginx and test
-```bash
-rm -f /etc/nginx/sites-enabled/default
-ln -sf /etc/nginx/sites-available/fashion-store /etc/nginx/sites-enabled/
-nginx -t
-systemctl restart nginx
-```
-
----
-
-## 8. Firewall setup
-
-Enable UFW on Ubuntu:
-```bash
-ufw allow OpenSSH
-ufw allow 'Nginx Full'
-ufw --force enable
-ufw status
-```
-
-In your cloud provider dashboard (e.g. ArvanCloud), leave the default security group allowing all inbound/outbound traffic. UFW handles access control on the operating system level, protecting internal ports like Redis (`6379`), Gunicorn (`8000`), and Node.js (`3000`).
-
----
-
-## 9. Routine code updates and maintenance
-
-When updating code in the future, follow this sequence:
-
+## 3. Trigger day (the flip)
 ```bash
 cd /var/www/fashion-store
 git pull origin main
-
-# 1. Update backend
-cd /var/www/fashion-store/backend
-source venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py collectstatic --noinput
-systemctl restart fashion-backend fashion-celery-worker fashion-celery-beat
-
-# 2. Update frontend
-cd /var/www/fashion-store/frontend
-npm install
-npm run build
-
-# Re-apply the DPI assets patch
-cd /var/www/fashion-store/frontend/.next
-ln -sfn chunks static/assets
-find . -type f \( -name '*.js' -o -name '*.json' -o -name '*.html' -o -name '*.css' \) \
-  -exec sed -i 's/static\/chunks/static\/assets/g' {} +
-
-# Fix permissions and restart PM2
-chown -R www-data:www-data /var/www/fashion-store
-chmod -R 755 /var/www/fashion-store
-pm2 restart fashion-frontend --update-env
+./deploy.sh --dry-run      # print-only sanity pass
+./deploy.sh                # backend + services + frontend + probes
+systemctl is-active fashion-backend fashion-celery-worker fashion-celery-beat
+pm2 status && curl -I https://<YOUR_DOMAIN>
 ```
 
----
+## 4. Routine updates afterwards (same as trigger, minus bootstrap)
+```bash
+cd /var/www/fashion-store && git pull origin main && ./deploy.sh
+```
 
-## 10. Service management cheat sheet
+## 5. Rollback / restore
+- Backend code: `git log --oneline -5` → `git checkout <good_sha>` → `./deploy.sh backend`
+- Database: latest snapshot in `/var/backups/fashion-store`;
+  `gunzip -c <file>.sql.gz ... restore via pg_restore` — verify with the owner before a live restore
+- Frontend: `pm2 restart fashion-frontend --update-env` after a bad build → check `pm2 logs`
 
-| Action | Command |
-| :--- | :--- |
-| View backend logs | `journalctl -u fashion-backend -f` |
-| View Celery worker logs | `journalctl -u fashion-celery-worker -f` |
-| View Celery beat logs | `journalctl -u fashion-celery-beat -f` |
-| View frontend logs | `pm2 logs fashion-frontend` |
-| Check service statuses | `systemctl is-active fashion-backend fashion-celery-worker fashion-celery-beat redis-server` |
-| Check frontend status | `pm2 status` |
-| Check Nginx errors | `tail -f /var/log/nginx/error.log` |
-| Check Nginx access | `tail -f /var/log/nginx/access.log` |
+## Appendix A. Engine-room facts (debugging value only)
+
+1. **The DPI `/chunks` trap is dead, by TLS.** In HTTP-only days, the Iranian DPI middleware matched the
+   cleartext path `/chunks/` and injected `HTTP/1.1 302 Location: http://10.10.34.35:80` (Peyvandha), bricking
+   web assets while leaving the page skeleton visible. cached the workarounds were: serve `static/assets` from
+   `static/chunks` via alias, and `sed s|static/chunks|static/assets|` over the entire bundle —
+   same byte lengths so source maps stayed aligned. With Let's Encrypt HTTPS, assets are transferred encrypted and
+   the interceptor can no longer see the path, so these mutations were removed from `deploy.sh`.
+2. **The build-time variable trap:** Next.js bakes `NEXT_PUBLIC_*` values at `next build`. If you build with a stale
+   domain/IP, browsers will request the API from that stale host (AxiosError: Network Error + failed hydration).
+   `frontend/.env.production` made on the server before building keeps this correct (and `deploy.sh` rebuilds on every
+   update).
+3. **SSR needs the internal URL** (`INTERNAL_API_URL=http://127.0.0.1:8000`) because the frontend server fetching
+   its own public IP may not get NAT loopback support on some providers.
+4. Whitenoise's manifest storage requires `collectstatic` before subsequent deploys, and settings.py now
+   supports `STATIC_ROOT` env; if whitenoise's manifest is missing, requests 500 without a trace at startup,
+   so treat collectstatic as a build-step, not a nice-to-have.
+5. JWT tokens for sessions and cache sit on Redis DB1; beat scheduler reads messages from DB0; each app uses DB
+   separation to avoid cache/spam interference.
+6. `_env` bootstrapping note: `backend/config/settings.py` reads `.env` with precedence
+   `real env > .env file` (via `os.environ.setdefault`). Systemd `EnvironmentFile=` and manual `export`
+   always outrank the on-disk file.
