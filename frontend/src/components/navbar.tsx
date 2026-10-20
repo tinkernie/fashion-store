@@ -290,10 +290,10 @@ export default function Navbar() {
               }
             }}
             className={cn(
-              "relative flex items-center h-10 rounded-full px-3 transition-colors duration-300 border overflow-hidden shrink-0 cursor-pointer group",
+              "relative flex items-center h-10 rounded-full transition-all duration-300 border overflow-hidden shrink-0 cursor-pointer group",
               isSearchExpanded
-                ? "w-44 sm:w-60 md:w-72 bg-white text-slate-900 border-white shadow-lg ring-2 ring-white/30"
-                : "w-20 sm:w-24 md:w-28 bg-white/15 hover:bg-white/25 text-white border-white/25"
+                ? "w-44 sm:w-60 md:w-72 px-3 bg-white text-slate-900 border-white shadow-lg ring-2 ring-white/30 justify-start"
+                : "w-10 px-0 justify-center bg-white/15 hover:bg-white/25 text-white border-white/25"
             )}
           >
             <button
@@ -302,7 +302,10 @@ export default function Navbar() {
                 e.stopPropagation();
                 setIsSearchExpanded((prev) => !prev);
               }}
-              className="p-0.5 text-inherit hover:opacity-85 transition-opacity cursor-pointer shrink-0 ml-1.5 flex items-center justify-center"
+              className={cn(
+                "p-0.5 text-inherit hover:opacity-85 transition-opacity cursor-pointer shrink-0 flex items-center justify-center",
+                isSearchExpanded ? "ml-1.5" : "ml-0"
+              )}
               aria-label="جستجو"
             >
               <Search
@@ -319,12 +322,13 @@ export default function Navbar() {
               value={searchQuery}
               onFocus={() => setIsSearchExpanded(true)}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isSearchExpanded ? "جستجوی محصول، برند، استایل..." : "جستجو..."}
+              placeholder={isSearchExpanded ? "جستجوی محصول، برند، استایل..." : ""}
+              tabIndex={isSearchExpanded ? 0 : -1}
               className={cn(
-                "flex-1 bg-transparent border-none outline-none text-xs font-medium min-w-0 transition-colors",
+                "bg-transparent border-none outline-none text-xs font-medium min-w-0 transition-colors",
                 isSearchExpanded
-                  ? "text-slate-900 placeholder:text-slate-400"
-                  : "text-white placeholder:text-white/75 cursor-pointer"
+                  ? "flex-1 text-slate-900 placeholder:text-slate-400"
+                  : "w-0 p-0 m-0 opacity-0 pointer-events-none"
               )}
             />
 
