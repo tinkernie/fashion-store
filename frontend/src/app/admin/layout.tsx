@@ -25,7 +25,8 @@ import {
   ArrowRight,
   Phone,
   Smartphone,
-  RefreshCw
+  RefreshCw,
+  BookOpen
 } from "lucide-react";
 import { MaviWordmark } from "@/components/ui/mavi-wordmark";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,12 @@ const NAV_ITEMS = [
     href: "/admin/cms",
     icon: FileText,
     badge: "محتوا",
+  },
+  {
+    title: "وبلاگ و مقالات",
+    href: "/admin/blog",
+    icon: BookOpen,
+    badge: "جدید",
   },
   {
     title: "محصولات و کاتالوگ",

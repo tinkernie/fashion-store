@@ -51,6 +51,7 @@ export default function Footer() {
               <Link href="/women" className="hover:text-white hover:-translate-x-1 transition-all">فروش ویژه</Link>
               <Link href="/women" className="hover:text-white hover:-translate-x-1 transition-all">جدیدترین محصولات</Link>
               <Link href="/women" className="hover:text-white hover:-translate-x-1 transition-all">پرفروش‌ترین‌ها</Link>
+              <Link href="/blog" className="hover:text-white hover:-translate-x-1 transition-all">وبلاگ و مجله مد</Link>
               <Link href="/about" className="hover:text-white hover:-translate-x-1 transition-all">درباره ما</Link>
               <Link href="/contact" className="hover:text-white hover:-translate-x-1 transition-all">تماس با ما</Link>
               <Link href="#" className="hover:text-white hover:-translate-x-1 transition-all">قوانین و مقررات</Link>

@@ -43,6 +43,11 @@ const CollectionsSection = dynamic(
   }
 );
 
+const HomeBlogSection = dynamic(
+  () => import("@/components/home-blog-section"),
+  { ssr: true }
+);
+
 interface HeroSlide {
   id: string | number;
   title: string;
@@ -792,6 +797,11 @@ export default function HomeClient({
           </div>
         </section>
       )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* 5.5 CMS RECENT BLOG ARTICLES                                      */}
+      {/* ----------------------------------------------------------------- */}
+      <HomeBlogSection />
 
       {/* ----------------------------------------------------------------- */}
       {/* 6. TRUST & BRAND VALUES BAR                                       */}

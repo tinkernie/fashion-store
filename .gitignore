@@ -124,6 +124,7 @@ lerna-debug.log*
 # Graphify
 .graphify*
 GRAPH_REPORT.md
+graphify-out/cache/
 
 # Impeccable & Taste Design Systems
 .impeccable/

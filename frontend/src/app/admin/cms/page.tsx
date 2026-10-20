@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Image as ImageIcon,
   Sliders,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -132,6 +133,17 @@ export default function AdminCMSPage() {
   const [productSearch, setProductSearch] = useState<string>("");
   const [isCampaignLoading, setIsCampaignLoading] = useState(false);
 
+  // Homepage Blog Section CMS State
+  const [blogSection, setBlogSection] = useState({
+    enabled: true,
+    titles: {
+      fa: "آخرین مقالات و مجله مد",
+      en: "Latest Journal Articles",
+      ar: "آخر المقالات ومجلة الموضة",
+    },
+    max_items: 3,
+  });
+
   useEffect(() => {
     loadAllCmsData();
   }, []);
@@ -139,17 +151,25 @@ export default function AdminCMSPage() {
   const loadAllCmsData = async () => {
     setIsLoading(true);
     try {
-      const [pagesData, announceData, heroData, footerData, discountData, productsData] = await Promise.allSettled([
+      const [pagesData, announceData, heroData, footerData, discountData, productsData, blogSecData] = await Promise.allSettled([
         adminApi.getPages(),
         adminApi.getSiteContent("announcement"),
         adminApi.getSiteContent("hero"),
         adminApi.getSiteContent("footer"),
         adminApi.getSiteContent("discount_section"),
         adminApi.getProducts(),
+        adminApi.getSiteContent("homepage_blog_section"),
       ]);
 
       if (pagesData.status === "fulfilled") {
         setPages(pagesData.value);
+      }
+      if (blogSecData.status === "fulfilled" && blogSecData.value) {
+        setBlogSection((prev) => ({
+          ...prev,
+          ...blogSecData.value,
+          titles: { ...prev.titles, ...(blogSecData.value.titles || {}) },
+        }));
       }
       if (announceData.status === "fulfilled" && announceData.value) {
         setAnnouncement((prev) => ({ ...prev, ...announceData.value }));
@@ -324,6 +344,19 @@ export default function AdminCMSPage() {
       toast.success("اطلاعات تماس و فوتر با موفقیت ذخیره شد");
     } catch (e: any) {
       const msg = e?.response?.data?.detail || e?.response?.data?.error?.message || "خطا در ذخیره اطلاعات فوتر. اطمینان حاصل کنید با حساب ادمین وارد شده‌اید.";
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveBlogSection = async () => {
+    setIsLoading(true);
+    try {
+      await adminApi.updateSiteContent("homepage_blog_section", blogSection);
+      toast.success("تنظیمات بخش مقالات صفحه اصلی با موفقیت ذخیره شد");
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || e?.response?.data?.error?.message || "خطا در ذخیره تنظیمات بخش مقالات صفحه اصلی.";
       toast.error(msg);
     } finally {
       setIsLoading(false);
@@ -982,6 +1015,131 @@ export default function AdminCMSPage() {
               >
                 <Save className="w-4 h-4" />
                 ذخیره اطلاعات فوتر
+              </Button>
+            </div>
+          </div>
+
+          {/* Section 4: Homepage Blog / Journal Section */}
+          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-[#0082CA] flex items-center justify-center">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base md:text-lg font-bold text-white">بخش مقالات و مجله مد در صفحه اصلی</h3>
+                  <p className="text-xs text-gray-400">کنترل نمایش آخرین مقالات وبلاگ، عناوین چندزبانه و تعداد موارد در صفحه نخست</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/admin/blog"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-500/30 text-sky-400 hover:bg-sky-500/10 text-xs font-bold transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>مدیریت مقالات</span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setBlogSection({ ...blogSection, enabled: !blogSection.enabled })}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-bold transition-all cursor-pointer ${
+                    blogSection.enabled
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-sm"
+                      : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${blogSection.enabled ? "bg-emerald-400 animate-pulse" : "bg-gray-500"}`} />
+                  <span>{blogSection.enabled ? "بخش وبلاگ فعال است" : "بخش وبلاگ غیرفعال است"}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300">عنوان بخش (فارسی)</label>
+                <Input
+                  value={blogSection.titles?.fa || ""}
+                  onChange={(e) =>
+                    setBlogSection({
+                      ...blogSection,
+                      titles: { ...blogSection.titles, fa: e.target.value },
+                    })
+                  }
+                  placeholder="آخرین مقالات و مجله مد"
+                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300">عنوان بخش (انگلیسی - English)</label>
+                <Input
+                  value={blogSection.titles?.en || ""}
+                  onChange={(e) =>
+                    setBlogSection({
+                      ...blogSection,
+                      titles: { ...blogSection.titles, en: e.target.value },
+                    })
+                  }
+                  placeholder="Latest Journal Articles"
+                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300">عنوان بخش (عربی - العربية)</label>
+                <Input
+                  value={blogSection.titles?.ar || ""}
+                  onChange={(e) =>
+                    setBlogSection({
+                      ...blogSection,
+                      titles: { ...blogSection.titles, ar: e.target.value },
+                    })
+                  }
+                  placeholder="آخر المقالات ومجلة الموضة"
+                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300">حداکثر تعداد مقالات نمایشی در صفحه اصلی</label>
+                <select
+                  value={blogSection.max_items || 3}
+                  onChange={(e) =>
+                    setBlogSection({
+                      ...blogSection,
+                      max_items: Number(e.target.value),
+                    })
+                  }
+                  className="w-full bg-[#0a0a0a] border border-white/10 h-11 rounded-xl px-3 text-white text-xs outline-none focus:ring-1 focus:ring-[#0082CA]"
+                >
+                  <option value={2}>۲ مقاله</option>
+                  <option value={3}>۳ مقاله (پیش‌فرض)</option>
+                  <option value={4}>۴ مقاله</option>
+                  <option value={6}>۶ مقاله</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300">وضعیت محتوای مجله</label>
+                <div className="p-3 bg-[#0a0a0a] border border-white/10 rounded-xl text-xs text-gray-400 flex items-center justify-between h-11">
+                  <span>مقالات به‌صورت خودکار بر اساس جدیدترین موارد منتشر شده لود می‌شوند.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={saveBlogSection}
+                disabled={isLoading}
+                className="h-11 px-6 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                ذخیره تنظیمات بخش مقالات
               </Button>
             </div>
           </div>

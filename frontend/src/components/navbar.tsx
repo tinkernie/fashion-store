@@ -274,6 +274,7 @@ export default function Navbar() {
             <Link href="/search?sort=newest" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold whitespace-nowrap">جدیدترین‌ها</Link>
             <Link href="/search?sort=best_selling" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold whitespace-nowrap">پرفروش‌ترین‌ها</Link>
             <Link href="/search?sort=trending" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold whitespace-nowrap">ترندها</Link>
+            <Link href="/blog" className="text-white/95 hover:text-white hover:bg-white/15 px-3 py-1.5 rounded-full transition-all text-xs lg:text-sm font-semibold whitespace-nowrap">مجله و وبلاگ</Link>
           </div>
         </div>
 
@@ -609,6 +610,7 @@ export default function Navbar() {
                   <SheetClose asChild><Link href="/search?sort=newest" className="hover:text-[#0082CA] transition-colors text-slate-700">جدیدترین محصولات</Link></SheetClose>
                   <SheetClose asChild><Link href="/search?sort=best_selling" className="hover:text-[#0082CA] transition-colors text-slate-700">پرفروش‌ترین‌ها</Link></SheetClose>
                   <SheetClose asChild><Link href="/search?sort=trending" className="hover:text-[#0082CA] transition-colors text-slate-700">ترندها</Link></SheetClose>
+                  <SheetClose asChild><Link href="/blog" className="hover:text-[#0082CA] transition-colors text-slate-700">مجله و وبلاگ مد</Link></SheetClose>
                   
                   <div className="border-t border-sky-100 pt-5 flex flex-col gap-4">
                     {isLoggedIn ? (
