@@ -376,16 +376,25 @@ export default function HomeClient({
             id="top-mavi-announcement"
             variant="rainbow"
             xColor="text-slate-500 hover:text-[#0082CA] hover:bg-sky-100/60"
-            className="rounded-2xl border border-sky-300/80 bg-gradient-to-l from-sky-50/95 via-white to-sky-50/95 shadow-md shadow-[#0082CA]/10 ring-1 ring-sky-200/50 backdrop-blur-xl w-full py-2.5 px-3 sm:px-6"
+            className="rounded-2xl border border-sky-300/80 bg-gradient-to-l from-sky-50/95 via-white to-sky-50/95 shadow-md shadow-[#0082CA]/10 ring-1 ring-sky-200/50 backdrop-blur-xl w-full py-2.5 px-8 sm:px-6"
           >
-            <div className="flex items-center justify-center gap-2.5 flex-wrap sm:flex-nowrap text-center max-w-full">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2.5 text-center max-w-full">
               <span className="bg-[#0082CA] text-white font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm shadow-[#0082CA]/30 flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-white" />
                 {announcement.badge || "پیشنهاد ماوی"}
               </span>
-              <span className="text-xs sm:text-sm font-black text-[#0B192C] truncate max-w-[280px] sm:max-w-md md:max-w-xl">
-                {announcement.text}
-              </span>
+              {announcement.link ? (
+                <Link
+                  href={announcement.link}
+                  className="text-xs sm:text-sm font-black text-[#0B192C] hover:text-[#0082CA] transition-colors leading-relaxed sm:leading-normal break-words text-balance max-w-full sm:max-w-xl underline-offset-4 hover:underline"
+                >
+                  {announcement.text}
+                </Link>
+              ) : (
+                <span className="text-xs sm:text-sm font-black text-[#0B192C] leading-relaxed sm:leading-normal break-words text-balance max-w-full sm:max-w-xl">
+                  {announcement.text}
+                </span>
+              )}
             </div>
           </Banner>
         </div>
