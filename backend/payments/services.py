@@ -24,9 +24,11 @@ class PaymentService:
         if order.status not in [Order.Status.AWAITING_PAYMENT, Order.Status.PENDING]:
             raise BusinessException("Order cannot be paid in its current status.")
 
-        # H10: block dummy gateway in production
-        if gateway == 'dummy' and not settings.DEBUG and os.environ.get("ALLOW_DUMMY_GATEWAY", "False").lower() not in ("true","1","yes"):
-            raise BusinessException("Dummy gateway not allowed in production.")
+        # H10: block dummy gateway in production unless staff or explicitly allowed
+        if gateway == 'dummy' and not settings.DEBUG:
+            allow_dummy = os.environ.get("ALLOW_DUMMY_GATEWAY", "False").lower() in ("true", "1", "yes")
+            if not (user.is_staff or allow_dummy):
+                raise BusinessException("Dummy gateway not allowed in production.")
 
         # Check for existing successful payment atomically (locked order)
         if order.payments.filter(status=Payment.Status.SUCCEEDED).exists():
