@@ -101,6 +101,10 @@ run chown -R "${SERVICE_USER}:${SERVICE_USER}" "${APP_DIR}"
 run find "${APP_DIR}" -type d -exec chmod 755 {} +
 run find "${APP_DIR}" -type f -exec chmod 644 {} +
 run chmod +x "${APP_DIR}/deploy/"*.sh
+run chmod +x "${BACKEND_DIR}/manage.py"
+if [ -d "${VENV}/bin" ]; then
+  run chmod -R +x "${VENV}/bin"
+fi
 run chmod 640 "${BACKEND_DIR}/.env"
 run chown root:"${SERVICE_USER}" "${BACKEND_DIR}/.env"
 
