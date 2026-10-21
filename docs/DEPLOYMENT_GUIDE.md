@@ -6,8 +6,8 @@
 > (SQLite, root services, self-signed IP, DPI `/chunks` workaround) is documented
 > in the appendix — read it only when debugging older deployments.
 
-- Target server: `37.32.31.95` (Ubuntu)
-- Domain: **purchased** — set `<YOUR_DOMAIN>` everywhere below
+- Target server: `185.226.119.184` (Ubuntu)
+- Domain: **maviposh.com** (+ `www.`)
 - Database: **PostgreSQL** (fresh cluster, no data migration — local data was test-only)
 - Backend: Django 4.2 + DRF via Gunicorn (systemd, `www-data`, port 8000 internal)
 - Background: Celery worker (queues `default,sms,inventory,media`) + beat (systemd)
@@ -40,14 +40,14 @@ Both states are approvals held by the store owner; neither is a technical unknow
 ## 2. One-time server bootstrap (the only heavy session)
 
 ### 2.1 DNS + TLS prerequisites (owner does, ~10 min)
-1. Point an **A record** for `<YOUR_DOMAIN>` (and `www.`) to `37.32.31.95`.
+1. Point an **A record** for `maviposh.com` (and `www.`) to `185.226.119.184`.
    DNS-only / no CDN proxying — ArvanCloud-style proxying breaks Let's Encrypt HTTP-01.
-2. Verify: `dig +short <YOUR_DOMAIN>` from the server returns the IP **and** from an external
-   resolver (`dig @8.8.8.8 +short <YOUR_DOMAIN>`), since Let's Encrypt checks from outside.
+2. Verify: `dig +short maviposh.com` from the server returns the IP **and** from an external
+   resolver (`dig @8.8.8.8 +short maviposh.com`), since Let's Encrypt checks from outside.
 
 ### 2.2 Packages
 ```bash
-ssh root@37.32.31.95
+ssh root@185.226.119.184
 apt update && apt upgrade -y
 apt install -y python3-venv python3-dev build-essential libpq-dev \
                postgresql postgresql-contrib redis-server nginx git curl ufw
@@ -104,7 +104,7 @@ cat > /var/www/fashion-store/backend/.env <<'EOF'
 DJANGO_SETTINGS_MODULE=config.settings
 SECRET_KEY=<openssl rand -base64 60>
 DEBUG=False
-ALLOWED_HOSTS=<YOUR_DOMAIN>,www.<YOUR_DOMAIN>
+ALLOWED_HOSTS=maviposh.com,www.maviposh.com
 STATIC_ROOT=/var/www/fashion-store/backend/staticfiles
 
 DB_ENGINE=postgres
@@ -127,10 +127,10 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS=True
 SESSION_COOKIE_SECURE=True
 CSRF_COOKIE_SECURE=True
 SECURE_PROXY_SSL_HEADER=1
-CSRF_TRUSTED_ORIGINS=https://<YOUR_DOMAIN>,https://www.<YOUR_DOMAIN>
+CSRF_TRUSTED_ORIGINS=https://maviposh.com,https://www.maviposh.com
 
-FRONTEND_URL=https://<YOUR_DOMAIN>
-CORS_ALLOWED_ORIGINS=https://<YOUR_DOMAIN>
+FRONTEND_URL=https://maviposh.com
+CORS_ALLOWED_ORIGINS=https://maviposh.com
 
 SMS_IR_API_KEY=
 ALLOW_DUMMY_GATEWAY=True
@@ -152,15 +152,14 @@ deploy/backup_db.sh   # baseline snapshot on day 0
 
 ### 2.9 Nginx + units + certbot
 ```bash
-sed "s|<YOUR_DOMAIN>|store.example.ir|g" deploy/nginx/fashion-store.conf \
-  > /etc/nginx/sites-available/fashion-store
+cp deploy/nginx/fashion-store.conf /etc/nginx/sites-available/fashion-store
 ln -sf /etc/nginx/sites-available/fashion-store /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
 mkdir -p /var/www/certbot
 apt install -y certbot python3-certbot-nginx
-certbot --nginx -d <YOUR_DOMAIN> -d www.<YOUR_DOMAIN> --redirect --agree-tos -m <owner_email>
+certbot --nginx -d maviposh.com -d www.maviposh.com --redirect --agree-tos -m <owner_email>
 
 cp deploy/systemd/*.service /etc/systemd/system/
 systemctl daemon-reload
@@ -174,7 +173,7 @@ ufw allow OpenSSH && ufw allow 'Nginx Full' && ufw --force enable
 ```bash
 cd /var/www/fashion-store/frontend
 cp ../deploy/frontend/env.production.example .env.production
-sed -i "s|<YOUR_DOMAIN>|store.example.ir|g" .env.production
+cp ../deploy/frontend/env.production.example .env.production
 npm ci && npm run build
 pm2 start npm --name fashion-frontend -- start -- -p 3000
 pm2 save
@@ -192,7 +191,7 @@ git pull origin main
 ./deploy.sh --dry-run      # print-only sanity pass
 ./deploy.sh                # backend + services + frontend + probes
 systemctl is-active fashion-backend fashion-celery-worker fashion-celery-beat
-pm2 status && curl -I https://<YOUR_DOMAIN>
+pm2 status && curl -I https://maviposh.com
 ```
 
 ## 4. Routine updates afterwards (same as trigger, minus bootstrap)

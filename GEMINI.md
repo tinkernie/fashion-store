@@ -23,7 +23,7 @@ Execute every incoming task strictly following the 10-phase lifecycle in [AGENTS
 7. **Verify**: Execute automated tests, type-checks, linters, API contracts, console/network audit, and a11y tests. Fix task-related failures.
 8. **Final Review**: Evaluate the final diff against the 10 pre-commit gates in [AGENTS.md Section 3](AGENTS.md#3-mandatory-10-phase-task-lifecycle).
 9. **Commit & Push**: Create an atomic Conventional Commit with a 4-part description (What, Why, Details, Verification), commit directly to `main`, and push safely to `origin/main`.
-10. **Production Deployment & Report**: Deploy to `37.32.31.95` per `docs/DEPLOYMENT_GUIDE.md` when applicable, and output the structured 8-field completion report.
+10. **Production Deployment & Report**: Deploy to `185.226.119.184` (domain `maviposh.com`) per `docs/DEPLOYMENT_GUIDE.md` when applicable, and output the structured 8-field completion report.
 11. **Dynamic Banners Rule**: All banners (sliders, promos, announcements, campaigns) must be customizable in CMS (`SiteContent` / Admin CMS) with dual-mode media (upload/CDN) and 16:9 landscape validation. Zero hardcoding.
 
 ## 4. Skill Dispatch Matrix

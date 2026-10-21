@@ -114,7 +114,7 @@ Every task MUST follow the 10-phase lifecycle. No implementation may begin befor
   - Relevant verification performed
 - **Automatic Push**: After successful verification and commit on `main`, push safely to `origin/main`. Never force-push or bypass protections.
 - **Detailed Commit Summary in Chat**: Always output full commit title, rationale, modified paths, and functional changes in conversation.
-- **Production Deployment**: Following push, deploy to live production server (`37.32.31.95`) per `docs/DEPLOYMENT_GUIDE.md`: pull latest commit to `/var/www/fashion-store`, run migrations/builds, apply Iranian DPI middlebox patch (`static/assets`), set permissions (`chown -R www-data:www-data`), and restart PM2 / Gunicorn / Celery.
+- **Production Deployment**: Following push, deploy to live production server (`185.226.119.184`, domain `maviposh.com`) per `docs/DEPLOYMENT_GUIDE.md`: pull latest commit to `/var/www/fashion-store`, then run `deploy.sh` (BACKUP → pip → migrate → collectstatic → systemd Gunicorn/Celery restarts → health probe → frontend build → PM2 restart → permissions). HTTPS via Let's Encrypt makes the old Iranian DPI `/chunks` patch obsolete.
 
 ## 8. Handling Ambiguity, Blockers & Unexpected Discoveries
 - Never resolve consequential uncertainty through guesswork.
