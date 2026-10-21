@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, Phone, Mail, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { MapPin, Phone, Mail } from "lucide-react";
 import { MaviWordmark } from "@/components/ui/mavi-wordmark";
 
 export default function Footer() {
@@ -13,12 +11,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
           
           {/* Column 1: Brand & Contact */}
-          <div className="md:col-span-5 flex flex-col space-y-6">
+          <div className="md:col-span-7 lg:col-span-8 flex flex-col space-y-6">
             <Link href="/" className="flex items-center gap-3 text-white hover:text-sky-200 transition-colors drop-shadow-sm group">
               <MaviWordmark className="h-7 sm:h-8 w-auto text-white group-hover:scale-105 transition-transform" />
               <span className="text-sm font-bold text-sky-300">ماوی</span>
             </Link>
-            <p className="text-sky-100/80 text-sm leading-relaxed max-w-sm">
+            <p className="text-sky-100/80 text-sm leading-relaxed max-w-lg">
               فروشگاه تخصصی مد و پوشاک فاخر ماوی (MAVI)؛ پیشرو در ارائه جدیدترین طراحی‌های مدرن و متریال‌های باکیفیت جهانی.
             </p>
             
@@ -45,9 +43,9 @@ export default function Footer() {
           </div>
 
           {/* Column 2: Quick Links */}
-          <div className="md:col-span-3 flex flex-col space-y-6">
+          <div className="md:col-span-5 lg:col-span-4 flex flex-col space-y-6">
             <h3 className="text-lg font-bold text-white border-b border-sky-800/60 pb-2 inline-block w-fit">دسترسی سریع</h3>
-            <div className="flex flex-col space-y-3.5 text-sm text-sky-200/85">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3.5 text-sm text-sky-200/85">
               <Link href="/women" className="hover:text-white hover:-translate-x-1 transition-all">فروش ویژه</Link>
               <Link href="/women" className="hover:text-white hover:-translate-x-1 transition-all">جدیدترین محصولات</Link>
               <Link href="/women" className="hover:text-white hover:-translate-x-1 transition-all">پرفروش‌ترین‌ها</Link>
@@ -55,25 +53,6 @@ export default function Footer() {
               <Link href="/about" className="hover:text-white hover:-translate-x-1 transition-all">درباره ما</Link>
               <Link href="/contact" className="hover:text-white hover:-translate-x-1 transition-all">تماس با ما</Link>
               <Link href="#" className="hover:text-white hover:-translate-x-1 transition-all">قوانین و مقررات</Link>
-            </div>
-          </div>
-
-          {/* Column 3: Newsletter */}
-          <div className="md:col-span-4 flex flex-col space-y-6">
-            <h3 className="text-lg font-bold text-white border-b border-sky-800/60 pb-2 inline-block w-fit">عضویت در خبرنامه</h3>
-            <p className="text-sky-100/80 text-sm">
-              برای اطلاع از جدیدترین محصولات و تخفیف‌های ویژه، ایمیل خود را وارد کنید.
-            </p>
-            <div className="flex items-stretch gap-2">
-              <Input 
-                type="email" 
-                placeholder="ایمیل شما..." 
-                className="bg-white/10 border-sky-800/80 text-white placeholder:text-sky-300/50 h-12 rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA] font-sans flex-1 min-w-0"
-                dir="ltr"
-              />
-              <Button className="h-12 w-12 rounded-xl bg-[#0082CA] text-white hover:bg-[#5CAFE7] shadow-lg shadow-[#0082CA]/30 shrink-0 p-0 flex items-center justify-center cursor-pointer transition-colors">
-                <Send className="w-5 h-5 rtl:-scale-x-100" />
-              </Button>
             </div>
           </div>
         </div>

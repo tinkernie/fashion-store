@@ -33,10 +33,10 @@ const CollectionsSection = dynamic(
     loading: () => (
       <div className="py-12 px-4 md:px-12 max-w-7xl mx-auto animate-pulse">
         <div className="h-6 w-36 bg-sky-100 rounded-xl mb-6" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="aspect-[4/3] bg-sky-50 rounded-3xl" />
-          <div className="aspect-[4/3] bg-sky-50 rounded-3xl" />
-          <div className="aspect-[4/3] bg-sky-50 rounded-3xl" />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+          <div className="aspect-[4/3] bg-sky-50 rounded-2xl sm:rounded-3xl" />
+          <div className="aspect-[4/3] bg-sky-50 rounded-2xl sm:rounded-3xl" />
+          <div className="aspect-[4/3] bg-sky-50 rounded-2xl sm:rounded-3xl" />
         </div>
       </div>
     ),
@@ -376,7 +376,7 @@ export default function HomeClient({
       {/* TOP ANNOUNCEMENT RIBBON (If enabled)                              */}
       {/* ----------------------------------------------------------------- */}
       {announcement && announcement.enabled !== false ? (
-        <div className="w-full max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 pt-20 sm:pt-22 pb-1.5">
+        <div className="w-full max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 pt-24 sm:pt-26 md:pt-28 pb-2 sm:pb-3">
           <Banner
             id="top-mavi-announcement"
             variant="rainbow"
@@ -404,7 +404,7 @@ export default function HomeClient({
           </Banner>
         </div>
       ) : (
-        <div className="pt-24 sm:pt-28" />
+        <div className="pt-24 sm:pt-28 md:pt-30" />
       )}
 
       {/* ----------------------------------------------------------------- */}

@@ -256,7 +256,7 @@ export default function Navbar() {
       <motion.nav
         layout
         transition={{ type: "spring", stiffness: 350, damping: 30 }}
-        className="w-full bg-[#0082CA] backdrop-blur-2xl border border-white/25 rounded-full h-16 flex items-center justify-between px-3 sm:px-5 md:px-7 text-white shadow-xl shadow-[#0082CA]/30 max-w-5xl transition-all duration-300"
+        className="relative overflow-hidden w-full bg-[#0082CA] backdrop-blur-2xl border border-white/25 rounded-full h-16 flex items-center justify-between px-3 sm:px-5 md:px-7 text-white shadow-xl shadow-[#0082CA]/30 max-w-5xl transition-all duration-300"
         dir="rtl"
       >
         {/* Right side: Brand Logo */}
@@ -278,93 +278,17 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Left Side: Actions (Search with Little Text Field, User, Cart Drawer, Mobile Menu) */}
+        {/* Left Side: Actions (Search Button, User, Cart Drawer, Mobile Menu) */}
         <div className="flex items-center gap-2 md:gap-3 text-white shrink-0">
-          {/* Animated Expanding Search Bar with Little Text Field */}
-          <motion.form
-            layout
-            transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            onSubmit={handleSearchSubmit}
-            onClick={() => {
-              if (!isSearchExpanded) {
-                setIsSearchExpanded(true);
-              }
-            }}
-            className={cn(
-              "relative flex items-center h-10 rounded-full transition-all duration-300 border overflow-hidden shrink-0 cursor-pointer group",
-              isSearchExpanded
-                ? "w-44 sm:w-60 md:w-72 px-3 bg-white text-slate-900 border-white shadow-lg ring-2 ring-white/30 justify-start"
-                : "w-10 px-0 justify-center bg-white/15 hover:bg-white/25 text-white border-white/25"
-            )}
+          {/* Circular Search Trigger Button */}
+          <button
+            type="button"
+            onClick={() => setIsSearchExpanded(true)}
+            className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/25 flex items-center justify-center cursor-pointer transition-all shrink-0 hover:scale-105 active:scale-95"
+            aria-label="جستجو"
           >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsSearchExpanded((prev) => !prev);
-              }}
-              className={cn(
-                "p-0.5 text-inherit hover:opacity-85 transition-opacity cursor-pointer shrink-0 flex items-center justify-center",
-                isSearchExpanded ? "ml-1.5" : "ml-0"
-              )}
-              aria-label="جستجو"
-            >
-              <Search
-                className={cn(
-                  "w-4 h-4 transition-colors",
-                  isSearchExpanded ? "text-[#0082CA]" : "text-white"
-                )}
-              />
-            </button>
-
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onFocus={() => setIsSearchExpanded(true)}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isSearchExpanded ? "جستجوی محصول، برند، استایل..." : ""}
-              tabIndex={isSearchExpanded ? 0 : -1}
-              className={cn(
-                "bg-transparent border-none outline-none text-xs font-medium min-w-0 transition-colors",
-                isSearchExpanded
-                  ? "flex-1 text-slate-900 placeholder:text-slate-400"
-                  : "w-0 p-0 m-0 opacity-0 pointer-events-none"
-              )}
-            />
-
-            {isSearching && isSearchExpanded && (
-              <Loader2 className="w-3.5 h-3.5 text-[#0082CA] animate-spin shrink-0 mx-1" />
-            )}
-
-            {searchQuery && isSearchExpanded && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSearchQuery("");
-                  setSearchResults([]);
-                }}
-                className="p-1 text-slate-400 hover:text-slate-700 transition-colors mr-0.5 cursor-pointer shrink-0"
-                aria-label="Clear search"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            {isSearchExpanded && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsSearchExpanded(false);
-                }}
-                className="mr-1 text-[10px] font-bold text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-all border border-slate-200 shrink-0"
-              >
-                بستن
-              </button>
-            )}
-          </motion.form>
+            <Search className="w-4 h-4 text-white" />
+          </button>
 
           {/* Customer Notifications (Strictly visible only when logged in, hidden for guests) */}
           {isLoggedIn && (
@@ -440,31 +364,22 @@ export default function Navbar() {
           </div>
 
           {/* Shopping Cart Drawer */}
-          <AnimatePresence>
-            {!isSearchExpanded && (
-              <motion.div
-                key="cart-drawer-wrapper"
-                initial={{ opacity: 0, scale: 0.8, width: 0 }}
-                animate={{ opacity: 1, scale: 1, width: "auto" }}
-                exit={{ opacity: 0, scale: 0.8, width: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className="flex items-center overflow-hidden shrink-0"
-              >
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <button 
-                      className="relative p-2 text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer outline-none flex items-center shrink-0"
-                      aria-label="سبد خرید"
-                    >
-                      <ShoppingBag className="w-5 h-5 text-white" />
-                      {itemCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-white text-[#0082CA] font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
-                          {toPersianDigits(itemCount)}
-                        </span>
-                      )}
-                    </button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="bg-white border-l border-sky-100 text-slate-800 w-full sm:max-w-md flex flex-col p-6 font-sans" dir="rtl">
+          <div className="flex items-center overflow-hidden shrink-0">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button 
+                  className="relative p-2 text-white hover:bg-white/20 rounded-full transition-colors cursor-pointer outline-none flex items-center shrink-0"
+                  aria-label="سبد خرید"
+                >
+                  <ShoppingBag className="w-5 h-5 text-white" />
+                  {itemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-white text-[#0082CA] font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
+                      {toPersianDigits(itemCount)}
+                    </span>
+                  )}
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="bg-white border-l border-sky-100 text-slate-800 w-full sm:max-w-md flex flex-col p-6 font-sans" dir="rtl">
                     <SheetHeader className="text-right pb-4 border-b border-sky-100 flex flex-row items-center justify-between">
                       <SheetTitle className="text-[#0B192C] text-lg font-black font-sans flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
@@ -580,9 +495,7 @@ export default function Navbar() {
                     )}
                   </SheetContent>
                 </Sheet>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
 
           {/* Mobile Navigation Sheet (visible on <lg screens) */}
           <div className="lg:hidden flex items-center">
@@ -647,6 +560,75 @@ export default function Navbar() {
           </div>
 
         </div>
+
+        {/* Seamless Full-Pill Search Takeover Overlay */}
+        <AnimatePresence>
+          {isSearchExpanded && (
+            <motion.form
+              key="navbar-search-takeover"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              onSubmit={handleSearchSubmit}
+              className="absolute inset-0 z-20 px-3 sm:px-5 md:px-7 flex items-center justify-between gap-2.5 sm:gap-4 bg-[#0082CA] rounded-full"
+              dir="rtl"
+            >
+              {/* Right side: Stationary Brand Logo Anchor */}
+              <Link href="/" className="flex items-center gap-2 text-white hover:text-sky-100 shrink-0 transition-all group">
+                <MaviWordmark className="h-5 sm:h-6 w-auto text-white drop-shadow-sm group-hover:scale-105 transition-transform" />
+                <span className="text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                  ماوی
+                </span>
+              </Link>
+
+              {/* Center: Full-Width Search Input Pill */}
+              <div className="flex-1 flex items-center h-10 sm:h-11 bg-white text-slate-900 rounded-full px-3 sm:px-4 shadow-lg ring-2 ring-white/30 border border-white min-w-0 transition-all">
+                <Search className="w-4 h-4 text-[#0082CA] ml-2 shrink-0" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="جستجوی محصول، برند، استایل..."
+                  className="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 min-w-0"
+                />
+
+                {isSearching && (
+                  <Loader2 className="w-3.5 h-3.5 text-[#0082CA] animate-spin shrink-0 mx-1.5" />
+                )}
+
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSearchQuery("");
+                      setSearchResults([]);
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-700 transition-colors mr-1 cursor-pointer shrink-0"
+                    aria-label="پاک کردن جستجو"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Left side: Close Button */}
+              <button
+                type="button"
+                onClick={() => setIsSearchExpanded(false)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition-all border border-white/30 shadow-sm shrink-0 cursor-pointer active:scale-95"
+                aria-label="بستن جستجو"
+              >
+                <span>بستن</span>
+                <kbd className="hidden sm:inline-block text-[10px] bg-white/20 px-1 rounded text-white/90 font-mono">
+                  ESC
+                </kbd>
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
       </motion.nav>
 
       {/* Floating Animated Search Suggestions / Live Results Dropdown */}

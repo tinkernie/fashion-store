@@ -35,14 +35,13 @@ export function CollectionsSection({ initialCollections }: { initialCollections?
           <h2 className="text-2xl md:text-3xl font-black text-[#0B192C]">کالکشن‌های ویژه</h2>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         {collections.map((collection, index) => {
           const bannerUrl =
             collection.hero_banner ||
             collection.image_url ||
             collection.image ||
             (collection as any).seo_metadata?.hero_banner;
-          const prodCount = collection.products?.length || 0;
 
           return (
             <motion.div 
@@ -53,7 +52,7 @@ export function CollectionsSection({ initialCollections }: { initialCollections?
             >
               <Link
                 href={`/collections/${collection.slug || collection.id}`}
-                className="block group relative overflow-hidden rounded-3xl bg-white border border-sky-100 hover:border-[#0082CA] aspect-[4/3] transition-all shadow-md hover:shadow-xl"
+                className="block group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white border border-sky-100 hover:border-[#0082CA] aspect-[4/3] transition-all shadow-md hover:shadow-xl"
               >
                 {/* Background Banner or Fallback Gradient */}
                 {bannerUrl ? (
@@ -74,27 +73,18 @@ export function CollectionsSection({ initialCollections }: { initialCollections?
                 {/* Gentle Aegean Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/85 via-[#0B192C]/25 to-transparent z-10 transition-opacity duration-300" />
 
-                {/* Top Badge: Product Count */}
-                {prodCount > 0 && (
-                  <div className="absolute top-4 right-4 z-20">
-                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#0082CA] text-white shadow-md shadow-[#0082CA]/25">
-                      {prodCount.toLocaleString("fa-IR")} محصول
-                    </span>
-                  </div>
-                )}
-
                 {/* Bottom Card Content */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 z-20 flex items-end justify-between gap-4">
-                  <div className="space-y-1">
-                    <h3 className="text-lg md:text-xl font-black text-white group-hover:text-sky-200 transition-colors">
+                <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-5 md:p-6 z-20 flex items-end justify-between gap-2 sm:gap-4">
+                  <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
+                    <h3 className="text-xs sm:text-base md:text-xl font-black text-white group-hover:text-sky-200 transition-colors line-clamp-1">
                       {collection.name || collection.title}
                     </h3>
-                    <p className="text-xs text-sky-100/90 line-clamp-2 leading-relaxed">
+                    <p className="text-[10px] sm:text-xs text-sky-100/90 line-clamp-1 sm:line-clamp-2 leading-relaxed">
                       {collection.description || "مشاهده محصولات و تخفیف‌های این کالکشن"}
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-[#0082CA] border border-sky-300/40 text-white flex items-center justify-center backdrop-blur-md group-hover:bg-[#006CA8] group-hover:scale-110 transition-all shrink-0 shadow-lg shadow-[#0082CA]/30">
-                    <ChevronLeft className="w-5 h-5 text-white" />
+                  <div className="w-6 h-6 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-[#0082CA] border border-sky-300/40 text-white flex items-center justify-center backdrop-blur-md group-hover:bg-[#006CA8] group-hover:scale-110 transition-all shrink-0 shadow-lg shadow-[#0082CA]/30">
+                    <ChevronLeft className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
                   </div>
                 </div>
               </Link>
