@@ -89,7 +89,8 @@ def quote(province_name: str, weight_grams: int, subtotal_tomans,
         surcharge = round(base * pct / 100)
         insurance = insurance_rials(declared_rials)
         packaging = rates.PACKAGING_RIALS
-        total_rials = base + surcharge + insurance + packaging
+        flat_fee = rates.FLAT_FEE_TOMANS * 10  # store-level fee is in Tomans
+        total_rials = base + surcharge + insurance + packaging + flat_fee
         options.append({
             "method": table["code"],
             "name": table["name"],
@@ -101,6 +102,7 @@ def quote(province_name: str, weight_grams: int, subtotal_tomans,
             "surcharge_percent": pct,
             "insurance": insurance // 10,
             "packaging": packaging // 10,
+            "flat_fee": flat_fee // 10,
             "total": total_rials // 10,
             "currency": "Toman",
         })

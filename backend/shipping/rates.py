@@ -64,3 +64,7 @@ INSURANCE_BRACKETS = [
 # Counter packaging fee, parcels larger than size 9 (Table 6 row 16).
 # Packing materials are billed separately at the counter (unquantified).
 PACKAGING_RIALS = 150_000
+
+# Store-level flat fee added on top of every tariff quote (Tomans, not
+# Rials like the tariff rows above — owner decision for handling costs).
+FLAT_FEE_TOMANS = 45_000
