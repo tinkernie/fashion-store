@@ -278,90 +278,88 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Left Side: Actions (Search Button, User, Cart Drawer, Mobile Menu) */}
-        <div className="flex items-center gap-2 md:gap-3 text-white shrink-0">
+        {/* Left Side: Actions (User, Search Button, Cart Drawer, Mobile Menu) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-white shrink-0">
+          {/* User Dropdown (Visible on all screens, compact on mobile) */}
+          <DropdownMenu dir="rtl">
+            <DropdownMenuTrigger asChild>
+              <button 
+                className={cn(
+                  "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all outline-none cursor-pointer text-[10px] sm:text-xs font-semibold select-none shrink-0",
+                  isLoggedIn 
+                    ? "bg-white/20 hover:bg-white/30 ring-1 ring-white/30 text-white" 
+                    : "bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                )}
+                aria-label="حساب کاربری"
+              >
+                <div className="relative flex items-center justify-center">
+                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  {isLoggedIn && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
+                  )}
+                </div>
+                <span className="truncate max-w-[70px] xs:max-w-[85px] sm:max-w-[110px]">
+                  {isLoggedIn ? (userDisplayName || "حساب کاربری") : "ورود / ثبت‌نام"}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-white border border-sky-100 text-slate-800 w-52 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
+              {isLoggedIn ? (
+                <>
+                  <div className="px-3 py-2 border-b border-sky-100 mb-1">
+                    <p className="text-[11px] text-slate-400">حساب کاربری</p>
+                    <p className="text-xs font-bold text-slate-800 truncate">{userDisplayName}</p>
+                  </div>
+                  {isSuperuser && (
+                    <>
+                      <DropdownMenuItem asChild className="focus:bg-amber-50 focus:text-amber-800 cursor-pointer rounded-xl text-right font-bold text-amber-700">
+                        <Link href="/admin" className="flex items-center justify-between w-full">
+                          <span>پنل مدیریت</span>
+                          <ShieldCheck className="w-4 h-4 text-amber-600" />
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-sky-100" />
+                    </>
+                  )}
+                  <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
+                    <Link href="/profile">پروفایل کاربری</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
+                    <Link href="/profile">سفارش‌های من</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
+                    <Link href="/profile">لیست علاقه‌مندی‌ها</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-sky-100" />
+                  <DropdownMenuItem
+                    onClick={() => setIsLogoutDialogOpen(true)}
+                    className="focus:bg-rose-50 text-rose-500 hover:text-rose-600 cursor-pointer rounded-xl text-right font-bold text-xs"
+                  >
+                    خروج از حساب کاربری
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
+                  <Link href="/auth">ورود / ثبت‌نام</Link>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {/* Circular Search Trigger Button */}
           <button
             type="button"
             onClick={() => setIsSearchExpanded(true)}
-            className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/25 flex items-center justify-center cursor-pointer transition-all shrink-0 hover:scale-105 active:scale-95"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/25 flex items-center justify-center cursor-pointer transition-all shrink-0 hover:scale-105 active:scale-95"
             aria-label="جستجو"
           >
-            <Search className="w-4 h-4 text-white" />
+            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
           </button>
 
           {/* Customer Notifications (Strictly visible only when logged in, hidden for guests) */}
           {isLoggedIn && (
             <NotificationDropdown />
           )}
-
-          {/* User Dropdown */}
-          <div className="hidden md:block">
-            <DropdownMenu dir="rtl">
-              <DropdownMenuTrigger asChild>
-                <button 
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all outline-none cursor-pointer text-xs font-semibold select-none shrink-0",
-                    isLoggedIn 
-                      ? "bg-white/20 hover:bg-white/30 ring-1 ring-white/30 text-white" 
-                      : "bg-white/10 hover:bg-white/20 border border-white/20 text-white"
-                  )}
-                  aria-label="حساب کاربری"
-                >
-                  <div className="relative flex items-center justify-center">
-                    <User className="w-4 h-4 shrink-0" />
-                    {isLoggedIn && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
-                    )}
-                  </div>
-                  <span className="truncate max-w-[110px]">
-                    {isLoggedIn ? (userDisplayName || "حساب کاربری") : "ورود / ثبت‌نام"}
-                  </span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border border-sky-100 text-slate-800 w-52 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
-                {isLoggedIn ? (
-                  <>
-                    <div className="px-3 py-2 border-b border-sky-100 mb-1">
-                      <p className="text-[11px] text-slate-400">حساب کاربری</p>
-                      <p className="text-xs font-bold text-slate-800 truncate">{userDisplayName}</p>
-                    </div>
-                    {isSuperuser && (
-                      <>
-                        <DropdownMenuItem asChild className="focus:bg-amber-50 focus:text-amber-800 cursor-pointer rounded-xl text-right font-bold text-amber-700">
-                          <Link href="/admin" className="flex items-center justify-between w-full">
-                            <span>پنل مدیریت</span>
-                            <ShieldCheck className="w-4 h-4 text-amber-600" />
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-sky-100" />
-                      </>
-                    )}
-                    <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
-                      <Link href="/profile">پروفایل کاربری</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
-                      <Link href="/profile">سفارش‌های من</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
-                      <Link href="/profile">لیست علاقه‌مندی‌ها</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-sky-100" />
-                    <DropdownMenuItem
-                      onClick={() => setIsLogoutDialogOpen(true)}
-                      className="focus:bg-rose-50 text-rose-500 hover:text-rose-600 cursor-pointer rounded-xl text-right font-bold text-xs"
-                    >
-                      خروج از حساب کاربری
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem asChild className="focus:bg-sky-50 focus:text-[#0082CA] cursor-pointer rounded-xl text-right">
-                    <Link href="/auth">ورود / ثبت‌نام</Link>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
 
           {/* Shopping Cart Drawer */}
           <div className="flex items-center overflow-hidden shrink-0">

@@ -35,7 +35,7 @@ export function CollectionsSection({ initialCollections }: { initialCollections?
           <h2 className="text-2xl md:text-3xl font-black text-[#0B192C]">کالکشن‌های ویژه</h2>
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 overflow-x-auto md:overflow-visible pb-3 pt-1 hide-scrollbar snap-x snap-mandatory flex-nowrap">
         {collections.map((collection, index) => {
           const bannerUrl =
             collection.hero_banner ||
@@ -49,6 +49,7 @@ export function CollectionsSection({ initialCollections }: { initialCollections?
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
+              className="w-[calc(50%-6px)] shrink-0 snap-start md:w-auto"
             >
               <Link
                 href={`/collections/${collection.slug || collection.id}`}

@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Sparkles,
   Tag as TagIcon,
-  Languages,
   X,
   Compass,
 } from "lucide-react";
@@ -188,48 +187,6 @@ function BlogListingContent() {
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
             {labels.subtitle}
           </p>
-
-          {/* Language Switcher Bar */}
-          <div className="flex items-center justify-center gap-1.5 pt-2">
-            <span className="text-xs text-slate-400 flex items-center gap-1">
-              <Languages className="w-3.5 h-3.5 text-[#0082CA]" />
-            </span>
-            <div className="inline-flex items-center p-1 rounded-full bg-white border border-sky-100 shadow-sm text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => handleLanguageChange("fa")}
-                className={`px-3 py-1 rounded-full transition-all ${
-                  language === "fa"
-                    ? "bg-[#0082CA] text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                فارسی (FA)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLanguageChange("en")}
-                className={`px-3 py-1 rounded-full transition-all ${
-                  language === "en"
-                    ? "bg-[#0082CA] text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                English (EN)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLanguageChange("ar")}
-                className={`px-3 py-1 rounded-full transition-all ${
-                  language === "ar"
-                    ? "bg-[#0082CA] text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                العربية (AR)
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Filter and Search Controls */}

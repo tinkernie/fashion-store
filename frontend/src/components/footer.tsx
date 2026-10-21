@@ -62,6 +62,10 @@ export default function Footer() {
           <p className="text-xs font-sans">
             © 2026 MAVI (ماوی). All rights reserved.
           </p>
+          <div className="text-xs text-sky-300/70 font-medium">
+            <span>ساخته شده توسط </span>
+            <span className="text-sky-200 font-bold">besporman</span>
+          </div>
           <div className="flex items-center gap-4 text-sky-300/70">
             <Link href="https://instagram.com/your_username" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
               <svg

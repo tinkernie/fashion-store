@@ -443,7 +443,7 @@ export default function HomeClient({
 
                 {/* Banner Editorial Typography & Actions */}
                 <div className="absolute inset-0 flex flex-col justify-end md:justify-center px-6 sm:px-12 md:px-16 lg:px-20 text-right z-10 pointer-events-none">
-                  <div className="max-w-2xl lg:max-w-3xl space-y-2.5 md:space-y-4 pointer-events-auto">
+                  <div className="max-w-2xl lg:max-w-3xl space-y-2.5 md:space-y-4 pointer-events-auto pb-8 sm:pb-0">
                     {currentSlide.badge && (
                       <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-md w-fit shadow-sm">
                         <Sparkles className="w-3.5 h-3.5 text-sky-300" />
@@ -461,10 +461,10 @@ export default function HomeClient({
                       {currentSlide.subtitle}
                     </p>
 
-                    <div className="pt-2 md:pt-4">
-                      <span className="inline-flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-3.5 rounded-full bg-[#0082CA] text-white text-xs sm:text-sm md:text-base font-bold shadow-lg shadow-[#0082CA]/30 group-hover:bg-[#006CA8] transition-all transform group-hover:scale-105 active:scale-[0.98]">
+                    <div className="pt-2 md:pt-4 flex justify-end sm:justify-start">
+                      <span className="inline-flex items-center gap-1.5 sm:gap-2 px-4 py-2 sm:px-8 sm:py-3.5 rounded-full bg-[#0082CA] text-white text-[11px] sm:text-sm md:text-base font-bold shadow-lg shadow-[#0082CA]/30 group-hover:bg-[#006CA8] transition-all transform group-hover:scale-105 active:scale-[0.98]">
                         {currentSlide.cta_label || "مشاهده و خرید"}
-                        <ArrowLeft className="w-4 h-4" />
+                        <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </span>
                     </div>
                   </div>
@@ -538,10 +538,10 @@ export default function HomeClient({
             disabled={!canScrollCategoriesPrev}
             aria-label="دسته‌بندی‌های قبلی"
             className={cn(
-              "flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full border shadow-sm backdrop-blur-sm items-center justify-center transition-all cursor-pointer",
+              "flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full border shadow-sm backdrop-blur-sm items-center justify-center transition-all duration-200 cursor-pointer",
               canScrollCategoriesPrev
-                ? "bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200 shadow-md hover:shadow-lg active:scale-95"
-                : "bg-white/50 text-slate-300 border-slate-200/50 opacity-40 cursor-not-allowed pointer-events-none"
+                ? "bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200 shadow-md hover:shadow-lg active:scale-95 opacity-100 scale-100 pointer-events-auto"
+                : "opacity-0 scale-75 pointer-events-none invisible"
             )}
           >
             <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -569,10 +569,10 @@ export default function HomeClient({
             disabled={!canScrollCategoriesNext}
             aria-label="دسته‌بندی‌های بعدی"
             className={cn(
-              "flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full border shadow-sm backdrop-blur-sm items-center justify-center transition-all cursor-pointer",
+              "flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full border shadow-sm backdrop-blur-sm items-center justify-center transition-all duration-200 cursor-pointer",
               canScrollCategoriesNext
-                ? "bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200 shadow-md hover:shadow-lg active:scale-95"
-                : "bg-white/50 text-slate-300 border-slate-200/50 opacity-40 cursor-not-allowed pointer-events-none"
+                ? "bg-white/95 hover:bg-[#0082CA] text-slate-700 hover:text-white border-sky-200 shadow-md hover:shadow-lg active:scale-95 opacity-100 scale-100 pointer-events-auto"
+                : "opacity-0 scale-75 pointer-events-none invisible"
             )}
           >
             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />

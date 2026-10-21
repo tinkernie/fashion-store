@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Tag as TagIcon,
-  AlertCircle,
   Copy,
   Check,
   BookOpen,
@@ -149,82 +148,23 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   return (
     <article
       className="min-h-screen bg-gradient-to-b from-sky-50/30 via-white to-white pt-24 md:pt-32 pb-24 font-sans"
-      dir={isRtl ? "rtl" : "ltr"}
+      dir="rtl"
     >
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Top Breadcrumb & Language Switcher */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-sky-100 pb-4">
+        {/* Top Breadcrumb */}
+        <div className="flex items-center justify-between gap-4 border-b border-sky-100 pb-4">
           <nav className="flex items-center gap-2 text-xs text-slate-400 font-medium">
             <Link href="/" className="hover:text-[#0082CA] transition-colors">
-              {currentLang === "en" ? "Home" : currentLang === "ar" ? "الرئيسية" : "صفحه اصلی"}
+              صفحه اصلی
             </Link>
             <span>/</span>
             <Link href="/blog" className="hover:text-[#0082CA] transition-colors">
-              {currentLang === "en" ? "Journal" : currentLang === "ar" ? "المجلة" : "وبلاگ و مقالات"}
+              وبلاگ و مقالات
             </Link>
             <span>/</span>
             <span className="text-slate-700 truncate max-w-[200px] sm:max-w-xs">{post.title}</span>
           </nav>
-
-          {/* Language Switcher */}
-          <div className="inline-flex items-center p-1 rounded-full bg-white border border-sky-100 shadow-sm text-xs font-semibold self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => handleLanguageSwitch("fa")}
-              className={`px-3 py-1 rounded-full transition-all ${
-                currentLang === "fa"
-                  ? "bg-[#0082CA] text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              فارسی (FA)
-            </button>
-            <button
-              type="button"
-              onClick={() => handleLanguageSwitch("en")}
-              className={`px-3 py-1 rounded-full transition-all ${
-                currentLang === "en"
-                  ? "bg-[#0082CA] text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              English (EN)
-            </button>
-            <button
-              type="button"
-              onClick={() => handleLanguageSwitch("ar")}
-              className={`px-3 py-1 rounded-full transition-all ${
-                currentLang === "ar"
-                  ? "bg-[#0082CA] text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              العربية (AR)
-            </button>
-          </div>
         </div>
-
-        {/* Missing Translation Fallback Warning */}
-        {post.has_language === false && currentLang !== "fa" && (
-          <div
-            className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3 text-xs leading-relaxed"
-            dir={currentLang === "ar" ? "rtl" : "ltr"}
-          >
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold">
-                {currentLang === "en"
-                  ? "English translation is not available yet"
-                  : "الترجمة العربية غير متوفرة بعد"}
-              </p>
-              <p className="text-amber-800 mt-0.5">
-                {currentLang === "en"
-                  ? "You are currently viewing the original Persian version of this article."
-                  : "أنت تشاهد حالياً النسخة الأصلية الفارسية من هذا المقال."}
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Article Header */}
         <header className="space-y-4">
