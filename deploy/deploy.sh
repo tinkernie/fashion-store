@@ -99,8 +99,9 @@ fi
 # --- 8. permissions ---------------------------------------------------
 run chown -R "${SERVICE_USER}:${SERVICE_USER}" "${APP_DIR}"
 run find "${APP_DIR}" -type d -exec chmod 755 {} +
-run find "${APP_DIR}" -type f -exec chmod go-rwx {} +
-run chmod 600 "${BACKEND_DIR}/.env"
-run chown root:root "${BACKEND_DIR}/.env"
+run find "${APP_DIR}" -type f -exec chmod 644 {} +
+run chmod +x "${APP_DIR}/deploy/"*.sh
+run chmod 640 "${BACKEND_DIR}/.env"
+run chown root:"${SERVICE_USER}" "${BACKEND_DIR}/.env"
 
 log "done. verify: systemctl is-active ${BACKEND_UNITS[*]} && pm2 status"
