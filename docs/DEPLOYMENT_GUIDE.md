@@ -1,10 +1,8 @@
-# Production Deployment Guide: Fashion Store (target-state)
+# Production Deployment Guide: Fashion Store
 
-> **Status: prepared, not triggered.** This document describes the *final* target state.
-> All fabrication is done in the repo (`deploy/`); the server session is a short,
-> mechanical bootstrap. The historical situation that superseded this guide
-> (SQLite, root services, self-signed IP, DPI `/chunks` workaround) is documented
-> in the appendix — read it only when debugging older deployments.
+> **Status: Active & Deployed.** Bootstrapped and running on `185.226.119.184`.
+> All services (backend, worker, beat, frontend via PM2, nginx, postgresql, redis, backups)
+> are live and serving traffic. Routine updates are managed via `./deploy.sh`.
 
 - Target server: `185.226.119.184` (Ubuntu)
 - Domain: **maviposh.com** (+ `www.`)
