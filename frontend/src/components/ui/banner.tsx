@@ -44,6 +44,7 @@ export function Banner({
   changeLayout = true,
   height = "3rem",
   persistDismiss = false,
+  onClose,
   rainbowColors = [
     "rgba(255,255,255,0.12)",
     "rgba(255,255,255,0.35)",
@@ -60,6 +61,7 @@ export function Banner({
   rainbowColors?: string[];
   changeLayout?: boolean;
   persistDismiss?: boolean;
+  onClose?: () => void;
 }) {
   const [open, setOpen] = useState(true);
   const globalKey = id && persistDismiss ? `nd-banner-${id}` : null;
@@ -106,6 +108,7 @@ export function Banner({
               localStorage.setItem(globalKey, "true");
               window.dispatchEvent(new Event("banner-status-changed"));
             }
+            onClose?.();
           }}
           className={cn(
             bannerButtonVariants({

@@ -161,6 +161,18 @@ export default function HomeClient({
     }
     return null;
   });
+  const [isBannerDismissed, setIsBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const dismissed = localStorage.getItem("nd-banner-top-mavi-announcement") === "true";
+      if (dismissed) {
+        setIsBannerDismissed(true);
+      }
+    }
+  }, []);
+
+  const isBannerVisible = !isBannerDismissed && announcement && announcement.enabled !== false;
 
   // 3. Categories State (pure DB data)
   const [categories, setCategories] = useState<CategoryItem[]>(() => {
@@ -373,45 +385,59 @@ export default function HomeClient({
   return (
     <main className="min-h-screen bg-[#FAFCFE] pb-4 sm:pb-6 overflow-x-clip" dir="rtl">
       {/* ----------------------------------------------------------------- */}
-      {/* TOP ANNOUNCEMENT RIBBON (If enabled)                              */}
+      {/* STICKY ANNOUNCEMENT RIBBON (Pinned below Navbar with Animation)   */}
       {/* ----------------------------------------------------------------- */}
-      {announcement && announcement.enabled !== false ? (
-        <div className="w-full max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 pt-24 sm:pt-26 md:pt-28 pb-2 sm:pb-3">
-          <Banner
-            id="top-mavi-announcement"
-            variant="rainbow"
-            xColor="text-slate-500 hover:text-[#0082CA] hover:bg-sky-100/60"
-            className="rounded-2xl border border-sky-300/80 bg-gradient-to-l from-sky-50/95 via-white to-sky-50/95 shadow-md shadow-[#0082CA]/10 ring-1 ring-sky-200/50 backdrop-blur-xl w-full py-2.5 px-8 sm:px-6"
+      <AnimatePresence>
+        {isBannerVisible && (
+          <motion.div
+            key="top-announcement-sticky"
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.96, height: 0, transition: { duration: 0.35, ease: "easeInOut" } }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed top-[5.375rem] md:top-24 left-0 right-0 z-40 flex justify-center px-2 sm:px-4 pointer-events-none"
           >
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2.5 text-center max-w-full">
-              <span className="bg-[#0082CA] text-white font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm shadow-[#0082CA]/30 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-white" />
-                {announcement.badge || "پیشنهاد ماوی"}
-              </span>
-              {announcement.link ? (
-                <Link
-                  href={announcement.link}
-                  className="text-xs sm:text-sm font-black text-[#0B192C] hover:text-[#0082CA] transition-colors leading-relaxed sm:leading-normal break-words text-balance max-w-full sm:max-w-xl underline-offset-4 hover:underline"
-                >
-                  {announcement.text}
-                </Link>
-              ) : (
-                <span className="text-xs sm:text-sm font-black text-[#0B192C] leading-relaxed sm:leading-normal break-words text-balance max-w-full sm:max-w-xl">
-                  {announcement.text}
-                </span>
-              )}
+            <div className="w-full max-w-5xl pointer-events-auto">
+              <Banner
+                id="top-mavi-announcement"
+                variant="rainbow"
+                persistDismiss={true}
+                onClose={() => setIsBannerDismissed(true)}
+                xColor="text-slate-500 hover:text-[#0082CA] hover:bg-sky-100/60"
+                className="rounded-2xl sm:rounded-full border border-sky-300/80 bg-gradient-to-l from-sky-50/95 via-white to-sky-50/95 shadow-md shadow-[#0082CA]/10 ring-1 ring-sky-200/50 backdrop-blur-xl w-full py-2 sm:py-2.5 px-8 sm:px-6"
+              >
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2.5 text-center max-w-full">
+                  <span className="bg-[#0082CA] text-white font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm shadow-[#0082CA]/30 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-white" />
+                    {announcement.badge || "پیشنهاد ماوی"}
+                  </span>
+                  {announcement.link ? (
+                    <Link
+                      href={announcement.link}
+                      className="text-xs sm:text-sm font-black text-[#0B192C] hover:text-[#0082CA] transition-colors leading-relaxed sm:leading-normal break-words text-balance max-w-full sm:max-w-xl underline-offset-4 hover:underline"
+                    >
+                      {announcement.text}
+                    </Link>
+                  ) : (
+                    <span className="text-xs sm:text-sm font-black text-[#0B192C] leading-relaxed sm:leading-normal break-words text-balance max-w-full sm:max-w-xl">
+                      {announcement.text}
+                    </span>
+                  )}
+                </div>
+              </Banner>
             </div>
-          </Banner>
-        </div>
-      ) : (
-        <div className="pt-24 sm:pt-28 md:pt-30" />
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ----------------------------------------------------------------- */}
       {/* 1. MAIN HERO BANNER / SLIDER (Extended Luxury Showcase)          */}
       {/* ----------------------------------------------------------------- */}
       <section
-        className="w-full max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 pt-1 sm:pt-2 pb-6 sm:pb-8"
+        className={cn(
+          "w-full max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 pb-6 sm:pb-8 transition-all duration-300 ease-out",
+          isBannerVisible ? "pt-36 sm:pt-40 md:pt-44" : "pt-24 sm:pt-28 md:pt-30"
+        )}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}

@@ -136,7 +136,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Production database is PostgreSQL (env-driven). SQLite only for quick local
 # fallback via DB_ENGINE=sqlite (e.g. CI without postgres) — never in production.
-_DB_ENGINE = os.environ.get("DB_ENGINE", "postgres").lower()
+_DB_ENGINE = os.environ.get("DB_ENGINE", "postgres").strip().lower()
 if _DB_ENGINE == "sqlite":
     DATABASES = {
         "default": {
