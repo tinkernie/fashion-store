@@ -55,7 +55,6 @@ export function ShippingMethodSelector({
           <Truck className="w-6 h-6 text-[#0082CA]" />
           <div>
             <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">روش و هزینه ارسال</h2>
-            <p className="text-xs text-slate-500 mt-0.5">محاسبه دقیق بر پایه نرخنامه مصوب پستی ۱۴۰۵</p>
           </div>
         </div>
         <div className="p-5 bg-sky-50/50 rounded-2xl border border-sky-100 text-slate-600 text-xs flex items-center gap-2">
@@ -71,6 +70,12 @@ export function ShippingMethodSelector({
     shippingQuote.selected ||
     shippingQuote.options[0];
 
+  const getCleanMethodName = (opt?: { name?: string; method?: string }) => {
+    if (!opt) return "";
+    if (opt.method === "vizheh") return "ویژه";
+    return (opt.name || "").replace("بین‌شهری", "").replace("بین شهری", "").trim() || (opt.name || "");
+  };
+
   return (
     <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
       {/* Header */}
@@ -81,16 +86,8 @@ export function ShippingMethodSelector({
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">روش و هزینه ارسال</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              مقصد: استان {shippingQuote.province} • برآورد وزن مرسوله:{" "}
-              {shippingQuote.weight_grams.toLocaleString("fa-IR")} گرم
-            </p>
           </div>
         </div>
-
-        <span className="text-[11px] px-3 py-1 rounded-full bg-sky-50 text-[#0082CA] border border-sky-200 font-bold">
-          تعرفه پستی ۱۴۰۵
-        </span>
       </div>
 
       {/* Methods Cards */}
@@ -98,6 +95,7 @@ export function ShippingMethodSelector({
         {shippingQuote.options.map((option) => {
           const isSelected = option.method === selectedMethod;
           const isVizheh = option.method === "vizheh";
+          const displayName = getCleanMethodName(option);
 
           return (
             <div
@@ -118,7 +116,7 @@ export function ShippingMethodSelector({
                       <Truck className="w-4 h-4 text-[#0082CA] shrink-0" />
                     )}
                     <span className="text-sm font-black text-[#0B192C]">
-                      {option.name}
+                      {displayName}
                     </span>
                     {isVizheh ? (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold">
@@ -167,7 +165,7 @@ export function ShippingMethodSelector({
           >
             <span className="flex items-center gap-1.5">
               <Info className="w-3.5 h-3.5 text-[#0082CA]" />
-              مشاهده ریز محاسبات تعرفه پستی ({selectedOption.name})
+              مشاهده ریز محاسبات تعرفه پستی ({getCleanMethodName(selectedOption)})
             </span>
             {showBreakdown ? (
               <ChevronUp className="w-4 h-4 text-slate-400" />

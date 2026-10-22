@@ -709,7 +709,7 @@ export default function ProductDetailClient({
               </span>
             )}
             {/* Rating or New/No Review Indicator */}
-            {ratingStats.average !== null ? (
+            {ratingStats.average !== null && (
               <button
                 type="button"
                 onClick={() => {
@@ -730,11 +730,6 @@ export default function ProductDetailClient({
                   ({ratingStats.count.toLocaleString("fa-IR")})
                 </span>
               </button>
-            ) : (
-              <div className="flex items-center gap-1.5 text-slate-400 bg-sky-50/50 border border-sky-100 px-2.5 py-0.5 rounded-full text-xs">
-                <Star className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[11px] text-slate-500 font-medium">بدون امتیاز</span>
-              </div>
             )}
             {isOutOfStock ? (
               <span className="bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
@@ -993,119 +988,87 @@ export default function ProductDetailClient({
         </motion.div>
       </div>
 
-      {/* Product Specifications Section (جدول مشخصات و ویژگی‌های فنی کالا) */}
-      <div className="mb-12 sm:mb-16 bg-white border border-sky-100 rounded-3xl p-6 sm:p-8 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-sky-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-sky-50 border border-sky-200 text-[#0082CA] flex items-center justify-center shadow-sm">
-              <Sliders className="w-5 h-5 text-[#0082CA]" />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-black text-[#0B192C]">
-                مشخصات و ویژگی‌های کالا
-              </h2>
-              <p className="text-xs text-slate-500">
-                اطلاعات دقیق، متریال ساخت، سایزبندی و جزئیات دوخت
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1 rounded-full self-start sm:self-auto">
-            {product?.category || product?.category_name || "پوشاک ماوی"}
-          </span>
-        </div>
+      {/* Product Specifications Section (جدول مشخصات کالا - فیلدهای اختصاصی) */}
+      {(() => {
+        const excludedSpecLabels = [
+          "جنس و متریال",
+          "جنس",
+          "رنگ‌بندی",
+          "رنگ",
+          "سایزبندی",
+          "سایز",
+          "وزن خالص",
+          "وزن",
+          "دسته‌بندی",
+          "شناسه کالا",
+          "وضعیت در انبار",
+          "تعداد موجودی",
+          "موجودی",
+          "ضمانت کالا",
+          "ضمانت",
+          "شرایط نگهداری و شستشو",
+          "شستشو",
+        ];
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-            <span className="text-xs text-slate-500 font-medium">دسته‌بندی:</span>
-            <span className="text-xs font-bold text-[#0B192C]">
-              {product?.category || product?.category_name || "پوشاک بانوان"}
-            </span>
-          </div>
+        const customSpecs = Array.isArray(product?.metadata?.specifications)
+          ? product.metadata.specifications.filter(
+              (spec: any) =>
+                spec &&
+                spec.label &&
+                spec.value &&
+                !excludedSpecLabels.some((ex) => String(spec.label).includes(ex))
+            )
+          : [];
 
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-            <span className="text-xs text-slate-500 font-medium">شناسه کالا (SKU):</span>
-            <span className="text-xs font-bold text-[#0B192C] font-mono" dir="ltr">
-              {matchedVariant?.sku || product?.sku || product?.slug || "PROD-MAVI"}
-            </span>
-          </div>
+        const hasInstaId = product.insta_id !== undefined && product.insta_id !== null;
+        const hasSpecsToShow = hasInstaId || customSpecs.length > 0;
 
-          {product.insta_id !== undefined && product.insta_id !== null && (
-            <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-              <span className="text-xs text-slate-500 font-medium">کد کالا (اینستاگرام و انبار):</span>
-              <span className="text-xs font-bold text-[#0082CA] font-mono" dir="ltr">
-                {product.insta_id}
+        if (!hasSpecsToShow) return null;
+
+        return (
+          <div className="mb-12 sm:mb-16 bg-white border border-sky-100 rounded-3xl p-6 sm:p-8 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-sky-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-sky-50 border border-sky-200 text-[#0082CA] flex items-center justify-center shadow-sm">
+                  <Sliders className="w-5 h-5 text-[#0082CA]" />
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-black text-[#0B192C]">
+                    مشخصات و ویژگی‌های کالا
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    اطلاعات تکمیلی و مشخصات فنی کالا
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1 rounded-full self-start sm:self-auto">
+                {product?.category || product?.category_name || "پوشاک ماوی"}
               </span>
             </div>
-          )}
 
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-            <span className="text-xs text-slate-500 font-medium">جنس و متریال:</span>
-            <span className="text-xs font-bold text-[#0B192C]">
-              {product?.metadata?.material ||
-                product?.metadata?.fabric ||
-                options.find((o) => o.name.includes("جنس"))?.values?.map((v) => v.value).join("، ") ||
-                "نخ پنبه و الیاف طبیعی ارگانیک با دوخت سفارشی"}
-            </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              {hasInstaId && (
+                <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
+                  <span className="text-xs text-slate-500 font-medium">کد کالا (اینستاگرام و انبار):</span>
+                  <span className="text-xs font-bold text-[#0082CA] font-mono" dir="ltr">
+                    {product.insta_id}
+                  </span>
+                </div>
+              )}
+
+              {customSpecs.map((spec: any, sIdx: number) => (
+                <div
+                  key={`custom-spec-${sIdx}`}
+                  className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors"
+                >
+                  <span className="text-xs text-slate-500 font-medium">{spec.label}:</span>
+                  <span className="text-xs font-bold text-[#0B192C]">{String(spec.value)}</span>
+                </div>
+              ))}
+            </div>
           </div>
-
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-            <span className="text-xs text-slate-500 font-medium">رنگ‌بندی‌های موجود:</span>
-            <span className="text-xs font-bold text-[#0B192C]">
-              {product?.metadata?.color ||
-                options.find((o) => o.name.includes("رنگ"))?.values?.map((v) => v.value).join("، ") ||
-                "تک رنگ ژورنالی"}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-            <span className="text-xs text-slate-500 font-medium">سایزبندی:</span>
-            <span className="text-xs font-bold text-[#0B192C]">
-              {product?.metadata?.size ||
-                options.find((o) => o.name.includes("سایز"))?.values?.map((v) => v.value).join("، ") ||
-                "فری سایز (مناسب ۳۶ تا ۴۴)"}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-            <span className="text-xs text-slate-500 font-medium">وزن خالص کالا:</span>
-            <span className="text-xs font-bold text-[#0B192C]">
-              {`${matchedVariant?.weight || product?.metadata?.weight || product?.weight || 500} گرم`}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-            <span className="text-xs text-slate-500 font-medium">وضعیت در انبار:</span>
-            <span className="text-xs font-bold text-emerald-600">
-              {isOutOfStock ? "ناموجود" : totalProductStock > 0 ? `موجود (${totalProductStock.toLocaleString("fa-IR")} عدد)` : "موجود در انبار"}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-            <span className="text-xs text-slate-500 font-medium">ضمانت کالا:</span>
-            <span className="text-xs font-bold text-[#0B192C]">
-              ضمانت اصالت فیزیکی و بازگشت ۷ روزه
-            </span>
-          </div>
-
-          <div className="md:col-span-2 flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-            <span className="text-xs text-slate-500 font-medium">شرایط نگهداری و شستشو:</span>
-            <span className="text-xs font-bold text-slate-700">
-              {product?.metadata?.care || "شستشو با آب سرد (حداکثر ۳۰ درجه سانتی‌گراد)، عدم استفاده از سفیدکننده، اتوکشی با حرارت ملایم"}
-            </span>
-          </div>
-
-          {Array.isArray(product?.metadata?.specifications) &&
-            product.metadata.specifications.map((spec: any, sIdx: number) => (
-              <div
-                key={`custom-spec-${sIdx}`}
-                className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors"
-              >
-                <span className="text-xs text-slate-500 font-medium">{spec.label}:</span>
-                <span className="text-xs font-bold text-[#0B192C]">{String(spec.value)}</span>
-              </div>
-            ))}
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Complete the Look (تکمیل استایل) */}
       {completeLook && completeLook.length > 0 && (

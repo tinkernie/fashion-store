@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
 import { Bell, CheckCheck, Check, Package, ExternalLink, Sparkles, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,11 +8,11 @@ import { useNotifications } from "@/store/notifications";
 import { formatShamsiDate } from "@/lib/jalali";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 export default function NotificationDropdown() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const {
     notifications,
@@ -29,30 +28,6 @@ export default function NotificationDropdown() {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Click outside and escape key handling
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
-
   const handleMarkAllRead = async (e: React.MouseEvent) => {
     e.stopPropagation();
     await markAllAsRead();
@@ -67,50 +42,44 @@ export default function NotificationDropdown() {
   const hasUnread = unreadCount > 0;
 
   return (
-    <div className="relative" ref={dropdownRef} dir="rtl">
-      {/* Trigger Button with Glowing Aura when unread */}
-      <motion.button
-        type="button"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={cn(
-          "p-2 rounded-full transition-all outline-none cursor-pointer flex items-center justify-center relative text-white",
-          isOpen
-            ? "bg-white/25 ring-1 ring-white/40"
-            : "hover:bg-white/20"
-        )}
-        aria-label="اعلان‌ها و پیام‌ها"
-        aria-expanded={isOpen}
-      >
-        <Bell
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
           className={cn(
-            "w-5 h-5 transition-transform",
-            hasUnread ? "animate-[bell-wiggle_2s_ease-in-out_infinite]" : ""
+            "p-2 rounded-full transition-all outline-none cursor-pointer flex items-center justify-center relative text-white active:scale-95",
+            isOpen
+              ? "bg-white/25 ring-1 ring-white/40"
+              : "hover:bg-white/20"
           )}
-        />
+          aria-label="اعلان‌ها و پیام‌ها"
+        >
+          <Bell
+            className={cn(
+              "w-5 h-5 transition-transform",
+              hasUnread ? "animate-[bell-wiggle_2s_ease-in-out_infinite]" : ""
+            )}
+          />
 
-        {/* Pulsing Glowing Badge when unread notifications exist */}
-        {hasUnread && (
-          <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center pointer-events-none">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-white text-[9px] font-black text-[#0082CA] items-center justify-center shadow-md">
-              {unreadCount > 9 ? "+۹" : unreadCount.toLocaleString("fa-IR")}
+          {/* Pulsing Glowing Badge when unread notifications exist */}
+          {hasUnread && (
+            <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center pointer-events-none">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-white text-[9px] font-black text-[#0082CA] items-center justify-center shadow-md">
+                {unreadCount > 9 ? "+۹" : unreadCount.toLocaleString("fa-IR")}
+              </span>
             </span>
-          </span>
-        )}
-      </motion.button>
+          )}
+        </button>
+      </PopoverTrigger>
 
-      {/* Popover Window */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.96 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="absolute left-0 sm:left-auto sm:right-0 mt-3 w-80 sm:w-96 bg-white/95 backdrop-blur-2xl border border-sky-100 rounded-3xl shadow-2xl shadow-sky-950/10 z-50 overflow-hidden text-right font-sans"
-          >
+      <PopoverContent
+        align="start"
+        sideOffset={14}
+        collisionPadding={16}
+        className="w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-white/95 backdrop-blur-2xl border border-sky-100 rounded-3xl shadow-2xl shadow-sky-950/20 p-0 overflow-hidden text-right font-sans z-50 animate-in fade-in-0 zoom-in-95 duration-200"
+        dir="rtl"
+      >
             {/* Header */}
             <div className="p-4 border-b border-sky-100 flex items-center justify-between bg-sky-50/50">
               <div className="flex items-center gap-2">
@@ -286,9 +255,7 @@ export default function NotificationDropdown() {
                 <ExternalLink className="w-3 h-3 text-slate-400" />
               </Link>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -117,6 +117,7 @@ export default function AdminProductsPage() {
   const [clothingColor, setClothingColor] = useState<string>("");
   const [clothingSize, setClothingSize] = useState<string>("");
   const [clothingMaterial, setClothingMaterial] = useState<string>("");
+  const [clothingStock, setClothingStock] = useState<string>("5");
   const [variantsMatrix, setVariantsMatrix] = useState<VariantItem[]>([]);
   const [showVariantGenerator, setShowVariantGenerator] = useState(false);
 
@@ -235,6 +236,7 @@ export default function AdminProductsPage() {
     setClothingColor("");
     setClothingSize("");
     setClothingMaterial("");
+    setClothingStock("5");
     setVariantsMatrix([]);
     setShowVariantGenerator(false);
     setIsModalOpen(true);
@@ -625,6 +627,8 @@ export default function AdminProductsPage() {
     const baseSlug = (slug || title).trim().toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, "").replace(/\s+/g, "-") || "item";
     const generated: VariantItem[] = [];
 
+    const defaultStock = Math.max(0, parseInt(clothingStock, 10) || 0);
+
     combinations.forEach((combo, idx) => {
       const comboName = combo.join(" / ");
       const comboSku = `${baseSlug.toUpperCase().slice(0, 3)}-${combo.map((v) => v.slice(0, 2).toUpperCase()).join("-")}-${idx + 1}`;
@@ -633,7 +637,7 @@ export default function AdminProductsPage() {
         sku: comboSku,
         price: formatPriceInput(price) || "0",
         weight: Number(weight) > 0 ? Number(weight) : 1, // Task 3
-        stock: 10,
+        stock: defaultStock,
       });
     });
 
@@ -2228,7 +2232,7 @@ export default function AdminProductsPage() {
                 </span>
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-gray-300 flex items-center gap-1">
                     <span>رنگ‌ها</span>
@@ -2279,6 +2283,20 @@ export default function AdminProductsPage() {
                     }`}
                   />
                 </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-300 flex items-center gap-1">
+                    <span>موجودی اولیه پیش‌فرض</span>
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={clothingStock}
+                    onChange={(e) => setClothingStock(e.target.value)}
+                    placeholder="مثال: ۵"
+                    className="bg-[#181818] h-10 text-xs text-white rounded-xl border-white/10"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-between pt-1">
@@ -2307,17 +2325,40 @@ export default function AdminProductsPage() {
                 )}
               </div>
 
-              {/* Preview of generated matrix */}
+              {/* Preview of generated matrix with editable stock per variant */}
               {variantsMatrix.length > 0 && (
-                <div className="mt-3 max-h-40 overflow-y-auto space-y-1 p-2 bg-black/40 rounded-xl border border-white/5 text-[11px]">
+                <div className="mt-3 max-h-52 overflow-y-auto space-y-1.5 p-2.5 bg-black/40 rounded-xl border border-white/5 text-[11px]">
+                  <div className="flex items-center justify-between text-[10px] text-gray-400 px-2 pb-1 border-b border-white/5 font-medium">
+                    <span>ترکیب تنوع</span>
+                    <div className="flex items-center gap-4">
+                      <span>شناسه (SKU)</span>
+                      <span>تعداد موجودی انبار</span>
+                    </div>
+                  </div>
                   {variantsMatrix.map((item, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between py-1 px-2 rounded-lg bg-white/5 text-gray-300"
+                      className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/5 text-gray-300 gap-2 hover:bg-white/10 transition-colors"
                     >
-                      <span className="font-bold text-white">{item.name}</span>
-                      <span className="font-mono text-[10px] text-gray-400">{item.sku}</span>
-                      <span>وزن: {item.weight} گرم</span>
+                      <span className="font-bold text-white truncate max-w-[140px] sm:max-w-none">{item.name}</span>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="font-mono text-[10px] text-gray-400" dir="ltr">{item.sku}</span>
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-[10px] text-gray-400">موجودی:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={item.stock ?? 0}
+                            onChange={(e) => {
+                              const val = Math.max(0, parseInt(e.target.value, 10) || 0);
+                              setVariantsMatrix((prev) =>
+                                prev.map((v, idx) => (idx === i ? { ...v, stock: val } : v))
+                              );
+                            }}
+                            className="w-16 h-7 bg-[#1c1c1c] border border-white/15 focus:border-purple-400 rounded-lg text-center text-xs text-white font-mono outline-none"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -32,8 +32,8 @@ METHODS = {
     },
     METHOD_VIZHEH: {
         "code": METHOD_VIZHEH,
-        "name": "ویژه بین‌شهری",
-        "name_en": "Special Intercity",
+        "name": "ویژه",
+        "name_en": "Special Express",
         "eta_days": 1,
         # Parcel (بسته) up to 1kg, Table 4 row 2 (Rials).
         "base_1kg": {ZONE_INTRA: 930_000, ZONE_NEIGHBOR: 1_080_000, ZONE_FAR: 1_530_000},
