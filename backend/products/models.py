@@ -34,6 +34,15 @@ class Product(BaseModel):
         default=1,
         help_text="Product weight in grams (used for post shipping calculations)",
     )
+    # Sequential public code starting at 1 (e.g. "کد ۲۷" on Instagram).
+    # Assigned automatically via pre_save (signals.py); unique protects the
+    # counter. Not the PK - UUID id stays as-is.
+    insta_id = models.PositiveBigIntegerField(
+        unique=True,
+        editable=False,
+        null=False,
+        help_text="Sequential public product code (auto-assigned, starts at 1)",
+    )
     seo_metadata = models.JSONField(default=dict, blank=True)
     metadata = models.JSONField(default=dict, blank=True)  # extensible attributes
 

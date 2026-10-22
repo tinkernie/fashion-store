@@ -1,10 +1,29 @@
 from django.db import transaction
+from django.db import connection
 from django.utils import timezone
 from .repositories import ProductRepository
 from .selectors import ProductSelector
 from .models import Product
 from common.exceptions import BusinessException
 from categories.selectors import CategorySelector
+
+SEQUENCE_NAME = "product_insta_id_seq"
+
+
+def allocate_insta_id() -> int:
+    """Next sequential public code. Postgres: DB-backed sequence survives
+    concurrent admin creations; SQLite (dev/tests): max+1 under the unique
+    constraint."""
+    if connection.vendor == "postgresql":
+        with connection.cursor() as cursor:
+            cursor.execute(f"SELECT nextval('{SEQUENCE_NAME}')")
+            return int(cursor.fetchone()[0])
+    with transaction.atomic():
+        from django.db.models import Max
+
+        last = Product.objects.aggregate(max_id=Max("insta_id"))["max_id"] or 0
+        return last + 1
+
 
 class ProductService:
     def create_product(self, data: dict) -> dict:

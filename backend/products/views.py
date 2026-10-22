@@ -2,7 +2,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_headers
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAdminUser
 from core.pagination import AdminPagination
@@ -13,6 +13,17 @@ from .serializers import (
     ProductUpdateSerializer,
     ProductDetailSerializer,
 )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def product_by_code(request, code):
+    """GET /api/products/by-code/{code}/ - Instagram/in-store code lookup."""
+    product = ProductSelector.get_product_by_insta_id(code)
+    if not product:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+    serializer = ProductDetailSerializer(product, context={"request": request})
+    return Response(serializer.data)
 
 
 class PublicProductViewSet(viewsets.GenericViewSet):
@@ -37,6 +48,8 @@ class PublicProductViewSet(viewsets.GenericViewSet):
             filters["has_discount"] = request.query_params["has_discount"]
         if "exclude_discounted" in request.query_params:
             filters["exclude_discounted"] = request.query_params["exclude_discounted"]
+        if "code" in request.query_params:
+            filters["code"] = request.query_params["code"]
         products = ProductSelector.get_visible_products(filters)
         # manual pagination? We'll use DRF's default pagination via core.pagination.StandardPagination.
         page = self.paginate_queryset(products)
@@ -321,6 +334,8 @@ class AdminProductViewSet(viewsets.GenericViewSet):
             filters["ordering"] = request.query_params["ordering"]
         if "has_discount" in request.query_params:
             filters["has_discount"] = request.query_params["has_discount"]
+        if "code" in request.query_params:
+            filters["code"] = request.query_params["code"]
         products = ProductSelector.get_all_products_admin(filters)
         page = self.paginate_queryset(products)
         if page is not None:
@@ -336,6 +351,8 @@ class AdminProductViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=["get"], url_path="admin-list")
     def admin_list(self, request):
         filters = {}
+        if "code" in request.query_params:
+            filters["code"] = request.query_params["code"]
         if "status" in request.query_params:
             filters["status"] = request.query_params["status"]
         if "search" in request.query_params:

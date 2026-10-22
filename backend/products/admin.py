@@ -10,10 +10,11 @@ class ProductImageInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("title", "slug", "status", "category", "created_at")
+    list_display = ("insta_id", "title", "slug", "status", "category", "created_at")
     prepopulated_fields = {"slug": ("title",)}
     list_filter = ("status", "category")
-    search_fields = ("title", "description")
+    search_fields = ("title", "description", "insta_id")
+    readonly_fields = ("insta_id",)
     inlines = [ProductImageInline]
 
 

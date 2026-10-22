@@ -70,14 +70,29 @@ class ProductSelector:
         if "collection_slug" in filters and filters["collection_slug"]:
             qs = qs.filter(collections__slug=filters["collection_slug"])
 
+        # Exact code filter (in-store forgot-the-noun case: ?code=27)
+        code = filters.get("code")
+        if code not in (None, ""):
+            try:
+                qs = qs.filter(insta_id=int(str(code).strip()))
+            except (TypeError, ValueError):
+                qs = qs.none()
+
         if "search" in filters and filters["search"]:
             search = filters["search"]
-            qs = qs.filter(
+            # Storefront "کد ۲۷" lookups: only exact number matches count,
+            # so 27 never collides with 270.
+            query = (
                 Q(title__icontains=search)
                 | Q(description__icontains=search)
                 | Q(slug__icontains=search)
                 | Q(variants__sku__icontains=search)
             )
+            try:
+                query = query | Q(insta_id=int(search.strip()))
+            except (TypeError, ValueError):
+                pass
+            qs = qs.filter(query)
 
         # Ordering - including popularity/best_selling/trending
         ordering = filters.get("ordering")
@@ -197,6 +212,26 @@ class ProductSelector:
     def get_product_by_id(product_id) -> Product or None:
         qs = (
             Product.objects.filter(id=product_id, deleted_at__isnull=True)
+            .select_related("category")
+            .prefetch_related("collections", "images")
+        )
+        qs = ProductSelector._annotate_reviews(qs)
+        return qs.first()
+
+    @staticmethod
+    def get_product_by_insta_id(code: int) -> Product or None:
+        """Public lookup: 'کد ۲۷' → the exact product. Strictly int."""
+        try:
+            code = int(code)
+        except (TypeError, ValueError):
+            return None
+        qs = (
+            Product.objects.filter(
+                insta_id=code,
+                status=Product.Status.PUBLISHED,
+                deleted_at__isnull=True,
+                category__is_active=True,
+            )
             .select_related("category")
             .prefetch_related("collections", "images")
         )

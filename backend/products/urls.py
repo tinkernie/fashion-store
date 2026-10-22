@@ -5,6 +5,7 @@ from .views import (
     AdminProductViewSet,
     PublicReviewViewSet,
     AdminReviewViewSet,
+    product_by_code,
 )
 
 public_router = DefaultRouter()
@@ -22,6 +23,8 @@ admin_router.register(r"admin/products", AdminProductViewSet, basename="admin-pr
 admin_router.register(r"admin/reviews", AdminReviewViewSet, basename="admin-reviews")
 
 urlpatterns = [
+    # Code lookup must precede the catch-all product routing.
+    path("products/by-code/<int:code>/", product_by_code, name="product-by-code"),
     path("", include(public_review_router.urls)),
     path("products/", include(public_router.urls)),
     path("", include(admin_router.urls)),
