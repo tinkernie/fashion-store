@@ -11,6 +11,9 @@ export interface CartItem {
   quantity: number;
   variant_id?: string;
   weight?: number;
+  product_id?: string;
+  product_slug?: string;
+  slug?: string;
 }
 
 export interface AppliedCoupon {
@@ -79,6 +82,9 @@ export const useCart = create<CartStore>((set, get) => ({
         const mapped = response.data.items.map((it: any) => ({
           id: String(it.id),
           variant_id: it.variant_id ? String(it.variant_id) : undefined,
+          product_id: it.product_id ? String(it.product_id) : undefined,
+          product_slug: it.product_slug || it.slug,
+          slug: it.product_slug || it.slug,
           name: it.product_title || it.name || "محصول",
           price: parsePrice(it.price),
           imageUrl: it.image?.url || it.image || it.imageUrl || "",

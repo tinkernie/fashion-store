@@ -314,6 +314,8 @@ class CartService:
                 {
                     "id": str(item.id),
                     "variant_id": str(item.variant_id),
+                    "product_id": str(item.variant.product_id),
+                    "product_slug": item.variant.product.slug,
                     "sku": item.variant.sku,
                     "product_title": item.variant.product.title,
                     "option_details": self._get_option_summary(item.variant),

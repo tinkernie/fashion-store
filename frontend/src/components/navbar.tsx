@@ -362,7 +362,7 @@ export default function Navbar() {
           )}
 
           {/* Shopping Cart Drawer */}
-          <div className="flex items-center overflow-hidden shrink-0">
+          <div className="flex items-center shrink-0">
             <Sheet>
               <SheetTrigger asChild>
                 <button 
@@ -371,7 +371,7 @@ export default function Navbar() {
                 >
                   <ShoppingBag className="w-5 h-5 text-white" />
                   {itemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-white text-[#0082CA] font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
+                    <span className="absolute -bottom-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-white text-[#0082CA] font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow-md ring-1 ring-sky-100">
                       {toPersianDigits(itemCount)}
                     </span>
                   )}
@@ -399,25 +399,46 @@ export default function Navbar() {
                           </SheetClose>
                         </div>
                       ) : (
-                        items.map((item) => (
-                          <div key={item.id} className="flex gap-4 items-center bg-sky-50/50 p-3 rounded-2xl border border-sky-100">
-                            <img src={item.imageUrl} alt={item.name} className="w-16 h-20 object-cover rounded-xl border border-sky-100 shadow-sm" />
-                            <div className="flex-1 space-y-1">
-                              <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{item.name}</h4>
-                              {item.size && (
-                                <div className="text-xs text-slate-500">
-                                  سایز: {item.size}
-                                </div>
-                              )}
-                              <div className="text-xs text-[#006CA8] font-bold">
-                                {formatPriceNumber(item.price)} تومان × {item.quantity}
-                              </div>
+                        items.map((item) => {
+                          const productTarget = item.product_slug || item.slug || item.product_id || item.id;
+                          return (
+                            <div key={item.id} className="flex gap-3 items-center bg-sky-50/50 hover:bg-sky-50 p-3 rounded-2xl border border-sky-100 transition-colors group">
+                              <SheetClose asChild>
+                                <Link
+                                  href={`/products/${productTarget}`}
+                                  className="flex gap-3 items-center flex-1 min-w-0 cursor-pointer text-right"
+                                >
+                                  <img
+                                    src={item.imageUrl || "/placeholder-product.svg"}
+                                    alt={item.name}
+                                    className="w-16 h-20 object-cover rounded-xl border border-sky-100 shadow-sm group-hover:scale-102 transition-transform shrink-0"
+                                  />
+                                  <div className="flex-1 space-y-1 min-w-0">
+                                    <h4 className="font-bold text-sm text-slate-800 group-hover:text-[#0082CA] transition-colors line-clamp-1">
+                                      {item.name}
+                                    </h4>
+                                    {item.size && (
+                                      <div className="text-xs text-slate-500 truncate">
+                                        سایز: {item.size}
+                                      </div>
+                                    )}
+                                    <div className="text-xs text-[#006CA8] font-bold">
+                                      {formatPriceNumber(item.price)} تومان × {item.quantity}
+                                    </div>
+                                  </div>
+                                </Link>
+                              </SheetClose>
+                              <button
+                                type="button"
+                                onClick={() => removeItem(item.id, item.size, item.variant_id)}
+                                className="text-slate-400 hover:text-rose-500 transition-colors p-2 cursor-pointer shrink-0"
+                                aria-label="حذف از سبد خرید"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
-                            <button onClick={() => removeItem(item.id, item.size, item.variant_id)} className="text-slate-400 hover:text-rose-500 transition-colors p-2 cursor-pointer">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
 

@@ -505,6 +505,9 @@ export default function ProductDetailClient({
     try {
       await addToCart({
         id: product.id,
+        product_id: product.id,
+        product_slug: product.slug,
+        slug: product.slug,
         name: product.name || product.title,
         price: finalPayablePrice,
         size: optionsSummary,
