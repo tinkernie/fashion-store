@@ -59,6 +59,170 @@ class TestCodeLookupEndpoint:
 
 
 @pytest.mark.django_db
+class TestPermissionSplit:
+    """Req 1: anonymous storefront search by pure code.
+    Req 2/3: admin finds/edits via staff auth; anonymous admin access fails."""
+
+    def test_public_search_by_code_no_credentials(self):
+        _make_product("silk scarf", insta_id=720)
+        client = APIClient()
+        response = client.get("/api/products/?search=720")
+        assert response.status_code == 200
+        slugs = [item["slug"] for item in response.data["results"]]
+        assert slugs == ["silk scarf"]
+
+    def test_anonymous_cannot_touch_admin_products(self):
+        _make_product("locked", insta_id=721)
+        client = APIClient()
+        response = client.get("/api/admin/products/?search=721")
+        assert response.status_code in (401, 403)
+
+    def test_staff_search_by_code_sees_product(self):
+        from django.contrib.auth import get_user_model
+
+        staff = get_user_model().objects.create_user(
+            "09129990001", password="pass1234", is_staff=True
+        )
+        product = _make_product("cashmere coat", insta_id=722)
+        client = APIClient()
+        client.force_authenticate(staff)
+        response = client.get("/api/admin/products/?search=722")
+        assert response.status_code == 200
+        slugs = [item["slug"] for item in response.data["results"]]
+        assert slugs == ["cashmere coat"]
+
+    def test_staff_search_by_code_exact_param(self):
+        from django.contrib.auth import get_user_model
+
+        staff = get_user_model().objects.create_user(
+            "09129990002", password="pass1234", is_staff=True
+        )
+        product = _make_product("wool cardigan", insta_id=723)
+        client = APIClient()
+        client.force_authenticate(staff)
+        response = client.get(f"/api/admin/products/?code={product.insta_id}")
+        assert response.status_code == 200
+        assert response.data["results"][0]["slug"] == "wool cardigan"
+
+    def test_staff_pure_digit_search_titleless_hit(self):
+        """Admin types only '724' - code matches, digit-free title proves hit
+        came from the code."""
+        from django.contrib.auth import get_user_model
+
+        staff = get_user_model().objects.create_user(
+            "09129990003", password="pass1234", is_staff=True
+        )
+        product = _make_product("mohair wrap", insta_id=724)
+        client = APIClient()
+        client.force_authenticate(staff)
+        response = client.get("/api/admin/products/?search=724")
+        found = [item["slug"] for item in response.data["results"]]
+        assert found == ["mohair wrap"]
+
+    def test_staff_adjusts_stock_after_code_search(self):
+        """Req 2: view stock then adjust it on the scanned item (variant-level
+        inventory endpoints, Imaginative staff flow)."""
+        from django.contrib.auth import get_user_model
+        from variants.models import Variant
+        from inventory.models import Inventory
+
+        staff = get_user_model().objects.create_user(
+            "09129990004", password="pass1234", is_staff=True
+        )
+        product = _make_product("linen dress", insta_id=725)
+        variant = Variant.objects.create(
+            product=product,
+            sku="725-DEFAULT",
+            price=100_000,
+            weight=500,
+            status=Variant.Status.PUBLISHED,
+            availability=Variant.Availability.IN_STOCK,
+        )
+        Inventory.objects.create(
+            variant=variant,
+            available_quantity=9,
+            status=Inventory.Status.IN_STOCK,
+        )
+        client = APIClient()
+        client.force_authenticate(staff)
+        response = client.get(
+            f"/api/admin/products/?code={product.insta_id}"
+        )
+        assert response.status_code == 200
+        product_data = response.data["results"][0]
+        assert product_data["stock_quantity"] == 9
+        response = client.post(
+            f"/api/admin/inventory/{variant.id}/set-quantity/",
+            {"quantity": 5},
+            format="json",
+        )
+        assert response.status_code == 200
+        variant.inventory.refresh_from_db()
+        assert variant.inventory.available_quantity == 5
+
+    def test_anonymous_cannot_adjust_stock(self):
+        from variants.models import Variant
+        from inventory.models import Inventory
+
+        product = _make_product("tencel skirt", insta_id=726)
+        variant = Variant.objects.create(
+            product=product,
+            sku="726-DEFAULT",
+            price=100_000,
+            weight=400,
+            status=Variant.Status.PUBLISHED,
+            availability=Variant.Availability.IN_STOCK,
+        )
+        Inventory.objects.create(
+            variant=variant,
+            available_quantity=3,
+            status=Inventory.Status.IN_STOCK,
+        )
+        client = APIClient()
+        response = client.post(
+            f"/api/admin/inventory/{variant.id}/set-quantity/",
+            {"quantity": 0},
+            format="json",
+        )
+        assert response.status_code in (401, 403)
+        variant.inventory.refresh_from_db()
+        assert variant.inventory.available_quantity == 3
+
+    def test_regular_customer_cannot_adjust_stock(self):
+        from django.contrib.auth import get_user_model
+        from variants.models import Variant
+        from inventory.models import Inventory
+
+        customer = get_user_model().objects.create_user(
+            "09129990005", password="pass1234"
+        )  # not is_staff
+        product = _make_product("denim jacket", insta_id=727)
+        variant = Variant.objects.create(
+            product=product,
+            sku="727-DEFAULT",
+            price=100_000,
+            weight=600,
+            status=Variant.Status.PUBLISHED,
+            availability=Variant.Availability.IN_STOCK,
+        )
+        Inventory.objects.create(
+            variant=variant,
+            available_quantity=2,
+            status=Inventory.Status.IN_STOCK,
+        )
+        client = APIClient()
+        client.force_authenticate(customer)
+        response = client.post(
+            f"/api/admin/inventory/{variant.id}/set-quantity/",
+            {"quantity": 0},
+            format="json",
+        )
+        assert response.status_code == 403
+        variant.inventory.refresh_from_db()
+        assert variant.inventory.available_quantity == 2
+
+
+@pytest.mark.django_db
 class TestSearchAndFilters:
     def test_storefront_search_hits_exact_code(self):
         # Digit-free titles: any hit must come from the code, not from the
