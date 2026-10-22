@@ -88,21 +88,22 @@ def quote(province_name: str, weight_grams: int, subtotal_tomans,
         base = table["base_1kg"][zone] + extra_units * table["per_kg"][zone]
         surcharge = round(base * pct / 100)
         insurance = insurance_rials(declared_rials)
-        packaging = rates.PACKAGING_RIALS
-        flat_fee = rates.FLAT_FEE_TOMANS * 10  # store-level fee is in Tomans
-        total_rials = base + surcharge + insurance + packaging + flat_fee
+        # Packaging (Table 6 row 16) + our store flat fee are folded into
+        # the base shipping cost and are never shown as separate charges.
+        base_fare_rials = (
+            base + rates.PACKAGING_RIALS + rates.FLAT_FEE_TOMANS * 10
+        )
+        total_rials = base_fare_rials + surcharge + insurance
         options.append({
             "method": table["code"],
             "name": table["name"],
             "name_en": table["name_en"],
             "eta_days": table["eta_days"],
             "zone": zone,
-            "base_fare": base // 10,
+            "base_fare": base_fare_rials // 10,
             "surcharge": surcharge // 10,
             "surcharge_percent": pct,
             "insurance": insurance // 10,
-            "packaging": packaging // 10,
-            "flat_fee": flat_fee // 10,
             "total": total_rials // 10,
             "currency": "Toman",
         })

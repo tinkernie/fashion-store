@@ -44,7 +44,7 @@ class ShippingViewSet(viewsets.GenericViewSet):
 
         GET/POST params: address_id (preferred) or province_id.
         Response: selected (default pishtaz) + options[] with full
-        Toman breakdown (base/surcharge/insurance/packaging/total).
+        Toman breakdown (base[includes folded packaging+store fee]/surcharge/insurance/total).
         """
         data = request.query_params if request.method == "GET" else (request.data or {})
         address_id = data.get("address_id")
