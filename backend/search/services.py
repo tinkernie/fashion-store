@@ -59,7 +59,9 @@ class SearchService:
                 pass
 
         total_stock = 0
-        for v in product.variants.filter(deleted_at__isnull=True):
+        for v in product.variants.filter(deleted_at__isnull=True).exclude(
+            sku__endswith="-DEFAULT"
+        ):
             if hasattr(v, "inventory") and v.inventory:
                 total_stock += v.inventory.available_quantity
 

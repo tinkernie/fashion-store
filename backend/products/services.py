@@ -82,27 +82,24 @@ class ProductService:
             except Exception:
                 pass
 
-        # Create default variant for inventory & pricing
+        # Common/price-basis variant ("{slug}-DEFAULT"). Placeholder only:
+        # billing/fulfilment never runs through it, so it deliberately gets
+        # NO Inventory row - real stock lives on the option variants created
+        # afterwards (missing row = cart rejects with "Out of stock").
         try:
             from variants.models import Variant
-            from inventory.models import Inventory
             # Use product weight if provided, else default 1g per spec
             variant_weight = data.get("weight", 1) if isinstance(data.get("weight"), int) else 1
             # Also check product instance weight
             if hasattr(product, "weight") and product.weight:
                 variant_weight = product.weight
-            variant = Variant.objects.create(
+            Variant.objects.create(
                 product=product,
                 sku=f"{product.slug}-DEFAULT",
                 price=price if price is not None else 0,
                 weight=variant_weight,
                 status=Variant.Status.PUBLISHED,
                 availability=Variant.Availability.IN_STOCK,
-            )
-            Inventory.objects.create(
-                variant=variant,
-                available_quantity=50,
-                status=Inventory.Status.IN_STOCK,
             )
         except Exception:
             pass

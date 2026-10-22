@@ -132,7 +132,7 @@ class TestPermissionSplit:
         product = _make_product("linen dress", insta_id=725)
         variant = Variant.objects.create(
             product=product,
-            sku="725-DEFAULT",
+            sku="725-LINEN-A",
             price=100_000,
             weight=500,
             status=Variant.Status.PUBLISHED,
@@ -167,7 +167,7 @@ class TestPermissionSplit:
         product = _make_product("tencel skirt", insta_id=726)
         variant = Variant.objects.create(
             product=product,
-            sku="726-DEFAULT",
+            sku="726-TENCEL-A",
             price=100_000,
             weight=400,
             status=Variant.Status.PUBLISHED,
@@ -199,7 +199,7 @@ class TestPermissionSplit:
         product = _make_product("denim jacket", insta_id=727)
         variant = Variant.objects.create(
             product=product,
-            sku="727-DEFAULT",
+            sku="727-DENIM-A",
             price=100_000,
             weight=600,
             status=Variant.Status.PUBLISHED,

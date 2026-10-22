@@ -62,13 +62,14 @@ class VariantDetailSerializer(serializers.ModelSerializer):
     options = serializers.SerializerMethodField()
     inventory = serializers.SerializerMethodField()
     stock = serializers.SerializerMethodField()
+    is_placeholder = serializers.SerializerMethodField()
 
     class Meta:
         model = Variant
         fields = (
             "id", "product_id", "sku", "barcode", "price", "weight",
             "dimensions", "availability", "status", "metadata", "options",
-            "inventory", "stock",
+            "inventory", "stock", "is_placeholder",
         )
 
     def get_price(self, variant):
@@ -100,6 +101,9 @@ class VariantDetailSerializer(serializers.ModelSerializer):
         if hasattr(variant, "inventory") and variant.inventory:
             return variant.inventory.available_quantity
         return 0
+
+    def get_is_placeholder(self, variant):
+        return variant.is_placeholder
 
 # class VariantDetailSerializer(serializers.Serializer):
 #     id = serializers.UUIDField(read_only=True)

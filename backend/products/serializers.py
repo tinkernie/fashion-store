@@ -236,7 +236,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def _get_total_stock(self, product):
         total = 0
-        for variant in product.variants.filter(deleted_at__isnull=True):
+        for variant in product.variants.filter(
+            deleted_at__isnull=True
+        ).exclude(sku__endswith="-DEFAULT"):
             if hasattr(variant, "inventory") and variant.inventory:
                 total += variant.inventory.available_quantity
         return total

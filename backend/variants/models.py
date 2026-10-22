@@ -77,6 +77,13 @@ class Variant(BaseModel):
     def __str__(self):
         return f"{self.product.title} – {self.sku}"
 
+    @property
+    def is_placeholder(self) -> bool:
+        """The product-managed DEFAULT variant is the common/price basis
+        variant products/services.py seeds at creation; it is never itself
+        purchasable and must not hold inventory."""
+        return self.sku.endswith("-DEFAULT")
+
 
 class VariantOption(models.Model):
     variant = models.ForeignKey(Variant, on_delete=models.CASCADE)

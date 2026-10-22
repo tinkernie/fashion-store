@@ -191,6 +191,8 @@ class CollectionDetailSerializer(serializers.Serializer):
                 stock_quantity = 0
                 try:
                     for v in p.variants.all():
+                        if getattr(v, "is_placeholder", False):
+                            continue
                         inv = getattr(v, "inventory", None)
                         if inv is not None and inv.available_quantity:
                             stock_quantity += int(inv.available_quantity)
