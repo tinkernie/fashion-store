@@ -69,6 +69,7 @@ export interface ProductVariant {
   weight?: number;
   availability: "in_stock" | "out_of_stock" | "pre_order" | string;
   status: string;
+  is_placeholder?: boolean;
   options: Array<{
     option_id: string;
     option_name: string;
@@ -127,7 +128,9 @@ function getInitialSelectedOptions(
       }
     });
   } else if (variants && variants.length > 0) {
-    const firstVariantOpts = getNormalizedOptions(variants[0].options);
+    const realVariants = variants.filter((v) => !v.is_placeholder && !v.sku?.endsWith("-DEFAULT"));
+    const pool = realVariants.length > 0 ? realVariants : variants;
+    const firstVariantOpts = getNormalizedOptions(pool[0].options);
     firstVariantOpts.forEach((o: any) => {
       if (o.option_name) {
         selected[o.option_name] = o.value;
@@ -141,12 +144,14 @@ function synthesizeOptions(options: ProductOption[], variants: ProductVariant[],
   if (options && options.length > 0) return options;
 
   if (variants && variants.length > 0) {
+    const realVariants = variants.filter((v) => !v.is_placeholder && !v.sku?.endsWith("-DEFAULT"));
+    const pool = realVariants.length > 0 ? realVariants : variants;
     const optMap: Record<
       string,
       { id: string; name: string; values: { id: string; value: string; extra_data?: any }[] }
     > = {};
 
-    for (const v of variants) {
+    for (const v of pool) {
       const vOpts = getNormalizedOptions(v.options);
       for (const vo of vOpts) {
         const optName = vo.option_name;
@@ -353,8 +358,12 @@ export default function ProductDetailClient({
   const matchedVariant = useMemo(() => {
     if (!variants || variants.length === 0) return null;
 
+    // Isolate real variants from placeholder -DEFAULT variants if real variants exist
+    const realVariants = variants.filter((v) => !v.is_placeholder && !v.sku?.endsWith("-DEFAULT"));
+    const candidatePool = realVariants.length > 0 ? realVariants : variants;
+
     // Filter to candidate variants whose assigned options all match the user's selected options
-    const candidates = variants.filter((v) => {
+    const candidates = candidatePool.filter((v) => {
       const vOpts = getNormalizedOptions(v.options);
       if (vOpts.length === 0) return true; // Generic variant matches all selections as fallback
       return vOpts.every((vOpt: any) => {
@@ -363,7 +372,7 @@ export default function ProductDetailClient({
       });
     });
 
-    if (candidates.length === 0) return variants[0];
+    if (candidates.length === 0) return candidatePool[0];
 
     // Sort candidates by specificity: highest number of defined matching options first
     candidates.sort((a, b) => {
@@ -444,10 +453,12 @@ export default function ProductDetailClient({
     product?.stock_quantity ??
     product?.inventory_count ??
     (variants && variants.length > 0
-      ? variants.reduce(
-          (sum, v) => sum + (v.stock ?? v.inventory?.available_quantity ?? v.inventory?.quantity ?? 0),
-          0
-        )
+      ? variants
+          .filter((v) => !v.is_placeholder && !v.sku?.endsWith("-DEFAULT"))
+          .reduce(
+            (sum, v) => sum + (v.stock ?? v.inventory?.available_quantity ?? v.inventory?.quantity ?? 0),
+            0
+          )
       : 0);
 
   const isOutOfStock = (() => {
@@ -548,7 +559,9 @@ export default function ProductDetailClient({
 
   const currentVariantId =
     matchedVariant?.id ||
-    (variants && variants.length > 0 ? variants[0].id : null) ||
+    (variants && variants.length > 0
+      ? (variants.find((v) => !v.is_placeholder && !v.sku?.endsWith("-DEFAULT"))?.id || variants[0].id)
+      : null) ||
     product?.default_variant_id ||
     null;
 
@@ -682,6 +695,19 @@ export default function ProductDetailClient({
             <span className="bg-sky-50 text-[#0082CA] border border-sky-200 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider">
               {product.category || product.category_name || "پوشاک لوکس"}
             </span>
+
+            {/* Instagram / In-Store Sequential Code Badge */}
+            {product.insta_id !== undefined && product.insta_id !== null && (
+              <span
+                className="bg-slate-100 text-slate-700 border border-slate-200/90 px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5"
+                title="کد محصول جهت استعلام در اینستاگرام و انبار فروشگاه"
+              >
+                <span className="text-slate-400 font-normal">کد کالا:</span>
+                <span className="font-black text-[#0082CA] font-mono" dir="ltr">
+                  {product.insta_id}
+                </span>
+              </span>
+            )}
             {/* Rating or New/No Review Indicator */}
             {ratingStats.average !== null ? (
               <button
@@ -1002,6 +1028,15 @@ export default function ProductDetailClient({
               {matchedVariant?.sku || product?.sku || product?.slug || "PROD-MAVI"}
             </span>
           </div>
+
+          {product.insta_id !== undefined && product.insta_id !== null && (
+            <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
+              <span className="text-xs text-slate-500 font-medium">کد کالا (اینستاگرام و انبار):</span>
+              <span className="text-xs font-bold text-[#0082CA] font-mono" dir="ltr">
+                {product.insta_id}
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
             <span className="text-xs text-slate-500 font-medium">جنس و متریال:</span>

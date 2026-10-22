@@ -104,6 +104,7 @@ interface ProductItem {
   rating?: number;
   stock_quantity?: number;
   is_in_stock?: boolean;
+  insta_id?: number | null;
 }
 
 interface FilterFacet {
@@ -234,6 +235,13 @@ function SearchContent() {
       if (queryParam) {
         params.set("q", queryParam);
         params.set("search", queryParam);
+        if (/^\d+$/.test(queryParam.trim())) {
+          params.set("code", queryParam.trim());
+        }
+      }
+      const explicitCode = searchParams.get("code");
+      if (explicitCode) {
+        params.set("code", explicitCode.trim());
       }
       if (categoryParam && categoryParam !== "all") {
         params.set("category", categoryParam);
@@ -791,9 +799,19 @@ function SearchContent() {
                       {/* Product Info */}
                       <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                         <div className="space-y-1">
-                          <span className="text-[11px] font-bold text-[#0082CA]">
-                            {product.category || "پوشاک"}
-                          </span>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-bold text-[#0082CA] truncate">
+                              {product.category || "پوشاک"}
+                            </span>
+                            {product.insta_id !== undefined && product.insta_id !== null && (
+                              <span
+                                className="text-[9px] font-bold font-mono text-slate-500 bg-slate-100 border border-slate-200/80 px-1.5 py-0.2 rounded shrink-0"
+                                title={`کد محصول: ${product.insta_id}`}
+                              >
+                                کد: {product.insta_id}
+                              </span>
+                            )}
+                          </div>
                           <Link href={`/products/${product.slug || product.id}`} className="block">
                             <h3 className="text-sm font-bold text-[#0B192C] group-hover:text-[#0082CA] transition-colors line-clamp-1">
                               {product.title || product.name}

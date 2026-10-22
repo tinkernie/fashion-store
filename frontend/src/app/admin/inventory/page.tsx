@@ -165,7 +165,18 @@ export default function AdminInventoryPage() {
 
   const filteredProducts = products.filter((p) => {
     const name = (p.name || p.title || "").toLowerCase();
-    return name.includes(searchQuery.toLowerCase()) || (p.slug || "").includes(searchQuery.toLowerCase());
+    const slug = (p.slug || "").toLowerCase();
+    const id = String(p.id || "").toLowerCase();
+    const code = p.insta_id !== undefined && p.insta_id !== null ? String(p.insta_id) : "";
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      !q ||
+      name.includes(q) ||
+      slug.includes(q) ||
+      id.includes(q) ||
+      code === q ||
+      code.includes(q)
+    );
   });
 
   return (
@@ -234,18 +245,21 @@ export default function AdminInventoryPage() {
               ) : (
                 filteredProducts.map((p) => {
                   const prodName = p.name || p.title || "محصول";
-                  const hasVariants = Array.isArray(p.variants) && p.variants.length > 0;
-                  const isMultiVariant = Array.isArray(p.variants) && p.variants.length > 1;
+                  const realVariants = Array.isArray(p.variants)
+                    ? p.variants.filter((v: any) => !v.is_placeholder && !v.sku?.endsWith("-DEFAULT"))
+                    : [];
+                  const hasVariants = realVariants.length > 0;
+                  const isMultiVariant = realVariants.length > 1;
                   const isExpanded = expandedRow === p.id;
 
                   // Aggregate stock if multi-variant, otherwise single stock
                   const stock = isMultiVariant
-                    ? p.variants.reduce((acc: number, v: any) => acc + getItemStock(v), 0)
-                    : (p.stock_quantity ?? p.inventory_count ?? getItemStock(p.variants?.[0]) ?? 0);
+                    ? realVariants.reduce((acc: number, v: any) => acc + getItemStock(v), 0)
+                    : (p.stock_quantity ?? p.inventory_count ?? getItemStock(realVariants[0] || p.variants?.[0]) ?? 0);
 
                   const isLow = stock <= 5 && stock > 0;
                   const isOut = stock <= 0;
-                  const singleItemId = p.variants?.[0]?.id || p.id;
+                  const singleItemId = realVariants[0]?.id || p.variants?.[0]?.id || p.id;
 
                   return (
                     <Fragment key={p.id}>
@@ -262,7 +276,16 @@ export default function AdminInventoryPage() {
                             />
                             <div className="space-y-0.5 min-w-0">
                               <span className="font-bold text-white text-xs block truncate max-w-xs">{prodName}</span>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {p.insta_id !== undefined && p.insta_id !== null && (
+                                  <span
+                                    className="text-[10px] font-mono font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 px-1.5 py-0.2 rounded"
+                                    title={`کد محصول: ${p.insta_id}`}
+                                    dir="ltr"
+                                  >
+                                    کد: {p.insta_id}
+                                  </span>
+                                )}
                                 <span className="text-[10px] text-gray-500 font-mono" dir="ltr">
                                   ID: {p.id?.substring(0, 8)}
                                 </span>
@@ -272,7 +295,7 @@ export default function AdminInventoryPage() {
                                     className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-0.5 font-bold cursor-pointer"
                                   >
                                     <Boxes className="w-3 h-3" />
-                                    {p.variants.length} تنوع
+                                    {realVariants.length} تنوع
                                     {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                   </button>
                                 )}
@@ -293,7 +316,7 @@ export default function AdminInventoryPage() {
                             </span>
                             {isMultiVariant && (
                               <span className="text-[10px] text-purple-400/90 font-medium block">
-                                (مجموع {p.variants.length.toLocaleString("fa-IR")} تنوع)
+                                (مجموع {realVariants.length.toLocaleString("fa-IR")} تنوع)
                               </span>
                             )}
                           </div>
@@ -392,12 +415,12 @@ export default function AdminInventoryPage() {
                                 تنوع‌ها و موجودی انبار برای «{prodName}»:
                               </span>
                               <span className="text-[11px] text-gray-400">
-                                تعداد کل تنوع‌ها: {p.variants.length.toLocaleString("fa-IR")} مورد
+                                تعداد کل تنوع‌های فعال: {realVariants.length.toLocaleString("fa-IR")} مورد
                               </span>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
-                              {p.variants.map((v: any) => {
+                              {realVariants.map((v: any) => {
                                 const vStock = getItemStock(v);
                                 const safetyVal = v.safety_stock ?? v.inventory?.safety_stock ?? 5;
                                 const vIsLow = vStock <= safetyVal && vStock > 0;

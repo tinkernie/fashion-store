@@ -17,11 +17,12 @@ export function getSiteBaseUrl(): string {
 }
 
 /**
- * Fetch a single product by slug or id on the server
+ * Fetch a single product by slug or id on the server (with insta_id numeric fallback)
  */
 export async function fetchProduct(idOrSlug: string): Promise<any | null> {
   const base = getApiBaseUrl();
-  const cleanId = encodeURIComponent(idOrSlug.trim());
+  const trimmed = idOrSlug.trim();
+  const cleanId = encodeURIComponent(trimmed);
 
   try {
     const res = await fetch(`${base}/api/products/${cleanId}/`, {
@@ -33,6 +34,19 @@ export async function fetchProduct(idOrSlug: string): Promise<any | null> {
 
     if (res.ok) {
       return await res.json();
+    }
+
+    // Fallback: If numeric, query by sequential insta_id code
+    if (/^\d+$/.test(trimmed)) {
+      const codeRes = await fetch(`${base}/api/products/by-code/${trimmed}/`, {
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      if (codeRes.ok) {
+        return await codeRes.json();
+      }
     }
   } catch (err) {
     // Backend may be offline or product not found
@@ -46,20 +60,31 @@ export async function fetchProduct(idOrSlug: string): Promise<any | null> {
  */
 export async function fetchProductFullData(idOrSlug: string) {
   const base = getApiBaseUrl();
-  const cleanId = encodeURIComponent(idOrSlug.trim());
+  const trimmed = idOrSlug.trim();
+  let cleanId = encodeURIComponent(trimmed);
+
+  // If numeric code, resolve product first to obtain canonical slug for parallel endpoints
+  let product: any = null;
+  if (/^\d+$/.test(trimmed)) {
+    product = await fetchProduct(trimmed);
+    if (product?.slug) {
+      cleanId = encodeURIComponent(product.slug);
+    }
+  }
 
   const [prodRes, optRes, varRes, revRes, relRes] = await Promise.allSettled([
-    fetch(`${base}/api/products/${cleanId}/`, { cache: "no-store" }),
+    product
+      ? Promise.resolve({ ok: true, json: async () => product })
+      : fetch(`${base}/api/products/${cleanId}/`, { cache: "no-store" }),
     fetch(`${base}/api/products/${cleanId}/options/`, { cache: "no-store" }),
     fetch(`${base}/api/products/${cleanId}/variants/`, { cache: "no-store" }),
     fetch(`${base}/api/products/${cleanId}/reviews/`, { cache: "no-store" }),
     fetch(`${base}/api/products/${cleanId}/related/?limit=8`, { cache: "no-store" }),
   ]);
 
-  let product: any = null;
-  if (prodRes.status === "fulfilled" && prodRes.value.ok) {
+  if (!product && prodRes.status === "fulfilled" && (prodRes.value as any).ok) {
     try {
-      product = await prodRes.value.json();
+      product = await (prodRes.value as any).json();
     } catch {
       product = null;
     }

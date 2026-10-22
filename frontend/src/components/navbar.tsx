@@ -705,7 +705,17 @@ export default function Navbar() {
                       className="w-12 h-14 object-cover rounded-xl border border-sky-100 shrink-0 shadow-sm"
                     />
                     <div className="flex flex-col flex-1 min-w-0">
-                      <h4 className="font-bold text-xs md:text-sm text-slate-800 truncate">{product.name || product.title}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-xs md:text-sm text-slate-800 truncate">{product.name || product.title}</h4>
+                        {product.insta_id !== undefined && product.insta_id !== null && (
+                          <span
+                            className="text-[9px] font-bold font-mono text-[#0082CA] bg-sky-50 border border-sky-200 px-1.5 py-0.2 rounded shrink-0"
+                            title={`کد محصول: ${product.insta_id}`}
+                          >
+                            کد: {product.insta_id}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[11px] text-slate-400 mt-0.5 truncate">{product.category}</span>
                     </div>
                     <div className="text-xs font-bold text-[#0082CA] shrink-0">

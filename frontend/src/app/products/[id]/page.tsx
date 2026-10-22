@@ -43,8 +43,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  // Canonicalize raw UUID URLs to clean SEO English slug
-  if (product.slug && id === product.id) {
+  // Canonicalize raw UUID or sequential numeric code URLs to clean SEO English slug
+  const isNumericCode = product.insta_id !== undefined && product.insta_id !== null && String(product.insta_id) === id.trim();
+  if (product.slug && (id === product.id || isNumericCode)) {
     redirect(`/products/${product.slug}`);
   }
 

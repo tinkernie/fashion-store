@@ -15,6 +15,7 @@ interface ProductCardProps {
   discountPercent?: number | null;
   remainingTime?: string | null;
   metadata?: any;
+  insta_id?: number | null;
 }
 
 export default function ProductCard({
@@ -28,6 +29,7 @@ export default function ProductCard({
   discountPercent,
   remainingTime,
   metadata,
+  insta_id,
 }: ProductCardProps) {
   const disc = getDiscountInfo({
     price,
@@ -63,9 +65,19 @@ export default function ProductCard({
 
       {/* Product Metadata */}
       <div className="mt-4 flex flex-col space-y-1 px-1">
-        <span className="inline-block px-2 py-0.5 rounded-md bg-sky-50 text-[#0072B3] text-[11px] font-bold w-fit">
-          {category}
-        </span>
+        <div className="flex items-center justify-between gap-1">
+          <span className="inline-block px-2 py-0.5 rounded-md bg-sky-50 text-[#0072B3] text-[11px] font-bold w-fit truncate">
+            {category}
+          </span>
+          {insta_id !== undefined && insta_id !== null && (
+            <span
+              className="text-[10px] font-bold font-mono text-slate-500 bg-slate-100/90 border border-slate-200/80 px-2 py-0.5 rounded-md shrink-0"
+              title={`کد محصول: ${insta_id}`}
+            >
+              کد: {insta_id}
+            </span>
+          )}
+        </div>
         <h3 className="text-base font-bold tracking-wide text-[#0B192C] group-hover:text-[#0082CA] transition-colors line-clamp-1">
           {name}
         </h3>

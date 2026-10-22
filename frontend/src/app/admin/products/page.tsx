@@ -961,15 +961,18 @@ export default function AdminProductsPage() {
     const name = (p.name || p.title || "").toLowerCase();
     const slug = (p.slug || "").toLowerCase();
     const id = String(p.id || "").toLowerCase();
+    const code = p.insta_id !== undefined && p.insta_id !== null ? String(p.insta_id) : "";
     const query = searchQuery.trim().toLowerCase();
     const uuidQuery = uuidSearchQuery.trim().toLowerCase();
 
-    // General search matches name, slug, or UUID
+    // General search matches name, slug, UUID, or sequential insta_id code
     const matchesGeneralQuery =
       !query ||
       name.includes(query) ||
       slug.includes(query) ||
-      id.includes(query);
+      id.includes(query) ||
+      code === query ||
+      code.includes(query);
 
     // Dedicated UUID search matches product ID
     const matchesUuidQuery =
@@ -1301,6 +1304,17 @@ export default function AdminProductsPage() {
                               {p.name || p.title}
                             </span>
                             <div className="flex items-center gap-2 flex-wrap">
+                              {p.insta_id !== undefined && p.insta_id !== null && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSearchQuery(String(p.insta_id))}
+                                  className="text-[10px] font-mono font-bold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer transition-colors"
+                                  title={`کد محصول: ${p.insta_id} (کلیک جهت فیلتر)`}
+                                  dir="ltr"
+                                >
+                                  <span>کد: {p.insta_id}</span>
+                                </button>
+                              )}
                               <span className="text-[10px] text-gray-500 font-mono block" dir="ltr">
                                 {p.slug}
                               </span>
@@ -1907,7 +1921,14 @@ export default function AdminProductsPage() {
                             className="flex items-center justify-between p-3 bg-[#1a1a1a] border border-white/5 rounded-xl text-xs hover:border-white/10 transition-colors"
                           >
                             <div className="space-y-0.5">
-                              <span className="font-bold text-white block">{optSummary}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white block">{optSummary}</span>
+                                {(v.is_placeholder || v.sku?.endsWith("-DEFAULT")) && (
+                                  <span className="text-[9px] font-bold text-purple-300 bg-purple-500/20 border border-purple-500/40 px-1.5 py-0.2 rounded">
+                                    پایه‌ی پیش‌فرض (سیستمی)
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono" dir="ltr">
                                 <span>SKU: {v.sku}</span>
                                 {v.weight && <span>• {v.weight}g</span>}
@@ -1987,6 +2008,16 @@ export default function AdminProductsPage() {
           </DialogHeader>
 
           <form onSubmit={handleSaveProduct} noValidate className="space-y-6 mt-4">
+            {/* Sequential Instagram / Warehouse Code Indicator */}
+            {editingProduct && editingProduct.insta_id !== undefined && editingProduct.insta_id !== null && (
+              <div className="flex items-center justify-between p-3 bg-[#181818] border border-amber-400/20 rounded-xl text-xs">
+                <span className="text-gray-400 font-bold">کد یکتای محصول (سیستمی اینستاگرام و انبار):</span>
+                <span className="font-mono font-black text-amber-400 text-sm" dir="ltr">
+                  #{editingProduct.insta_id}
+                </span>
+              </div>
+            )}
+
             {/* Basic Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">

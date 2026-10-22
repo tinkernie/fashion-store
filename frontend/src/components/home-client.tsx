@@ -709,9 +709,19 @@ export default function HomeClient({
 
                   <div className="flex flex-col px-1 pb-1 flex-1 justify-between">
                     <div>
-                      <span className="text-[10px] sm:text-[11px] font-semibold text-[#0082CA] mb-0.5 block truncate">
-                        {(product.category || "").split("-")[1]?.trim() || product.category || "ماوی"}
-                      </span>
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className="text-[10px] sm:text-[11px] font-semibold text-[#0082CA] truncate">
+                          {(product.category || "").split("-")[1]?.trim() || product.category || "ماوی"}
+                        </span>
+                        {product.insta_id !== undefined && product.insta_id !== null && (
+                          <span
+                            className="text-[9px] font-bold font-mono text-slate-500 bg-slate-100 border border-slate-200/80 px-1.5 py-0.2 rounded shrink-0"
+                            title={`کد محصول: ${product.insta_id}`}
+                          >
+                            کد: {product.insta_id}
+                          </span>
+                        )}
+                      </div>
                       <h3 className="text-xs sm:text-sm font-bold text-[#0B192C] line-clamp-1 mb-1.5">
                         {product.name || product.title}
                       </h3>

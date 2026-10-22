@@ -152,6 +152,7 @@ export const adminApi = {
   // Products
   async getProducts(params?: {
     search?: string;
+    code?: string | number;
     status?: string;
     category?: string;
     page?: number | string;
@@ -180,6 +181,7 @@ export const adminApi = {
   },
   async getProductsPaginated(params?: {
     search?: string;
+    code?: string | number;
     status?: string;
     category?: string;
     page?: number | string;
