@@ -15,6 +15,18 @@ export const metadata: Metadata = {
     default: "ماوی (MAVI) — فروشگاه تخصصی مد و پوشاک فاخر",
   },
   description: "فروشگاه تخصصی مد و پوشاک فاخر ماوی (MAVI)؛ جدیدترین کالکشن‌های پوشاک، پیراهن، شومیز، اکسسوری و استایل مدرن زنانه و مردانه",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({
