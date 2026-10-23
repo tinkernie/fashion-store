@@ -46,7 +46,6 @@ export interface ShippingBreakdownOption {
   surcharge: number;
   surcharge_percent: number;
   insurance: number;
-  packaging: number;
   total: number;
   currency: "Toman" | string;
 }

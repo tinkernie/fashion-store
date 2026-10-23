@@ -10,7 +10,6 @@ import {
   Check,
   Loader2,
   ShieldCheck,
-  PackageCheck,
 } from "lucide-react";
 import { ShippingQuoteResponse, ShippingBreakdownOption } from "@/lib/address-shipping-api";
 import { formatPrice } from "@/lib/price-utils";
@@ -202,16 +201,6 @@ export function ShippingMethodSelector({
                 </span>
                 <span className="font-bold text-slate-800">
                   {formatPrice(selectedOption.insurance)}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1">
-                  <PackageCheck className="w-3.5 h-3.5 text-[#0082CA]" />
-                  خدمات کارتن و بسته‌بندی باجه:
-                </span>
-                <span className="font-bold text-slate-800">
-                  {formatPrice(selectedOption.packaging)}
                 </span>
               </div>
 
