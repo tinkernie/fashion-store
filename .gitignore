@@ -53,6 +53,9 @@ venv.bak/
 # Only ignore user-uploaded media files inside media_libm, not the Django app source code
 backend/media_libm/uploads/
 backend/media_libm/products/
+backend/media_libm/collections/
+backend/media_libm/categories/
+backend/media_libm/media_libm/
 **/staticfiles/
 local_settings.py
 
