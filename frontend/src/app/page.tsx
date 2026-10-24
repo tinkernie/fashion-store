@@ -4,12 +4,15 @@ import { Metadata } from "next";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "ماوی (MAVI) — فروشگاه تخصصی مد و پوشاک فاخر",
+  title: "38166500",
   description: "جدیدترین کالکشن‌های مد، استایل و پوشاک لوکس زنانه و مردانه با مرغوب‌ترین متریال در فروشگاه ماوی (MAVI)",
   openGraph: {
-    title: "ماوی (MAVI) — فروشگاه تخصصی مد و پوشاک فاخر",
+    title: "38166500",
     description: "جدیدترین کالکشن‌های مد، استایل و پوشاک لوکس در فروشگاه ماوی (MAVI)",
     siteName: "ماوی MAVI",
+  },
+  other: {
+    enamad: "38166500",
   },
 };
 
