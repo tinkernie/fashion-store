@@ -408,8 +408,8 @@ export default function HomeClient({
                 className="rounded-2xl sm:rounded-full border border-sky-300/80 bg-gradient-to-l from-sky-50/95 via-white to-sky-50/95 shadow-md shadow-[#0082CA]/10 ring-1 ring-sky-200/50 backdrop-blur-xl w-full py-2 sm:py-2.5 px-8 sm:px-6"
               >
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2.5 text-center max-w-full">
-                  <span className="bg-[#0082CA] text-white font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm shadow-[#0082CA]/30 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-300 fill-amber-300/30 shrink-0" />
+                  <span className="bg-amber-400 text-[#0B192C] font-black text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-sm shadow-amber-400/30 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#0082CA] fill-[#0082CA]/20 shrink-0" />
                     {announcement.badge || "پیشنهاد ماوی"}
                   </span>
                   {announcement.link ? (

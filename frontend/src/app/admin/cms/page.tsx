@@ -632,7 +632,8 @@ export default function AdminCMSPage() {
               </span>
               <div className="p-3 rounded-xl bg-[#1a1a1a] border border-white/10 text-center text-xs flex items-center justify-center gap-2">
                 {announcement.badge && (
-                  <span className="bg-amber-400 text-black text-[10px] font-black px-2 py-0.5 rounded-full">
+                  <span className="bg-amber-400 text-[#0B192C] text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm shadow-amber-400/20">
+                    <Sparkles className="w-3 h-3 text-[#0082CA] fill-[#0082CA]/20 shrink-0" />
                     {announcement.badge}
                   </span>
                 )}
