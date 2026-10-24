@@ -99,6 +99,7 @@ export default function ProductGallery({
   const [direction, setDirection] = useState<1 | -1>(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const thumbnailContainerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Keep index within range if images array length changes
@@ -108,15 +109,16 @@ export default function ProductGallery({
     }
   }, [images.length, currentIndex]);
 
-  // Scroll active thumbnail into view
+  // Scroll active thumbnail horizontally within its container without jumping the window
   useEffect(() => {
     const activeThumb = thumbnailRefs.current[currentIndex];
-    if (activeThumb) {
-      activeThumb.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
+    const container = thumbnailContainerRef.current;
+    if (activeThumb && container) {
+      const containerRect = container.getBoundingClientRect();
+      const thumbRect = activeThumb.getBoundingClientRect();
+      const scrollOffset =
+        thumbRect.left + thumbRect.width / 2 - (containerRect.left + containerRect.width / 2);
+      container.scrollBy({ left: scrollOffset, behavior: "smooth" });
     }
   }, [currentIndex]);
 
@@ -213,7 +215,7 @@ export default function ProductGallery({
   return (
     <div className="space-y-4 select-none" ref={containerRef} dir="rtl">
       {/* Main Slide Viewer Container */}
-      <div className="relative w-full aspect-[3/4] sm:aspect-[3/4] max-h-[46vh] sm:max-h-none bg-sky-50/40 rounded-2xl sm:rounded-3xl overflow-hidden border border-sky-100 shadow-xl shadow-sky-950/5 group">
+      <div className="relative w-full aspect-[3/4] max-h-[46vh] sm:max-h-[500px] md:max-h-[540px] lg:max-h-[580px] max-w-full mx-auto bg-sky-50/40 rounded-2xl sm:rounded-3xl overflow-hidden border border-sky-100 shadow-xl shadow-sky-950/5 group">
         {/* Discount Badge on Product Photo */}
         {discountInfo?.hasDiscount && (
           <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5 pointer-events-none">
@@ -314,15 +316,6 @@ export default function ProductGallery({
           </>
         )}
 
-        {/* SKU Badge (Bottom Left - desktop only to ensure clean mobile breathing room) */}
-        {matchedVariant?.sku && (
-          <span
-            className="absolute bottom-4 left-4 z-20 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-mono text-slate-600 border border-sky-100 hidden sm:inline-block max-w-[160px] truncate shadow-sm"
-            dir="ltr"
-          >
-            SKU: {matchedVariant.sku}
-          </span>
-        )}
 
         {/* Mobile Swipe Guidance and Pagination Dots Overlay */}
         {images.length > 1 && (
@@ -354,6 +347,7 @@ export default function ProductGallery({
       {images.length > 1 && (
         <div className="relative">
           <div
+            ref={thumbnailContainerRef}
             className="flex items-center justify-center sm:justify-start gap-2.5 sm:gap-3 overflow-x-auto pb-2 pt-1 px-1 no-scrollbar scroll-smooth snap-x snap-mandatory touch-pan-x"
             tabIndex={0}
             role="region"

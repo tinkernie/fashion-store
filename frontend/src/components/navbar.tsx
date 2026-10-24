@@ -710,7 +710,6 @@ export default function Navbar() {
                         {product.insta_id !== undefined && product.insta_id !== null && (
                           <span
                             className="text-[9px] font-bold font-mono text-[#0082CA] bg-sky-50 border border-sky-200 px-1.5 py-0.2 rounded shrink-0"
-                            title={`کد محصول: ${product.insta_id}`}
                           >
                             کد: {product.insta_id}
                           </span>

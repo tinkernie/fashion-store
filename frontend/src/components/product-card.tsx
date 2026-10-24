@@ -72,7 +72,6 @@ export default function ProductCard({
           {insta_id !== undefined && insta_id !== null && (
             <span
               className="text-[10px] font-bold font-mono text-slate-500 bg-slate-100/90 border border-slate-200/80 px-2 py-0.5 rounded-md shrink-0"
-              title={`کد محصول: ${insta_id}`}
             >
               کد: {insta_id}
             </span>

@@ -700,7 +700,6 @@ export default function ProductDetailClient({
             {product.insta_id !== undefined && product.insta_id !== null && (
               <span
                 className="bg-slate-100 text-slate-700 border border-slate-200/90 px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5"
-                title="کد محصول جهت استعلام در اینستاگرام و انبار فروشگاه"
               >
                 <span className="text-slate-400 font-normal">کد کالا:</span>
                 <span className="font-black text-[#0082CA] font-mono" dir="ltr">
@@ -991,14 +990,10 @@ export default function ProductDetailClient({
       {/* Product Specifications Section (جدول مشخصات کالا - فیلدهای اختصاصی) */}
       {(() => {
         const excludedSpecLabels = [
-          "جنس و متریال",
-          "جنس",
           "رنگ‌بندی",
           "رنگ",
           "سایزبندی",
           "سایز",
-          "وزن خالص",
-          "وزن",
           "دسته‌بندی",
           "شناسه کالا",
           "وضعیت در انبار",
@@ -1006,19 +1001,43 @@ export default function ProductDetailClient({
           "موجودی",
           "ضمانت کالا",
           "ضمانت",
-          "شرایط نگهداری و شستشو",
-          "شستشو",
         ];
 
-        const customSpecs = Array.isArray(product?.metadata?.specifications)
-          ? product.metadata.specifications.filter(
-              (spec: any) =>
-                spec &&
-                spec.label &&
-                spec.value &&
-                !excludedSpecLabels.some((ex) => String(spec.label).includes(ex))
-            )
+        const customSpecs: { label: string; value: string }[] = Array.isArray(product?.metadata?.specifications)
+          ? product.metadata.specifications
+              .filter(
+                (spec: any) =>
+                  spec &&
+                  spec.label &&
+                  spec.value &&
+                  !excludedSpecLabels.some((ex) => String(spec.label).includes(ex))
+              )
+              .map((spec: any) => ({ label: String(spec.label), value: String(spec.value) }))
           : [];
+
+        // Check for material from metadata/options if not in customSpecs
+        const hasMaterial = customSpecs.some((s) => s.label.includes("جنس"));
+        const fallbackMaterial =
+          product?.metadata?.material ||
+          product?.metadata?.fabric ||
+          options.find((o) => o.name.includes("جنس"))?.values?.map((v) => v.value).join("، ");
+        if (!hasMaterial && fallbackMaterial) {
+          customSpecs.push({ label: "جنس و متریال", value: String(fallbackMaterial) });
+        }
+
+        // Check for weight if not in customSpecs
+        const hasWeight = customSpecs.some((s) => s.label.includes("وزن"));
+        const fallbackWeight = matchedVariant?.weight || product?.metadata?.weight || product?.weight;
+        if (!hasWeight && fallbackWeight && Number(fallbackWeight) > 1) {
+          customSpecs.push({ label: "وزن خالص کالا", value: `${Number(fallbackWeight).toLocaleString("fa-IR")} گرم` });
+        }
+
+        // Check for care instructions if not in customSpecs
+        const hasCare = customSpecs.some((s) => s.label.includes("شستشو") || s.label.includes("نگهداری"));
+        const fallbackCare = product?.metadata?.care;
+        if (!hasCare && fallbackCare) {
+          customSpecs.push({ label: "شرایط نگهداری و شستشو", value: String(fallbackCare) });
+        }
 
         const hasInstaId = product.insta_id !== undefined && product.insta_id !== null;
         const hasSpecsToShow = hasInstaId || customSpecs.length > 0;
@@ -1049,7 +1068,7 @@ export default function ProductDetailClient({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {hasInstaId && (
                 <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-sky-50/40 border border-sky-100/80 hover:border-sky-200 transition-colors">
-                  <span className="text-xs text-slate-500 font-medium">کد کالا (اینستاگرام و انبار):</span>
+                  <span className="text-xs text-slate-500 font-medium">کد کالا:</span>
                   <span className="text-xs font-bold text-[#0082CA] font-mono" dir="ltr">
                     {product.insta_id}
                   </span>
