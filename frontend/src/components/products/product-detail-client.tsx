@@ -987,14 +987,9 @@ export default function ProductDetailClient({
         </motion.div>
       </div>
 
-      {/* Product Specifications Section (جدول مشخصات کالا - فیلدهای اختصاصی) */}
+      {/* Product Specifications Section (جدول مشخصات کالا - ۵ ویژگی اصلی و فیلدهای اختصاصی) */}
       {(() => {
         const excludedSpecLabels = [
-          "رنگ‌بندی",
-          "رنگ",
-          "سایزبندی",
-          "سایز",
-          "دسته‌بندی",
           "شناسه کالا",
           "وضعیت در انبار",
           "تعداد موجودی",
@@ -1015,7 +1010,7 @@ export default function ProductDetailClient({
               .map((spec: any) => ({ label: String(spec.label), value: String(spec.value) }))
           : [];
 
-        // Check for material from metadata/options if not in customSpecs
+        // 1. جنس و متریال
         const hasMaterial = customSpecs.some((s) => s.label.includes("جنس"));
         const fallbackMaterial =
           product?.metadata?.material ||
@@ -1025,14 +1020,39 @@ export default function ProductDetailClient({
           customSpecs.push({ label: "جنس و متریال", value: String(fallbackMaterial) });
         }
 
-        // Check for weight if not in customSpecs
+        // 2. دسته‌بندی
+        const hasCategory = customSpecs.some((s) => s.label.includes("دسته"));
+        const fallbackCategory = product?.category || product?.category_name;
+        if (!hasCategory && fallbackCategory) {
+          customSpecs.push({ label: "دسته‌بندی", value: String(fallbackCategory) });
+        }
+
+        // 3. رنگ‌بندی
+        const hasColor = customSpecs.some((s) => s.label.includes("رنگ"));
+        const fallbackColor =
+          product?.metadata?.color ||
+          options.find((o) => o.name.includes("رنگ"))?.values?.map((v) => v.value).join("، ");
+        if (!hasColor && fallbackColor) {
+          customSpecs.push({ label: "رنگ‌بندی", value: String(fallbackColor) });
+        }
+
+        // 4. سایزبندی
+        const hasSize = customSpecs.some((s) => s.label.includes("سایز"));
+        const fallbackSize =
+          product?.metadata?.size ||
+          options.find((o) => o.name.includes("سایز"))?.values?.map((v) => v.value).join("، ");
+        if (!hasSize && fallbackSize) {
+          customSpecs.push({ label: "سایزبندی", value: String(fallbackSize) });
+        }
+
+        // 5. وزن خالص
         const hasWeight = customSpecs.some((s) => s.label.includes("وزن"));
         const fallbackWeight = matchedVariant?.weight || product?.metadata?.weight || product?.weight;
         if (!hasWeight && fallbackWeight && Number(fallbackWeight) > 1) {
-          customSpecs.push({ label: "وزن خالص کالا", value: `${Number(fallbackWeight).toLocaleString("fa-IR")} گرم` });
+          customSpecs.push({ label: "وزن خالص", value: `${Number(fallbackWeight).toLocaleString("fa-IR")} گرم` });
         }
 
-        // Check for care instructions if not in customSpecs
+        // 6. شرایط نگهداری و شستشو (در صورت تعریف در متادیتا)
         const hasCare = customSpecs.some((s) => s.label.includes("شستشو") || s.label.includes("نگهداری"));
         const fallbackCare = product?.metadata?.care;
         if (!hasCare && fallbackCare) {
