@@ -220,6 +220,7 @@ class CollectionDetailSerializer(serializers.Serializer):
                         if getattr(p, "discount_expires_at", None) else None
                     ),
                     "is_discount_active": is_discount_active,
+                    "discount_source": getattr(p, "discount_source", None) or (getattr(p, "metadata", None) or {}).get("discount_source"),
                     "category": category_data,
                     "is_in_stock": stock_quantity > 0,
                     "stock_quantity": stock_quantity,

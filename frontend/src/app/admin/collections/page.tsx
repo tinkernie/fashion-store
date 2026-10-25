@@ -24,6 +24,12 @@ import {
   ChevronLeft,
   AlertCircle,
   HelpCircle,
+  Percent,
+  Calendar,
+  Clock,
+  CheckSquare,
+  Square,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +44,7 @@ import { adminApi } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import MediaUploader from "@/components/admin/media-uploader";
 import { formatPrice, parsePrice } from "@/lib/price-utils";
+import { formatShamsiDate } from "@/lib/jalali";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +87,10 @@ export default function AdminCollectionsPage() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [productActionLoading, setProductActionLoading] = useState<string | null>(null);
+  const [selectedCatalogProductIds, setSelectedCatalogProductIds] = useState<string[]>([]);
+  const [promoDiscountPercent, setPromoDiscountPercent] = useState<string>("");
+  const [promoExpiresAt, setPromoExpiresAt] = useState<string>("");
+  const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
   const [deleteConfirmState, setDeleteConfirmState] = useState<{
     isOpen: boolean;
     collection: CollectionItem | null;
@@ -204,11 +215,14 @@ export default function AdminCollectionsPage() {
     }
   };
 
-  // --- Product Attachment Handlers ---
+  // --- Product Attachment & Promotional Discount Handlers ---
   const handleOpenProductManager = async (col: CollectionItem) => {
     setSelectedCollectionForProducts(col);
     setIsProductModalOpen(true);
     setProductSearchQuery("");
+    setSelectedCatalogProductIds([]);
+    setPromoDiscountPercent("");
+    setPromoExpiresAt("");
     // Refresh collection to have latest products
     try {
       const fresh = await adminApi.getCollection(col.slug || col.id);
@@ -221,25 +235,147 @@ export default function AdminCollectionsPage() {
     }
   };
 
+  const setExpiryPresetDays = (days: number) => {
+    const target = new Date();
+    target.setDate(target.getDate() + days);
+    target.setHours(23, 59, 0, 0);
+    const yyyy = target.getFullYear();
+    const mm = String(target.getMonth() + 1).padStart(2, "0");
+    const dd = String(target.getDate()).padStart(2, "0");
+    const hh = String(target.getHours()).padStart(2, "0");
+    const min = String(target.getMinutes()).padStart(2, "0");
+    setPromoExpiresAt(`${yyyy}-${mm}-${dd}T${hh}:${min}`);
+  };
+
+  const handleToggleSelectCatalogProduct = (productId: string) => {
+    setSelectedCatalogProductIds((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleSelectAllVisibleCatalogProducts = () => {
+    const visibleIds = availableCatalogProducts.map((p) => String(p.id));
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedCatalogProductIds.includes(id));
+    if (allSelected) {
+      setSelectedCatalogProductIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedCatalogProductIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  };
+
+  const handleClearCatalogSelection = () => {
+    setSelectedCatalogProductIds([]);
+  };
+
+  const handleBatchAddProducts = async () => {
+    if (!selectedCollectionForProducts) return;
+    if (selectedCatalogProductIds.length === 0) {
+      toast.error("لطفاً حداقل یک محصول را از لیست کاتالوگ انتخاب کنید.");
+      return;
+    }
+
+    const pct = promoDiscountPercent.trim() ? parseInt(promoDiscountPercent, 10) : 0;
+    if (isNaN(pct) || pct < 0 || pct > 99) {
+      toast.error("درصد تخفیف باید عددی بین ۰ تا ۹۹ باشد.");
+      return;
+    }
+
+    let isoExpiry: string | null = null;
+    if (pct > 0) {
+      if (!promoExpiresAt) {
+        toast.error("در صورت تعیین درصد تخفیف، تعیین تاریخ انقضای تخفیف الزامی است.");
+        return;
+      }
+      const expDate = new Date(promoExpiresAt);
+      if (isNaN(expDate.getTime()) || expDate.getTime() <= Date.now()) {
+        toast.error("تاریخ انقضای تخفیف باید در آینده باشد.");
+        return;
+      }
+      isoExpiry = expDate.toISOString();
+    }
+
+    setIsBatchSubmitting(true);
+    try {
+      const res = await adminApi.batchAddProductsToCollection(
+        selectedCollectionForProducts.id,
+        {
+          product_ids: selectedCatalogProductIds,
+          discount_percent: pct,
+          expires_at: isoExpiry,
+        }
+      );
+
+      toast.success(
+        pct > 0
+          ? `تخفیف ${pct}٪ با موفقیت روی ${res.discounted_count ?? selectedCatalogProductIds.length} محصول اعمال و به کالکشن متصل شد.`
+          : `محصولات با موفقیت به کالکشن متصل شدند (تخفیف کالکشن روی آن‌ها پاکسازی شد).`
+      );
+
+      setSelectedCatalogProductIds([]);
+
+      // Refresh collection & products
+      const [freshCol, freshProds] = await Promise.all([
+        adminApi.getCollection(selectedCollectionForProducts.slug || selectedCollectionForProducts.id),
+        adminApi.getProducts(),
+      ]);
+      if (freshCol) {
+        setSelectedCollectionForProducts(freshCol);
+        setCollections((prev) => prev.map((c) => (c.id === freshCol.id ? freshCol : c)));
+      }
+      if (freshProds) {
+        setAllProducts(freshProds);
+      }
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در اعمال تخفیف و افزودن گروهی به کالکشن"));
+    } finally {
+      setIsBatchSubmitting(false);
+    }
+  };
+
   const handleAddProduct = async (productId: string) => {
     if (!selectedCollectionForProducts) return;
     setProductActionLoading(productId);
     try {
-      const currentProductsCount = selectedCollectionForProducts.products?.length || 0;
-      await adminApi.addProductToCollection(
+      const pct = promoDiscountPercent.trim() ? parseInt(promoDiscountPercent, 10) : 0;
+      let isoExpiry: string | null = null;
+      if (pct > 0) {
+        if (!promoExpiresAt) {
+          toast.error("در صورت تعیین درصد تخفیف، تعیین تاریخ انقضای تخفیف الزامی است.");
+          setProductActionLoading(null);
+          return;
+        }
+        const expDate = new Date(promoExpiresAt);
+        if (isNaN(expDate.getTime()) || expDate.getTime() <= Date.now()) {
+          toast.error("تاریخ انقضای تخفیف باید در آینده باشد.");
+          setProductActionLoading(null);
+          return;
+        }
+        isoExpiry = expDate.toISOString();
+      }
+
+      await adminApi.batchAddProductsToCollection(
         selectedCollectionForProducts.id,
-        productId,
-        currentProductsCount + 1
+        {
+          product_ids: [productId],
+          discount_percent: pct,
+          expires_at: isoExpiry,
+        }
       );
-      toast.success("محصول به کالکشن اضافه شد.");
+      toast.success(pct > 0 ? `محصول با تخفیف ${pct}٪ به کالکشن افزوده شد.` : "محصول به کالکشن افزوده شد.");
 
       // Refresh data
-      const fresh = await adminApi.getCollection(
-        selectedCollectionForProducts.slug || selectedCollectionForProducts.id
-      );
-      if (fresh) {
-        setSelectedCollectionForProducts(fresh);
-        setCollections((prev) => prev.map((c) => (c.id === fresh.id ? fresh : c)));
+      const [freshCol, freshProds] = await Promise.all([
+        adminApi.getCollection(selectedCollectionForProducts.slug || selectedCollectionForProducts.id),
+        adminApi.getProducts(),
+      ]);
+      if (freshCol) {
+        setSelectedCollectionForProducts(freshCol);
+        setCollections((prev) => prev.map((c) => (c.id === freshCol.id ? freshCol : c)));
+      }
+      if (freshProds) {
+        setAllProducts(freshProds);
       }
     } catch (err) {
       toast.error(getApiErrorMessage(err, "خطا در افزودن محصول به کالکشن"));
@@ -253,15 +389,19 @@ export default function AdminCollectionsPage() {
     setProductActionLoading(productId);
     try {
       await adminApi.removeProductFromCollection(selectedCollectionForProducts.id, productId);
-      toast.success("محصول از کالکشن حذف شد.");
+      toast.success("محصول از کالکشن حذف شد (تخفیف پروموشن آن در صورت وجود بازگردانی شد).");
 
       // Refresh data
-      const fresh = await adminApi.getCollection(
-        selectedCollectionForProducts.slug || selectedCollectionForProducts.id
-      );
-      if (fresh) {
-        setSelectedCollectionForProducts(fresh);
-        setCollections((prev) => prev.map((c) => (c.id === fresh.id ? fresh : c)));
+      const [freshCol, freshProds] = await Promise.all([
+        adminApi.getCollection(selectedCollectionForProducts.slug || selectedCollectionForProducts.id),
+        adminApi.getProducts(),
+      ]);
+      if (freshCol) {
+        setSelectedCollectionForProducts(freshCol);
+        setCollections((prev) => prev.map((c) => (c.id === freshCol.id ? freshCol : c)));
+      }
+      if (freshProds) {
+        setAllProducts(freshProds);
       }
     } catch (err) {
       toast.error(getApiErrorMessage(err, "خطا در حذف محصول از کالکشن"));
@@ -720,26 +860,172 @@ export default function AdminCollectionsPage() {
       {/* --- Dedicated Product Selection & Management Modal --- */}
       <Dialog open={isProductModalOpen} onOpenChange={setIsProductModalOpen}>
         <DialogContent
-          className="bg-[#0b0b0b] border border-white/10 text-white sm:max-w-4xl p-6 md:p-8 max-h-[90vh] flex flex-col"
+          className="bg-[#0b0b0b] border border-white/10 text-white sm:max-w-5xl p-6 md:p-8 max-h-[92vh] flex flex-col"
           dir="rtl"
         >
           <DialogHeader className="border-b border-white/10 pb-4 shrink-0">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg md:text-xl font-black flex items-center gap-2">
-                <Package className="w-5 h-5 text-amber-400" />
-                مدیریت محصولات کالکشن «{selectedCollectionForProducts?.name}»
-              </DialogTitle>
-              <span className="text-xs px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
-                {(selectedCollectionForProducts?.products?.length || 0).toLocaleString("fa-IR")} محصول متصل
-              </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                  <Package className="w-5 h-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg md:text-xl font-black text-white">
+                    مدیریت و تخفیف‌گذاری محصولات کالکشن «{selectedCollectionForProducts?.name}»
+                  </DialogTitle>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    افزودن محصولات، تعیین درصد تخفیف پروموشن با تاریخ انقضا و مدیریت اقلام متصل به این کالکشن.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold shrink-0">
+                  {(selectedCollectionForProducts?.products?.length || 0).toLocaleString("fa-IR")} محصول متصل
+                </span>
+                {selectedCatalogProductIds.length > 0 && (
+                  <span className="text-xs px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold shrink-0">
+                    {selectedCatalogProductIds.length.toLocaleString("fa-IR")} انتخاب شده
+                  </span>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              محصولاتی که مایل هستید در این رویداد یا کالکشن تخفیفی نمایش داده شوند را با کلیک روی «+ افزودن» اضافه نمایید.
-            </p>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto space-y-6 pt-4 pr-1">
-            {/* 1. Currently Attached Products Section */}
+            {/* 1. Batch Promotional Discount Configuration Card */}
+            <div className="bg-[#141414] border border-white/10 rounded-2xl p-4 md:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-xs md:text-sm font-black text-white">
+                    تنظیمات تخفیف پروموشن کالکشن (Promotional Discount)
+                  </h3>
+                </div>
+                <span className="text-[11px] text-gray-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+                  تخفیف‌های پروموشن کالکشن با کوپن‌های سبد خرید همپوشانی (Stack) ندارند
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Discount Percent */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                    <Percent className="w-3.5 h-3.5 text-amber-400" />
+                    درصد تخفیف پروموشن (۰ تا ۹۹)
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={99}
+                    placeholder="مثلاً ۲۰ (عدد ۰ برای بدون تخفیف)"
+                    value={promoDiscountPercent}
+                    onChange={(e) => setPromoDiscountPercent(e.target.value)}
+                    className="h-10 bg-black/40 border-white/10 text-white rounded-xl text-xs font-mono"
+                  />
+                  <p className="text-[11px] text-gray-500">
+                    عدد ۰ باعث پاکسازی تخفیف قبلی کالکشن و بازگشت به قیمت پایه محصول می‌شود.
+                  </p>
+                </div>
+
+                {/* Expiry Date */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    تاریخ و ساعت انقضای تخفیف
+                    {parseInt(promoDiscountPercent || "0", 10) > 0 && (
+                      <span className="text-rose-400 text-[10px] font-normal">(الزامی در صورت تخفیف)</span>
+                    )}
+                  </label>
+                  <Input
+                    type="datetime-local"
+                    value={promoExpiresAt}
+                    onChange={(e) => setPromoExpiresAt(e.target.value)}
+                    className="h-10 bg-black/40 border-white/10 text-white rounded-xl text-xs font-mono"
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                    <span className="text-[10px] text-gray-500">پیش‌تنظیم سریع:</span>
+                    <button
+                      type="button"
+                      onClick={() => setExpiryPresetDays(3)}
+                      className="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/15 text-gray-300 transition-colors"
+                    >
+                      +۳ روز
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExpiryPresetDays(7)}
+                      className="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/15 text-gray-300 transition-colors"
+                    >
+                      +۷ روز
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExpiryPresetDays(14)}
+                      className="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/15 text-gray-300 transition-colors"
+                    >
+                      +۱۴ روز
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExpiryPresetDays(30)}
+                      className="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/15 text-gray-300 transition-colors"
+                    >
+                      +۳۰ روز
+                    </button>
+                    {promoExpiresAt && (
+                      <button
+                        type="button"
+                        onClick={() => setPromoExpiresAt("")}
+                        className="text-[10px] px-2 py-0.5 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      >
+                        پاکسازی
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning Notice & Batch Action Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-white/5">
+                <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                  <AlertCircle className="w-4 h-4 text-blue-400 shrink-0" />
+                  <span>
+                    محصولاتی که دارای تخفیف کمپین سراسری هستند، ابتدا باید از کمپین خارج شوند.
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {selectedCatalogProductIds.length > 0 && (
+                    <Button
+                      type="button"
+                      onClick={handleClearCatalogSelection}
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 px-3 rounded-xl text-gray-400 hover:text-white text-xs"
+                    >
+                      لغو انتخاب‌ها
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={handleBatchAddProducts}
+                    disabled={isBatchSubmitting || selectedCatalogProductIds.length === 0}
+                    className="h-10 px-5 rounded-xl bg-amber-400 text-black hover:bg-amber-300 font-black text-xs flex items-center gap-2 shadow-lg disabled:opacity-50"
+                  >
+                    {isBatchSubmitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    {selectedCatalogProductIds.length > 0
+                      ? `اعمال و اتصال (${selectedCatalogProductIds.length.toLocaleString("fa-IR")}) محصول انتخابی`
+                      : "محصولی انتخاب نشده است"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Currently Attached Products Section */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-black text-white flex items-center gap-2">
@@ -752,9 +1038,9 @@ export default function AdminCollectionsPage() {
                 selectedCollectionForProducts.products.length === 0) ? (
                 <div className="p-6 rounded-2xl bg-white/[0.02] border border-dashed border-white/10 text-center space-y-1">
                   <ShoppingBag className="w-8 h-8 text-gray-600 mx-auto" />
-                  <p className="text-xs text-gray-400 font-bold">هنوز هیچ محصولی به این کالکشن اضافه نشده است.</p>
+                  <p className="text-xs text-gray-400 font-bold">هنوز هیچ محصولی به این کالکشن متصل نشده است.</p>
                   <p className="text-[11px] text-gray-500">
-                    از لیست زیر محصول مورد نظر خود را انتخاب کرده و روی «افزودن به کالکشن» کلیک کنید.
+                    از لیست کاتالوگ زیر محصول مورد نظر خود را انتخاب کرده و روی «اعمال و اتصال» یا «افزودن» کلیک کنید.
                   </p>
                 </div>
               ) : (
@@ -762,6 +1048,7 @@ export default function AdminCollectionsPage() {
                   {selectedCollectionForProducts.products.map((item: any) => {
                     const itemImg = item.imageUrl || item.image_url || "/placeholder-product.svg";
                     const isRemoving = productActionLoading === String(item.id);
+                    const hasActiveDiscount = Boolean(item.is_discount_active && (item.discount_percent || item.discount_price));
 
                     return (
                       <div
@@ -777,13 +1064,40 @@ export default function AdminCollectionsPage() {
                               (e.currentTarget as HTMLImageElement).src = "/placeholder-product.svg";
                             }}
                           />
-                          <div className="min-w-0 space-y-0.5">
+                          <div className="min-w-0 space-y-1">
                             <span className="font-bold text-white block truncate">
                               {item.title || item.name}
                             </span>
-                            <span className="text-[11px] text-amber-400 font-mono block">
-                              {formatPrice(item.price)}
-                            </span>
+                            
+                            {hasActiveDiscount ? (
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-[11px] text-emerald-400 font-mono font-bold">
+                                    {formatPrice(item.discount_price || item.price)}
+                                  </span>
+                                  <span className="text-[10px] text-gray-500 line-through font-mono">
+                                    {formatPrice(item.price)}
+                                  </span>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                                    {item.discount_percent}٪
+                                  </span>
+                                </div>
+                                {item.discount_expires_at && (
+                                  <span className="text-[10px] text-gray-400 block truncate" title={item.discount_expires_at}>
+                                    انقضا: {formatShamsiDate(item.discount_expires_at, { mode: "full", withTime: true })}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-amber-400 font-mono">
+                                  {formatPrice(item.price)}
+                                </span>
+                                <span className="text-[10px] text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">
+                                  قیمت پایه
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -792,7 +1106,7 @@ export default function AdminCollectionsPage() {
                           onClick={() => handleRemoveProduct(String(item.id))}
                           disabled={isRemoving}
                           className="p-2 text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors cursor-pointer shrink-0"
-                          title="حذف از این کالکشن"
+                          title="حذف از این کالکشن (تخفیف پروموشن بازگردانی می‌شود)"
                         >
                           {isRemoving ? (
                             <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
@@ -807,16 +1121,30 @@ export default function AdminCollectionsPage() {
               )}
             </div>
 
-            {/* 2. Available Catalog Products Picker Section */}
+            {/* 3. Catalog Products Picker Section with Multi-select Checkboxes */}
             <div className="space-y-4 pt-4 border-t border-white/10">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-xs font-black text-white flex items-center gap-2">
-                    <Plus className="w-4 h-4 text-amber-400" />
-                    انتخاب و افزودن از کاتالوگ محصولات فروشگاه
-                  </h3>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-black text-white flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-amber-400" />
+                      انتخاب از کاتالوگ محصولات فروشگاه
+                    </h3>
+                    <Button
+                      type="button"
+                      onClick={handleSelectAllVisibleCatalogProducts}
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2.5 rounded-lg border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 text-[11px]"
+                    >
+                      {availableCatalogProducts.length > 0 &&
+                      availableCatalogProducts.every((p) => selectedCatalogProductIds.includes(String(p.id)))
+                        ? "لغو انتخاب موارد این بخش"
+                        : "انتخاب همه موارد این بخش"}
+                    </Button>
+                  </div>
                   <span className="text-[11px] text-gray-500">
-                    محصولاتی که می‌خواهید به این کالکشن اضافه کنید را جستجو نمایید.
+                    تیک محصولات مورد نظر خود را بزنید و سپس با دکمه بالایی به صورت گروهی تخفیف پروموشن اعمال کنید.
                   </span>
                 </div>
 
@@ -842,25 +1170,41 @@ export default function AdminCollectionsPage() {
                   محصولی یافت نشد.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
                   {availableCatalogProducts.map((product) => {
                     const isAlreadyAttached = (selectedCollectionForProducts?.products || []).some(
                       (p: any) => String(p.id) === String(product.id)
                     );
+                    const isSelected = selectedCatalogProductIds.includes(String(product.id));
                     const isAdding = productActionLoading === String(product.id);
                     const img = product.imageUrl || product.image_url || product.image || "/placeholder-product.svg";
 
                     return (
                       <div
                         key={product.id}
+                        onClick={() => handleToggleSelectCatalogProduct(String(product.id))}
                         className={cn(
-                          "flex items-center justify-between p-3 rounded-2xl border transition-all text-xs",
-                          isAlreadyAttached
-                            ? "bg-emerald-500/5 border-emerald-500/20 opacity-80"
+                          "flex items-center justify-between p-3 rounded-2xl border transition-all text-xs cursor-pointer select-none",
+                          isSelected
+                            ? "bg-amber-500/10 border-amber-500/40 ring-1 ring-amber-500/30"
+                            : isAlreadyAttached
+                            ? "bg-emerald-500/5 border-emerald-500/20 opacity-90 hover:border-emerald-500/40"
                             : "bg-[#141414] border-white/5 hover:border-white/15"
                         )}
                       >
                         <div className="flex items-center gap-3 min-w-0">
+                          {/* Selection Checkbox */}
+                          <div
+                            className={cn(
+                              "w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-colors",
+                              isSelected
+                                ? "bg-amber-400 border-amber-400 text-black"
+                                : "border-white/20 bg-white/5 hover:border-white/40"
+                            )}
+                          >
+                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+
                           <img
                             src={img}
                             alt={product.name || product.title}
@@ -876,36 +1220,36 @@ export default function AdminCollectionsPage() {
                             <span className="text-[10px] text-gray-400 block truncate">
                               {product.category_name || product.category || "پوشاک"}
                             </span>
-                            <span className="text-[11px] text-amber-400 font-mono font-bold block">
-                              {formatPrice(product.price)}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] text-amber-400 font-mono font-bold">
+                                {formatPrice(product.price)}
+                              </span>
+                              {isAlreadyAttached && (
+                                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                                  متصل
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <div>
-                          {isAlreadyAttached ? (
-                            <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20">
-                              <Check className="w-3 h-3" />
-                              متصل
-                            </span>
-                          ) : (
-                            <Button
-                              type="button"
-                              onClick={() => handleAddProduct(String(product.id))}
-                              disabled={isAdding}
-                              size="sm"
-                              className="h-8 px-3 rounded-xl bg-white/10 hover:bg-white text-white hover:text-black text-[11px] font-bold transition-all cursor-pointer"
-                            >
-                              {isAdding ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <>
-                                  <Plus className="w-3.5 h-3.5 mr-1" />
-                                  افزودن
-                                </>
-                              )}
-                            </Button>
-                          )}
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            type="button"
+                            onClick={() => handleAddProduct(String(product.id))}
+                            disabled={isAdding}
+                            size="sm"
+                            className="h-8 px-3 rounded-xl bg-white/10 hover:bg-white text-white hover:text-black text-[11px] font-bold transition-all cursor-pointer"
+                          >
+                            {isAdding ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <Plus className="w-3.5 h-3.5 mr-1" />
+                                {isAlreadyAttached ? "بروزرسانی" : "افزودن"}
+                              </>
+                            )}
+                          </Button>
                         </div>
                       </div>
                     );

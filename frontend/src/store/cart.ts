@@ -315,8 +315,9 @@ export const useCart = create<CartStore>((set, get) => ({
     const coupon = get().coupon;
     if (!coupon) return 0;
     
-    const discAmount = Number(coupon.discount_amount) || 0;
-    if (discAmount > 0) {
+    // Server-calculated discount_amount always has highest precedence (honors non-stacking rule)
+    const discAmount = Number(coupon.discount_amount);
+    if (!isNaN(discAmount) && discAmount >= 0 && coupon.code) {
       return discAmount;
     }
     
@@ -329,7 +330,7 @@ export const useCart = create<CartStore>((set, get) => ({
     if (coupon.discount_type === 'fixed' && discVal > 0) {
       return Math.min(discVal, total);
     }
-    return discAmount;
+    return 0;
   },
 
   getFinalTotal: () => {

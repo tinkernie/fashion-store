@@ -16,6 +16,10 @@ const errorMap: Record<string, string> = {
   "Coupon not found.": "کد تخفیف مورد نظر یافت نشد.",
   "coupon_limit_reached": "سقف استفاده از این کد تخفیف تکمیل شده است.",
   "invalid_coupon": "کد تخفیف وارد شده نامعتبر یا منقضی است.",
+  "All items in your cart are on discount, so no coupon applies.": "تمام اقلام موجود در سبد خرید شما دارای تخفیف هستند، بنابراین کد تخفیف اعمال نمی‌شود.",
+  "A discount expiry date is required when a percentage is applied.": "در صورت اعمال درصد تخفیف، تعیین تاریخ انقضای تخفیف الزامی است.",
+  "The discount expiry date must be in the future.": "تاریخ انقضای تخفیف باید در آینده باشد.",
+  "Collection not found.": "کالکشن مورد نظر یافت نشد.",
 
   // Authentication & User Accounts (Messages & Codes)
   "Password is incorrect.": "رمز عبور وارد شده نادرست است.",
@@ -163,6 +167,15 @@ export function translateError(msg: string): string {
   }
   if (lower.includes("coupon") && lower.includes("limit")) {
     return "سقف استفاده از این کد تخفیف تکمیل شده است.";
+  }
+  if (lower.includes("all items in your cart are on discount") || lower.includes("no coupon applies")) {
+    return "تمام اقلام موجود در سبد خرید شما دارای تخفیف هستند، بنابراین کد تخفیف اعمال نمی‌شود.";
+  }
+  if (lower.includes("active discount campaign discounts") || lower.includes("campaign first")) {
+    return "برخی از این محصولات دارای تخفیف فعال در کمپین سراسری هستند؛ ابتدا آن‌ها را از کمپین خارج کنید.";
+  }
+  if (lower.includes("expiry date is required") || lower.includes("expiry date must be in the future")) {
+    return "تعیین تاریخ انقضای تخفیف در آینده الزامی است.";
   }
   if (lower.includes("coupon") && lower.includes("exists")) {
     return "کد تخفیفی با این عنوان قبلاً ثبت شده است.";

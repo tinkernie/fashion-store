@@ -627,6 +627,31 @@ export const adminApi = {
     });
     return res.data;
   },
+
+  async batchAddProductsToCollection(
+    collectionId: string,
+    data: {
+      product_ids: string[];
+      discount_percent: number;
+      expires_at?: string | null;
+      position?: number;
+    }
+  ): Promise<{
+    message: string;
+    collection_id: string;
+    discount_percent: number;
+    expires_at: string | null;
+    discounted_count: number;
+    cleared_discounts: number;
+    items: Array<{
+      product_id: string;
+      previous_percent: number | null;
+      applied_percent: number;
+    }>;
+  }> {
+    const res = await api.post(`/api/admin/collections/${collectionId}/add-products/`, data);
+    return res.data;
+  },
 };
 
 export interface ProductReview {
