@@ -43,8 +43,10 @@ class LoginSerializer(serializers.Serializer):
 
 
 class OtpRequestSerializer(serializers.Serializer):
+    # Hardened: OTP is used for registration and password recovery only —
+    # no OTP login (phone+password), no implicit OTP registration.
     phone_number = serializers.CharField()
-    purpose = serializers.ChoiceField(choices=["login", "reset", "signup"], default="login", required=False)
+    purpose = serializers.ChoiceField(choices=["reset", "signup"], default="signup", required=False)
 
     def validate_phone_number(self, value):
         return PhoneValidator.validate(value)
@@ -53,7 +55,7 @@ class OtpRequestSerializer(serializers.Serializer):
 class OtpVerifySerializer(serializers.Serializer):
     phone_number = serializers.CharField()
     code = serializers.CharField(min_length=4, max_length=8)
-    purpose = serializers.ChoiceField(choices=["login", "reset", "signup"], default="login", required=False)
+    purpose = serializers.ChoiceField(choices=["reset", "signup"], default="signup", required=False)
 
     def validate_phone_number(self, value):
         return PhoneValidator.validate(value)

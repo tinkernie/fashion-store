@@ -129,8 +129,28 @@ class AuthService:
             raise BusinessException("Account is not active.", code="inactive_account")
         return _issue_tokens(user)
 
-    # --- OTP passwordless (signup + login via sms.ir verify) ---
+    # --- OTP passwordless (signup + reset via sms.ir verify) ---
+    _PUBLIC_OTP_PURPOSES = ("signup", "reset")
+
     def request_otp(self, phone_number: str, purpose: str = "login") -> dict:
+        """Public OTP entry point. OTP is only used for registration and
+        password recovery — login stays phone+password. Profile
+        phone-change OTP is issued via the users app."""
+        from .models import OtpCode
+
+        normalized = (purpose or "").strip().lower()
+        if normalized == OtpCode.PURPOSE_LOGIN:
+            raise BusinessException(
+                "OTP login is not available. Please log in with your phone number and password.",
+                code="otp_login_disabled",
+            )
+        if normalized not in self._PUBLIC_OTP_PURPOSES:
+            raise BusinessException(
+                "Unsupported OTP purpose.", code="otp_unsupported_purpose"
+            )
+        return self._request_otp_internal(phone_number, normalized)
+
+    def _request_otp_internal(self, phone_number: str, purpose: str) -> dict:
         from django.core.cache import cache
 
         from .models import OtpCode
@@ -167,7 +187,7 @@ class AuthService:
                 pass
         from notifications.tasks import send_otp_sms
 
-        transaction.on_commit(lambda: send_otp_sms.delay(phone_number, raw_code))
+        transaction.on_commit(lambda: send_otp_sms.delay(phone_number, raw_code, purpose))
         return {"message": "If the number is valid, an OTP has been sent."}
 
     @staticmethod
@@ -216,11 +236,23 @@ class AuthService:
             return otp
 
     def verify_otp(self, phone_number: str, code: str, purpose: str = "login") -> dict:
+        """Public verify endpoint. Only signup/reset are accepted: there is
+        no OTP login (phone+password only), and no implicit OTP registration.
+        Profile phone-change verifies via its own users-app logic."""
         from .models import OtpCode
 
         phone_number = PhoneValidator.validate(phone_number)
-        if purpose not in (OtpCode.PURPOSE_LOGIN, OtpCode.PURPOSE_RESET, OtpCode.PURPOSE_SIGNUP):
-            purpose = OtpCode.PURPOSE_LOGIN
+        normalized = (purpose or "").strip().lower()
+        if normalized == OtpCode.PURPOSE_LOGIN:
+            raise BusinessException(
+                "OTP login is not available. Please log in with your phone number and password.",
+                code="otp_login_disabled",
+            )
+        if normalized not in self._PUBLIC_OTP_PURPOSES:
+            raise BusinessException(
+                "Unsupported OTP purpose.", code="otp_unsupported_purpose"
+            )
+        purpose = normalized
         self._consume_code(phone_number, purpose, code)
         with transaction.atomic():
             if purpose == OtpCode.PURPOSE_SIGNUP:
@@ -241,10 +273,9 @@ class AuthService:
                 # Reset codes only authorize the password-reset-otp call;
                 # they never open a session by themselves.
                 return {"phone_number": phone_number, "message": "Code verified."}
-            user, _ = UserRepository.get_or_create_for_otp(phone_number)
-            if not user.is_active:
-                raise BusinessException("Account is not active.", code="inactive_account")
-        return _issue_tokens(user)
+            raise BusinessException(
+                "Unsupported OTP purpose.", code="otp_unsupported_purpose"
+            )
 
     def complete_signup(self, phone_number: str, signup_token: str,
                         password: str, first_name: str = "", last_name: str = "") -> dict:

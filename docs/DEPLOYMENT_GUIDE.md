@@ -21,7 +21,7 @@
 
 | Concern | State until provider approval | Flip line after approval |
 |---|---|---|
-| SMS (OTP) | `SMS_IR_API_KEY=` **empty** → codes are logged server-side only: `journalctl -u fashion-celery-worker -f | grep -i otp` | set real key + line number in `.env`, `systemctl restart fashion-celery-worker` |
+| SMS (OTP) | `SMS_IR_API_KEY=` **empty** → codes are logged server-side only: `journalctl -u fashion-celery-worker -f | grep -i otp` | set real key + line number + templates (`SMS_IR_TEMPLATE_SIGNUP=875605`, `SMS_IR_TEMPLATE_RESET=120372`) in `.env`, `systemctl restart fashion-celery-worker`. Public OTP **login** is blocked by design — login is phone+password only |
 | Payments | `ALLOW_DUMMY_GATEWAY=True` → checkout can complete **without real money**. Acceptable ONLY during the approval window and only with the owner's knowledge | `False` in `.env` + `systemctl restart fashion-backend` (and a real gateway integration when available) |
 
 Both states are approvals held by the store owner; neither is a technical unknown.
@@ -131,6 +131,10 @@ FRONTEND_URL=https://maviposh.com
 CORS_ALLOWED_ORIGINS=https://maviposh.com
 
 SMS_IR_API_KEY=
+SMS_IR_LINE_NUMBER=300021152280
+SMS_IR_TEMPLATE_SIGNUP=875605
+SMS_IR_TEMPLATE_RESET=120372
+SMS_IR_OTP_TEMPLATE_ID=919633
 ALLOW_DUMMY_GATEWAY=True
 EOF
 chmod 600 /var/www/fashion-store/backend/.env

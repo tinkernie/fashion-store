@@ -56,7 +56,7 @@ class OtpRequestView(APIView):
         service = AuthService()
         data = service.request_otp(
             serializer.validated_data["phone_number"],
-            serializer.validated_data.get("purpose", "login"),
+            serializer.validated_data.get("purpose", "signup"),
         )
         return Response(data, status=status.HTTP_200_OK)
 
@@ -73,7 +73,7 @@ class OtpVerifyView(APIView):
         data = service.verify_otp(
             serializer.validated_data["phone_number"],
             serializer.validated_data["code"],
-            serializer.validated_data.get("purpose", "login"),
+            serializer.validated_data.get("purpose", "signup"),
         )
         return Response(data, status=status.HTTP_200_OK)
 

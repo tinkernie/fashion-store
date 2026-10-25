@@ -55,7 +55,9 @@ class UserService:
             PhoneChangeRequest.objects.create(user=user, new_phone=new_phone)
         from notifications.tasks import send_otp_sms
 
-        transaction.on_commit(lambda: send_otp_sms.delay(new_phone, raw))
+        transaction.on_commit(
+            lambda: send_otp_sms.delay(new_phone, raw, OtpCode.PURPOSE_LOGIN)
+        )
         return {"message": "OTP sent to new number."}
 
     def confirm_phone_change(self, user: User, new_phone: str, code: str) -> dict:

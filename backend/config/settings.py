@@ -397,6 +397,11 @@ AWS_SES_REGION = os.environ.get("AWS_SES_REGION", "us-east-1")
 SMS_IR_API_KEY = os.environ.get("SMS_IR_API_KEY", os.environ.get("KAVENEGAR_API_KEY", ""))
 SMS_IR_LINE_NUMBER = os.environ.get("SMS_IR_LINE_NUMBER", os.environ.get("SMS_SENDER", "300021152280"))
 SMS_IR_OTP_TEMPLATE_ID = int(os.environ.get("SMS_IR_OTP_TEMPLATE_ID", "919633"))
+# Per-purpose sms.ir workspace templates (owner-provided production IDs).
+# LOGIN is combined with signup by owner decision (one shared "login code"
+# template). Fallback for unmapped purposes stays SMS_IR_OTP_TEMPLATE_ID.
+SMS_IR_TEMPLATE_SIGNUP = int(os.environ.get("SMS_IR_TEMPLATE_SIGNUP", "875605"))
+SMS_IR_TEMPLATE_RESET = int(os.environ.get("SMS_IR_TEMPLATE_RESET", "120372"))
 SMS_IR_OTP_PARAM = os.environ.get("SMS_IR_OTP_PARAM", "Code")
 SMS_ENABLED = bool(SMS_IR_API_KEY)
 OTP_LENGTH = int(os.environ.get("OTP_LENGTH", "5"))

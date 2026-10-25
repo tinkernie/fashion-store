@@ -184,6 +184,24 @@ def cleanup_stale_stock_alerts(self):
     return {"retired_count": count}
 
 
+def _otp_template_for(purpose) -> str:
+    """Owner-provided workspace templates per OTP purpose; unmapped
+    purposes fall back to the generic SMS_IR_OTP_TEMPLATE_ID."""
+    from django.conf import settings as dj_settings
+
+    purpose = (purpose or "").strip().lower()
+    if purpose == "signup":
+        return dj_settings.SMS_IR_TEMPLATE_SIGNUP
+    if purpose == "reset":
+        return dj_settings.SMS_IR_TEMPLATE_RESET
+    if purpose == "login":
+        # Only consumed internally (profile phone-change); the public
+        # OTP-login endpoint is blocked. Shares the signup template by
+        # owner decision.
+        return dj_settings.SMS_IR_TEMPLATE_SIGNUP
+    return dj_settings.SMS_IR_OTP_TEMPLATE_ID
+
+
 @shared_task(
     bind=True,
     acks_late=True,
@@ -194,26 +212,34 @@ def cleanup_stale_stock_alerts(self):
     retry_jitter=True,
     max_retries=3,
 )
-def send_otp_sms(self, phone_number: str, code: str):
-    """OTP via sms.ir verify (template 919633, param Code). Mocked when no key."""
+def send_otp_sms(self, phone_number: str, code: str, purpose: str = "login"):
+    """OTP via sms.ir verify with the purpose-matched workspace template
+    (signup 875605 / reset 120372). Mocked when no API key is present."""
     from django.conf import settings as dj_settings
 
     code = str(code).strip()
+    template_id = _otp_template_for(purpose)
     if not phone_number or not code:
         logger.warning("send_otp_sms: missing phone/code, skipping")
         return
     if not dj_settings.SMS_ENABLED or not dj_settings.SMS_IR_API_KEY:
-        logger.info("Mock OTP to %s: %s", phone_number, code)
+        logger.info(
+            "Mock OTP to %s: %s (purpose=%s, template=%s)",
+            phone_number, code, purpose, template_id,
+        )
         return
     try:
         from .sms_ir import send_verify
 
         resp = send_verify(
             phone_number,
-            dj_settings.SMS_IR_OTP_TEMPLATE_ID,
+            template_id,
             [{"name": dj_settings.SMS_IR_OTP_PARAM, "value": code}],
         )
-        logger.info("OTP sent to %s via sms.ir %s", phone_number, resp)
+        logger.info(
+            "OTP sent to %s via sms.ir (purpose=%s template=%s) %s",
+            phone_number, purpose, template_id, resp,
+        )
     except Exception as e:
         logger.exception("OTP send failed to %s: %s", phone_number, e)
         raise self.retry(exc=e)
