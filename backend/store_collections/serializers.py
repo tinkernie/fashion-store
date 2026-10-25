@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.files.base import ContentFile
+from django.utils import timezone
 from rest_framework import serializers
 
 
@@ -249,3 +250,30 @@ class SetProductPositionsSerializer(serializers.Serializer):
 class ProductActionSerializer(serializers.Serializer):
     product_id = serializers.UUIDField()
     position = serializers.IntegerField(default=0)
+
+
+class BatchAddProductsSerializer(serializers.Serializer):
+    """Batch add-products modal payload: links products to the collection and
+    optionally applies ONE promotional percentage to all of them. The expiry
+    date is always owner-entered (never auto-derived) and mandatory whenever a
+    percentage is applied."""
+
+    product_ids = serializers.ListField(
+        child=serializers.UUIDField(), allow_empty=False
+    )
+    discount_percent = serializers.IntegerField(min_value=0, max_value=99)
+    expires_at = serializers.DateTimeField(required=False, allow_null=True)
+    position = serializers.IntegerField(default=0, min_value=0)
+
+    def validate(self, attrs):
+        percent = attrs.get("discount_percent") or 0
+        expires_at = attrs.get("expires_at")
+        if percent > 0 and not expires_at:
+            raise serializers.ValidationError(
+                "A discount expiry date is required when a percentage is applied."
+            )
+        if expires_at and expires_at <= timezone.now():
+            raise serializers.ValidationError(
+                "The discount expiry date must be in the future."
+            )
+        return attrs

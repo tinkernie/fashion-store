@@ -8,6 +8,22 @@ from .selectors import CartSelector
 from inventory.services import InventoryService
 from variants.selectors import VariantSelector
 from analytics.signals import cart_changed
+from products.services import variant_effective_price
+
+
+def _ensure_effective_price(item):
+    """Syncs the stored snapshot with the variant's current effective price.
+    Returns (stored_snapshot, current_effective) for display purposes."""
+    current = variant_effective_price(item.variant)
+    if item.price_snapshot != current:
+        item.price_snapshot = current
+        item.save(update_fields=["price_snapshot", "updated_at"])
+    return item.price_snapshot, current
+
+
+def _effective_snapshot(item):
+    """Purchase-true snapshot: skips the DB write on read-serialization."""
+    return variant_effective_price(item.variant)
 
 
 class CartService:
@@ -85,8 +101,9 @@ class CartService:
                 item, quantity=new_quantity, reservation_id=reservation["reservation_id"]
             )
         else:
+            # Effective unit price: honors active product discounts at add time
             CartRepository.add_item(
-                cart, actual_variant_id, new_quantity, str(variant.price),
+                cart, actual_variant_id, new_quantity, str(variant_effective_price(variant)),
                 reservation_id=reservation["reservation_id"],
             )
         # H5/H8: dispatch signal after commit
@@ -156,9 +173,15 @@ class CartService:
             )
         except BusinessException as e:
             raise BusinessException(f"Cannot adjust reservation: {e}")
+        # Refresh the price snapshot too: a discount may have started/ended
+        # since the item was added (date-based fallback handled in the helper).
         CartRepository.update_item(
-            item, quantity=quantity, reservation_id=reservation["reservation_id"]
+            item,
+            quantity=quantity,
+            reservation_id=reservation["reservation_id"],
         )
+        item.price_snapshot = str(variant_effective_price(item.variant))
+        item.save(update_fields=["price_snapshot", "updated_at"])
 
         transaction.on_commit(lambda: cart_changed.send(
             sender=self.__class__,
@@ -326,12 +349,32 @@ class CartService:
                     "reservation_id": item.reservation_id,
                 }
             )
+            # Write-through: a discount may have activated/deactivated since the
+            # snapshot was taken; checkout must always charge the current price.
+            price, effective_price = _ensure_effective_price(item)
+            if price != effective_price and effective_price is not None:
+                items[-1]["price"] = int(round(float(effective_price)))
 
         # H8: use Decimal for internal calc, return integer Tomans
-        subtotal = sum((item.price_snapshot * item.quantity for item in cart_items), Decimal("0.00"))
+        subtotal = sum(
+            (
+                _effective_snapshot(item) * item.quantity
+                for item in cart_items
+            ),
+            Decimal("0.00"),
+        )
         discount_amount = Decimal("0.00")
         coupon_code = None
         coupon_data = None
+        # No-stacking rule: coupon benefits apply only to non-promotional items.
+        eligible_items = [
+            item for item in cart_items
+            if not item.variant.product.is_discount_active
+        ]
+        if cart.coupon and not eligible_items:
+            # Everything discounted => coupon cannot provide any benefit: drop it.
+            cart.coupon = None
+            cart.save(update_fields=['coupon', 'updated_at'])
         if cart.coupon:
             coupon_code = cart.coupon.code
             try:
@@ -345,7 +388,7 @@ class CartService:
                         "category_id": str(item.variant.product.category_id) if item.variant.product.category_id else None,
                         "product_id": str(item.variant.product_id),
                     }
-                    for item in cart_items
+                    for item in eligible_items
                 ]
                 result = coupon_service.validate_and_calculate(coupon_code, cart.user or None, coupon_items)
                 discount_amount = result['discount'] if isinstance(result['discount'], Decimal) else Decimal(str(result['discount']))
@@ -385,9 +428,11 @@ class CartService:
     @transaction.atomic
     def apply_coupon(self, user, session_key: str, code: str) -> dict:
         cart = self._resolve_cart_locked(user, session_key)
-        # Collect cart items for validation
+        # No-stacking rule: validate against eligible (non-discounted) items only.
         items_data = []
         for item in CartItem.objects.select_for_update().filter(cart=cart).select_related("variant__product"):
+            if item.variant.product.is_discount_active:
+                continue
             items_data.append({
                 'variant_id': str(item.variant_id),
                 'quantity': item.quantity,
@@ -395,6 +440,10 @@ class CartService:
                 'category_id': str(item.variant.product.category_id) if item.variant.product.category_id else None,
                 'product_id': str(item.variant.product_id),
             })
+        if not items_data:
+            raise BusinessException(
+                "All items in your cart are on discount, so no coupon applies."
+            )
         from coupons.services import CouponService
         coupon_service = CouponService()
         result = coupon_service.validate_and_calculate(code, user or cart.user, items_data)

@@ -10,6 +10,7 @@ from .serializers import (
     CollectionDetailSerializer,
     SetProductPositionsSerializer,
     ProductActionSerializer,
+    BatchAddProductsSerializer,
 )
 
 
@@ -112,4 +113,25 @@ class AdminCollectionViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         service = CollectionService()
         result = service.remove_product(pk, serializer.validated_data["product_id"])
+        return Response(result)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="add-products",
+        serializer_class=BatchAddProductsSerializer,
+    )
+    def add_products(self, request, pk=None):
+        """Batch modal endpoint: link products and apply one collection
+        discount percentage with an owner-entered expiry date."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = CollectionService()
+        result = service.batch_add_products(
+            pk,
+            serializer.validated_data["product_ids"],
+            serializer.validated_data["discount_percent"],
+            expires_at=serializer.validated_data.get("expires_at"),
+            position=serializer.validated_data.get("position", 0),
+        )
         return Response(result)

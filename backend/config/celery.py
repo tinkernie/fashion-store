@@ -32,6 +32,10 @@ app.conf.beat_schedule = {
         "task": "notifications.tasks.cleanup_stale_stock_alerts",
         "schedule": crontab(hour=3, minute=0),
     },
+    "cleanup-expired-discounts-hourly": {
+        "task": "products.tasks.cleanup_expired_discounts",
+        "schedule": crontab(minute=15),
+    },
 }
 # Note: inventory.tasks.release_expired_reservations is an alias for
 # expire_reservations_task (same service call) — available for manual .delay()

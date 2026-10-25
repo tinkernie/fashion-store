@@ -257,6 +257,39 @@ class ProductService:
         except Exception:
             pass
 
+    @classmethod
+    def apply_collection_discount(
+        cls, products: list, discount_percent: int, expires_at=None, collection_id=None
+    ) -> None:
+        """Collection-owned discount writer (rate = one batch, owner-entered
+        expiry). Provenance is stamped so collection discounts can be reverted
+        surgically and can never mix with campaign discounts."""
+        cls._apply_percent_to_products(
+            products,
+            discount_percent,
+            expires_at,
+            source=Product.DiscountSource.COLLECTION,
+            collection_id=collection_id,
+        )
+        cls._purge_campaign_caches()
+
+    @classmethod
+    def clear_collection_discounts(cls, collection_id) -> int:
+        """Reverts every discount owned by the given collection."""
+        rows = list(
+            Product.objects.filter(
+                deleted_at__isnull=True,
+                discount_source=Product.DiscountSource.COLLECTION,
+                discount_collection_id=collection_id,
+                discount_percent__isnull=False,
+            )
+        )
+        for product in rows:
+            product.clear_discount()
+        if rows:
+            cls._purge_campaign_caches()
+        return len(rows)
+
     @staticmethod
     def _base_price(product: Product) -> int:
         """Single source of truth for discount calculation (matches serializer)."""
@@ -307,6 +340,12 @@ class ProductService:
         # Add/overwrite semantics: activate never clears products outside the
         # given set, so re-activating can never silently drop campaign items.
         # Full removal is explicit via remove-one / deactivate endpoints.
+        blocked = self._filter_collection_conflicts(products)
+        if blocked:
+            raise BusinessException(
+                "These products have active collection discounts; remove the "
+                "discount via the collection first: " + ", ".join(str(b) for b in blocked)
+            )
         self._apply_percent_to_products(products, discount_percent, expires_at)
 
         self._purge_campaign_caches()
@@ -317,20 +356,45 @@ class ProductService:
             "expires_at": expires_at.isoformat() if expires_at else None,
         }
 
-    def _apply_percent_to_products(self, products: list, discount_percent: int, expires_at=None) -> None:
-        """Shared bulk writer: one percentage for many products (no per-product calls)."""
+    @staticmethod
+    def _filter_collection_conflicts(products: list) -> list:
+        """Direction guard (Campaign ⇱ Collection): returns ids of products
+        whose current discount belongs to a collection."""
+        return [
+            p.id
+            for p in products
+            if p.has_active_collection_discount
+        ]
+    @classmethod
+    def _apply_percent_to_products(
+        cls,
+        products: list,
+        discount_percent: int,
+        expires_at=None,
+        source: str = Product.DiscountSource.CAMPAIGN,
+        collection_id=None,
+    ) -> None:
+        """Shared bulk writer: one percentage for many products (no per-product calls).
+        Stamps provenance so campaign/collection discounts never mix."""
         for product in products:
-            base = self._base_price(product)
+            base = cls._base_price(product)
             product.discount_percent = discount_percent
             product.discount_price = product.calculate_discount_price(base)
             product.discount_expires_at = expires_at
+            product.discount_source = source
+            product.discount_collection_id = collection_id
             meta = dict(product.metadata) if product.metadata else {}
             meta["discount_percent"] = discount_percent
+            meta["discount_source"] = source
             if product.discount_price:
                 meta["discount_price"] = str(int(product.discount_price))
             product.metadata = meta
             product.save(
-                update_fields=["discount_percent", "discount_price", "discount_expires_at", "metadata", "updated_at"]
+                update_fields=[
+                    "discount_percent", "discount_price", "discount_expires_at",
+                    "discount_source", "discount_collection_id",
+                    "metadata", "updated_at",
+                ]
             )
 
     @staticmethod
@@ -341,6 +405,7 @@ class ProductService:
             Product.objects.filter(
                 deleted_at__isnull=True, discount_percent__isnull=False
             )
+            .exclude(discount_source=Product.DiscountSource.COLLECTION)
             .values_list("discount_percent", flat=True)
             .first()
         )
@@ -367,11 +432,17 @@ class ProductService:
                     deleted_at__isnull=True, discount_percent__isnull=False
                 )
                 .exclude(discount_expires_at__isnull=True)
+                .exclude(discount_source=Product.DiscountSource.COLLECTION)
                 .values_list("discount_expires_at", flat=True)
                 .first()
             )
         if not isinstance(discount_percent, int) or not 1 <= discount_percent <= 99:
             raise BusinessException("Discount must be an integer between 1 and 99.")
+        if product.has_active_collection_discount:
+            raise BusinessException(
+                "This product has an active collection discount; remove the "
+                "discount via the collection first."
+            )
         self._apply_percent_to_products([product], discount_percent, campaign_expires_at)
         self._purge_campaign_caches()
         return {
@@ -391,8 +462,19 @@ class ProductService:
         product.discount_percent = None
         product.discount_price = None
         product.discount_expires_at = None
+        product.discount_source = None
+        product.discount_collection_id = None
+        meta = dict(product.metadata) if product.metadata else {}
+        meta.pop("discount_percent", None)
+        meta.pop("discount_price", None)
+        meta.pop("discount_source", None)
+        product.metadata = meta
         product.save(
-            update_fields=["discount_percent", "discount_price", "discount_expires_at", "updated_at"]
+            update_fields=[
+                "discount_percent", "discount_price", "discount_expires_at",
+                "discount_source", "discount_collection_id",
+                "metadata", "updated_at",
+            ]
         )
         self._purge_campaign_caches()
         return {"message": "Product removed from discount section.", "product_id": str(product.id)}
@@ -408,21 +490,26 @@ class ProductService:
         deadline; omit it to preserve existing deadlines."""
         if not isinstance(discount_percent, int) or not 1 <= discount_percent <= 99:
             raise BusinessException("Discount must be an integer between 1 and 99.")
-        qs = Product.objects.select_for_update().filter(
-            deleted_at__isnull=True, discount_percent__isnull=False
+        qs = (
+            Product.objects.select_for_update()
+            .filter(deleted_at__isnull=True, discount_percent__isnull=False)
+            .exclude(discount_source=Product.DiscountSource.COLLECTION)
         )
         if product_ids:
             qs = qs.filter(id__in=product_ids)
         products = list(qs)
         if not products:
             raise BusinessException("No discounted products to update.")
-        update_fields = ["discount_percent", "discount_price", "updated_at"]
+        update_fields = [
+            "discount_percent", "discount_price", "discount_source", "updated_at"
+        ]
         if expires_at is not self._KEEP_DEADLINE:
             update_fields.append("discount_expires_at")
         for product in products:
             base = self._base_price(product)
             product.discount_percent = discount_percent
             product.discount_price = product.calculate_discount_price(base)
+            product.discount_source = Product.DiscountSource.CAMPAIGN
             if expires_at is not self._KEEP_DEADLINE:
                 product.discount_expires_at = expires_at
             product.save(update_fields=update_fields)
@@ -440,15 +527,20 @@ class ProductService:
 
     @transaction.atomic
     def deactivate_discount_section(self) -> dict:
-        """Bulk revert: clear discounts on every discounted product (prices restore automatically)."""
-        qs = Product.objects.select_for_update().filter(
-            deleted_at__isnull=True, discount_percent__isnull=False
+        """Bulk revert: clear discounts on every campaign-owned discounted product
+        (prices restore automatically). Collection-owned discounts are untouched."""
+        qs = (
+            Product.objects.select_for_update()
+            .filter(deleted_at__isnull=True, discount_percent__isnull=False)
+            .exclude(discount_source=Product.DiscountSource.COLLECTION)
         )
         count = qs.count()
         qs.update(
             discount_percent=None,
             discount_price=None,
             discount_expires_at=None,
+            discount_source=None,
+            discount_collection_id=None,
             updated_at=timezone.now(),
         )
         self._purge_campaign_caches()
@@ -592,3 +684,36 @@ class RelatedProductService:
                 else "Related rail already full — nothing to auto-fill."
             ),
         }
+
+def variant_effective_price(variant):
+    """Unit price carts/checkout must charge for this variant: the product's
+    discounted price while any discount (campaign or collection) is active,
+    the variant's base price otherwise (e.g. after discount expiry)."""
+    from decimal import Decimal as _Decimal
+
+    product = getattr(variant, "product", None)
+    if product is not None and product.is_discount_active and product.discount_price:
+        return _Decimal(str(product.discount_price))
+    return _Decimal(str(variant.price))
+
+def cleanup_expired_discounts() -> dict:
+    """Nulls discount rows (campaign and collection alike) whose owner-entered
+    expiry date has passed. Pricing already ignores them via is_discount_active
+    (date-aware); this keeps the stored data clean instead of letting stale
+    numbers linger in the database."""
+    from datetime import timedelta
+
+    cutoff = timezone.now() - timedelta(seconds=60)
+    rows = list(
+        Product.objects.filter(
+            deleted_at__isnull=True,
+            discount_percent__isnull=False,
+            discount_expires_at__isnull=False,
+            discount_expires_at__lt=cutoff,
+        )
+    )
+    for product in rows:
+        product.clear_discount()
+    if rows:
+        ProductService._purge_campaign_caches()
+    return {"cleared": len(rows)}

@@ -69,6 +69,68 @@ class Product(BaseModel):
         help_text="زمان پایان مهلت تخفیف (اختیاری)",
     )
 
+    class DiscountSource(models.TextChoices):
+        """Full separation between price-cut systems, per owner decision:
+        'campaign' (Discount Campaigns / discount-section) and 'collection'
+        (promotional discounts applied from the Collections add-products
+        modal) must never mix on one product while both are active."""
+
+        CAMPAIGN = "campaign", "Campaign"
+        COLLECTION = "collection", "Collection"
+        MANUAL = "manual", "Manual"
+
+    discount_source = models.CharField(
+        max_length=12,
+        choices=DiscountSource.choices,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Which system owns the current discount (null = none)",
+    )
+    discount_collection_id = models.UUIDField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Collection that owns the discount (reverts with it)",
+    )
+
+    @property
+    def has_active_collection_discount(self) -> bool:
+        if not self.is_discount_active:
+            return False
+        return self.discount_source == self.DiscountSource.COLLECTION
+
+    @property
+    def has_active_campaign_discount(self) -> bool:
+        if not self.is_discount_active:
+            return False
+        return self.discount_source == self.DiscountSource.CAMPAIGN
+
+    def clear_discount(self, update_from=None):
+        """Resets every discount trace back to base pricing."""
+        self.discount_percent = None
+        self.discount_price = None
+        self.discount_expires_at = None
+        self.discount_source = None
+        self.discount_collection_id = None
+        if self.metadata:
+            meta = dict(self.metadata)
+            meta.pop("discount_percent", None)
+            meta.pop("discount_price", None)
+            meta.pop("discount_source", None)
+            self.metadata = meta
+        self.save(
+            update_fields=[
+                "discount_percent",
+                "discount_price",
+                "discount_expires_at",
+                "discount_source",
+                "discount_collection_id",
+                "metadata",
+                "updated_at",
+            ]
+        )
+
     # Full-text search vector (PostgreSQL only, maintained by DB trigger).
     # Stays NULL on SQLite; search falls back to icontains there.
     search_vector = SearchVectorField(null=True, blank=True, editable=False)
