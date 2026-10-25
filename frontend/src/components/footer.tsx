@@ -8,10 +8,10 @@ export default function Footer() {
   return (
     <footer className="bg-[#0B192C] text-white border-t border-sky-900/50 pt-16 sm:pt-20 pb-28 md:pb-12 px-4 sm:px-6 mt-6 sm:mt-10 shadow-2xl">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-8 mb-16">
           
           {/* Column 1: Brand & Contact */}
-          <div className="md:col-span-7 lg:col-span-8 flex flex-col space-y-6">
+          <div className="md:col-span-6 lg:col-span-6 flex flex-col space-y-6">
             <Link href="/" className="flex items-center gap-3 text-white hover:text-sky-200 transition-colors drop-shadow-sm group">
               <MaviWordmark className="h-7 sm:h-8 w-auto text-white group-hover:scale-105 transition-transform" />
               <span className="text-sm font-bold text-sky-300">ماوی</span>
@@ -43,9 +43,9 @@ export default function Footer() {
           </div>
 
           {/* Column 2: Quick Links */}
-          <div className="md:col-span-5 lg:col-span-4 flex flex-col space-y-6">
+          <div className="md:col-span-3 lg:col-span-3 flex flex-col space-y-6">
             <h3 className="text-lg font-bold text-white border-b border-sky-800/60 pb-2 inline-block w-fit">دسترسی سریع</h3>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3.5 text-sm text-sky-200/85">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-y-3.5 text-sm text-sky-200/85">
               <Link href="/women" className="hover:text-white hover:-translate-x-1 transition-all">فروش ویژه</Link>
               <Link href="/women" className="hover:text-white hover:-translate-x-1 transition-all">جدیدترین محصولات</Link>
               <Link href="/women" className="hover:text-white hover:-translate-x-1 transition-all">پرفروش‌ترین‌ها</Link>
@@ -53,6 +53,36 @@ export default function Footer() {
               <Link href="/about" className="hover:text-white hover:-translate-x-1 transition-all">درباره ما</Link>
               <Link href="/contact" className="hover:text-white hover:-translate-x-1 transition-all">تماس با ما</Link>
               <Link href="#" className="hover:text-white hover:-translate-x-1 transition-all">قوانین و مقررات</Link>
+            </div>
+          </div>
+
+          {/* Column 3: Trust Badges */}
+          <div className="md:col-span-3 lg:col-span-3 flex flex-col space-y-6">
+            <h3 className="text-lg font-bold text-white border-b border-sky-800/60 pb-2 inline-block w-fit">نماد اعتماد</h3>
+            <p className="text-xs text-sky-200/80 leading-relaxed">
+              خرید امن و تضمین‌شده با نماد رسمی اعتماد الکترونیکی کسب‌وکارهای اینترنتی.
+            </p>
+            <div className="flex items-center gap-3 pt-1">
+              <div className="bg-white rounded-2xl p-3 shadow-lg shadow-sky-950/40 border border-sky-100/30 flex items-center justify-center hover:shadow-sky-500/20 transition-all hover:scale-105">
+                <a
+                  referrerPolicy="origin"
+                  target="_blank"
+                  rel="noreferrer"
+                  href="https://trustseal.enamad.ir/?id=8347882&Code=1Yev5tmcIPdMjoXc7qvOUYCpFiei0NRw"
+                  title="نماد اعتماد الکترونیکی ماوی"
+                  className="block cursor-pointer"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    referrerPolicy="origin"
+                    src="https://trustseal.enamad.ir/logo.aspx?id=8347882&Code=1Yev5tmcIPdMjoXc7qvOUYCpFiei0NRw"
+                    alt="نماد اعتماد الکترونیکی ماوی"
+                    width={96}
+                    height={96}
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+                  />
+                </a>
+              </div>
             </div>
           </div>
         </div>

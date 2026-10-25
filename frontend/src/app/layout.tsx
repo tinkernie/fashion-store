@@ -12,7 +12,7 @@ const vazirmatn = Vazirmatn({
 export const metadata: Metadata = {
   title: {
     template: "%s | ماوی MAVI",
-    default: "38166500",
+    default: "ماوی (MAVI) — فروشگاه تخصصی مد و پوشاک فاخر",
   },
   description: "فروشگاه تخصصی مد و پوشاک فاخر ماوی (MAVI)؛ جدیدترین کالکشن‌های پوشاک، پیراهن، شومیز، اکسسوری و استایل مدرن زنانه و مردانه",
   icons: {
@@ -26,9 +26,6 @@ export const metadata: Metadata = {
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
-  },
-  other: {
-    enamad: "38166500",
   },
 };
 
