@@ -405,8 +405,8 @@ SMS_IR_TEMPLATE_RESET = int(os.environ.get("SMS_IR_TEMPLATE_RESET", "120372"))
 SMS_IR_OTP_PARAM = os.environ.get("SMS_IR_OTP_PARAM", "Code")
 SMS_ENABLED = bool(SMS_IR_API_KEY)
 OTP_LENGTH = int(os.environ.get("OTP_LENGTH", "5"))
-OTP_EXPIRY_SECONDS = int(os.environ.get("OTP_EXPIRY_SECONDS", "600"))
-OTP_RESEND_SECONDS = int(os.environ.get("OTP_RESEND_SECONDS", "60"))
+OTP_EXPIRY_SECONDS = int(os.environ.get("OTP_EXPIRY_SECONDS", "360"))
+OTP_RESEND_SECONDS = int(os.environ.get("OTP_RESEND_SECONDS", "120"))
 OTP_MAX_ATTEMPTS = int(os.environ.get("OTP_MAX_ATTEMPTS", "5"))
 # Frontend should be https in production
 if not DEBUG and FRONTEND_URL.startswith("http://"):
