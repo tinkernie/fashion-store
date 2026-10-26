@@ -12,6 +12,14 @@ import { getApiErrorMessage } from "@/lib/error-utils";
 import { normalizePersianDigits } from "@/lib/utils";
 import Link from "next/link";
 
+const OTP_COOLDOWN_SECONDS = 120; // 2 minutes cooldown
+
+function formatCooldown(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
 function ResetPasswordForm() {
   const router = useRouter();
   const [step, setStep] = useState<"phone" | "verify">("phone");
@@ -48,7 +56,7 @@ function ResetPasswordForm() {
         purpose: "reset",
       });
       setStep("verify");
-      setCooldown(60);
+      setCooldown(OTP_COOLDOWN_SECONDS);
       toast.success("کد تأیید بازیابی پیامک شد");
     } catch (error: any) {
       toast.error(getApiErrorMessage(error, "خطا در ارسال کد بازیابی پیامکی"));
@@ -228,13 +236,15 @@ function ResetPasswordForm() {
 
       <div className="flex items-center justify-between text-xs text-slate-500">
         {cooldown > 0 ? (
-          <span>ارسال مجدد کد تا {cooldown} ثانیه</span>
+          <span className="font-sans text-slate-400">
+            ارسال مجدد کد تا {formatCooldown(cooldown)} دیگر
+          </span>
         ) : (
           <button
             type="button"
             onClick={handleRequestOtp}
             disabled={isLoading}
-            className="text-[#0082CA] hover:underline cursor-pointer flex items-center gap-1"
+            className="text-[#0082CA] hover:underline cursor-pointer flex items-center gap-1 font-bold transition-colors"
           >
             <RefreshCw className="w-3 h-3" />
             <span>ارسال مجدد پیامک</span>

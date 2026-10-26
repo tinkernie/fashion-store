@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageSlider } from "@/components/ui/image-slider";
+import { AuthTabs } from "@/components/ui/auth-tabs";
+import { PasswordStrengthIndicator } from "@/components/ui/premium-auth";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +32,14 @@ import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { setAuthSession, parseJwtPayload } from "@/lib/auth";
+
+const OTP_COOLDOWN_SECONDS = 120; // 2 minutes cooldown
+
+function formatCooldown(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
 
 // Persian to English digit normalizer
 function normalizePersianDigits(str: string): string {
@@ -159,11 +169,24 @@ export default function AuthPage() {
   const resetStep1Form = useForm<ResetStep1Form>({ resolver: zodResolver(resetStep1Schema) });
   const resetStep2Form = useForm<ResetStep2Form>({ resolver: zodResolver(resetStep2Schema) });
 
-  // Cooldown countdown timer
+  // Tab switching with phone number sync
+  const handleTabChange = (tab: "login" | "signup") => {
+    if (tab === "login") {
+      const phoneVal = signupStep1Form.getValues("phone");
+      if (phoneVal) loginForm.setValue("phone", phoneVal);
+      setView("login");
+    } else {
+      const phoneVal = loginForm.getValues("phone");
+      if (phoneVal) signupStep1Form.setValue("phone", phoneVal);
+      setView("signup-step1");
+    }
+  };
+
+  // Cooldown countdown timer: decrements to 0, stops automatically
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setInterval(() => {
-      setCooldown((prev) => Math.max(0, prev - 1));
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
@@ -237,7 +260,7 @@ export default function AuthPage() {
         purpose: "signup",
       });
       setSignupPhone(normalized);
-      setCooldown(60);
+      setCooldown(OTP_COOLDOWN_SECONDS);
       setView("signup-step2");
       toast.success("کد تایید ۵ رقمی پیامک شد", {
         description: `کد تایید به شماره ${normalized} ارسال گردید.`,
@@ -304,7 +327,7 @@ export default function AuthPage() {
         purpose: "reset",
       });
       setResetPhone(normalized);
-      setCooldown(60);
+      setCooldown(OTP_COOLDOWN_SECONDS);
       setView("reset-step2");
       toast.success("کد تایید بازیابی پیامک شد");
     } catch (error: any) {
@@ -347,7 +370,7 @@ export default function AuthPage() {
         phone_number: targetPhone,
         purpose,
       });
-      setCooldown(60);
+      setCooldown(OTP_COOLDOWN_SECONDS);
       toast.success("کد تایید مجدداً ارسال گردید");
     } catch (error: any) {
       toast.error(getApiErrorMessage(error, "خطا در ارسال مجدد کد تایید"));
@@ -415,8 +438,8 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Top Navigation Hints */}
-            {view !== "login" && (
+            {/* Top Navigation Hints (Shown only during password reset) */}
+            {view.startsWith("reset-") && (
               <button
                 type="button"
                 onClick={() => setView("login")}
@@ -427,6 +450,16 @@ export default function AuthPage() {
               </button>
             )}
           </div>
+
+          {/* Top Segmented Dual-Tab Switcher: ورود (Right) / ثبت‌نام (Left) */}
+          {!view.startsWith("reset-") && (
+            <div className="mb-6">
+              <AuthTabs
+                activeTab={view === "login" ? "login" : "signup"}
+                onTabChange={handleTabChange}
+              />
+            </div>
+          )}
 
           {/* Dynamic Form Area with Framer Motion AnimatePresence */}
           <div className="flex-1 flex flex-col justify-center my-auto">
@@ -534,7 +567,7 @@ export default function AuthPage() {
                     <span>حساب کاربری ندارید؟ </span>
                     <button
                       type="button"
-                      onClick={() => setView("signup-step1")}
+                      onClick={() => handleTabChange("signup")}
                       className="font-bold text-[#0082CA] hover:underline cursor-pointer mr-1"
                     >
                       ثبت‌نام جدید در ماوی
@@ -604,7 +637,7 @@ export default function AuthPage() {
                     <span>قبلاً حساب کاربری داشته‌اید؟ </span>
                     <button
                       type="button"
-                      onClick={() => setView("login")}
+                      onClick={() => handleTabChange("login")}
                       className="font-bold text-[#0082CA] hover:underline cursor-pointer mr-1"
                     >
                       ورود به حساب
@@ -677,13 +710,14 @@ export default function AuthPage() {
                     <div className="flex items-center justify-between text-xs pt-1">
                       {cooldown > 0 ? (
                         <span className="text-slate-400 font-sans text-xs">
-                          ارسال مجدد تا {cooldown} ثانیه دیگر
+                          ارسال مجدد کد تا {formatCooldown(cooldown)} دیگر
                         </span>
                       ) : (
                         <button
                           type="button"
+                          disabled={isLoading}
                           onClick={() => onResendOtp("signup")}
-                          className="text-[#0082CA] font-bold hover:underline cursor-pointer text-xs flex items-center gap-1"
+                          className="text-[#0082CA] font-bold hover:underline cursor-pointer text-xs flex items-center gap-1 transition-colors"
                         >
                           <RotateCw className="w-3.5 h-3.5" />
                           <span>ارسال مجدد کد تایید</span>
@@ -794,6 +828,7 @@ export default function AuthPage() {
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
+                      <PasswordStrengthIndicator password={signupStep3Form.watch("password") || ""} />
                       {signupStep3Form.formState.errors.password && (
                         <p className="text-[11px] text-rose-500">
                           {signupStep3Form.formState.errors.password.message}
@@ -955,15 +990,17 @@ export default function AuthPage() {
                         </Label>
                         {cooldown > 0 ? (
                           <span className="text-[11px] text-slate-400 font-sans">
-                            ارسال مجدد تا {cooldown} ثانیه
+                            ارسال مجدد کد تا {formatCooldown(cooldown)} دیگر
                           </span>
                         ) : (
                           <button
                             type="button"
+                            disabled={isLoading}
                             onClick={() => onResendOtp("reset")}
-                            className="text-[11px] font-bold text-[#0082CA] hover:underline cursor-pointer"
+                            className="text-[11px] font-bold text-[#0082CA] hover:underline cursor-pointer flex items-center gap-1 transition-colors"
                           >
-                            ارسال مجدد کد
+                            <RotateCw className="w-3 h-3" />
+                            <span>ارسال مجدد کد</span>
                           </button>
                         )}
                       </div>
