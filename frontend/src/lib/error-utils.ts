@@ -77,6 +77,10 @@ const errorMap: Record<string, string> = {
   "Code expired.": "کد تأیید منقضی شده است.",
   "Invalid code.": "کد تأیید نادرست است.",
   "Invalid or expired code.": "کد تأیید نادرست یا منقضی شده است.",
+  "otp_login_disabled": "ورود با پیامک یک‌بارمصرف غیرفعال است. لطفاً با شماره موبایل و رمز عبور وارد شوید.",
+  "OTP login is not available. Please log in with your phone number and password.": "ورود با پیامک یک‌بارمصرف غیرفعال است. لطفاً با شماره موبایل و رمز عبور وارد شوید.",
+  "otp_unsupported_purpose": "نوع درخواست کد تأیید نامعتبر است.",
+  "Unsupported OTP purpose.": "نوع درخواست کد تأیید نامعتبر است.",
 
   // Cart & Inventory (Messages & Codes)
   "Item not in cart.": "این کالا در سبد خرید شما یافت نشد.",

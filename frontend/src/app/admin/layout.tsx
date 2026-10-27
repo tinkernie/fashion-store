@@ -24,8 +24,6 @@ import {
   Lock,
   ArrowRight,
   Phone,
-  Smartphone,
-  RefreshCw,
   BookOpen
 } from "lucide-react";
 import { MaviWordmark } from "@/components/ui/mavi-wordmark";
@@ -121,26 +119,14 @@ export default function AdminLayout({
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
-  // Admin Auth States - fully synchronized with backend contracts (phone_number + password / OTP)
-  const [authMode, setAuthMode] = useState<"password" | "otp">("password");
+  // Admin Auth States - password login (phone_number + password)
   const [loginPhone, setLoginPhone] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [otpStep, setOtpStep] = useState<"request" | "verify">("request");
-  const [otpCooldown, setOtpCooldown] = useState(0);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
     checkAdminAuth();
   }, []);
-
-  useEffect(() => {
-    if (otpCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setOtpCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [otpCooldown]);
 
   const checkAdminAuth = async () => {
     if (typeof window === "undefined") return;
@@ -241,53 +227,6 @@ export default function AdminLayout({
     }
   };
 
-  // 2. OTP Request: POST /api/auth/otp/request/ { phone_number, purpose: "login" }
-  const handleAdminRequestOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const phone = normalizePersianDigits(loginPhone);
-    if (!/^09\d{9}$/.test(phone)) {
-      toast.error("شماره موبایل باید ۱۱ رقم بوده و با 09 شروع شود (مثال: 09123456789).");
-      return;
-    }
-    setIsLoggingIn(true);
-    try {
-      await api.post("/api/auth/otp/request/", {
-        phone_number: phone,
-        purpose: "login",
-      });
-      setOtpStep("verify");
-      setOtpCooldown(60);
-      toast.success("کد تأیید یک‌بارمصرف پیامک شد");
-    } catch (err: any) {
-      toast.error(getApiErrorMessage(err, "خطا در ارسال کد پیامکی"));
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  // 3. OTP Verify: POST /api/auth/otp/verify/ { phone_number, code, purpose: "login" }
-  const handleAdminVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const phone = normalizePersianDigits(loginPhone);
-    const code = normalizePersianDigits(otpCode);
-    if (!code || code.length < 4) {
-      toast.error("کد تأیید را به طور کامل وارد کنید");
-      return;
-    }
-    setIsLoggingIn(true);
-    try {
-      const response = await api.post("/api/auth/otp/verify/", {
-        phone_number: phone,
-        code: code,
-        purpose: "login",
-      });
-      processAuthSuccess(response.data);
-    } catch (err: any) {
-      toast.error(getApiErrorMessage(err, "کد تأیید اشتباه است یا منقضی شده"));
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -353,169 +292,48 @@ export default function AdminLayout({
               </div>
             )}
 
-            {/* Auth Mode Tabs (Password vs OTP) */}
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#1a1a1a] border border-white/10 rounded-2xl mb-6 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("password");
-                  setOtpStep("request");
-                }}
-                className={`py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  authMode === "password"
-                    ? "bg-[#0082CA] text-white shadow-md shadow-[#0082CA]/30"
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>رمز عبور</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAuthMode("otp")}
-                className={`py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  authMode === "otp"
-                    ? "bg-[#0082CA] text-white shadow-md shadow-[#0082CA]/30"
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>کد پیامکی (OTP)</span>
-              </button>
-            </div>
-
-            {/* Tab 1: Password Login */}
-            {authMode === "password" && (
-              <form onSubmit={handleAdminPasswordLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-300 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-[#0082CA]" />
-                    <span>شماره موبایل مدیر</span>
-                  </label>
-                  <Input
-                    type="tel"
-                    required
-                    placeholder="09123456789"
-                    value={loginPhone}
-                    onChange={(e) => setLoginPhone(e.target.value)}
-                    className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-[#0082CA] text-sm"
-                    dir="ltr"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-300 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-[#0082CA]" />
-                    <span>رمز عبور</span>
-                  </label>
-                  <Input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-[#0082CA] text-sm"
-                    dir="ltr"
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isLoggingIn}
-                  className="w-full h-12 rounded-xl bg-[#0082CA] hover:bg-[#0072B5] text-white font-bold text-sm transition-all mt-4 shadow-lg shadow-[#0082CA]/25 cursor-pointer"
-                >
-                  {isLoggingIn ? "در حال اعتبارسنجی..." : "ورود به کنترل پنل"}
-                </Button>
-              </form>
-            )}
-
-            {/* Tab 2: OTP Login */}
-            {authMode === "otp" && (
-              <div className="space-y-4">
-                {otpStep === "request" ? (
-                  <form onSubmit={handleAdminRequestOtp} className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-medium text-gray-300 flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-[#0082CA]" />
-                        <span>شماره موبایل مدیر</span>
-                      </label>
-                      <Input
-                        type="tel"
-                        required
-                        placeholder="09123456789"
-                        value={loginPhone}
-                        onChange={(e) => setLoginPhone(e.target.value)}
-                        className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-[#0082CA] text-sm"
-                        dir="ltr"
-                      />
-                    </div>
-
-                    <Button
-                      type="submit"
-                      disabled={isLoggingIn}
-                      className="w-full h-12 rounded-xl bg-[#0082CA] hover:bg-[#0072B5] text-white font-bold text-sm transition-all mt-4 shadow-lg shadow-[#0082CA]/25 cursor-pointer"
-                    >
-                      {isLoggingIn ? "در حال ارسال پیامک..." : "دریافت کد پیامکی"}
-                    </Button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleAdminVerifyOtp} className="space-y-4">
-                    <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-2xl text-xs text-sky-300 text-center flex items-center justify-between">
-                      <span dir="ltr" className="font-mono text-white">{loginPhone}</span>
-                      <button
-                        type="button"
-                        onClick={() => setOtpStep("request")}
-                        className="text-[11px] underline text-sky-400 hover:text-white cursor-pointer"
-                      >
-                        ویرایش شماره
-                      </button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-xs font-medium text-gray-300 flex items-center gap-1.5">
-                        <Smartphone className="w-3.5 h-3.5 text-[#0082CA]" />
-                        <span>کد تأیید پیامک‌شده</span>
-                      </label>
-                      <Input
-                        type="text"
-                        required
-                        maxLength={8}
-                        placeholder="12345"
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value)}
-                        className="bg-[#0a0a0a] border-white/10 h-12 text-white text-center text-lg tracking-widest placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-[#0082CA]"
-                        dir="ltr"
-                        autoFocus
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs text-gray-400">
-                      {otpCooldown > 0 ? (
-                        <span>ارسال مجدد تا {otpCooldown} ثانیه دیگر</span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleAdminRequestOtp}
-                          disabled={isLoggingIn}
-                          className="text-[#0082CA] hover:underline cursor-pointer flex items-center gap-1"
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                          <span>ارسال مجدد کد</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <Button
-                      type="submit"
-                      disabled={isLoggingIn}
-                      className="w-full h-12 rounded-xl bg-[#0082CA] hover:bg-[#0072B5] text-white font-bold text-sm transition-all mt-4 shadow-lg shadow-[#0082CA]/25 cursor-pointer"
-                    >
-                      {isLoggingIn ? "در حال تأیید کد..." : "ورود به کنترل پنل"}
-                    </Button>
-                  </form>
-                )}
+            {/* Admin Password Login Form */}
+            <form onSubmit={handleAdminPasswordLogin} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-[#0082CA]" />
+                  <span>شماره موبایل مدیر</span>
+                </label>
+                <Input
+                  type="tel"
+                  required
+                  placeholder="09123456789"
+                  value={loginPhone}
+                  onChange={(e) => setLoginPhone(e.target.value)}
+                  className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-[#0082CA] text-sm"
+                  dir="ltr"
+                />
               </div>
-            )}
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-300 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#0082CA]" />
+                  <span>رمز عبور</span>
+                </label>
+                <Input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="bg-[#0a0a0a] border-white/10 h-12 text-white placeholder:text-gray-600 focus-visible:ring-1 focus-visible:ring-[#0082CA] text-sm"
+                  dir="ltr"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoggingIn}
+                className="w-full h-12 rounded-xl bg-[#0082CA] hover:bg-[#0072B5] text-white font-bold text-sm transition-all mt-4 shadow-lg shadow-[#0082CA]/25 cursor-pointer"
+              >
+                {isLoggingIn ? "در حال اعتبارسنجی..." : "ورود به کنترل پنل"}
+              </Button>
+            </form>
 
             <div className="mt-6 pt-6 border-t border-white/10 text-center">
               <Link
