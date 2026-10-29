@@ -33,7 +33,7 @@ def fake_request_response(monkeypatch, authority="A00000000000000000000000000123
             def raise_for_status(self):
                 pass
             def json(self):
-                return {"data": {"code": 100, "authority": authority}, "status": 1}
+                return {"data": {"code": 100, "authority": authority}, "errors": []}
         return R()
 
     monkeypatch.setattr("payments.gateways.zarinpal.requests.post", fake_post)
@@ -69,7 +69,7 @@ class TestZarinpalGatewayCreate:
                 def raise_for_status(self):
                     pass
                 def json(self):
-                    return {"data": None, "status": -70}
+                    return {"data": None, "errors": [{"code": -70, "message": "whitelist"}]}
             return R()
 
         monkeypatch.setattr("payments.gateways.zarinpal.requests.post", fake_post)
@@ -102,7 +102,7 @@ class TestZarinpalVerifyCallback:
                 def raise_for_status(self):
                     pass
                 def json(self):
-                    return {"data": {"code": code, "ref_id": ref_id, "card_pan": card}, "status": 1}
+                    return {"data": {"code": code, "ref_id": ref_id, "card_pan": card}, "errors": []}
             return R()
 
         monkeypatch.setattr("payments.gateways.zarinpal.requests.post", fake_post)
@@ -188,7 +188,7 @@ class TestZarinpalEndToEnd:
                 def raise_for_status(self):
                     pass
                 def json(self):
-                    return {"data": {"code": 100, "ref_id": 444123, "card_pan": "5022**"}, "status": 1}
+                    return {"data": {"code": 100, "ref_id": 444123, "card_pan": "5022**"}, "errors": []}
             return R()
 
         monkeypatch.setattr("payments.gateways.zarinpal.requests.post", fake_verify)
@@ -216,7 +216,7 @@ class TestZarinpalEndToEnd:
                 def raise_for_status(self):
                     pass
                 def json(self):
-                    return {"data": {"code": 101, "ref_id": 444123}, "status": 1}
+                    return {"data": {"code": 101, "ref_id": 444123}, "errors": []}
             return R()
 
         monkeypatch.setattr("payments.gateways.zarinpal.requests.post", fake_verify_repeat)

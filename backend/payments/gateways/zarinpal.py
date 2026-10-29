@@ -66,7 +66,10 @@ class ZarinpalGateway:
                 code="zarinpal_unreachable",
             )
         data = body.get("data") or {}
-        if body.get("status") not in (1,) or data.get("code") not in (101, 100):
+        # Zarinpal errors can arrive via HTTP status, an errors array, or the
+        # data.code != 100 — all three must be checked (v4 has no fixed
+        # top-level "status" field in real responses).
+        if data.get("code") != 100:
             raise BusinessException(
                 "Payment initiation rejected by gateway.",
                 code="zarinpal_request_failed",
