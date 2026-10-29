@@ -213,6 +213,14 @@ REST_FRAMEWORK.update({
     },
 })
 
+# --- Payments / Zarinpal PG v4 ---
+# Sandbox host is safe for development; set ZARINPAL_SANDBOX=false on the server.
+ZARINPAL_MERCHANT_ID = os.environ.get("ZARINPAL_MERCHANT_ID", "")
+ZARINPAL_SANDBOX = os.environ.get("ZARINPAL_SANDBOX", "True").lower() in ("true", "1", "yes")
+ZARINPAL_CURRENCY = os.environ.get("ZARINPAL_CURRENCY", "IRT")
+# Frontend route the browser lands on after the gateway return (backend 302).
+ZARINPAL_RETURN_PATH = os.environ.get("ZARINPAL_RETURN_PATH", "/payment-result")
+
 
 
 SPECTACULAR_SETTINGS = {

@@ -16,7 +16,7 @@ class PaymentRepository:
 
     @staticmethod
     def update_payment(payment: Payment, **fields):
-        allowed = ['status', 'gateway_reference', 'raw_response', 'callback_data']
+        allowed = ['status', 'gateway_reference', 'raw_response', 'callback_data', 'authority']
         for key, value in fields.items():
             if key in allowed:
                 setattr(payment, key, value)

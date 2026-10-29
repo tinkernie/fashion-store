@@ -4,7 +4,7 @@ class DummyGateway(BasePaymentGateway):
     def __init__(self, mode='success'):
         self.mode = mode  # 'success' or 'failure'
 
-    def create_transaction(self, payment, order):
+    def create_transaction(self, payment, order, request=None):
         import uuid
         ref = f'dummy-{uuid.uuid4().hex[:12]}'
         if self.mode == 'success':

@@ -23,6 +23,7 @@
 |---|---|---|
 | SMS (OTP) | `SMS_IR_API_KEY=` **empty** → codes are logged server-side only: `journalctl -u fashion-celery-worker -f | grep -i otp` | set real key + line number + templates (`SMS_IR_TEMPLATE_SIGNUP=875605`, `SMS_IR_TEMPLATE_RESET=120372`) in `.env`, `systemctl restart fashion-celery-worker`. Public OTP **login** is blocked by design — login is phone+password only |
 | Payments | `ALLOW_DUMMY_GATEWAY=True` → checkout can complete **without real money**. Acceptable ONLY during the approval window and only with the owner's knowledge | `False` in `.env` + `systemctl restart fashion-backend` (and a real gateway integration when available) |
+| Zarinpal | `ZARINPAL_SANDBOX=True` (host swap only) | `False` + `ZARINPAL_MERCHANT_ID` set + `systemctl restart fashion-backend`. Zarinpal panel IP restriction allows API calls only from `185.226.119.184` — keep sandbox locally, production on server. Amounts are sent as **IRT (Toman)** integers. Gateway return: `GET /api/payments/callbacks/zarinpal/result/` → 302 to `{FRONTEND_URL}/payment-result?order=&status=&ref=` |
 
 Both states are approvals held by the store owner; neither is a technical unknown.
 
@@ -136,6 +137,11 @@ SMS_IR_TEMPLATE_SIGNUP=875605
 SMS_IR_TEMPLATE_RESET=120372
 SMS_IR_OTP_TEMPLATE_ID=919633
 ALLOW_DUMMY_GATEWAY=True
+# Zarinpal PG v4 (merchant id from Zarinpal panel; never commit the real value)
+ZARINPAL_MERCHANT_ID=<SET-FROM-PANEL>
+ZARINPAL_SANDBOX=False
+ZARINPAL_CURRENCY=IRT
+ZARINPAL_RETURN_PATH=/payment-result
 EOF
 chmod 600 /var/www/fashion-store/backend/.env
 chown root:root /var/www/fashion-store/backend/.env

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class BasePaymentGateway(ABC):
     @abstractmethod
-    def create_transaction(self, payment, order) -> dict:
+    def create_transaction(self, payment, order, request=None) -> dict:
         """
         Return a dict with at least:
         - 'gateway_reference': str
