@@ -35,7 +35,7 @@ class CallbackViewSet(viewsets.GenericViewSet):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "payment_callback"
 
-    @action(detail=False, methods=['post'], url_path='(?P<gateway>[\w-]+)')
+    @action(detail=False, methods=['post'], url_path=r'(?P<gateway>[\w-]+)')
     def callback(self, request, gateway=None):
         # H10: gateway allowlist is enforced in service, but also validate path param length
         if gateway and len(gateway) > 30:
