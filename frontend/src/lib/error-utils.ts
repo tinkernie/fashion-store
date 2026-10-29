@@ -108,6 +108,12 @@ const errorMap: Record<string, string> = {
   "Order cannot be paid in its current status.": "وضعیت سفارش برای پرداخت نامعتبر است.",
   "Invalid order state.": "وضعیت سفارش برای این عملیات نامعتبر است.",
   "Shipping address is required.": "ثبت آدرس و اطلاعات تحویل‌گیرنده الزامی است.",
+  "zarinpal_unconfigured": "تنظیمات درگاه پرداخت زرین‌پال در سرور ناقص است. لطفاً با پشتیبانی تماس بگیرید.",
+  "zarinpal_unreachable": "ارتباط با سرور درگاه پرداخت زرین‌پال برقرار نشد. لطفاً لحظاتی بعد تلاش کنید.",
+  "zarinpal_request_failed": "درخواست ایجاد تراکنش توسط درگاه پرداخت زرین‌پال تایید نشد.",
+  "Payment initiation failed. Please try again.": "ارتباط با درگاه پرداخت برقرار نشد. لطفاً مجدداً تلاش کنید.",
+  "Payment initiation rejected by gateway.": "درخواست تراکنش توسط درگاه پرداخت پذیرفته نشد.",
+  "invalid_gateway": "درگاه پرداخت انتخاب‌شده نامعتبر است.",
 
   // Forms & Validation
   "This field is required.": "تکمیل این فیلد الزامی است.",

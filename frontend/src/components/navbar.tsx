@@ -260,11 +260,8 @@ export default function Navbar() {
         dir="rtl"
       >
         {/* Right side: Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 text-white hover:text-sky-100 shrink-0 transition-all group">
+        <Link href="/" className="flex items-center text-white hover:text-sky-100 shrink-0 transition-all group">
           <MaviWordmark className="h-5 sm:h-6 w-auto text-white drop-shadow-sm group-hover:scale-105 transition-transform" />
-          <span className="text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-            ماوی
-          </span>
         </Link>
 
         {/* Center Section: Navigation Links (hidden on <lg to prevent tablet squashing) */}
@@ -594,11 +591,8 @@ export default function Navbar() {
               dir="rtl"
             >
               {/* Right side: Stationary Brand Logo Anchor */}
-              <Link href="/" className="flex items-center gap-2 text-white hover:text-sky-100 shrink-0 transition-all group">
+              <Link href="/" className="flex items-center text-white hover:text-sky-100 shrink-0 transition-all group">
                 <MaviWordmark className="h-5 sm:h-6 w-auto text-white drop-shadow-sm group-hover:scale-105 transition-transform" />
-                <span className="text-[10px] md:text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-white backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-                  ماوی
-                </span>
               </Link>
 
               {/* Center: Full-Width Search Input Pill */}
