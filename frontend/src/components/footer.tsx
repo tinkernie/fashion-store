@@ -1,10 +1,22 @@
 "use client";
 
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { MapPin, Phone, Mail } from "lucide-react";
 import { MaviWordmark } from "@/components/ui/mavi-wordmark";
 
 export default function Footer() {
+  const [hasEnamadError, setHasEnamadError] = useState(false);
+  const isProduction = useSyncExternalStore(
+    () => () => {},
+    () => window.location.hostname === "maviposh.com" || window.location.hostname === "www.maviposh.com",
+    () => false
+  );
+
+  const enamadSrc = isProduction && !hasEnamadError
+    ? "https://trustseal.enamad.ir/logo.aspx?id=8347882&Code=1Yev5tmcIPdMjoXc7qvOUYCpFiei0NRw"
+    : "/images/enamad.png";
+
   return (
     <footer className="bg-[#0B192C] text-white border-t border-sky-900/50 pt-16 sm:pt-20 pb-28 md:pb-12 px-4 sm:px-6 mt-6 sm:mt-10 shadow-2xl">
       <div className="max-w-7xl mx-auto">
@@ -67,7 +79,7 @@ export default function Footer() {
                 <a
                   referrerPolicy="origin"
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener"
                   href="https://trustseal.enamad.ir/?id=8347882&Code=1Yev5tmcIPdMjoXc7qvOUYCpFiei0NRw"
                   title="نماد اعتماد الکترونیکی ماوی"
                   className="block cursor-pointer"
@@ -75,7 +87,8 @@ export default function Footer() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     referrerPolicy="origin"
-                    src="https://trustseal.enamad.ir/logo.aspx?id=8347882&Code=1Yev5tmcIPdMjoXc7qvOUYCpFiei0NRw"
+                    src={enamadSrc}
+                    onError={() => setHasEnamadError(true)}
                     alt="نماد اعتماد الکترونیکی ماوی"
                     width={96}
                     height={96}
