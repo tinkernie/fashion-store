@@ -24,6 +24,16 @@ class TestInventoryService:
         with pytest.raises(BusinessException):
             service.adjust_stock(str(inventory.variant_id), -10)
 
+    def test_adjust_stock_missing_target_does_not_create_variant(self):
+        from variants.models import Variant
+        import uuid
+        fake_id = str(uuid.uuid4())
+        initial_count = Variant.objects.count()
+        service = InventoryService()
+        with pytest.raises(BusinessException, match='Target product or variant not found.'):
+            service.adjust_stock(fake_id, 10)
+        assert Variant.objects.count() == initial_count
+
     def test_reserve_stock_success(self):
         inventory = InventoryFactory(available_quantity=20)
         service = InventoryService()

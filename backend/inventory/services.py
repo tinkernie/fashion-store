@@ -33,25 +33,12 @@ class InventoryService:
             if variant:
                 actual_variant_id = str(variant.id)
             else:
-                # Create a default variant for this product if missing
-                from products.models import Product
-                import uuid
-                prod = Product.objects.filter(id=variant_id, deleted_at__isnull=True).first()
-                if prod:
-                    variant = Variant.objects.create(
-                        product=prod,
-                        sku=f"{prod.slug or 'PROD'}-{uuid.uuid4().hex[:6].upper()}",
-                        price=100000,
-                        weight=500,
-                        status=Variant.Status.PUBLISHED,
-                        availability=Variant.Availability.IN_STOCK,
-                    )
-                    actual_variant_id = str(variant.id)
-                else:
-                    raise BusinessException("Target product or variant not found.")
+                raise BusinessException("Target product or variant not found.")
 
         inventory = InventoryRepository.lock_inventory(actual_variant_id)
-        new_qty = max(0, inventory.available_quantity + delta)
+        if inventory.available_quantity + delta < 0:
+            raise BusinessException("Insufficient stock to remove.")
+        new_qty = inventory.available_quantity + delta
         # H6: compute status from new sellable, not stale inventory object
         new_sellable = new_qty - inventory.reserved_quantity
         if new_sellable <= 0:

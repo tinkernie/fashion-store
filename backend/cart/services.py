@@ -333,6 +333,7 @@ class CartService:
                 except Exception:
                     pass
 
+            effective_price = _effective_snapshot(item)
             items.append(
                 {
                     "id": str(item.id),
@@ -343,17 +344,12 @@ class CartService:
                     "product_title": item.variant.product.title,
                     "option_details": self._get_option_summary(item.variant),
                     "quantity": item.quantity,
-                    "price": int(round(float(item.price_snapshot))) if item.price_snapshot is not None else 0,
+                    "price": int(round(float(effective_price))) if effective_price is not None else 0,
                     "image": img,
                     "imageUrl": img,
                     "reservation_id": item.reservation_id,
                 }
             )
-            # Write-through: a discount may have activated/deactivated since the
-            # snapshot was taken; checkout must always charge the current price.
-            price, effective_price = _ensure_effective_price(item)
-            if price != effective_price and effective_price is not None:
-                items[-1]["price"] = int(round(float(effective_price)))
 
         # H8: use Decimal for internal calc, return integer Tomans
         subtotal = sum(
@@ -372,10 +368,10 @@ class CartService:
             if not item.variant.product.is_discount_active
         ]
         if cart.coupon and not eligible_items:
-            # Everything discounted => coupon cannot provide any benefit: drop it.
-            cart.coupon = None
-            cart.save(update_fields=['coupon', 'updated_at'])
-        if cart.coupon:
+            # Everything discounted => coupon cannot provide any benefit: omit from serialized output without mutating DB
+            coupon_code = None
+            coupon_data = None
+        elif cart.coupon:
             coupon_code = cart.coupon.code
             try:
                 from coupons.services import CouponService
@@ -384,7 +380,7 @@ class CartService:
                     {
                         "variant_id": str(item.variant_id),
                         "quantity": item.quantity,
-                        "price": item.price_snapshot,
+                        "price": _effective_snapshot(item),
                         "category_id": str(item.variant.product.category_id) if item.variant.product.category_id else None,
                         "product_id": str(item.variant.product_id),
                     }
@@ -398,9 +394,9 @@ class CartService:
                     "discount_value": int(round(float(cart.coupon.discount_value))) if cart.coupon.discount_value is not None else 0,
                 }
             except BusinessException:
-                cart.coupon = None
-                cart.save(update_fields=['coupon', 'updated_at'])
+                # Invalid/expired coupon is omitted from read-response without mutating DB
                 coupon_code = None
+                coupon_data = None
         total = max(Decimal("0.00"), subtotal - discount_amount)
 
         return {

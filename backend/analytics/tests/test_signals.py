@@ -20,6 +20,27 @@ class TestSignals:
         )
 
     @patch('analytics.handlers.AnalyticsService.record_event')
+    def test_cart_update_triggers_event(self, mock_record):
+        user = UserFactory()
+        cart_changed.send(sender=self.__class__, user=user, session_key='test-key',
+                          action='update', variant_id='123', quantity=5)
+        mock_record.assert_called_once_with(
+            user=user, session_key='test-key', type='cart_update',
+            payload={'variant_id': '123', 'quantity': 5}
+        )
+
+    def test_cart_update_persists_as_valid_choice(self):
+        user = UserFactory()
+        cart_changed.send(sender=self.__class__, user=user, session_key=None,
+                          action='update', variant_id='123', quantity=3)
+        event = TrackedEvent.objects.filter(type='cart_update').first()
+        assert event is not None
+        assert event.type == 'cart_update'
+        assert event.payload == {'variant_id': '123', 'quantity': 3}
+        # Model choice validation passes cleanly
+        event.full_clean()
+
+    @patch('analytics.handlers.AnalyticsService.record_event')
     def test_order_placed_triggers_event(self, mock_record):
         user = UserFactory()
         order = OrderFactory(user=user)

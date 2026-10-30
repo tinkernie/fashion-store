@@ -343,7 +343,7 @@ STORAGES = {
     },
 }
 MEDIA_URL = "/media_libm/"
-MEDIA_ROOT = BASE_DIR / "media_libm"
+MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Cache headers for product/category APIs (CDN friendly)
 CACHE_MIDDLEWARE_SECONDS = 300

@@ -9,6 +9,7 @@ class TrackedEvent(BaseModel):
         ('product_view', 'Product View'),
         ('cart_add', 'Cart Add'),
         ('cart_remove', 'Cart Remove'),
+        ('cart_update', 'Cart Update'),
         ('order_placed', 'Order Placed'),
     ]
     user = models.ForeignKey(
