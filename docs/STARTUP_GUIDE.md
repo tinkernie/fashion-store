@@ -55,7 +55,7 @@ CELERY_BROKER_URL=redis://127.0.0.1:6379/0
 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
 
 # Dev flags
-ALLOW_DUMMY_GATEWAY=True
+ZARINPAL_SANDBOX=True
 ```
 
 > **Offline Fallback Note**: To run without Docker/PostgreSQL for quick offline edits, set `DB_ENGINE=sqlite`.

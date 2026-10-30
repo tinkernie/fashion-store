@@ -22,8 +22,8 @@
 | Concern | State until provider approval | Flip line after approval |
 |---|---|---|
 | SMS (OTP) | `SMS_IR_API_KEY=` **empty** → codes are logged server-side only: `journalctl -u fashion-celery-worker -f | grep -i otp` | set real key + line number + templates (`SMS_IR_TEMPLATE_SIGNUP=875605`, `SMS_IR_TEMPLATE_RESET=120372`) in `.env`, `systemctl restart fashion-celery-worker`. Public OTP **login** is blocked by design — login is phone+password only |
-| Payments | `ALLOW_DUMMY_GATEWAY=True` → checkout can complete **without real money**. Acceptable ONLY during the approval window and only with the owner's knowledge | `False` in `.env` + `systemctl restart fashion-backend` (and a real gateway integration when available) |
-| Zarinpal | `ZARINPAL_SANDBOX=True` (host swap only) | `False` + `ZARINPAL_MERCHANT_ID` set + `systemctl restart fashion-backend`. Zarinpal panel IP restriction allows API calls only from `185.226.119.184` — keep sandbox locally, production on server. Amounts are sent as **IRT (Toman)** integers. Gateway return: `GET /api/payments/callbacks/zarinpal/result/` → 302 to `{FRONTEND_URL}/payment-result?order=&status=&ref=` |
+| Zarinpal | `ZARINPAL_SANDBOX=True` (host swap only) | `False` + `ZARINPAL_MERCHANT_ID` set + `systemctl restart fashion-backend`. Zarinpal panel IP restriction allows API calls only from `185.226.119.184` — keep sandbox locally, production on server. Amounts are sent as **IRT (Toman)** integers. Gateway return: `GET /api/payments/callbacks/zarinpal/result/` → 302 to `{FRONTEND_URL}/payment-result?order=&status=&ref=&amount=&gateway=` (dummy gateway deleted; checkout can only go Zarinpal) |
+| Paid-order SMS | Templated customer (321934) + owner (551115) SMS fire only on the payment-success transition; checkout sends no SMS/email | tune `ORDER_OWNER_PHONE` + template ids in `.env`, `systemctl restart fashion-celery-worker` |
 
 Both states are approvals held by the store owner; neither is a technical unknown.
 
@@ -136,7 +136,9 @@ SMS_IR_LINE_NUMBER=300021152280
 SMS_IR_TEMPLATE_SIGNUP=875605
 SMS_IR_TEMPLATE_RESET=120372
 SMS_IR_OTP_TEMPLATE_ID=919633
-ALLOW_DUMMY_GATEWAY=True
+SMS_IR_TEMPLATE_ORDER_CONFIRMED=321934
+SMS_IR_TEMPLATE_OWNER_NEW_ORDER=551115
+ORDER_OWNER_PHONE=09199547931
 # Zarinpal PG v4 (merchant id from Zarinpal panel; never commit the real value)
 ZARINPAL_MERCHANT_ID=<SET-FROM-PANEL>
 ZARINPAL_SANDBOX=False

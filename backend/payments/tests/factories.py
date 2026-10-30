@@ -10,6 +10,6 @@ class PaymentFactory(DjangoModelFactory):
     order = factory.SubFactory(OrderFactory)
     user = factory.SubFactory(UserFactory)
     amount = '100.00'
-    gateway = 'dummy'
+    gateway = 'zarinpal'
     status = Payment.Status.PENDING
     authority = factory.Sequence(lambda n: f'PAY-{n:012X}')

@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from datetime import timedelta
 from django.core.exceptions import ImproperlyConfigured
@@ -271,7 +272,16 @@ _CELERY_EAGER = os.environ.get(
     "yes",
 )
 CELERY_TASK_ALWAYS_EAGER = _CELERY_EAGER
-CELERY_TASK_EAGER_PROPAGATES = _CELERY_EAGER
+# Eager propagation is independent: tests want it on (fail fast inline), but
+# eager-propagating a background task failure (e.g. a provider outage) would
+# break the request that merely queued it — e.g. payment callbacks. Keep
+# restoration responsibility inside the task's own retry/error handling.
+PYTEST_CURRENT_TEST = "pytest" in sys.modules
+_celery_propagates = os.environ.get(
+    "CELERY_TASK_EAGER_PROPAGATES",
+    "True" if PYTEST_CURRENT_TEST else "False",
+).lower() in ("true", "1", "yes")
+CELERY_TASK_EAGER_PROPAGATES = _celery_propagates
 # Beat persistence: DatabaseScheduler reads from django_celery_beat_periodictask table.
 # app.conf.beat_schedule in config/celery.py is the bootstrap definition — on first
 # migrate it should be synced to DB (via migration or admin). DB is source of truth
@@ -416,8 +426,15 @@ OTP_LENGTH = int(os.environ.get("OTP_LENGTH", "5"))
 OTP_EXPIRY_SECONDS = int(os.environ.get("OTP_EXPIRY_SECONDS", "360"))
 OTP_RESEND_SECONDS = int(os.environ.get("OTP_RESEND_SECONDS", "120"))
 OTP_MAX_ATTEMPTS = int(os.environ.get("OTP_MAX_ATTEMPTS", "5"))
+# Owner notification target for paid-order SMS (template 551115)
+ORDER_OWNER_PHONE = os.environ.get("ORDER_OWNER_PHONE", "09199547931")
+# Workspace templates (owner-purchased): customer purchase confirmation +
+# owner new-order alert, sent on the PAID transition.
+SMS_IR_TEMPLATE_ORDER_CONFIRMED = int(os.environ.get("SMS_IR_TEMPLATE_ORDER_CONFIRMED", "321934"))
+SMS_IR_TEMPLATE_OWNER_NEW_ORDER = int(os.environ.get("SMS_IR_TEMPLATE_OWNER_NEW_ORDER", "551115"))
 # Frontend should be https in production
 if not DEBUG and FRONTEND_URL.startswith("http://"):
+
     import warnings
 
     warnings.warn("FRONTEND_URL should use https:// in production", RuntimeWarning)

@@ -24,7 +24,7 @@ class PaymentViewSet(viewsets.GenericViewSet):
         result = self.service.initiate_payment(
             user=request.user,
             order_id=serializer.validated_data['order_id'],
-            gateway=serializer.validated_data.get('gateway', 'dummy'),
+            gateway=serializer.validated_data.get('gateway', 'zarinpal'),
             request=request,
         )
         return Response(result, status=status.HTTP_200_OK)
@@ -58,7 +58,9 @@ class PaymentCallbackResultView(APIView):
 
     def _redirect_url(self, **params):
         base = settings.FRONTEND_URL.rstrip('/') + getattr(settings, 'ZARINPAL_RETURN_PATH', '/payment-result')
-        clean = {k: str(v) for k, v in params.items() if v}
+        # Stable frontend contract: status and ref are always emitted (ref may be
+        # empty on cancelled/failed flows) so the result page never re-derives keys.
+        clean = {k: ("" if v is None else str(v)) for k, v in params.items() if v is not None or k in ("status", "ref")}
         return f"{base}?{urlencode(clean)}" if clean else base
 
     def get(self, request, gateway=None):
@@ -75,4 +77,6 @@ class PaymentCallbackResultView(APIView):
             payment=payment.get('id'),
             status=payment.get('status'),
             ref=payment.get('gateway_reference'),
+            amount=payment.get('amount'),
+            gateway=payment.get('gateway'),
         ))

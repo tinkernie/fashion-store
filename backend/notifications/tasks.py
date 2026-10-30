@@ -18,6 +18,61 @@ logger = logging.getLogger(__name__)
     retry_jitter=True,
     max_retries=3,
 )
+def send_template_sms(self, phone_number: str, template_id: int, parameters: list):
+    """
+    Async sms.ir templated send (send/verify endpoint) for any approved
+    workspace template, e.g. purchase-confirmation 321934 / owner 551115.
+    parameters: list of {"name": ..., "value": ...} dicts. Silent no-op when
+    SMS_ENABLED is False (dev with no API key)."""
+    if not phone_number:
+        logger.warning("send_template_sms: missing phone_number, skipping")
+        return
+    if not template_id:
+        logger.warning("send_template_sms: missing template_id, skipping")
+        return
+    params = [
+        {"name": str(p.get("name", "")), "value": str(p.get("value", ""))}
+        for p in (parameters or [])
+    ]
+    if not params:
+        logger.warning("send_template_sms: empty parameters, skipping")
+        return
+
+    if not settings.SMS_ENABLED or not settings.SMS_IR_API_KEY:
+        logger.info(
+            "SMS_ENABLED=False - mock templated SMS to %s template %s params=%s",
+            phone_number, template_id, params,
+        )
+        return
+
+    try:
+        from .sms_ir import send_verify
+
+        response = send_verify(phone_number, template_id, params)
+        logger.info(
+            "templated SMS sent to %s (template %s) response=%s",
+            phone_number, template_id, response,
+        )
+    except Exception as e:
+        logger.exception("templated SMS failed to %s (template %s): %s", phone_number, template_id, e)
+        if isinstance(e, (ConnectionError, TimeoutError, OperationalError)):
+            raise self.retry(exc=e)
+        sms_like = "sms.ir" in str(e).lower()
+        if sms_like:
+            raise self.retry(exc=e)
+        return
+
+
+@shared_task(
+    bind=True,
+    acks_late=True,
+    time_limit=30,
+    soft_time_limit=20,
+    autoretry_for=(ConnectionError, TimeoutError, OperationalError),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=3,
+)
 def send_sms(self, phone_number: str, message: str, notification_id: str = None):
     """
     Async SMS dispatch via sms.ir bulk. Uses SMS_ENABLED flag; in dev (no API key) logs only.

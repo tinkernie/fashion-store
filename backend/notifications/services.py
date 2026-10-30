@@ -38,33 +38,32 @@ class NotificationService:
 
         prefs = PreferenceRepository.get_or_create_preferences(user)
         sms_allowed = self._is_sms_allowed(type, prefs)
-        if send_sms_flag and sms_allowed:
-            try:
-                template = TemplateRepository.get_template(type)
-                subject = self._render_template_string(template.subject_template, context)
-                body = self._render_template_string(template.body_template, context)
-            except BusinessException:
-                fallback_subjects = {
-                    "order_confirmation": "سفارش {{ order_number }} با موفقیت ثبت شد",
-                    "order_status_change": "وضعیت سفارش {{ order_number }}: {{ new_status_fa|default:new_status }}",
-                    "shipping_update": "سفارش {{ order_number }} تحویل پست شد",
-                    "welcome": "به فروشگاه تخصصی ماوی خوش آمدید",
-                    "back_in_stock": "{{ product_title }} دوباره موجود شد",
-                    "generic": "اطلاعیه سیستم",
-                }
-                fallback_bodies = {
-                    "order_confirmation": "{{ user_name }} عزیز، سفارش {{ order_number }} به مبلغ {{ total }} تومان ثبت شد. فاکتور: {{ invoice_url }}",
-                    "order_status_change": "{{ user_name }} عزیز، وضعیت سفارش {{ order_number }} به «{{ new_status_fa|default:new_status }}» تغییر یافت.",
-                    "shipping_update": "{{ user_name }} عزیز، مرسوله سفارش {{ order_number }} تحویل شرکت پست گردید. کد رهگیری: {{ tracking_number|default:'---' }}",
-                    "welcome": "{{ user_name }} عزیز، به فروشگاه تخصصی ماوی خوش آمدید!",
-                    "back_in_stock": "{{ product_title }} ({{ options }}) هم‌اکنون موجود است.",
-                    "generic": "{{ user_name }} عزیز، شما یک اعلان جدید دارید.",
-                }
-                subject = self._render_template_string(fallback_subjects.get(type, "اطلاعیه سیستم"), context)
-                body = self._render_template_string(fallback_bodies.get(type, "یک پیام سیستمی جدید برای شما ثبت شده است."), context)
-        else:
-            subject = ""
-            body = ""
+        # Render the subject/body from the DB template (or fallbacks) for the
+        # in-app notification regardless of whether SMS is enabled — SMS
+        # dispatch is the only thing gated by send_sms_flag.
+        try:
+            template = TemplateRepository.get_template(type)
+            subject = self._render_template_string(template.subject_template, context)
+            body = self._render_template_string(template.body_template, context)
+        except BusinessException:
+            fallback_subjects = {
+                "order_confirmation": "سفارش {{ order_number }} با موفقیت ثبت شد",
+                "order_status_change": "وضعیت سفارش {{ order_number }}: {{ new_status_fa|default:new_status }}",
+                "shipping_update": "سفارش {{ order_number }} تحویل پست شد",
+                "welcome": "به فروشگاه تخصصی ماوی خوش آمدید",
+                "back_in_stock": "{{ product_title }} دوباره موجود شد",
+                "generic": "اطلاعیه سیستم",
+            }
+            fallback_bodies = {
+                "order_confirmation": "{{ user_name }} عزیز، سفارش {{ order_number }} به مبلغ {{ total }} تومان ثبت شد. فاکتور: {{ invoice_url }}",
+                "order_status_change": "{{ user_name }} عزیز، وضعیت سفارش {{ order_number }} به «{{ new_status_fa|default:new_status }}» تغییر یافت.",
+                "shipping_update": "{{ user_name }} عزیز، مرسوله سفارش {{ order_number }} تحویل شرکت پست گردید. کد رهگیری: {{ tracking_number|default:'---' }}",
+                "welcome": "{{ user_name }} عزیز، به فروشگاه تخصصی ماوی خوش آمدید!",
+                "back_in_stock": "{{ product_title }} ({{ options }}) هم‌اکنون موجود شد.",
+                "generic": "{{ user_name }} عزیز، شما یک اعلان جدید دارید.",
+            }
+            subject = self._render_template_string(fallback_subjects.get(type, "اطلاعیه سیستم"), context)
+            body = self._render_template_string(fallback_bodies.get(type, "یک پیام سیستمی جدید برای شما ثبت شده است."), context)
 
         in_app_allowed = self._is_inapp_allowed(type, prefs)
         notification = None

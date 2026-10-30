@@ -1,4 +1,3 @@
-import os
 from decimal import Decimal
 from django.db import transaction
 from django.conf import settings
@@ -12,7 +11,7 @@ from .models import Payment
 
 class PaymentService:
     @transaction.atomic
-    def initiate_payment(self, user, order_id: str, gateway: str = 'dummy', request=None) -> dict:
+    def initiate_payment(self, user, order_id: str, gateway: str = 'zarinpal', request=None) -> dict:
         from orders.selectors import OrderSelector
         # H5/H10: lock order to prevent double payment race
         try:
@@ -23,12 +22,8 @@ class PaymentService:
             raise BusinessException("Order not found.")
         if order.status not in [Order.Status.AWAITING_PAYMENT, Order.Status.PENDING]:
             raise BusinessException("Order cannot be paid in its current status.")
-
-        # H10: block dummy gateway in production unless staff or explicitly allowed
-        if gateway == 'dummy' and not settings.DEBUG:
-            allow_dummy = os.environ.get("ALLOW_DUMMY_GATEWAY", "False").lower() in ("true", "1", "yes")
-            if not (user.is_staff or allow_dummy):
-                raise BusinessException("Dummy gateway not allowed in production.")
+        if gateway not in GATEWAYS:
+            raise BusinessException(f"Unknown gateway: {gateway}")
 
         # Check for existing successful payment atomically (locked order)
         if order.payments.filter(status=Payment.Status.SUCCEEDED).exists():
@@ -79,14 +74,11 @@ class PaymentService:
         # H10: gateway allowlist check
         if gateway not in GATEWAYS:
             raise BusinessException(f"Unknown gateway: {gateway}")
-        # Block dummy in prod for callbacks too
-        if gateway == 'dummy' and not settings.DEBUG and os.environ.get("ALLOW_DUMMY_GATEWAY", "False").lower() not in ("true","1","yes"):
-            raise BusinessException("Dummy gateway not allowed in production.")
 
         gateway_cls = GATEWAYS.get(gateway)
         gw = gateway_cls()
-        # Basic signature verification placeholder: require gateway-specific HMAC if configured
-        # For real gateways, verify request_data['signature'] against settings
+        # Verify is server-to-server gateway-side (Zarinpal v4 verify.json);
+        # the browser-facing query params are never trusted on their own.
         result = gw.verify_callback(request_data)
         # H10: validate result structure
         if not result or 'gateway_reference' not in result or 'status' not in result:
