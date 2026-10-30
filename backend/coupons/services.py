@@ -1,4 +1,6 @@
 from decimal import Decimal
+from django.db.models import Q
+from django.utils import timezone
 from .repositories import CouponRepository
 from .selectors import CouponSelector
 from common.exceptions import BusinessException
@@ -14,10 +16,21 @@ class CouponService:
         from django.db import transaction as db_transaction
         # H9: lock coupon row to prevent race between validate and increment
         with db_transaction.atomic():
-            # Re-fetch with lock if exists
-            coupon = Coupon.objects.select_for_update().filter(code=code, is_active=True).first()
+            # Re-fetch with lock. The locked query must enforce every rule the
+            # selector enforces: locking with a looser filter used to match an
+            # expired coupon and never fall through to the selector below, so
+            # `valid_from`/`valid_until` were never applied.
+            now = timezone.now()
+            coupon = (
+                Coupon.objects.select_for_update()
+                .filter(code=code, is_active=True, deleted_at__isnull=True)
+                .filter(Q(valid_from__isnull=True) | Q(valid_from__lte=now))
+                .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=now))
+                .first()
+            )
             if not coupon:
-                # Fallback to selector (check expiry)
+                # Fallback to selector (case-insensitive code match; re-checks
+                # the validity window and soft-deletion).
                 coupon = CouponSelector.get_active_coupon_by_code(code)
             if not coupon:
                 raise BusinessException("Invalid or expired coupon code.")

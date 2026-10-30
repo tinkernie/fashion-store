@@ -314,8 +314,12 @@ CELERY_TASK_COMPRESSION = "gzip"
 
 
 # Security
+# No-op since Django 3.0 / removed from browsers; kept explicit, do not rely on it.
 SECURE_BROWSER_XSS_FILTER = False
-SECURE_CONTENT_TYPE_NOSNIFF = False
+# Always on: never let a browser MIME-sniff a JSON/API response into HTML or SVG.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+# Preload only makes sense while HSTS itself is live (see SECURE_HSTS_SECONDS).
+SECURE_HSTS_PRELOAD = _env_bool("SECURE_HSTS_PRELOAD", SECURE_HSTS_SECONDS > 0)
 from corsheaders.defaults import default_headers
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
