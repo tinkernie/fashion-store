@@ -105,6 +105,9 @@ run chmod +x "${BACKEND_DIR}/manage.py"
 if [ -d "${VENV}/bin" ]; then
   run chmod -R +x "${VENV}/bin"
 fi
+if [ -d "${FRONTEND_DIR}/node_modules/.bin" ]; then
+  run find -L "${FRONTEND_DIR}/node_modules/.bin" -type f -exec chmod +x {} +
+fi
 run chmod 640 "${BACKEND_DIR}/.env"
 run chown root:"${SERVICE_USER}" "${BACKEND_DIR}/.env"
 
