@@ -45,6 +45,17 @@ export interface OrderItemSnapshot {
   line_total: number;
 }
 
+export interface OrderPaymentInfo {
+  id?: string;
+  status: string;
+  gateway: string;
+  gateway_name?: string;
+  tracking_code?: string;
+  amount: number;
+  authority?: string;
+  paid_at?: string | null;
+}
+
 export interface AuthoritativeOrder {
   id: string;
   order_number: string;
@@ -74,4 +85,6 @@ export interface AuthoritativeOrder {
   placed_at: string;
   paid_at?: string | null;
   items?: OrderItemSnapshot[];
+  payments?: OrderPaymentInfo[];
+  payment_info?: OrderPaymentInfo | null;
 }

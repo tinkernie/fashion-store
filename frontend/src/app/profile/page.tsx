@@ -29,6 +29,7 @@ import {
   ArrowRight,
   Sparkles,
   Loader2,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -173,6 +174,7 @@ export default function ProfilePage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(false);
 
   const { items: wishlistItems, removeItem: removeWishlistItem } = useWishlist();
 
@@ -440,6 +442,20 @@ export default function ProfilePage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      const orderParam = params.get("order");
+      if (tabParam) {
+        setActiveTab(tabParam);
+      }
+      if (orderParam) {
+        fetchOrderDetails(orderParam);
+      }
+    }
+  }, []);
 
   const fetchOrderDetails = async (orderIdentifier: string) => {
     try {
@@ -1472,6 +1488,94 @@ export default function ProfilePage() {
                   </p>
                 </div>
               )}
+
+                            {/* Payment Information Box */}
+              {selectedOrder.payment_info || selectedOrder.payments?.length ? (
+                (() => {
+                  const pInfo = selectedOrder.payment_info || selectedOrder.payments?.[0];
+                  const isPaid = selectedOrder.status === "paid" || selectedOrder.status === "packing" || selectedOrder.status === "shipping" || selectedOrder.status === "delivered" || pInfo?.status === "succeeded";
+                  return (
+                    <div className="bg-sky-50/60 border border-sky-100 rounded-2xl p-4 space-y-3 text-xs">
+                      <div className="flex items-center justify-between pb-2.5 border-b border-sky-100/80">
+                        <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                          <CreditCard className="w-4 h-4 text-[#0082CA]" />
+                          اطلاعات و تراکنش پرداخت
+                        </span>
+                        <span
+                          className={cn(
+                            "px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
+                            isPaid
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200"
+                          )}
+                        >
+                          {isPaid ? "پرداخت موفق" : "در انتظار پرداخت"}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-slate-600">
+                        <div>
+                          <span className="text-slate-400 block text-[11px]">درگاه پرداخت:</span>
+                          <span className="font-medium text-slate-900">{pInfo?.gateway_name || (pInfo?.gateway === "zarinpal" ? "زرین‌پال" : pInfo?.gateway) || "زرین‌پال"}</span>
+                        </div>
+
+                        <div>
+                          <span className="text-slate-400 block text-[11px]">مبلغ پرداخت شده:</span>
+                          <span className="font-bold text-slate-900 font-mono">
+                            {formatPrice(pInfo?.amount || selectedOrder.total || selectedOrder.total_amount)}
+                          </span>
+                        </div>
+
+                        {pInfo?.tracking_code ? (
+                          <div className="sm:col-span-2 flex items-center justify-between bg-white border border-sky-200/70 rounded-xl p-2.5 mt-1 shadow-sm">
+                            <div>
+                              <span className="text-slate-400 block text-[10px]">کد رهگیری بانکی (Ref ID):</span>
+                              <span className="font-mono font-bold text-[#0082CA] text-xs tracking-wider" dir="ltr">
+                                {pInfo.tracking_code}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(pInfo.tracking_code);
+                                setCopiedRef(true);
+                                toast.success("کد رهگیری کپی شد");
+                                setTimeout(() => setCopiedRef(false), 2000);
+                              }}
+                              className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg text-slate-700 transition-colors flex items-center gap-1 text-[11px]"
+                            >
+                              {copiedRef ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{copiedRef ? "کپی شد" : "کپی"}</span>
+                            </button>
+                          </div>
+                        ) : null}
+
+                        {pInfo?.paid_at || selectedOrder.paid_at ? (
+                          <div className="sm:col-span-2 text-slate-500 text-[11px] pt-1">
+                            <span>زمان ثبت تراکنش: </span>
+                            <span dir="ltr" className="font-mono text-slate-700">
+                              {formatShamsiDate(pInfo?.paid_at || selectedOrder.paid_at)}
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : selectedOrder.status === "paid" ? (
+                <div className="bg-sky-50/60 border border-sky-100 rounded-2xl p-4 space-y-2 text-xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-sky-100">
+                    <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                      <CreditCard className="w-4 h-4 text-[#0082CA]" />
+                      اطلاعات پرداخت
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      پرداخت شده
+                    </span>
+                  </div>
+                  <p className="text-slate-600 text-[11px]">این سفارش از طریق درگاه پرداخت الکترونیک تسویه گردیده است.</p>
+                </div>
+              ) : null}
 
               {/* Financial Totals */}
               <div className="border-t border-sky-100 pt-4 space-y-3 text-xs">

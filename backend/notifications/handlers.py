@@ -50,13 +50,13 @@ def order_status_changed_handler(sender, order, old_status, new_status, **kwargs
     
 
     tracking = paid.gateway_reference or order.order_number
-    frontend_url = settings.FRONTEND_URL
+    profile_url = f"{settings.FRONTEND_URL.replace('https://', '').replace('http://', '').rstrip('/')}/profile"
 
     customer_phone = getattr(order.user, "phone_number", "")
     customer_params = [
         {"name": "ORDERID", "value": order.order_number},
         {"name": "TRACKING", "value": tracking},
-        {"name": "URL", "value": f"{frontend_url}/orders/{order.order_number}"},
+        {"name": "URL", "value": profile_url},
     ]
     sms_updates_pref = True
     try:

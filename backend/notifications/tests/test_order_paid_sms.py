@@ -49,7 +49,7 @@ class TestPaidOrderSms:
         assert mock_template_sms.delay.call_count == 2
         calls = {c.args[1]: c.args[2] for c in mock_template_sms.delay.call_args_list}
         customer_params = {p["name"]: p["value"] for p in calls.pop(321934)}
-        expected_url = f"{settings.FRONTEND_URL}/orders/{order.order_number}"
+        expected_url = f"{settings.FRONTEND_URL.replace('https://', '').replace('http://', '').rstrip('/')}/profile"
         assert customer_params == {
             "ORDERID": order.order_number,
             "TRACKING": "15511601",
@@ -98,6 +98,19 @@ class TestPaidOrderSms:
                 old_status=Order.Status.PAID, new_status=Order.Status.PAID,
             )
         assert mock_template_sms.delay.call_count == 0
+
+
+
+    def test_order_serialization_includes_payment_info(self):
+        user = UserFactory()
+        order = _paid_order(user)
+        serialized = OrderService().get_order_by_number(order.order_number, user=user)
+        assert serialized["payment_info"] is not None
+        assert serialized["payment_info"]["tracking_code"] == "15511601"
+        assert serialized["payment_info"]["amount"] == 25000
+        assert serialized["payment_info"]["status"] == "succeeded"
+        assert serialized["payment_info"]["gateway_name"] == "زرین‌پال"
+        assert len(serialized["payments"]) == 1
 
 
 @pytest.mark.django_db

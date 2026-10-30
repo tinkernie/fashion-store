@@ -408,6 +408,42 @@ class OrderService:
                     "line_total": int(round(float(item.line_total))) if item.line_total is not None else 0,
                 }
             )
+
+        payments_data = []
+        try:
+            for p in order.payments.all().order_by("-created_at"):
+                payments_data.append(
+                    {
+                        "id": str(p.id),
+                        "amount": int(round(float(p.amount))) if p.amount is not None else 0,
+                        "gateway": p.gateway,
+                        "status": p.status,
+                        "gateway_reference": p.gateway_reference,
+                        "authority": p.authority,
+                        "created_at": p.created_at.isoformat() if p.created_at else None,
+                    }
+                )
+        except Exception:
+            payments_data = []
+
+        successful_payment = next((p for p in payments_data if p["status"] == "succeeded"), None)
+        active_payment = successful_payment or (payments_data[0] if payments_data else None)
+
+        payment_info = None
+        if active_payment:
+            gw = active_payment["gateway"]
+            gw_display = "زرین‌پال" if gw == "zarinpal" else gw
+            payment_info = {
+                "id": active_payment["id"],
+                "status": active_payment["status"],
+                "gateway": active_payment["gateway"],
+                "gateway_name": gw_display,
+                "tracking_code": active_payment["gateway_reference"] or "",
+                "amount": active_payment["amount"],
+                "authority": active_payment["authority"] or "",
+                "paid_at": active_payment["created_at"],
+            }
+
         return {
             "id": str(order.id),
             "order_number": order.order_number,
@@ -432,6 +468,8 @@ class OrderService:
                 order.cancelled_at.isoformat() if order.cancelled_at else None
             ),
             "items": items,
+            "payments": payments_data,
+            "payment_info": payment_info,
             "status_history": [
                 {
                     "from": h.from_status,
