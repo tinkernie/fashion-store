@@ -12,7 +12,7 @@ User = get_user_model()
 
 class UserService:
     def update_profile(self, user: User, data: dict) -> User:
-        allowed_fields = {"first_name", "last_name", "email"}
+        allowed_fields = {"first_name", "last_name", "email", "birth_date"}
         filtered = {k: v for k, v in data.items() if k in allowed_fields}
         if "email" in filtered:
             email = (filtered["email"] or "").strip().lower() or None
@@ -26,12 +26,53 @@ class UserService:
         for field in ["first_name", "last_name"]:
             if field in filtered:
                 UserValidator.validate_name(filtered[field], field_name=field)
+        if "birth_date" in filtered:
+            birth = filtered.pop("birth_date")
+            if birth is None:
+                # Explicit empty value clears the stored date.
+                filtered.update(birth_year=None, birth_month=None, birth_day=None)
+            else:
+                filtered.update(
+                    birth_year=birth["year"],
+                    birth_month=birth["month"],
+                    birth_day=birth["day"],
+                )
         from django.db import IntegrityError
 
         try:
             return UserRepository.update_user(user, **filtered)
         except IntegrityError:
             raise BusinessException("A user with this email address already exists.")
+
+    def quick_create_user(self, phone_number: str, birth: dict, requested_by: User) -> User:
+        """Admin quick user creation for in-person customers.
+
+        Phone + Jalali birth date only; account is active with the shared
+        initial password (settings.QUICK_CREATE_PASSWORD, default 12345).
+        Customers set their own password later via the Forgot Password OTP
+        flow (/api/auth/password-reset-otp/).
+        """
+        from django.conf import settings
+        from django.db import IntegrityError
+        from authentication.validators import PhoneValidator
+
+        phone_number = PhoneValidator.validate(phone_number)
+        UserValidator.validate_phone_unique(phone_number)
+        try:
+            user = User.objects.create_user(
+                phone_number,
+                password=getattr(settings, "QUICK_CREATE_PASSWORD", "12345"),
+                birth_year=birth["year"],
+                birth_month=birth["month"],
+                birth_day=birth["day"],
+            )
+        except ValueError as exc:
+            raise BusinessException(str(exc), code="invalid_phone")
+        except IntegrityError:
+            raise BusinessException(
+                "A user with this phone already exists.", code="phone_exists"
+            )
+        return user
 
     def change_phone_request(self, user: User, new_phone: str) -> dict:
         from authentication.validators import PhoneValidator

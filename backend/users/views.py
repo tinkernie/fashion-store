@@ -17,8 +17,9 @@ from .serializers import (
     AddressSerializer,
     AddressCreateSerializer,
     AddressUpdateSerializer,
+    QuickCreateUserSerializer,
 )
-from .permissions import IsSelf
+from .permissions import IsSelf, IsAdminUserOrSuperuser
 
 User = get_user_model()
 
@@ -206,6 +207,32 @@ class AdminUserViewSet(viewsets.GenericViewSet):
         response = HttpResponse(content, content_type=content_type)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="quick-create",
+        permission_classes=[IsAdminUserOrSuperuser],
+        serializer_class=QuickCreateUserSerializer,
+    )
+    def quick_create(self, request):
+        """POST /api/admin/users/quick-create/ {phone_number, birth_date}
+
+        Creates an active customer with settings.QUICK_CREATE_PASSWORD
+        (default 12345) from just a phone number and a Solar Hijri birth
+        date. For is_staff users AND superusers. In-person customers set
+        their own password later via the Forgot Password OTP flow.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service = UserService()
+        user = service.quick_create_user(
+            serializer.validated_data["phone_number"],
+            serializer.validated_data["birth_date"],
+            request.user,
+        )
+        output_serializer = AdminUserSerializer(user)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
     def deactivate(self, request, pk=None):

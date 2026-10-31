@@ -10,16 +10,27 @@ class UserProfileSerializer(serializers.Serializer):
     email = serializers.EmailField(read_only=True)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    birth_date = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(read_only=True)
     is_staff = serializers.BooleanField(read_only=True)
     is_superuser = serializers.BooleanField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
+
+    def get_birth_date(self, obj):
+        if obj.birth_year and obj.birth_month and obj.birth_day:
+            from .validators import JalaliDateValidator
+
+            return JalaliDateValidator.format_jalali(
+                obj.birth_year, obj.birth_month, obj.birth_day
+            )
+        return None
 
 
 class UpdateProfileSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=False)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=False)
     email = serializers.EmailField(required=False, allow_null=True, allow_blank=True)
+    birth_date = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     def validate_first_name(self, value):
         from .validators import UserValidator
@@ -32,6 +43,15 @@ class UpdateProfileSerializer(serializers.Serializer):
 
         UserValidator.validate_name(value, field_name="last_name")
         return value.strip()
+
+    def validate_birth_date(self, value):
+        """Empty/null clears the stored date; otherwise strict Jalali YYYY/MM/DD."""
+        from .validators import JalaliDateValidator
+
+        if value is None or not str(value).strip():
+            return None
+        year, month, day = JalaliDateValidator.validate(value)
+        return {"year": year, "month": month, "day": day}
 
 
 class AddressSerializer(serializers.Serializer):
@@ -97,6 +117,7 @@ class AdminUserSerializer(serializers.Serializer):
     email = serializers.EmailField(read_only=True, required=False, allow_null=True)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    birth_date = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(required=False)
     is_staff = serializers.BooleanField(read_only=True)
     is_superuser = serializers.BooleanField(read_only=True)
@@ -104,6 +125,15 @@ class AdminUserSerializer(serializers.Serializer):
     groups = serializers.SerializerMethodField()
     total_spent = serializers.SerializerMethodField()
     orders_count = serializers.SerializerMethodField()
+
+    def get_birth_date(self, obj):
+        if obj.birth_year and obj.birth_month and obj.birth_day:
+            from .validators import JalaliDateValidator
+
+            return JalaliDateValidator.format_jalali(
+                obj.birth_year, obj.birth_month, obj.birth_day
+            )
+        return None
 
     def get_groups(self, obj):
         return list(obj.groups.values_list("name", flat=True))
@@ -141,3 +171,26 @@ class AdminUserUpdateSerializer(serializers.Serializer):
 
 class AssignGroupsSerializer(serializers.Serializer):
     group_ids = serializers.ListField(child=serializers.IntegerField())
+
+
+class QuickCreateUserSerializer(serializers.Serializer):
+    """Admin quick user creation: phone + Jalali birth date only.
+
+    The account is immediately active with the shared initial password
+    (settings.QUICK_CREATE_PASSWORD, default 12345). In-person customers
+    set their own password later through the Forgot Password flow.
+    """
+
+    phone_number = serializers.CharField(max_length=15)
+    birth_date = serializers.CharField()
+
+    def validate_phone_number(self, value):
+        from authentication.validators import PhoneValidator
+
+        return PhoneValidator.validate(value)
+
+    def validate_birth_date(self, value):
+        from .validators import JalaliDateValidator
+
+        year, month, day = JalaliDateValidator.validate(value)
+        return {"year": year, "month": month, "day": day}

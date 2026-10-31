@@ -430,6 +430,9 @@ OTP_LENGTH = int(os.environ.get("OTP_LENGTH", "5"))
 OTP_EXPIRY_SECONDS = int(os.environ.get("OTP_EXPIRY_SECONDS", "360"))
 OTP_RESEND_SECONDS = int(os.environ.get("OTP_RESEND_SECONDS", "120"))
 OTP_MAX_ATTEMPTS = int(os.environ.get("OTP_MAX_ATTEMPTS", "5"))
+# Admin quick user creation: shared initial password for in-person customers.
+# Override in .env if the owner ever wants a different initial password.
+QUICK_CREATE_PASSWORD = os.environ.get("QUICK_CREATE_PASSWORD", "12345")
 # Owner notification target for paid-order SMS (template 551115)
 ORDER_OWNER_PHONE = os.environ.get("ORDER_OWNER_PHONE", "09199547931")
 # Workspace templates (owner-purchased): customer purchase confirmation +
