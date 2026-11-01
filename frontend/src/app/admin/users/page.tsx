@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { adminApi } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
+import { ShamsiDatePicker } from "@/components/ui/shamsi-date-picker";
 import { cn } from "@/lib/utils";
 import { formatPrice, formatPriceNumber, parsePrice } from "@/lib/price-utils";
 
@@ -655,9 +656,6 @@ export default function AdminUsersPage() {
                   <div className="text-xs md:text-sm font-bold text-sky-300 font-mono mt-1" dir="ltr">
                     {selectedUser.birth_date || "ثبت نشده"}
                   </div>
-                  <span className="text-[10px] text-gray-500 block mt-1">
-                    تاریخ تولد هجری شمسی
-                  </span>
                 </div>
               </div>
 
@@ -959,18 +957,16 @@ export default function AdminUsersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-300">تاریخ تولد (هجری شمسی)</label>
-              <input
-                required
-                type="text"
+              <label className="text-xs font-bold text-gray-300">تاریخ تولد</label>
+              <ShamsiDatePicker
                 value={quickBirthDate}
-                onChange={(e) => setQuickBirthDate(e.target.value)}
-                placeholder="1370/05/21"
-                maxLength={10}
-                dir="ltr"
-                className="w-full bg-[#181818] border border-white/15 rounded-xl h-11 px-3 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
+                onChange={setQuickBirthDate}
+                theme="dark"
+                outputFormat="jalali"
+                minYear={1320}
+                maxYear={1405}
+                placeholder="انتخاب تاریخ تولد..."
               />
-              <span className="text-[11px] text-gray-500">فرمت: سال/ماه/روز (مثال: ۱۳۷۰/۰۵/۲۱)</span>
             </div>
 
             <div className="flex items-center gap-3 pt-2">

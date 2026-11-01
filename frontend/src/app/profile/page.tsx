@@ -43,6 +43,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/error-utils";
 import { formatShamsiDate } from "@/lib/jalali";
+import { ShamsiDatePicker } from "@/components/ui/shamsi-date-picker";
 import { cn } from "@/lib/utils";
 import { isTokenExpired, clearAuthSession, parseJwtPayload } from "@/lib/auth";
 import { formatPrice, parsePrice, getDiscountInfo } from "@/lib/price-utils";
@@ -143,6 +144,7 @@ export default function ProfilePage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [stockAlerts, setStockAlerts] = useState<StockAlert[]>([]);
   const [isRemovingAlertId, setIsRemovingAlertId] = useState<string | null>(null);
+  const [birthDate, setBirthDate] = useState("");
   const [preferences, setPreferences] = useState<any>({
     sms_order_updates: true,
     sms_promotions: true,
@@ -245,6 +247,12 @@ export default function ProfilePage() {
     };
     fetchData();
   }, [router]);
+
+  useEffect(() => {
+    if (userProfile?.birth_date) {
+      setBirthDate(userProfile.birth_date);
+    }
+  }, [userProfile?.birth_date]);
 
   const handleRemoveStockAlert = async (alertId: string) => {
     setIsRemovingAlertId(alertId);
@@ -395,13 +403,12 @@ export default function ProfilePage() {
 
     const formData = new FormData(e.currentTarget);
     const fullName = ((formData.get("fullName") as string) || "").trim();
-    const birthDateRaw = ((formData.get("birthDate") as string) || "").trim();
-    const normalizedBirthDate = birthDateRaw.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+    const normalizedBirthDate = (birthDate || "").trim().replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
 
     if (normalizedBirthDate) {
       const jalaliPattern = /^1[34]\d{2}[/\-.](0[1-9]|1[0-2])[/\-.](0[1-9]|[12]\d|3[01])$/;
       if (!jalaliPattern.test(normalizedBirthDate)) {
-        toast.error("تاریخ تولد باید به فرمت هجری شمسی مانند 1370/05/21 باشد");
+        toast.error("فرمت تاریخ تولد معتبر نیست");
         setIsLoading(false);
         return;
       }
@@ -633,16 +640,9 @@ export default function ProfilePage() {
             <h2 className="text-xl font-black text-slate-900 mb-1">
               {displayName}
             </h2>
-            <p className="text-xs text-slate-500 font-sans mb-4" dir="ltr">
+            <p className="text-xs text-slate-500 font-sans mb-6" dir="ltr">
               {userProfile?.phone_number || ""}
             </p>
-
-            {userProfile?.birth_date && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-50 border border-sky-200 rounded-full text-xs text-[#0082CA] font-medium mb-6">
-                <Calendar className="w-3.5 h-3.5 text-[#0082CA]" />
-                <span>متولد: <strong className="font-mono" dir="ltr">{userProfile.birth_date}</strong></span>
-              </div>
-            )}
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-3 gap-2 py-4 border-y border-sky-100 mb-6 text-center">
@@ -1200,20 +1200,20 @@ export default function ProfilePage() {
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                      <span>تاریخ تولد (هجری شمسی)</span>
+                      <span>تاریخ تولد</span>
                       <span className="text-[11px] text-slate-400 font-normal">اختیاری</span>
                     </label>
-                    <Input
-                      key={`profile-birth-${userProfile?.id || "guest"}`}
-                      name="birthDate"
-                      defaultValue={userProfile?.birth_date || ""}
-                      placeholder="مثال: ۱۳۷۵/۰۴/۱۵"
-                      maxLength={10}
-                      dir="ltr"
-                      className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl font-mono focus-visible:ring-2 focus-visible:ring-[#0082CA]"
+                    <ShamsiDatePicker
+                      value={birthDate}
+                      onChange={setBirthDate}
+                      theme="light"
+                      outputFormat="jalali"
+                      minYear={1320}
+                      maxYear={1405}
+                      placeholder="انتخاب تاریخ تولد..."
                     />
                     <p className="text-[11px] text-slate-500">
-                      فرمت صحیح: سال/ماه/روز (مثال: ۱۳۷۵/۰۴/۱۵). برای هدایا و تخفیف‌های سالروز تولد.
+                      برای دریافت هدایا و تخفیف‌های ویژه سالروز تولد.
                     </p>
                   </div>
 

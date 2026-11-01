@@ -21,19 +21,21 @@ When designing or modifying UI components, follow this strict precedence:
 1. Explicit requirements and visual references provided by the user.
 2. Established rules and tokens in `DESIGN.md` and [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
 3. Existing project-specific reusable components (`frontend/src/components`).
-4. Specialized design skills (`/impeccable`, `/hallmark`, `/design-taste-frontend`, `/ui-ux-pro-max`, `/ux-ui-agent-skills`, `/high-end-visual-design`).
+4. Anti-slop core filter & specialized design skills (`antislop`, `antislop-ui`, `antislop-copywriting`, `antislop-human`, `antislop-layoutmobile`, `antislop-code`, `/impeccable`, `/hallmark`, `/design-taste-frontend`, `/ui-ux-pro-max`, `/ux-ui-agent-skills`, `/high-end-visual-design`).
 5. Established accessibility (WCAG 2.2 AA) and engineering standards.
 
 ---
 
 ## 3. Anti-AI-Slop Directives
-All UI implementations must strictly avoid generic AI template patterns:
+All UI implementations must strictly avoid generic AI template patterns (active antislop: during):
 - **BANNED:** AI purple/violet gradients, neon glow blobs, muddy warm beige/brass clichés, and unstyled raw emojis.
 - **BANNED:** Arbitrary pill wrappers on non-button elements, excessive blur/glassmorphism, and layout-shifting hovers.
 - **BANNED:** Low-contrast cyan on white, illegible ghost buttons, generic cards without hierarchy.
-- **BANNED:** Fake UI chrome (fake browser bars, fake traffic lights, fake mobile frames).
-- **ENFORCED:** Single locked accent palette, crisp physical micro-interactions, WCAG AA contrast (>4.5:1 text, >3:1 UI components), and clean typography.
-- **ENFORCED:** Human-written copy audited via `/humanizer` for all user-facing strings.
+- **BANNED:** Fake UI chrome (fake browser bars, fake traffic lights, fake mobile frames), fake counters, and arbitrary animation noise.
+- **ENFORCED:** Single locked accent palette, crisp physical micro-interactions, WCAG 2.2 AA contrast (>4.5:1 text, >3:1 UI components via `antislop-human`), and clean typography.
+- **ENFORCED:** Human-written copy audited via `antislop-copywriting` and `/humanizer` for all user-facing strings.
+- **ENFORCED:** Responsive stability across 320px–1440px+ without horizontal overflow via `antislop-layoutmobile`.
+- **DELIVERY GATE:** Verification before declaring completion using `antislop` Delivery Gate checklist.
 
 ---
 

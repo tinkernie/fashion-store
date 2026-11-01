@@ -13,10 +13,10 @@
 
 - **Brand Essence:** High-end, contemporary fashion house fusing Mediterranean clarity with modern minimalist precision.
 - **Color Core:** A disciplined harmony of **Mavi Azure Blue**, **Pure Snow White**, and **Ice Blue tints**, grounded by deep Aegean navy/slate for text contrast.
-- **Anti-Slop Stance:**
-  - BANNED: Generic AI purple gradients, neon glow blobs, muddy warm beige/brass clichés, and unstyled raw emojis.
-  - REJECTED: Low-contrast cyan on white, illegible ghost buttons, generic cards without hierarchy, and layout-shifting hovers.
-  - ENFORCED: Single locked accent palette, crisp physical micro-interactions, WCAG AA/AAA compliance, and flawless RTL alignment.
+- **Anti-Slop Stance (antislop active: during):**
+  - BANNED: Generic AI purple gradients, neon glow blobs, muddy warm beige/brass clichés, unstyled raw emojis, fake statistics/counters, and low-contrast ghost buttons.
+  - REJECTED: Low-contrast cyan on white, illegible ghost buttons, generic cards without hierarchy, layout-shifting hovers, and robotic AI-generated code comments.
+  - ENFORCED: Single locked accent palette, crisp physical micro-interactions, WCAG 2.2 AA/AAA compliance (`antislop-human`), mobile/responsive resilience (`antislop-layoutmobile`), natural copy (`antislop-copywriting`), and flawless RTL alignment.
 
 ---
 

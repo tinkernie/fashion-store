@@ -29,9 +29,12 @@ Execute every incoming task strictly following the 10-phase lifecycle in [AGENTS
 ## 4. Skill Dispatch Matrix
 | Task Domain | Primary Skill | Trigger Condition |
 | :--- | :--- | :--- |
+| Anti-slop core filter & quality gate | `antislop` (mode: during) | Active during all UI, copy, layout, and comment workflows |
+| UI craft, visual hierarchy & CWV | `antislop-ui`, `impeccable`, `hallmark`, `taste` | Component creation/redesign, eliminating generic templates |
+| User-facing frontend copy & microcopy | `antislop-copywriting`, `humanizer` | Any visible UI text, headlines, error messages, empty states |
+| Accessibility, WCAG 2.2 & contrast | `antislop-human`, `ui-ux-pro-max` | Contrast verification, keyboard navigation, touch targets (≥44×44px) |
+| Responsive layout & mobile viewports | `antislop-layoutmobile` | Viewport scaling (320px–1440px+), responsive grid/flex rhythm |
+| Concise architectural code comments | `antislop-code` | Writing or editing code; omit tautological/robotic explanations |
 | Codebase architecture & dependencies | `graphify` | First step of every task; consult `graphify-out/` |
 | Requirement clarification | `grill-me` | Ambiguous requirements, edge cases, competing technical options |
-| User-facing frontend copy | `humanizer` | Any visible UI text (headings, buttons, alerts, error messages) |
-| Interface design & visual polish | `impeccable`, `hallmark`, `taste` (`design-taste-frontend`) | Creating or refining UI components, page layouts, visual styling |
-| Design systems, responsive & a11y | `ui-ux-pro-max`, `ux-ui-agent-skills`, `high-end-visual-design` | Component architectures, WCAG AA audits, touch targets, mobile layouts |
 | Terse output & token efficiency | `caveman`, `cavecrew` | Continuous chat communication |
