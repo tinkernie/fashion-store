@@ -89,13 +89,15 @@ export default function MediaUploader({
   const handleFileSelect = async (file?: File) => {
     if (!file) return;
 
-    // Validate type & size
-    if (!file.type.startsWith("image/")) {
-      toast.error("لطفاً فقط فایل تصویری (JPG, PNG, WEBP) انتخاب نمایید.");
+    // Validate type & size (supports iPhone HEIC/HEIF and standard web formats)
+    const isImage = file.type?.startsWith("image/") ||
+      ["jpg", "jpeg", "png", "webp", "heic", "heif"].includes(file.name.split(".").pop()?.toLowerCase() || "");
+    if (!isImage) {
+      toast.error("لطفاً فقط فایل تصویری (JPG, PNG, WEBP یا HEIC آیفون) انتخاب نمایید.");
       return;
     }
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error("حجم فایل نباید بیش از ۱۵ مگابایت باشد.");
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("حجم فایل نباید بیش از ۲۰ مگابایت باشد.");
       return;
     }
 
@@ -125,6 +127,24 @@ export default function MediaUploader({
       const uploadedUrl = res.image_url || res.url;
       onChange(uploadedUrl);
       setUrlInput(uploadedUrl);
+
+      // Server returns converted WebP dimensions directly
+      if (res.width && res.height) {
+        const isLandscape = res.width > res.height;
+        const ratio = res.height > 0 ? Number((res.width / res.height).toFixed(2)) : 1;
+        const serverMeta: ImageDimensionMeta = {
+          width: res.width,
+          height: res.height,
+          isLandscape,
+          ratio,
+        };
+        setImageMeta(serverMeta);
+
+        if (isBannerMode && !isLandscape) {
+          toast.warning("هشدار: تصویر بنر بارگذاری شده افقی نیست. برای نمایش ایده‌آل بنر، از تصویر افقی ۱۶:۹ استفاده فرمایید.");
+        }
+      }
+
       toast.success("تصویر با موفقیت در سرور ذخیره شد.");
     } catch (e: any) {
       console.error("Upload failed:", e);
@@ -226,7 +246,7 @@ export default function MediaUploader({
             type="file"
             ref={fileInputRef}
             onChange={(e) => handleFileSelect(e.target.files?.[0])}
-            accept="image/*"
+            accept="image/*,.heic,.heif,.HEIC,.HEIF"
             className="hidden"
           />
 
@@ -322,8 +342,8 @@ export default function MediaUploader({
                     </p>
                     <p className="text-[10px] text-gray-400">
                       {isBannerMode
-                        ? "تصویر افقی با نسبت ۱۶:۹ (حداقل ۱۶۰۰×۹۰۰) — JPG, PNG, WEBP تا ۱۵ مگابایت"
-                        : "فرمت‌های مجاز: JPG, PNG, WEBP (حداکثر ۱۵ مگابایت)"}
+                        ? "تصویر افقی با نسبت ۱۶:۹ — فرمت‌های JPG, PNG, WEBP, HEIC (آیفون) تا ۲۰ مگابایت"
+                        : "فرمت‌های مجاز: JPG, PNG, WEBP و HEIC آیفون (حداکثر ۲۰ مگابایت)"}
                     </p>
                   </div>
                 </>

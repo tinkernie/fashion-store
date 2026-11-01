@@ -237,3 +237,8 @@ cd /var/www/fashion-store && git pull origin main && ./deploy.sh
 6. `_env` bootstrapping note: `backend/config/settings.py` reads `.env` with precedence
    `real env > .env file` (via `os.environ.setdefault`). Systemd `EnvironmentFile=` and manual `export`
    always outrank the on-disk file.
+7. **iPhone HEIC/HEIF image pipeline & WebP conversion:** pillow-heif is pinned in 
+equirements.txt.
+   It registers the HEIF decoder with Pillow on startup, enabling seamless upload of iPhone 15 Pro Max
+   photos (.heic, .heif) and immediate conversion to .webp. On production VPS (deploy.sh), binary
+   wheels are installed automatically during pip install -r requirements.txt.

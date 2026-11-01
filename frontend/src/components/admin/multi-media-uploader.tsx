@@ -51,15 +51,20 @@ export default function MultiMediaUploader({
       return;
     }
 
-    // Validate format and size
+    // Validate format and size (supports iPhone HEIC/HEIF and standard web formats)
     const validFiles: File[] = [];
     for (const f of fileArray) {
-      if (!f.type.startsWith("image/")) {
-        toast.error(`فایل "${f.name}" تصویر معتبر نیست.`);
+      const isImage =
+        f.type?.startsWith("image/") ||
+        ["jpg", "jpeg", "png", "webp", "heic", "heif"].includes(
+          f.name.split(".").pop()?.toLowerCase() || ""
+        );
+      if (!isImage) {
+        toast.error(`فایل "${f.name}" تصویر معتبر نیست (فرمت‌های JPG, PNG, WEBP یا HEIC آیفون مجاز است).`);
         continue;
       }
-      if (f.size > 10 * 1024 * 1024) {
-        toast.error(`حجم فایل "${f.name}" بیشتر از ۱۰ مگابایت است.`);
+      if (f.size > 20 * 1024 * 1024) {
+        toast.error(`حجم فایل "${f.name}" بیشتر از ۲۰ مگابایت است.`);
         continue;
       }
       validFiles.push(f);
@@ -211,7 +216,7 @@ export default function MultiMediaUploader({
         type="file"
         ref={fileInputRef}
         onChange={(e) => handleFilesSelect(e.target.files)}
-        accept="image/*"
+        accept="image/*,.heic,.heif,.HEIC,.HEIF"
         multiple
         className="hidden"
       />
@@ -253,7 +258,7 @@ export default function MultiMediaUploader({
                   تصاویر را اینجا بکشید یا برای انتخاب دسته‌جمعی کلیک کنید
                 </p>
                 <p className="text-[10px] text-gray-500">
-                  انتخاب همزمان چندین تصویر مجاز است (JPG, PNG, WEBP تا ۱۰ مگابایت)
+                  انتخاب همزمان چندین تصویر مجاز است (JPG, PNG, WEBP و HEIC آیفون تا ۲۰ مگابایت)
                 </p>
               </div>
             </>

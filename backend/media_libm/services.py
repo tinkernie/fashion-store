@@ -8,7 +8,7 @@ from product_options.models import ProductOption
 
 
 class MediaService:
-    ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
+    ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif']
     ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'webm']
     MAX_FILE_SIZE_MB = 20
 
@@ -63,7 +63,23 @@ class MediaService:
 
     def _validate_file(self, file, media_type):
         import os
-        ext = os.path.splitext(file.name)[1].lower().lstrip('.')
+        ext = os.path.splitext(getattr(file, "name", "") or "")[1].lower().lstrip('.')
+        content_type = getattr(file, "content_type", "") or ""
+
+        # Infer extension from content_type if extension is omitted (e.g. mobile blobs)
+        if not ext and content_type:
+            ct_map = {
+                'image/jpeg': 'jpg',
+                'image/jpg': 'jpg',
+                'image/png': 'png',
+                'image/webp': 'webp',
+                'image/heic': 'heic',
+                'image/heif': 'heif',
+                'image/heic-sequence': 'heic',
+                'image/heif-sequence': 'heif',
+            }
+            ext = ct_map.get(content_type.lower(), '')
+
         if media_type == 'image' and ext not in self.ALLOWED_IMAGE_EXTENSIONS:
             raise BusinessException(f"Unsupported image format. Allowed: {', '.join(self.ALLOWED_IMAGE_EXTENSIONS)}")
         if media_type == 'video' and ext not in self.ALLOWED_VIDEO_EXTENSIONS:

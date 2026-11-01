@@ -5,6 +5,13 @@ from PIL import Image, ImageOps
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
+# Enable Pillow HEIF/HEIC decoding (e.g., iPhone 15 Pro Max photos)
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except Exception:
+    pass
+
 logger = logging.getLogger(__name__)
 
 # Single source of truth for the whole WebP pipeline (upload service,
@@ -66,7 +73,7 @@ def image_to_webp_bytes(img: Image.Image, quality: int = WEBP_QUALITY) -> bytes:
     return buf.getvalue()
 
 
-def to_webp_file(file, quality: int = WEBP_QUALITY) -> InMemoryUploadedFile:
+def to_webp_file(file, quality: int = WEBP_QUALITY, name: str = None) -> InMemoryUploadedFile:
     """
     Converts any incoming image to WebP, preserving transparency, correcting
     EXIF orientation and downscaling huge originals (see prepare_image).
@@ -78,7 +85,7 @@ def to_webp_file(file, quality: int = WEBP_QUALITY) -> InMemoryUploadedFile:
     buf = BytesIO(content)
     buf.seek(0)
 
-    orig_name = getattr(file, "name", "image.jpg")
+    orig_name = name or getattr(file, "name", "image.jpg")
     base_name = os.path.splitext(os.path.basename(orig_name))[0] or "image"
     webp_name = f"{base_name}.webp"
 
@@ -107,7 +114,7 @@ def ensure_webp_field(instance, field_name: str, quality: int = WEBP_QUALITY):
         return
 
     try:
-        webp_file = to_webp_file(field_file.file, quality=quality)
+        webp_file = to_webp_file(field_file.file, quality=quality, name=name)
         field_file.save(webp_file.name, webp_file, save=False)
     except ValueError as exc:
         logger.warning("WebP conversion skipped for %s.%s (%s): %s",

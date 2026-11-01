@@ -286,7 +286,7 @@ export const adminApi = {
   },
 
   // Media Upload
-  async uploadImage(file: File): Promise<{ url: string; image_url: string; relative_url?: string }> {
+  async uploadImage(file: File): Promise<{ url: string; image_url: string; relative_url?: string; width?: number; height?: number }> {
     const formData = new FormData();
     formData.append('file', file);
     const res = await api.post('/api/admin/media_libm/upload/', formData, {

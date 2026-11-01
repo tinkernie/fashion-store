@@ -18,6 +18,7 @@ python-decouple==3.8
 requests==2.31.0
 
 Pillow==11.3.0
+pillow-heif==1.8.1
 boto3==1.42.97
 
 gunicorn==23.0.0

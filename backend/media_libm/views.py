@@ -24,19 +24,6 @@ class PublicMediaViewSet(viewsets.GenericViewSet):
         media = MediaSelector.get_media_for_object(option)
         return Response(MediaUploadSerializer(media, many=True).data)
 
-        # Validate product exists (optional)
-        # media_list = MediaSelector.get_media_for_product_option(option_id)
-        # data = [{
-        #     'id': str(m.id),
-        #     'url': m.file.url,
-        #     'media_type': m.media_type,
-        #     'alt_text': m.alt_text,
-        #     'thumbnail': m.metadata.get('thumbnail'),
-        #     'responsive': m.metadata.get('responsive'),
-        #     'position': m.position,
-        # } for m in media_list]
-        # return Response(data)
-
 
 class AdminMediaViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAdminUser]
@@ -59,17 +46,18 @@ class AdminMediaViewSet(viewsets.GenericViewSet):
             from django.core.files.base import ContentFile
             from django.conf import settings
             from common.exceptions import BusinessException
-            from .webp import to_webp_file
+            from .webp import prepare_image, image_to_webp_bytes
 
             try:
                 self.service._validate_file(file, 'image')
-                webp_file = to_webp_file(file)
+                img = prepare_image(file)
+                content = image_to_webp_bytes(img)
             except BusinessException:
                 raise
             except ValueError as exc:
                 raise BusinessException(str(exc) or "Invalid image file.")
             filename = f"products/{uuid.uuid4().hex}.webp"
-            saved_path = default_storage.save(filename, ContentFile(webp_file.read()))
+            saved_path = default_storage.save(filename, ContentFile(content))
             
             # Format absolute and relative URLs
             media_prefix = getattr(settings, 'MEDIA_URL', '/media_libm/')
@@ -86,6 +74,8 @@ class AdminMediaViewSet(viewsets.GenericViewSet):
                 "image_url": full_url,
                 "relative_url": relative_url,
                 "filename": filename,
+                "width": img.width,
+                "height": img.height,
             }, status=status.HTTP_201_CREATED)
 
         try:
