@@ -9,7 +9,7 @@ class VariantOptionInline(admin.TabularInline):
 
 @admin.register(Variant)
 class VariantAdmin(admin.ModelAdmin):
-    list_display = ("sku", "product", "price", "status", "availability")
+    list_display = ("sku", "barcode", "product", "price", "status", "availability")
     search_fields = ("sku", "barcode", "product__title")
     list_filter = ("status", "availability")
     inlines = [VariantOptionInline]
