@@ -78,7 +78,7 @@ export interface PasswordStrength {
 
 export const calculatePasswordStrength = (password: string): PasswordStrength => {
   const requirements = {
-    length: password.length >= 8,
+    length: password.length >= 6,
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
     number: /\d/.test(password),
@@ -88,11 +88,11 @@ export const calculatePasswordStrength = (password: string): PasswordStrength =>
   const score = Object.values(requirements).filter(Boolean).length;
   const feedback: string[] = [];
 
-  if (!requirements.length) feedback.push('حداقل ۸ کاراکتر');
-  if (!requirements.uppercase) feedback.push('حداقل یک حرف بزرگ انگلیسی');
-  if (!requirements.lowercase) feedback.push('حداقل یک حرف کوچک انگلیسی');
-  if (!requirements.number) feedback.push('حداقل یک عدد');
-  if (!requirements.special) feedback.push('حداقل یک نماد ویژه (@#$...)');
+  if (!requirements.length) feedback.push('حداقل ۶ کاراکتر');
+
+
+
+
 
   return { score, feedback, requirements };
 };
@@ -212,11 +212,11 @@ export function AuthForm({
         if (!value) {
           error = 'رمز عبور الزامی است';
         } else if (typeof value === 'string') {
-          if (value.length < 8) {
-            error = 'رمز عبور باید حداقل ۸ کاراکتر باشد';
+          if (value.length < 6) {
+            error = 'رمز عبور باید حداقل ۶ کاراکتر باشد';
           } else if (authMode === 'signup') {
             const strength = calculatePasswordStrength(value);
-            if (strength.score < 2) {
+            if (strength.score < 1) {
               error = 'رمز عبور بسیار ضعیف است';
             }
           }
