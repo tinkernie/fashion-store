@@ -82,3 +82,23 @@ class TestProfileBirthDate:
         client.force_authenticate(user=user)
         resp = client.get("/api/users/me/")
         assert resp.json()["birth_date"] == "1370/05/21"
+
+    def test_profile_patch_jalali_birth_date(self):
+        user = UserFactory(phone_number='09355500011')
+        client = APIClient()
+        client.force_authenticate(user=user)
+        resp = client.patch('/api/users/me/', {'birth_date': '1375/04/15'}, format='json')
+        assert resp.status_code == 200
+        assert resp.json()['birth_date'] == '1375/04/15'
+        user.refresh_from_db()
+        assert (user.birth_year, user.birth_month, user.birth_day) == (1375, 4, 15)
+
+    def test_profile_patch_clear_birth_date(self):
+        user = UserFactory(phone_number='09355500012', birth_year=1370, birth_month=5, birth_day=21)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        resp = client.patch('/api/users/me/', {'birth_date': ''}, format='json')
+        assert resp.status_code == 200
+        assert resp.json()['birth_date'] is None
+        user.refresh_from_db()
+        assert (user.birth_year, user.birth_month, user.birth_day) == (None, None, None)

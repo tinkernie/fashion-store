@@ -30,6 +30,7 @@ import {
   Sparkles,
   Loader2,
   CreditCard,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -394,6 +395,17 @@ export default function ProfilePage() {
 
     const formData = new FormData(e.currentTarget);
     const fullName = ((formData.get("fullName") as string) || "").trim();
+    const birthDateRaw = ((formData.get("birthDate") as string) || "").trim();
+    const normalizedBirthDate = birthDateRaw.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+
+    if (normalizedBirthDate) {
+      const jalaliPattern = /^1[34]\d{2}[/\-.](0[1-9]|1[0-2])[/\-.](0[1-9]|[12]\d|3[01])$/;
+      if (!jalaliPattern.test(normalizedBirthDate)) {
+        toast.error("تاریخ تولد باید به فرمت هجری شمسی مانند 1370/05/21 باشد");
+        setIsLoading(false);
+        return;
+      }
+    }
 
     if (!fullName) {
       toast.error("نام و نام خانوادگی نمی‌تواند خالی باشد");
@@ -417,12 +429,14 @@ export default function ProfilePage() {
       const res = await api.patch("/api/users/me/", {
         first_name: fName,
         last_name: lName,
+        birth_date: normalizedBirthDate || "",
       });
 
       const updatedProfile = res.data || {
         ...userProfile,
         first_name: fName,
         last_name: lName,
+        birth_date: normalizedBirthDate || null,
       };
 
       setUserProfile(updatedProfile);
@@ -619,9 +633,16 @@ export default function ProfilePage() {
             <h2 className="text-xl font-black text-slate-900 mb-1">
               {displayName}
             </h2>
-            <p className="text-xs text-slate-500 font-sans mb-6" dir="ltr">
+            <p className="text-xs text-slate-500 font-sans mb-4" dir="ltr">
               {userProfile?.phone_number || ""}
             </p>
+
+            {userProfile?.birth_date && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-50 border border-sky-200 rounded-full text-xs text-[#0082CA] font-medium mb-6">
+                <Calendar className="w-3.5 h-3.5 text-[#0082CA]" />
+                <span>متولد: <strong className="font-mono" dir="ltr">{userProfile.birth_date}</strong></span>
+              </div>
+            )}
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-3 gap-2 py-4 border-y border-sky-100 mb-6 text-center">
@@ -1175,6 +1196,25 @@ export default function ProfilePage() {
                       placeholder="مثال: علی رضایی"
                       className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl focus-visible:ring-2 focus-visible:ring-[#0082CA]"
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                      <span>تاریخ تولد (هجری شمسی)</span>
+                      <span className="text-[11px] text-slate-400 font-normal">اختیاری</span>
+                    </label>
+                    <Input
+                      key={`profile-birth-${userProfile?.id || "guest"}`}
+                      name="birthDate"
+                      defaultValue={userProfile?.birth_date || ""}
+                      placeholder="مثال: ۱۳۷۵/۰۴/۱۵"
+                      maxLength={10}
+                      dir="ltr"
+                      className="bg-sky-50/50 border-sky-200 h-12 text-slate-900 text-sm rounded-xl font-mono focus-visible:ring-2 focus-visible:ring-[#0082CA]"
+                    />
+                    <p className="text-[11px] text-slate-500">
+                      فرمت صحیح: سال/ماه/روز (مثال: ۱۳۷۵/۰۴/۱۵). برای هدایا و تخفیف‌های سالروز تولد.
+                    </p>
                   </div>
 
                   <Button disabled={isLoading} type="submit" className="w-full h-12 rounded-xl bg-[#0082CA] text-white font-bold text-xs hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20">

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   Users,
+  UserPlus,
   Search,
   ShieldCheck,
   UserCheck,
@@ -116,6 +117,12 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isExporting, setIsExporting] = useState<"xlsx" | "csv" | null>(null);
 
+  // Quick Create Customer Dialog State
+  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
+  const [quickPhone, setQuickPhone] = useState("");
+  const [quickBirthDate, setQuickBirthDate] = useState("");
+  const [isSubmittingQuickCreate, setIsSubmittingQuickCreate] = useState(false);
+
   // User Details & Orders Modal State
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -127,6 +134,47 @@ export default function AdminUsersPage() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  const handleQuickCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const phone = quickPhone.trim().replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+    const birthDate = quickBirthDate.trim().replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+
+    if (!/^09\d{9}$/.test(phone)) {
+      toast.error("شماره موبایل نامعتبر است (باید ۱۱ رقم و با 09 شروع شود)");
+      return;
+    }
+
+    if (!birthDate) {
+      toast.error("وارد کردن تاریخ تولد الزامی است");
+      return;
+    }
+
+    const jalaliPattern = /^1[34]\d{2}[/\-.](0[1-9]|1[0-2])[/\-.](0[1-9]|[12]\d|3[01])$/;
+    if (!jalaliPattern.test(birthDate)) {
+      toast.error("فرمت تاریخ تولد باید هجری شمسی مانند 1370/05/21 باشد");
+      return;
+    }
+
+    setIsSubmittingQuickCreate(true);
+    try {
+      await adminApi.quickCreateUser({
+        phone_number: phone,
+        birth_date: birthDate,
+      });
+      toast.success("مشتری با موفقیت ایجاد شد", {
+        description: `رمز اولیه: 12345 | شماره: ${phone}`,
+      });
+      setIsQuickCreateOpen(false);
+      setQuickPhone("");
+      setQuickBirthDate("");
+      loadUsers();
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در ایجاد سریع کاربر"));
+    } finally {
+      setIsSubmittingQuickCreate(false);
+    }
+  };
 
   const loadUsers = async () => {
     setIsLoading(true);
@@ -245,8 +293,16 @@ export default function AdminUsersPage() {
           </p>
         </div>
 
-        {/* Export Buttons */}
+        {/* Action & Export Buttons */}
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <Button
+            type="button"
+            onClick={() => setIsQuickCreateOpen(true)}
+            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4 text-white" />
+            <span>افزودن سریع مشتری</span>
+          </Button>
           <Button
             type="button"
             onClick={() => handleExport("xlsx")}
@@ -339,6 +395,7 @@ export default function AdminUsersPage() {
               <tr>
                 <th className="p-4 md:p-5 font-bold">نام و مشخصات کاربر</th>
                 <th className="p-4 md:p-5 font-bold">شماره موبایل</th>
+                <th className="p-4 md:p-5 font-bold">تاریخ تولد</th>
                 <th className="p-4 md:p-5 font-bold">نقش کاربری</th>
                 <th className="p-4 md:p-5 font-bold">تاریخ عضویت</th>
                 <th className="p-4 md:p-5 font-bold">وضعیت حساب</th>
@@ -348,13 +405,13 @@ export default function AdminUsersPage() {
             <tbody className="divide-y divide-white/5">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-500">
+                  <td colSpan={7} className="text-center py-12 text-gray-500">
                     در حال بارگذاری لیست کاربران...
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-500">
+                  <td colSpan={7} className="text-center py-12 text-gray-500">
                     هیچ کاربری با این مشخصات یافت نشد.
                   </td>
                 </tr>
@@ -387,6 +444,17 @@ export default function AdminUsersPage() {
 
                       <td className="p-4 md:p-5 text-gray-300 font-mono" dir="ltr">
                         {user.phone_number || user.phone || user.email || "—"}
+                      </td>
+
+                      <td className="p-4 md:p-5 text-gray-300 font-mono text-[11px]" dir="ltr">
+                        {user.birth_date ? (
+                          <span className="inline-flex items-center gap-1.5 text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded-md border border-sky-500/20">
+                            <Calendar className="w-3 h-3 text-[#0082CA]" />
+                            {user.birth_date}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
                       </td>
 
                       <td className="p-4 md:p-5">
@@ -537,7 +605,7 @@ export default function AdminUsersPage() {
               </div>
 
               {/* Financial & Order Statistics */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="bg-[#121212] border border-emerald-500/20 rounded-2xl p-4 relative overflow-hidden">
                   <div className="flex items-center justify-between text-gray-400 mb-2">
                     <span className="text-xs font-bold">مجموع کل خریدها</span>
@@ -576,6 +644,19 @@ export default function AdminUsersPage() {
                   </div>
                   <span className="text-[10px] text-gray-500 block mt-1">
                     زمان اولین ثبت‌نام در فروشگاه
+                  </span>
+                </div>
+
+                <div className="bg-[#121212] border border-white/10 rounded-2xl p-4">
+                  <div className="flex items-center justify-between text-gray-400 mb-2">
+                    <span className="text-xs font-bold">تاریخ تولد</span>
+                    <Calendar className="w-4 h-4 text-sky-400" />
+                  </div>
+                  <div className="text-xs md:text-sm font-bold text-sky-300 font-mono mt-1" dir="ltr">
+                    {selectedUser.birth_date || "ثبت نشده"}
+                  </div>
+                  <span className="text-[10px] text-gray-500 block mt-1">
+                    تاریخ تولد هجری شمسی
                   </span>
                 </div>
               </div>
@@ -846,6 +927,75 @@ export default function AdminUsersPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Quick Create Customer Modal */}
+      <Dialog open={isQuickCreateOpen} onOpenChange={setIsQuickCreateOpen}>
+        <DialogContent className="bg-[#111111] border border-white/10 text-white sm:max-w-md p-6 rounded-3xl shadow-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black flex items-center gap-2.5 text-white">
+              <UserPlus className="w-5 h-5 text-emerald-400" />
+              افزودن سریع مشتری جدید
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleQuickCreateUser} className="space-y-4 mt-3">
+            <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-400 leading-relaxed">
+              این فرم برای ثبت سریع مشتریان حضوری طراحی شده است. مشتری با رمز عبور اولیه <strong className="text-white font-mono" dir="ltr">12345</strong> ایجاد می‌شود و در آینده می‌تواند از طریق فراموشی رمز عبور آن را تغییر دهد.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-300">شماره موبایل مشتری</label>
+              <input
+                required
+                type="tel"
+                value={quickPhone}
+                onChange={(e) => setQuickPhone(e.target.value)}
+                placeholder="09123456789"
+                maxLength={11}
+                dir="ltr"
+                className="w-full bg-[#181818] border border-white/15 rounded-xl h-11 px-3 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-300">تاریخ تولد (هجری شمسی)</label>
+              <input
+                required
+                type="text"
+                value={quickBirthDate}
+                onChange={(e) => setQuickBirthDate(e.target.value)}
+                placeholder="1370/05/21"
+                maxLength={10}
+                dir="ltr"
+                className="w-full bg-[#181818] border border-white/15 rounded-xl h-11 px-3 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
+              />
+              <span className="text-[11px] text-gray-500">فرمت: سال/ماه/روز (مثال: ۱۳۷۰/۰۵/۲۱)</span>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                type="submit"
+                disabled={isSubmittingQuickCreate}
+                className="flex-1 h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+              >
+                {isSubmittingQuickCreate ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <UserPlus className="w-4 h-4" />
+                )}
+                <span>ثبت مشتری</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsQuickCreateOpen(false)}
+                className="h-11 px-4 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-bold transition-all"
+              >
+                انصراف
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

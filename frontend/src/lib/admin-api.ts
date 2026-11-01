@@ -410,6 +410,10 @@ export const adminApi = {
     const res = await api.get(`/api/admin/users/${query ? `?${query}` : ''}`);
     return Array.isArray(res.data) ? res.data : res.data.results || [];
   },
+  async quickCreateUser(data: { phone_number: string; birth_date: string }): Promise<any> {
+    const res = await api.post('/api/admin/users/quick-create/', data);
+    return res.data;
+  },
   async exportUsers(
     filetype: 'csv' | 'xlsx' = 'xlsx',
     params?: { search?: string; is_active?: boolean }
