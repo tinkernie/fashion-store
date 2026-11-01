@@ -536,6 +536,7 @@ export const adminApi = {
   async createVariant(data: {
     product_id: string;
     sku: string;
+    barcode?: string;
     price: number | string;
     weight: number;
     availability?: 'in_stock' | 'out_of_stock' | 'pre_order';
@@ -548,6 +549,7 @@ export const adminApi = {
   },
   async updateVariant(id: string, data: Partial<{
     sku: string;
+    barcode?: string;
     price: number | string;
     weight: number;
     availability: string;

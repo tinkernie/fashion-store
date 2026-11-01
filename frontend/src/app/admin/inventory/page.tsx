@@ -17,6 +17,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Equal,
+  Barcode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,7 +176,13 @@ export default function AdminInventoryPage() {
       slug.includes(q) ||
       id.includes(q) ||
       code === q ||
-      code.includes(q)
+      code.includes(q) ||
+      (Array.isArray(p.variants) &&
+        p.variants.some(
+          (v: any) =>
+            (v.sku && String(v.sku).toLowerCase().includes(q)) ||
+            (v.barcode && String(v.barcode).toLowerCase().includes(q))
+        ))
     );
   });
 
@@ -463,6 +470,18 @@ export default function AdminInventoryPage() {
                                         >
                                           {v.sku}
                                         </span>
+
+                                        {/* Barcode Pill */}
+                                        {v.barcode && (
+                                          <span
+                                            className="text-[10px] font-mono text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1"
+                                            dir="ltr"
+                                            title="بارکد کالا"
+                                          >
+                                            <Barcode className="w-3 h-3 text-cyan-400" />
+                                            {v.barcode}
+                                          </span>
+                                        )}
                                       </div>
 
                                       {/* Price & Safety stock info row */}
@@ -639,11 +658,19 @@ export default function AdminInventoryPage() {
                 <span className="font-bold text-white text-xs block truncate max-w-[260px]">
                   {formatVariantTitle(customStockItem)}
                 </span>
-                {customStockItem?.sku && (
-                  <span className="text-[10px] text-gray-500 font-mono block mt-0.5" dir="ltr">
-                    SKU: {customStockItem.sku}
-                  </span>
-                )}
+                <div className="flex items-center gap-2 mt-0.5">
+                  {customStockItem?.sku && (
+                    <span className="text-[10px] text-gray-500 font-mono" dir="ltr">
+                      SKU: {customStockItem.sku}
+                    </span>
+                  )}
+                  {customStockItem?.barcode && (
+                    <span className="text-[10px] text-cyan-400 font-mono flex items-center gap-1" dir="ltr">
+                      <Barcode className="w-3 h-3 text-cyan-400" />
+                      {customStockItem.barcode}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="text-left shrink-0">
                 <span className="text-[10px] text-gray-400 block">موجودی فعلی</span>

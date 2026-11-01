@@ -27,6 +27,7 @@ import {
   Package,
   Hash,
   Copy,
+  Barcode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ interface VariantItem {
   id?: string;
   name: string;
   sku: string;
+  barcode?: string;
   price: string;
   weight?: number;
   stock: number;
@@ -132,6 +134,7 @@ export default function AdminProductsPage() {
   
   // Single Variant Add Form inside Variant Modal
   const [newVariantSku, setNewVariantSku] = useState("");
+  const [newVariantBarcode, setNewVariantBarcode] = useState("");
   const [newVariantPrice, setNewVariantPrice] = useState("");
   const [newVariantWeight, setNewVariantWeight] = useState("1");
   const [newVariantStock, setNewVariantStock] = useState("10");
@@ -140,6 +143,8 @@ export default function AdminProductsPage() {
   // Variant Edit State inside Variant Modal (Task 9)
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
   const [editVariantSku, setEditVariantSku] = useState("");
+  const [editVariantBarcode, setEditVariantBarcode] = useState("");
+  const [copiedBarcode, setCopiedBarcode] = useState<string | null>(null);
   const [editVariantPrice, setEditVariantPrice] = useState("");
   const [editVariantWeight, setEditVariantWeight] = useState("1");
   const [editVariantStock, setEditVariantStock] = useState("10");
@@ -431,6 +436,7 @@ export default function AdminProductsPage() {
       const createdVar = await adminApi.createVariant({
         product_id: selectedProductForVariants.id,
         sku: newVariantSku.trim().toUpperCase(),
+        ...(newVariantBarcode.trim() ? { barcode: newVariantBarcode.trim() } : {}),
         price: parsePrice(newVariantPrice),
         weight: Number(newVariantWeight) > 0 ? Number(newVariantWeight) : 1, // Task 3
         availability: "in_stock",
@@ -446,6 +452,7 @@ export default function AdminProductsPage() {
       const vars = await adminApi.getVariants(selectedProductForVariants.id);
       setProductVariants(vars);
       setSelectedOptionValueIds({});
+      setNewVariantBarcode("");
       setNewVariantSku(`${(selectedProductForVariants.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`);
     } catch (err: any) {
       toast.error(getApiErrorMessage(err, "خطا در ایجاد تنوع"));
@@ -501,6 +508,7 @@ export default function AdminProductsPage() {
   const startEditVariant = (v: any) => {
     setEditingVariantId(v.id);
     setEditVariantSku(v.sku || "");
+    setEditVariantBarcode(v.barcode || "");
     setEditVariantPrice(formatPriceInput(String(v.price || 0)));
     setEditVariantWeight(String(v.weight || 1));
     const currentStock = v.stock ?? v.inventory?.available_quantity ?? 0;
@@ -520,6 +528,7 @@ export default function AdminProductsPage() {
   const cancelEditVariant = () => {
     setEditingVariantId(null);
     setEditVariantSku("");
+    setEditVariantBarcode("");
     setEditVariantPrice("");
     setEditVariantWeight("1");
     setEditVariantStock("0");
@@ -547,6 +556,7 @@ export default function AdminProductsPage() {
     try {
       await adminApi.updateVariant(editingVariantId, {
         sku: editVariantSku.trim().toUpperCase(),
+        barcode: editVariantBarcode.trim(),
         price: parsePrice(editVariantPrice),
         weight: Number(editVariantWeight) > 0 ? Number(editVariantWeight) : 1,
         option_values: optionValuesPayload,
@@ -976,7 +986,13 @@ export default function AdminProductsPage() {
       slug.includes(query) ||
       id.includes(query) ||
       code === query ||
-      code.includes(query);
+      code.includes(query) ||
+      (Array.isArray(p.variants) &&
+        p.variants.some(
+          (v: any) =>
+            (v.sku && String(v.sku).toLowerCase().includes(query)) ||
+            (v.barcode && String(v.barcode).toLowerCase().includes(query))
+        ));
 
     // Dedicated UUID search matches product ID
     const matchesUuidQuery =
@@ -1720,7 +1736,7 @@ export default function AdminProductsPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                     <div className="space-y-1">
                       <label className="text-[10px] text-gray-400 font-bold">کد انبار (SKU)</label>
                       <Input
@@ -1728,6 +1744,20 @@ export default function AdminProductsPage() {
                         onChange={(e) => setNewVariantSku(e.target.value)}
                         placeholder="SKU-101"
                         className="bg-black/60 border-white/10 h-9 text-xs text-white rounded-lg font-mono text-left"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-cyan-400 font-bold flex items-center gap-1">
+                        <Barcode className="w-3 h-3 text-cyan-400" />
+                        بارکد (اختیاری)
+                      </label>
+                      <Input
+                        value={newVariantBarcode}
+                        onChange={(e) => setNewVariantBarcode(e.target.value)}
+                        placeholder="تولید خودکار EAN-13"
+                        className="bg-black/60 border-cyan-500/30 h-9 text-xs text-cyan-300 placeholder:text-gray-500 rounded-lg font-mono text-left"
                         dir="ltr"
                       />
                     </div>
@@ -1840,7 +1870,7 @@ export default function AdminProductsPage() {
                                 </div>
                               )}
 
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
                                 <div className="space-y-1">
                                   <label className="text-[10px] text-gray-400 font-bold">کد انبار (SKU)</label>
                                   <Input
@@ -1848,6 +1878,20 @@ export default function AdminProductsPage() {
                                     onChange={(e) => setEditVariantSku(e.target.value)}
                                     placeholder="SKU-101"
                                     className="bg-black/60 border-white/15 h-8 text-xs text-white rounded-lg font-mono text-left"
+                                    dir="ltr"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-[10px] text-cyan-400 font-bold flex items-center gap-1">
+                                    <Barcode className="w-3 h-3 text-cyan-400" />
+                                    بارکد EAN-13
+                                  </label>
+                                  <Input
+                                    value={editVariantBarcode}
+                                    onChange={(e) => setEditVariantBarcode(e.target.value)}
+                                    placeholder="خالی برای بازتولید"
+                                    className="bg-black/60 border-cyan-500/30 h-8 text-xs text-cyan-300 placeholder:text-gray-500 rounded-lg font-mono text-left"
                                     dir="ltr"
                                   />
                                 </div>
@@ -1933,9 +1977,32 @@ export default function AdminProductsPage() {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono" dir="ltr">
-                                <span>SKU: {v.sku}</span>
-                                {v.weight && <span>• {v.weight}g</span>}
+                              <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono" dir="ltr">
+                                <span className="text-gray-400 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">
+                                  SKU: {v.sku}
+                                </span>
+                                {v.barcode && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(v.barcode);
+                                      setCopiedBarcode(v.barcode);
+                                      toast.success(`بارکد ${v.barcode} کپی شد`);
+                                      setTimeout(() => setCopiedBarcode(null), 2000);
+                                    }}
+                                    className="group/bc inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-400/50 hover:bg-cyan-500/20 transition-all cursor-pointer"
+                                    title="کلیک برای کپی بارکد"
+                                  >
+                                    <Barcode className="w-3 h-3 text-cyan-400" />
+                                    <span>{v.barcode}</span>
+                                    {copiedBarcode === v.barcode ? (
+                                      <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="w-2.5 h-2.5 opacity-60 group-hover/bc:opacity-100 transition-opacity" />
+                                    )}
+                                  </button>
+                                )}
+                                {v.weight && <span className="text-gray-500">• {v.weight}g</span>}
                               </div>
                             </div>
 
