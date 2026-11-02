@@ -19,11 +19,27 @@ import {
   AlertCircle,
   Eye,
   RefreshCw,
+  Search,
+  Hash,
+  UserPlus,
+  ExternalLink,
+  Edit3,
+  Loader2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { adminApi } from "@/lib/admin-api";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { formatPriceNumber, parsePrice } from "@/lib/price-utils";
+import { getApiErrorMessage } from "@/lib/error-utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ShamsiDatePicker } from "@/components/ui/shamsi-date-picker";
 
 export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +54,18 @@ export default function AdminDashboardPage() {
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [popularProducts, setPopularProducts] = useState<any[]>([]);
   const [recentPages, setRecentPages] = useState<any[]>([]);
+
+  // Instagram Code Search States
+  const [instaCodeQuery, setInstaCodeQuery] = useState("");
+  const [isSearchingCode, setIsSearchingCode] = useState(false);
+  const [searchedProduct, setSearchedProduct] = useState<any | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Quick Customer Registration Modal States
+  const [isQuickUserOpen, setIsQuickUserOpen] = useState(false);
+  const [quickPhone, setQuickPhone] = useState("");
+  const [quickBirthDate, setQuickBirthDate] = useState("");
+  const [isSubmittingQuickCreate, setIsSubmittingQuickCreate] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -90,6 +118,114 @@ export default function AdminDashboardPage() {
     return formatPriceNumber(val);
   };
 
+  const handleSearchByInstaCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanCode = instaCodeQuery
+      .trim()
+      .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+
+    if (!cleanCode) {
+      toast.error("لطفاً کد اینستاگرام محصول را وارد کنید");
+      return;
+    }
+
+    setIsSearchingCode(true);
+    setSearchError(null);
+    setSearchedProduct(null);
+
+    try {
+      let found: any = null;
+
+      // 1. Direct public/admin by-code lookup
+      try {
+        const directRes = await api.get(`/api/products/by-code/${cleanCode}/`);
+        if (directRes?.data && (directRes.data.id || directRes.data.name || directRes.data.title)) {
+          found = directRes.data;
+        }
+      } catch {
+        // Fall back to admin product list query
+      }
+
+      // 2. Fall back to adminApi.getProducts with code filter
+      if (!found) {
+        const list = await adminApi.getProducts({ code: cleanCode });
+        if (Array.isArray(list) && list.length > 0) {
+          found = list.find((p: any) => String(p.insta_id) === cleanCode) || list[0];
+        }
+      }
+
+      if (found) {
+        setSearchedProduct(found);
+        toast.success(`محصول با کد #${cleanCode} پیدا شد`);
+      } else {
+        const msg = `محصولی با کد اینستاگرام «${cleanCode}» یافت نشد.`;
+        setSearchError(msg);
+        toast.error(msg);
+      }
+    } catch (err: any) {
+      console.error("Error searching by insta code:", err);
+      const msg = getApiErrorMessage(err, `خطا در جستجوی محصول با کد ${cleanCode}`);
+      setSearchError(msg);
+      toast.error(msg);
+    } finally {
+      setIsSearchingCode(false);
+    }
+  };
+
+  const handleClearCodeSearch = () => {
+    setInstaCodeQuery("");
+    setSearchedProduct(null);
+    setSearchError(null);
+  };
+
+  const handleQuickCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const phone = quickPhone
+      .trim()
+      .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const birthDate = quickBirthDate
+      .trim()
+      .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+      .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+
+    if (!/^09\d{9}$/.test(phone)) {
+      toast.error("شماره موبایل نامعتبر است (باید ۱۱ رقم و با 09 آغاز شود)");
+      return;
+    }
+
+    if (!birthDate) {
+      toast.error("لطفاً تاریخ تولد مشتری را مشخص فرمایید");
+      return;
+    }
+
+    const jalaliPattern = /^1[34]\d{2}[/\-.](0[1-9]|1[0-2])[/\-.](0[1-9]|[12]\d|3[01])$/;
+    if (!jalaliPattern.test(birthDate)) {
+      toast.error("فرمت تاریخ تولد باید به صورت 1370/05/21 باشد");
+      return;
+    }
+
+    setIsSubmittingQuickCreate(true);
+    try {
+      await adminApi.quickCreateUser({
+        phone_number: phone,
+        birth_date: birthDate,
+      });
+      toast.success("مشتری با موفقیت ثبت شد", {
+        description: `رمز عبور اولیه: 12345 | موبایل: ${phone}`,
+      });
+      setIsQuickUserOpen(false);
+      setQuickPhone("");
+      setQuickBirthDate("");
+    } catch (err: any) {
+      console.error("Quick create user error:", err);
+      toast.error(getApiErrorMessage(err, "خطا در ثبت سریع کاربر"));
+    } finally {
+      setIsSubmittingQuickCreate(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
@@ -111,7 +247,7 @@ export default function AdminDashboardPage() {
           <div className="flex flex-wrap gap-3">
             <Button
               asChild
-              className="h-11 px-5 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs flex items-center gap-2 shadow-lg"
+              className="h-11 px-5 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs flex items-center gap-2 shadow-lg cursor-pointer"
             >
               <Link href="/admin/products">
                 <Plus className="w-4 h-4" />
@@ -121,7 +257,7 @@ export default function AdminDashboardPage() {
             <Button
               asChild
               variant="outline"
-              className="h-11 px-5 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 font-bold text-xs flex items-center gap-2"
+              className="h-11 px-5 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 font-bold text-xs flex items-center gap-2 cursor-pointer"
             >
               <Link href="/admin/cms">
                 <FileText className="w-4 h-4" />
@@ -130,13 +266,240 @@ export default function AdminDashboardPage() {
             </Button>
             <button
               onClick={loadDashboardData}
-              className="p-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               title="بروزرسانی آمار"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
+
+        {/* Quick Operations Row (Instagram Code Search & Quick Add User) */}
+        <div className="relative z-10 mt-6 pt-5 border-t border-white/10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          {/* Instagram Code Search Bar */}
+          <div className="flex-1 max-w-xl">
+            <form onSubmit={handleSearchByInstaCode} className="flex items-center gap-2">
+              <div className="relative flex-1 flex items-center bg-[#181818] border border-amber-400/25 focus-within:border-amber-400/70 rounded-2xl px-3.5 py-1.5 transition-all shadow-inner">
+                <Hash className="w-4 h-4 text-amber-400 shrink-0 ml-1.5" />
+                <input
+                  type="text"
+                  value={instaCodeQuery}
+                  onChange={(e) => {
+                    setInstaCodeQuery(e.target.value);
+                    if (searchError) setSearchError(null);
+                  }}
+                  placeholder="جستجوی سریع محصول با کد اینستاگرام (مثلاً: ۲۵ یا 104)..."
+                  className="flex-1 bg-transparent border-none outline-none text-amber-300 font-mono text-xs placeholder:text-gray-500 placeholder:font-sans placeholder:text-right"
+                  dir="ltr"
+                />
+                {instaCodeQuery && (
+                  <button
+                    type="button"
+                    onClick={handleClearCodeSearch}
+                    className="text-gray-500 hover:text-amber-300 text-xs px-1 cursor-pointer"
+                    aria-label="پاک کردن"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isSearchingCode || !instaCodeQuery.trim()}
+                className="h-10 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-400/10 shrink-0 cursor-pointer disabled:opacity-50"
+              >
+                {isSearchingCode ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Search className="w-3.5 h-3.5" />
+                )}
+                <span>جستجوی کد</span>
+              </Button>
+            </form>
+
+            {/* Search Error Notice */}
+            {searchError && (
+              <div className="mt-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2 flex items-center justify-between">
+                <span>{searchError}</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchError(null)}
+                  className="text-rose-400 hover:text-white cursor-pointer px-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Add Customer Action Button */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Button
+              type="button"
+              onClick={() => setIsQuickUserOpen(true)}
+              className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 text-white" />
+              <span>افزودن سریع مشتری</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Live Product Preview Card */}
+        {searchedProduct && (
+          <div className="relative z-10 mt-4 p-4 rounded-2xl bg-[#161616] border border-amber-400/40 shadow-2xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="relative shrink-0">
+                  <img
+                    src={
+                      searchedProduct.imageUrl ||
+                      searchedProduct.image_url ||
+                      searchedProduct.image ||
+                      (Array.isArray(searchedProduct.images) &&
+                        (typeof searchedProduct.images[0] === "string"
+                          ? searchedProduct.images[0]
+                          : searchedProduct.images[0]?.url)) ||
+                      "/placeholder-product.svg"
+                    }
+                    alt={searchedProduct.name || searchedProduct.title || "تصویر محصول"}
+                    className="w-14 h-16 object-cover rounded-xl border border-white/10"
+                  />
+                  <span
+                    className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-amber-400 text-black font-black text-[10px] shadow"
+                    dir="ltr"
+                  >
+                    #{searchedProduct.insta_id}
+                  </span>
+                </div>
+
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-white text-sm truncate max-w-xs">
+                      {searchedProduct.name || searchedProduct.title}
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-400 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-md">
+                      کد اینستا: {searchedProduct.insta_id}
+                    </span>
+                    {searchedProduct.category_name && (
+                      <span className="text-[10px] text-gray-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
+                        {searchedProduct.category_name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Price & Stock info */}
+                  <div className="flex items-center gap-3 text-xs text-gray-300 flex-wrap">
+                    <div className="flex items-center gap-1 font-bold text-emerald-400">
+                      <span>قیمت:</span>
+                      <span>
+                        {formatPrice(
+                          searchedProduct.discount_price || searchedProduct.price || 0
+                        )}{" "}
+                        تومان
+                      </span>
+                      {searchedProduct.discount_price && searchedProduct.price && (
+                        <span className="line-through text-gray-500 text-[10px] mr-1">
+                          {formatPrice(searchedProduct.price)}
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="text-gray-500">•</span>
+
+                    <span className="text-xs text-gray-300">
+                      موجودی کل:{" "}
+                      <strong className="text-white font-mono">
+                        {(
+                          searchedProduct.stock_quantity ??
+                          searchedProduct.inventory_count ??
+                          (Array.isArray(searchedProduct.variants)
+                            ? searchedProduct.variants.reduce(
+                                (acc: number, v: any) =>
+                                  acc + (v.stock ?? v.inventory?.quantity ?? 0),
+                                0
+                              )
+                            : 0)
+                        ).toLocaleString("fa-IR")}
+                      </strong>{" "}
+                      عدد
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions & Close */}
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Link
+                    href={`/products/${searchedProduct.slug || searchedProduct.insta_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-sky-400" />
+                    <span>مشاهده در سایت</span>
+                  </Link>
+                </Button>
+
+                <Button
+                  asChild
+                  size="sm"
+                  className="h-9 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-400/20 cursor-pointer"
+                >
+                  <Link href={`/admin/products?search=${searchedProduct.insta_id}`}>
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>ویرایش در پنل</span>
+                  </Link>
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => setSearchedProduct(null)}
+                  className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  title="بستن پیش‌نمایش"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Variants Breakdown if available */}
+            {Array.isArray(searchedProduct.variants) && searchedProduct.variants.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] text-gray-400 font-medium ml-1">تنوع‌ها و موجودی:</span>
+                {searchedProduct.variants.map((v: any, idx: number) => {
+                  const vStock = v.stock ?? v.inventory?.quantity ?? 0;
+                  const label =
+                    Array.isArray(v.options) && v.options.length > 0
+                      ? v.options.map((o: any) => o.value || o.name).join(" / ")
+                      : v.sku || `تنوع #${idx + 1}`;
+
+                  return (
+                    <span
+                      key={v.id || idx}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono border ${
+                        vStock > 0
+                          ? "bg-white/5 text-gray-200 border-white/10"
+                          : "bg-rose-500/10 text-rose-300 border-rose-500/20 opacity-60"
+                      }`}
+                    >
+                      <span className="font-bold">{label}:</span>
+                      <span className={vStock > 0 ? "text-amber-400 font-bold" : "text-rose-400"}>
+                        {vStock > 0 ? `${vStock} عدد` : "ناموجود"}
+                      </span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* KPI Stats Grid */}
@@ -452,6 +815,74 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Quick Create Customer Modal */}
+      <Dialog open={isQuickUserOpen} onOpenChange={setIsQuickUserOpen}>
+        <DialogContent className="bg-[#111111] border border-white/10 text-white sm:max-w-md p-6 rounded-3xl shadow-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black flex items-center gap-2.5 text-white">
+              <UserPlus className="w-5 h-5 text-emerald-400" />
+              افزودن سریع مشتری جدید
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleQuickCreateUser} className="space-y-4 mt-3">
+            <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-400 leading-relaxed">
+              این فرم برای ثبت سریع مشتریان حضوری و تلفنی طراحی شده است. مشتری با رمز عبور اولیه <strong className="text-white font-mono" dir="ltr">12345</strong> ایجاد می‌شود و در آینده می‌تواند از طریق فراموشی رمز عبور آن را تغییر دهد.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-300">شماره موبایل مشتری</label>
+              <input
+                required
+                type="tel"
+                value={quickPhone}
+                onChange={(e) => setQuickPhone(e.target.value)}
+                placeholder="09123456789"
+                maxLength={11}
+                dir="ltr"
+                className="w-full bg-[#181818] border border-white/15 rounded-xl h-11 px-3 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-300">تاریخ تولد</label>
+              <ShamsiDatePicker
+                value={quickBirthDate}
+                onChange={setQuickBirthDate}
+                theme="dark"
+                outputFormat="jalali"
+                minYear={1320}
+                maxYear={1405}
+                placeholder="انتخاب تاریخ تولد..."
+              />
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                type="submit"
+                disabled={isSubmittingQuickCreate}
+                className="flex-1 h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+              >
+                {isSubmittingQuickCreate ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <UserPlus className="w-4 h-4" />
+                )}
+                <span>ثبت مشتری</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsQuickUserOpen(false)}
+                className="h-11 px-4 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                انصراف
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
