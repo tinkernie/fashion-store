@@ -47,6 +47,29 @@ class TestPlaceholderVariantInventory:
         product = self._product_with_real_variant(stock=7)
         assert ProductDetailSerializer(product).data["stock_quantity"] == 7
 
+    def _simple_product_with_default_stock(self, title="perfume", stock=12):
+        ProductService().create_product(
+            {"title": title, "slug": title, "price": 250_000}
+        )
+        product = Product.objects.get(slug=title)
+        default = Variant.objects.get(
+            product=product, sku__endswith="-DEFAULT"
+        )
+        Inventory.objects.create(
+            variant=default,
+            available_quantity=stock,
+            status=Inventory.Status.IN_STOCK,
+        )
+        return product
+
+    def test_simple_product_reads_default_variant_inventory(self):
+        """Simple products have no real option variants; their stock lives on
+        the DEFAULT placeholder, so totals must not silently report 0."""
+        product = self._simple_product_with_default_stock(stock=12)
+        assert (
+            ProductDetailSerializer(product).data["stock_quantity"] == 12
+        )
+
     def test_legacy_phantom_50_excluded_from_totals(self):
         """Pre-fix rows: DEFAULT variant carrying Inventory(available=50) must
         neither inflate totals nor resurface after the cleanup migration."""

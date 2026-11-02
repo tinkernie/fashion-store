@@ -235,13 +235,26 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return self._get_total_stock(product)
 
     def _get_total_stock(self, product):
-        total = 0
-        for variant in product.variants.filter(
+        real_variants = product.variants.filter(
             deleted_at__isnull=True
-        ).exclude(sku__endswith="-DEFAULT"):
-            if hasattr(variant, "inventory") and variant.inventory:
-                total += variant.inventory.available_quantity
-        return total
+        ).exclude(sku__endswith="-DEFAULT")
+
+        if real_variants.exists():
+            total = 0
+            for variant in real_variants:
+                if hasattr(variant, "inventory") and variant.inventory:
+                    total += variant.inventory.available_quantity
+            return total
+
+        # Fallback for simple products: they carry no real variants, only the
+        # system-seeded {slug}-DEFAULT placeholder holds their stock.
+        default_var = product.variants.filter(
+            deleted_at__isnull=True, sku__endswith="-DEFAULT"
+        ).first()
+        if default_var and hasattr(default_var, "inventory") and default_var.inventory:
+            return default_var.inventory.available_quantity
+
+        return 0
 
     def get_images(self, product):
         if hasattr(product, "images"):

@@ -4,13 +4,24 @@ from django.db import migrations
 def delete_placeholder_inventories(apps, schema_editor):
     """The common/DEFAULT variant never holds stock. Remove legacy rows
     (historically seeded with available_quantity=50) so product totals are
-    the sum of real option variants only."""
+    the sum of real option variants only.
+
+    Reservations pointing at a placeholder's inventory cannot ever be
+    committed (the DEFAULT variant is not purchasable), so they are cleared
+    first — otherwise the Reservation.inventory PROTECT FK blocks the delete.
+    """
     Inventory = apps.get_model("inventory", "Inventory")
-    deleted, _ = Inventory.objects.filter(
-        variant__sku__endswith="-DEFAULT"
+    Reservation = apps.get_model("inventory", "Reservation")
+    res_deleted, _ = Reservation.objects.filter(
+        inventory__variant__sku__endswith="-DEFAULT"
     ).delete()
-    if deleted:
-        print(f"Removed {deleted} placeholder inventory rows.")
+    placeholder = Inventory.objects.filter(variant__sku__endswith="-DEFAULT")
+    deleted, _ = placeholder.delete()
+    if res_deleted or deleted:
+        print(
+            f"Removed {res_deleted} stale reservation row(s) and {deleted} "
+            "placeholder inventory row(s)."
+        )
 
 
 def restore_placeholder_inventories(apps, schema_editor):
