@@ -1068,8 +1068,12 @@ export default function ProductDetailClient({
           <div className="mb-12 sm:mb-16 bg-white border border-sky-100 rounded-3xl p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-sky-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-sky-50 border border-sky-200 text-[#0082CA] flex items-center justify-center shadow-sm">
-                  <Sliders className="w-5 h-5 text-[#0082CA]" />
+                <div className="w-11 h-11 rounded-full bg-white border border-sky-200/90 flex items-center justify-center shadow-sm shadow-sky-500/10 p-2 shrink-0">
+                  <img
+                    src="/clothes.svg"
+                    alt="مشخصات پوشاک ماوی"
+                    className="w-6 h-6 object-contain"
+                  />
                 </div>
                 <div>
                   <h2 className="text-lg sm:text-xl font-black text-[#0B192C]">
