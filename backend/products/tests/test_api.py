@@ -60,3 +60,45 @@ class TestAdminAPI:
             {"title": "Belt", "slug": "belt", "category_id": "some-id"},
         )
         assert resp.status_code == 401
+
+    def test_patch_product_reorders_images(self):
+        admin = User.objects.create_superuser("admin_img@test.com", "pass")
+        cat = CategoryFactory(name="Shoes", slug="shoes")
+        client = APIClient()
+        client.force_authenticate(user=admin)
+
+        # Create product with initial images
+        create_resp = client.post(
+            "/api/v1/admin/products/",
+            {
+                "title": "Leather Boots",
+                "slug": "leather-boots",
+                "category_id": str(cat.id),
+                "images": ["https://cdn.example.com/boot-front.jpg", "https://cdn.example.com/boot-side.jpg"],
+            },
+            format="json",
+        )
+        assert create_resp.status_code == 201
+        prod_id = create_resp.data["id"]
+
+        from products.models import Product
+        prod = Product.objects.get(id=prod_id)
+        assert prod.images.filter(is_cover=True).first().image_url == "https://cdn.example.com/boot-front.jpg"
+
+        # Patch product with reordered images (side image becomes featured at index 0)
+        patch_resp = client.patch(
+            f"/api/v1/admin/products/{prod_id}/",
+            {
+                "images": ["https://cdn.example.com/boot-side.jpg", "https://cdn.example.com/boot-front.jpg"],
+                "image_url": "https://cdn.example.com/boot-side.jpg",
+            },
+            format="json",
+        )
+        assert patch_resp.status_code == 200
+
+        prod.refresh_from_db()
+        cover_after = prod.images.filter(is_cover=True).first()
+        assert cover_after is not None
+        assert cover_after.image_url == "https://cdn.example.com/boot-side.jpg"
+        ordered_urls = list(prod.images.order_by("position").values_list("image_url", flat=True))
+        assert ordered_urls == ["https://cdn.example.com/boot-side.jpg", "https://cdn.example.com/boot-front.jpg"]
