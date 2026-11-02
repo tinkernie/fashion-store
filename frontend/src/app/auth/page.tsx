@@ -62,7 +62,7 @@ const phoneValidator = z
 
 const passwordValidator = z
   .string()
-  .min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد")
+  .min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد")
   .max(128, "رمز عبور نباید بیشتر از ۱۲۸ کاراکتر باشد");
 
 // 1. Login Schema
@@ -808,7 +808,7 @@ export default function AuthPage() {
                     {/* Password */}
                     <div className="space-y-1.5">
                       <Label htmlFor="signup-password" className="text-xs font-bold text-[#0B192C]">
-                        رمز عبور (حداقل ۸ کاراکتر)
+                        رمز عبور (حداقل ۶ کاراکتر)
                       </Label>
                       <div className="relative">
                         <Input
@@ -1023,7 +1023,7 @@ export default function AuthPage() {
                     {/* New Password */}
                     <div className="space-y-1.5">
                       <Label htmlFor="reset-new-password" className="text-xs font-bold text-[#0B192C]">
-                        رمز عبور جدید (حداقل ۸ کاراکتر)
+                        رمز عبور جدید (حداقل ۶ کاراکتر)
                       </Label>
                       <div className="relative">
                         <Input

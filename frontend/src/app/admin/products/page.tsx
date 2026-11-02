@@ -283,9 +283,34 @@ export default function AdminProductsPage() {
     setWeight(prodWeight ? String(prodWeight) : "1"); // Task 3: Default weight 1
     setDescription(p.description || "");
 
-    setClothingColor("");
-    setClothingSize("");
-    setClothingMaterial("");
+    let extractedColor = p.metadata?.color || "";
+    let extractedSize = p.metadata?.size || "";
+    let extractedMaterial = p.metadata?.material || "";
+
+    if ((!extractedColor || !extractedSize || !extractedMaterial) && Array.isArray(p.variants)) {
+      const colorsSet = new Set<string>();
+      const sizesSet = new Set<string>();
+      const materialsSet = new Set<string>();
+      p.variants.forEach((v: any) => {
+        if (!v.is_placeholder && !v.sku?.endsWith("-DEFAULT") && Array.isArray(v.options)) {
+          v.options.forEach((opt: any) => {
+            const optName = opt.option_name?.trim();
+            const val = opt.value?.trim();
+            if (!val) return;
+            if (optName === "رنگ" || optName === "Color") colorsSet.add(val);
+            else if (optName === "سایز" || optName === "Size") sizesSet.add(val);
+            else if (optName === "جنس" || optName === "متریال" || optName === "Material") materialsSet.add(val);
+          });
+        }
+      });
+      if (!extractedColor && colorsSet.size > 0) extractedColor = Array.from(colorsSet).join("، ");
+      if (!extractedSize && sizesSet.size > 0) extractedSize = Array.from(sizesSet).join("، ");
+      if (!extractedMaterial && materialsSet.size > 0) extractedMaterial = Array.from(materialsSet).join("، ");
+    }
+
+    setClothingColor(extractedColor);
+    setClothingSize(extractedSize);
+    setClothingMaterial(extractedMaterial);
 
     const extractedImages: string[] = [];
     if (Array.isArray(p.metadata?.images) && p.metadata.images.length > 0) {
@@ -305,16 +330,29 @@ export default function AdminProductsPage() {
     setImageUrl(extractedImages[0] || "");
     setStatus(p.status || "active");
 
-    if (Array.isArray(p.variants) && p.variants.length > 0) {
+    const realVariants = Array.isArray(p.variants)
+      ? p.variants.filter((v: any) => !v.is_placeholder && !v.sku?.endsWith("-DEFAULT"))
+      : [];
+
+    if (realVariants.length > 0) {
       setVariantsMatrix(
-        p.variants.map((v: any) => ({
-          id: v.id,
-          name: v.title || v.name || "تنوع",
-          sku: v.sku || "",
-          price: formatPriceInput(v.price || p.price),
-          weight: v.weight || prodWeight || 1,
-          stock: v.inventory?.quantity || v.stock || 10,
-        }))
+        realVariants.map((v: any) => {
+          let variantName = "";
+          if (Array.isArray(v.options) && v.options.length > 0) {
+            variantName = v.options.map((o: any) => o.value).filter(Boolean).join(" / ");
+          }
+          if (!variantName) {
+            variantName = v.title || v.name || v.sku || "تنوع";
+          }
+          return {
+            id: v.id,
+            name: variantName,
+            sku: v.sku || "",
+            price: formatPriceInput(v.price || p.price),
+            weight: v.weight || prodWeight || 1,
+            stock: v.stock ?? v.inventory?.available_quantity ?? 0,
+          };
+        })
       );
       setShowVariantGenerator(true);
     } else {
@@ -600,7 +638,7 @@ export default function AdminProductsPage() {
   };
 
   // Generate Combinatorial Matrix for in-product form (Task 5 & 8: Flexible 1-, 2-, or 3-attributes)
-  const handleGenerateClothingVariants = () => {
+  const handleGenerateClothingVariants = (): VariantItem[] | null => {
     const colors = clothingColor
       .split(/[,،]/)
       .map((v) => v.trim())
@@ -622,7 +660,7 @@ export default function AdminProductsPage() {
 
     if (attributePools.length === 0) {
       toast.error("لطفاً حداقل یکی از مشخصات (رنگ، سایز یا جنس) را وارد نمایید.");
-      return false;
+      return null;
     }
 
     // Cartesian product across whatever pools are provided
@@ -654,7 +692,7 @@ export default function AdminProductsPage() {
     setVariantsMatrix(generated);
     setShowVariantGenerator(true);
     toast.success(`${generated.length} تنوع لباس با موفقیت ایجاد شد.`);
-    return true;
+    return generated;
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -675,9 +713,13 @@ export default function AdminProductsPage() {
     }
 
     // Auto-generate variants if user entered options but forgot to click generate
+    let activeMatrix: VariantItem[] = [...variantsMatrix];
     const hasAnyClothingInput = Boolean(clothingColor.trim() || clothingSize.trim() || clothingMaterial.trim());
-    if (hasAnyClothingInput && variantsMatrix.length === 0) {
-      handleGenerateClothingVariants();
+    if (hasAnyClothingInput && activeMatrix.length === 0) {
+      const generated = handleGenerateClothingVariants();
+      if (generated && generated.length > 0) {
+        activeMatrix = generated;
+      }
     }
 
     const basePriceNum = parsePrice(price);
@@ -743,17 +785,32 @@ export default function AdminProductsPage() {
     };
 
     try {
-      let savedProduct: any;
+      let targetProduct: any;
       if (editingProduct) {
-        savedProduct = await adminApi.updateProduct(editingProduct.id, payload);
+        targetProduct = await adminApi.updateProduct(editingProduct.id, payload);
         toast.success("محصول با موفقیت بروزرسانی شد");
       } else {
-        savedProduct = await adminApi.createProduct(payload);
+        targetProduct = await adminApi.createProduct(payload);
         toast.success("محصول جدید با موفقیت اضافه شد");
+      }
 
-        // Automatically provision clothing options & values for newly created product if entered
-        if (savedProduct?.id && (clothingColor.trim() || clothingSize.trim() || clothingMaterial.trim())) {
-          try {
+      const targetProdId = targetProduct?.id || editingProduct?.id;
+
+      // Synchronize Variants and Inventory for both create and edit
+      if (targetProdId && activeMatrix.length > 0) {
+        try {
+          // 1. Concurrent stock update for existing variants that already have an ID
+          const existingStockUpdates = activeMatrix
+            .filter((vItem) => vItem.id && vItem.stock !== undefined && vItem.stock !== null && !isNaN(Number(vItem.stock)))
+            .map((vItem) => adminApi.setStockQuantity(vItem.id!, Math.max(0, parseInt(String(vItem.stock), 10))));
+
+          if (existingStockUpdates.length > 0) {
+            await Promise.allSettled(existingStockUpdates);
+          }
+
+          // 2. Provision newly added variants in matrix (items without an ID)
+          const newVariantsToCreate = activeMatrix.filter((vItem) => !vItem.id);
+          if (newVariantsToCreate.length > 0) {
             const optionsToCreate: { name: string; values: string[] }[] = [];
             if (clothingColor.trim()) {
               optionsToCreate.push({
@@ -774,56 +831,73 @@ export default function AdminProductsPage() {
               });
             }
 
+            const existingOptions = await adminApi.getProductOptions(targetProdId).catch(() => []);
             const optionMap: Record<string, { optId: string; valMap: Record<string, string> }> = {};
-            for (const item of optionsToCreate) {
-              const createdOpt = await adminApi.createProductOption(savedProduct.id, { name: item.name });
-              const valMap: Record<string, string> = {};
-              for (const val of item.values) {
-                const createdVal = await adminApi.createOptionValue(savedProduct.id, createdOpt.id, { value: val });
-                valMap[val] = createdVal.id;
-              }
-              optionMap[item.name] = { optId: createdOpt.id, valMap };
+
+            if (Array.isArray(existingOptions)) {
+              existingOptions.forEach((opt: any) => {
+                const valMap: Record<string, string> = {};
+                if (Array.isArray(opt.values)) {
+                  opt.values.forEach((v: any) => {
+                    valMap[v.value] = v.id;
+                  });
+                }
+                optionMap[opt.name] = { optId: opt.id, valMap };
+              });
             }
 
-            // Provision variants if matrix exists
-            if (variantsMatrix.length > 0) {
-              for (const vItem of variantsMatrix) {
-                const parts = vItem.name.split(" / ").map((s) => s.trim());
-                const optValuesPayload: { option_id: string; value_id: string }[] = [];
-
-                parts.forEach((valPart) => {
-                  Object.values(optionMap).forEach(({ optId, valMap }) => {
-                    if (valMap[valPart]) {
-                      optValuesPayload.push({ option_id: optId, value_id: valMap[valPart] });
-                    }
-                  });
-                });
-
-                const createdVar = await adminApi.createVariant({
-                  product_id: savedProduct.id,
-                  sku: vItem.sku || `${(savedProduct.slug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`,
-                  price: parsePrice(vItem.price || String(basePriceNum)),
-                  weight: Number(vItem.weight) > 0 ? Number(vItem.weight) : parsedWeight,
-                  availability: "in_stock",
-                  status: targetStatus === "draft" ? "draft" : "published",
-                  option_values: optValuesPayload,
-                });
-
-                if (vItem.stock !== undefined && vItem.stock !== null && String(vItem.stock).trim() !== "" && !isNaN(Number(vItem.stock)) && createdVar?.id) {
-                  await adminApi.setStockQuantity(createdVar.id, Math.max(0, parseInt(String(vItem.stock), 10)));
+            for (const item of optionsToCreate) {
+              let optEntry = optionMap[item.name];
+              if (!optEntry) {
+                const createdOpt = await adminApi.createProductOption(targetProdId, { name: item.name });
+                optEntry = { optId: createdOpt.id, valMap: {} };
+                optionMap[item.name] = optEntry;
+              }
+              for (const val of item.values) {
+                if (!optEntry.valMap[val]) {
+                  const createdVal = await adminApi.createOptionValue(targetProdId, optEntry.optId, { value: val });
+                  optEntry.valMap[val] = createdVal.id;
                 }
               }
             }
-          } catch (optErr) {
-            console.warn("Auto-provisioning options/variants encountered an issue:", optErr);
+
+            for (const vItem of newVariantsToCreate) {
+              const parts = vItem.name.split(" / ").map((s) => s.trim());
+              const optValuesPayload: { option_id: string; value_id: string }[] = [];
+
+              parts.forEach((valPart) => {
+                Object.values(optionMap).forEach(({ optId, valMap }) => {
+                  if (valMap[valPart]) {
+                    optValuesPayload.push({ option_id: optId, value_id: valMap[valPart] });
+                  }
+                });
+              });
+
+              const createdVar = await adminApi.createVariant({
+                product_id: targetProdId,
+                sku: vItem.sku || `${(cleanSlug || "PROD").toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`,
+                price: parsePrice(vItem.price || String(basePriceNum)),
+                weight: Number(vItem.weight) > 0 ? Number(vItem.weight) : parsedWeight,
+                availability: "in_stock",
+                status: targetStatus === "draft" ? "draft" : "published",
+                option_values: optValuesPayload,
+              });
+
+              if (vItem.stock !== undefined && vItem.stock !== null && String(vItem.stock).trim() !== "" && !isNaN(Number(vItem.stock)) && createdVar?.id) {
+                await adminApi.setStockQuantity(createdVar.id, Math.max(0, parseInt(String(vItem.stock), 10)));
+              }
+            }
           }
+        } catch (variantSyncErr) {
+          console.warn("Variant/stock synchronization encountered an issue:", variantSyncErr);
+          toast.warning("اطلاعات محصول ذخیره شد، اما برخی تنوع‌ها یا مقادیر موجودی ممکن است نیاز به بازبینی داشته باشند.");
         }
       }
 
       // Wishlist Discount Notification Dispatch:
       // When a product gets a discount, dispatch notification with discount details (percentage, new price, remaining time)
       if (finalDiscountPercent && finalDiscountPrice) {
-        const prodId = savedProduct?.id || editingProduct?.id;
+        const prodId = targetProdId;
         useNotifications.getState().addNotification({
           id: `notif-discount-${prodId}-${Date.now()}`,
           type: "wishlist_discount",
