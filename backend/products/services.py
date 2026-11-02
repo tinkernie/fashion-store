@@ -105,11 +105,7 @@ class ProductService:
             pass
 
         # Invalidate product list caches
-        try:
-            from django.core.cache import cache
-            cache.delete_pattern("luxe:products:*")
-        except Exception:
-            pass
+        self._purge_product_view_caches()
         return self._serialize(product)
 
     def update_product(self, product_id, data: dict) -> dict:
@@ -191,12 +187,7 @@ class ProductService:
         if images is not None and isinstance(images, list):
             self._save_product_images(updated, images)
 
-        try:
-            from django.core.cache import cache
-            cache.delete_pattern("luxe:products:*")
-            cache.delete_pattern("luxe:categories:*")
-        except Exception:
-            pass
+        self._purge_product_view_caches()
         return self._serialize(updated)
 
     def _save_product_images(self, product, images: list):
@@ -242,20 +233,30 @@ class ProductService:
             )
 
     @staticmethod
-    def _purge_campaign_caches() -> None:
-        """Purge product-list caches after campaign mutations.
+    def _purge_product_view_caches() -> None:
+        """Centralized catalog cache purge for every product mutation.
 
         NOTE: deliberately NOT cache.clear() — sessions live in the default
-        cache backend, so a full flush would log out every user. Instead we
-        purge the product rails plus Django's view-level cache entries
-        (cache_page stores under views.decorators.cache.*).
+        cache backend, so a full flush would log out every user. We purge the
+        product/category rails plus Django's view-level cache entries;
+        cache_page keys live under views.decorators.cache.* at the raw-cache
+        level and again under the 'luxe' keyspace prefix when that prefixing
+        backend is in use.
         """
         try:
             from django.core.cache import cache
             cache.delete_pattern("luxe:products:*")
+            cache.delete_pattern("luxe:categories:*")
             cache.delete_pattern("views.decorators.cache.*")
+            cache.delete_pattern("luxe:*:views.decorators.cache.*")
         except Exception:
             pass
+
+    @staticmethod
+    def _purge_campaign_caches() -> None:
+        """Back-compat alias: campaign mutations purge through the same
+        centralized helper as every other catalog write."""
+        ProductService._purge_product_view_caches()
 
     @classmethod
     def apply_collection_discount(
@@ -552,11 +553,7 @@ class ProductService:
             raise BusinessException("Product not found.")
         product.status = Product.Status.ARCHIVED
         product.save(update_fields=["status", "updated_at"])
-        try:
-            from django.core.cache import cache
-            cache.delete_pattern("luxe:products:*")
-        except Exception:
-            pass
+        self._purge_product_view_caches()
         return {"message": f"Product '{product.title}' archived."}
 
     def delete_product(self, product_id) -> dict:
@@ -564,11 +561,7 @@ class ProductService:
         if not product:
             raise BusinessException("Product not found.")
         ProductRepository.soft_delete_product(product)
-        try:
-            from django.core.cache import cache
-            cache.delete_pattern("luxe:products:*")
-        except Exception:
-            pass
+        self._purge_product_view_caches()
         return {"message": f"Product '{product.title}' deleted."}
 
     def _serialize(self, product: Product) -> dict:

@@ -5,9 +5,9 @@ from common.exceptions import BusinessException
 
 
 class PasswordValidator:
-    # Aligned with the client-side minimum (8): shorter server-only
+    # Aligned with the client-side minimum (6): shorter server-only
     # rejections produced confusing form errors.
-    MIN_LENGTH = 8
+    MIN_LENGTH = 6
     MAX_LENGTH = 128
 
     @staticmethod
