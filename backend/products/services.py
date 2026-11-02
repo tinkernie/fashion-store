@@ -64,6 +64,13 @@ class ProductService:
         if image_url:
             data["metadata"]["image_url"] = image_url
             data["metadata"]["imageUrl"] = image_url
+        if images is not None and isinstance(images, list):
+            data["metadata"]["images"] = images
+            if images and not image_url:
+                first_url = images[0] if isinstance(images[0], str) else images[0].get("url", "")
+                if first_url:
+                    data["metadata"]["image_url"] = first_url
+                    data["metadata"]["imageUrl"] = first_url
 
         try:
             product = ProductRepository.create_product(**data)
@@ -134,7 +141,10 @@ class ProductService:
         images = data.pop("images", None)
         collection_id = data.pop("collection_id", None)
 
-        meta = product.metadata or {}
+        meta = dict(product.metadata or {})
+        incoming_meta = data.get("metadata")
+        if isinstance(incoming_meta, dict):
+            meta.update(incoming_meta)
         if price is not None:
             meta["price"] = str(price)
         if discount_price is not None:
@@ -142,6 +152,13 @@ class ProductService:
         if image_url:
             meta["image_url"] = image_url
             meta["imageUrl"] = image_url
+        if images is not None and isinstance(images, list):
+            meta["images"] = images
+            if images and not image_url:
+                first_url = images[0] if isinstance(images[0], str) else images[0].get("url", "")
+                if first_url:
+                    meta["image_url"] = first_url
+                    meta["imageUrl"] = first_url
         data["metadata"] = meta
 
         if collection_id:

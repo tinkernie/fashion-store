@@ -27,6 +27,7 @@ class ProductCreateSerializer(serializers.Serializer):
     price = serializers.IntegerField(min_value=0, required=False)
     discount_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     image_url = serializers.CharField(required=False, allow_blank=True)
+    images = serializers.ListField(required=False, allow_empty=True)
     weight = serializers.IntegerField(min_value=1, required=False, default=1)
     status = serializers.ChoiceField(
         choices=["draft", "published", "archived", "active"], default="published"
@@ -54,6 +55,7 @@ class ProductUpdateSerializer(serializers.Serializer):
     price = serializers.IntegerField(min_value=0, required=False)
     discount_price = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     image_url = serializers.CharField(required=False, allow_blank=True)
+    images = serializers.ListField(required=False, allow_empty=True)
     weight = serializers.IntegerField(min_value=1, required=False)
     status = serializers.ChoiceField(
         choices=["draft", "published", "archived", "active"], required=False

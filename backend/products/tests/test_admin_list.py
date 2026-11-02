@@ -101,3 +101,39 @@ def test_non_admin_blocked(catalog):
     resp = client.get("/api/admin/products/")
     assert resp.status_code in (401, 403)
     User.all_objects.filter(phone_number="09120000092").delete()
+
+
+def test_admin_patch_product_reorders_images(admin_client):
+    cat, _ = Category.objects.get_or_create(slug="img-test-cat", defaults={"name": "ImgCat"})
+    svc = ProductService()
+    created = svc.create_product({
+        "title": "Jacket Cover Test",
+        "slug": "jacket-cover-test",
+        "category_id": str(cat.id),
+        "price": 2500000,
+        "images": ["https://cdn.example.com/front.webp", "https://cdn.example.com/back.webp"],
+        "status": "published",
+    })
+    prod_id = created["id"]
+
+    prod = Product.objects.get(id=prod_id)
+    assert prod.images.filter(is_cover=True).first().image_url == "https://cdn.example.com/front.webp"
+
+    # Admin patches product with reordered images (back image becomes featured at index 0)
+    patch_resp = admin_client.patch(
+        f"/api/admin/products/{prod_id}/",
+        {
+            "images": ["https://cdn.example.com/back.webp", "https://cdn.example.com/front.webp"],
+            "image_url": "https://cdn.example.com/back.webp",
+        },
+        format="json",
+    )
+    assert patch_resp.status_code == 200
+
+    prod.refresh_from_db()
+    new_cover = prod.images.filter(is_cover=True).first()
+    assert new_cover is not None
+    assert new_cover.image_url == "https://cdn.example.com/back.webp"
+    ordered = list(prod.images.order_by("position").values_list("image_url", flat=True))
+    assert ordered == ["https://cdn.example.com/back.webp", "https://cdn.example.com/front.webp"]
+    assert prod.metadata.get("images") == ["https://cdn.example.com/back.webp", "https://cdn.example.com/front.webp"]
