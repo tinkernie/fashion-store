@@ -119,6 +119,7 @@ lerna-debug.log*
 .claude/
 .cursor/
 .skills/
+skills-lock.json
 
 # Graphify
 .graphify*
