@@ -50,7 +50,7 @@ export default function CheckoutPage() {
   const [isLoadingOrder, setIsLoadingOrder] = useState(false);
   const [couponCodeInput, setCouponCodeInput] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const [paymentGateway, setPaymentGateway] = useState<"dummy" | "zarinpal">("dummy");
+  const [paymentGateway, setPaymentGateway] = useState<"zarinpal">("zarinpal");
 
   // Address and Shipping states
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
@@ -384,54 +384,18 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setPaymentGateway("dummy")}
-                className={`p-5 rounded-2xl border text-right transition-all flex items-center justify-between cursor-pointer ${
-                  paymentGateway === "dummy"
-                    ? "bg-sky-50 border-[#0082CA] shadow-sm ring-1 ring-[#0082CA]/30"
-                    : "bg-white border-sky-200 hover:border-sky-300"
-                }`}
-              >
-                <div className="space-y-1">
-                  <span className="text-sm font-bold text-[#0B192C] block">
-                    درگاه شبیه‌ساز تستی (آنلاین)
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    تراکنش فوری و امن جهت تست تسویه
-                  </span>
-                </div>
-                <div className="w-5 h-5 rounded-full border-2 border-sky-300 flex items-center justify-center shrink-0">
-                  {paymentGateway === "dummy" && (
-                    <div className="w-2.5 h-2.5 bg-[#0082CA] rounded-full" />
-                  )}
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentGateway("zarinpal")}
-                className={`p-5 rounded-2xl border text-right transition-all flex items-center justify-between cursor-pointer ${
-                  paymentGateway === "zarinpal"
-                    ? "bg-sky-50 border-[#0082CA] shadow-sm ring-1 ring-[#0082CA]/30"
-                    : "bg-white border-sky-200 hover:border-sky-300"
-                }`}
-              >
-                <div className="space-y-1">
-                  <span className="text-sm font-bold text-[#0B192C] block">
-                    درگاه پرداخت زرین‌پال / بانکی
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    پشتیبانی از تمامی کارت‌های عضو شتاب
-                  </span>
-                </div>
-                <div className="w-5 h-5 rounded-full border-2 border-sky-300 flex items-center justify-center shrink-0">
-                  {paymentGateway === "zarinpal" && (
-                    <div className="w-2.5 h-2.5 bg-[#0082CA] rounded-full" />
-                  )}
-                </div>
-              </button>
+            <div className="p-5 rounded-2xl border bg-sky-50 border-[#0082CA] shadow-sm ring-1 ring-[#0082CA]/30 text-right flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-sm font-bold text-[#0B192C] block">
+                  درگاه پرداخت الکترونیک شاپرک (زرین‌پال)
+                </span>
+                <span className="text-xs text-slate-500">
+                  اتصال امن و مستقیم بانکی • پشتیبانی از تمامی کارت‌های عضو شبکه شتاب
+                </span>
+              </div>
+              <div className="w-5 h-5 rounded-full border-2 border-[#0082CA] flex items-center justify-center shrink-0">
+                <div className="w-2.5 h-2.5 bg-[#0082CA] rounded-full" />
+              </div>
             </div>
           </div>
         </motion.div>

@@ -1,4 +1,4 @@
-export type PaymentGateway = 'dummy' | 'zarinpal';
+export type PaymentGateway = 'zarinpal';
 
 export type PaymentStatus =
   | 'pending'

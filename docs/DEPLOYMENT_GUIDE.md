@@ -17,7 +17,25 @@
 
 ---
 
-## 0. Two provider-dependent states (temporary, by design)
+## 0. Production-Only & Zero-Testing Hardening Contract (CRITICAL)
+
+> **MANDATORY POLICY**: The deployed version on `185.226.119.184` is a **real production deployment serving real customers**. All test, mock, sandbox, and development options are strictly disabled across both backend and frontend layers.
+
+| Subsystem | Setting / Requirement | Production State | Justification & Verification |
+|---|---|---|---|
+| **Django Core** | `DEBUG=False` | **Enforced** (`backend/.env`) | Disables traceback disclosure, debug toolbars, unhardened `/admin/`, and insecure static views. Django check: `python manage.py check --deploy`. |
+| **Payment Gateway** | `ZARINPAL_SANDBOX=False` | **Enforced** (`backend/.env`) | Directs payment transactions to live Shaparak gateway (`payment.zarinpal.com`) using registered production merchant ID. |
+| **Payment Options** | Zero Dummy/Mock Gateways | **Enforced** (code & UI) | Dummy simulator gateway is deleted from backend registry and completely removed from frontend checkout. Only official bank gateway (ZarinPal / Shaparak) is present. |
+| **Database** | `DB_ENGINE=postgres` | **Enforced** (`backend/.env`) | Live cluster `webstore` on PostgreSQL 16. SQLite is strictly banned in production. |
+| **Background Tasks** | `CELERY_TASK_ALWAYS_EAGER=False` | **Enforced** (`backend/.env`) | Asynchronous processing via Redis broker (queues: `default`, `sms`, `inventory`, `media`). No inline test execution. |
+| **SMS Delivery** | `SMS_IR_API_KEY` + `SMS_ENABLED=True` | **Enforced** (`backend/.env`) | Live transactional SMS sent via sms.ir workspace templates (875605 signup, 120372 reset, 321934 paid order, 551115 owner alert). Console logging disabled. |
+| **Email Backend** | `EMAIL_BACKEND=smtp.EmailBackend` | **Enforced** (`backend/.env`) | Console email backend is disabled; only live SMTP is used. |
+| **Security Headers** | `SESSION_COOKIE_SECURE=True`<br>`CSRF_COOKIE_SECURE=True` | **Enforced** (`backend/.env`) | Cookies transmitted only over encrypted TLS channels (`maviposh.com`). |
+| **Frontend API Target** | `NEXT_PUBLIC_API_URL=https://maviposh.com` | **Enforced** (`.env.production`) | Baked into Next.js static build; zero localhost or test endpoints in client bundles. |
+
+---
+
+## 0.1 Two provider-dependent states (historical reference)
 
 | Concern | State until provider approval | Flip line after approval |
 |---|---|---|
