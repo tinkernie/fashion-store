@@ -354,7 +354,7 @@ export default function CollectionProductsClient({
               (Array.isArray(product.images) && typeof product.images[0] === "string"
                 ? product.images[0]
                 : null) ||
-              "/placeholder-product.svg";
+              "/placeholder.webp";
 
             const productCategory =
               typeof product.category === "string"
@@ -374,7 +374,7 @@ export default function CollectionProductsClient({
                     loading="lazy"
                     decoding="async"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = "/placeholder-product.svg";
+                      (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
                     }}
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                   />

@@ -618,7 +618,7 @@ export default function AdminCollectionsPage() {
                                 alt={col.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).src = "/placeholder-product.svg";
+                                  (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
                                 }}
                               />
                             ) : (
@@ -1046,7 +1046,7 @@ export default function AdminCollectionsPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {selectedCollectionForProducts.products.map((item: any) => {
-                    const itemImg = item.imageUrl || item.image_url || "/placeholder-product.svg";
+                    const itemImg = item.imageUrl || item.image_url || "/placeholder.webp";
                     const isRemoving = productActionLoading === String(item.id);
                     const hasActiveDiscount = Boolean(item.is_discount_active && (item.discount_percent || item.discount_price));
 
@@ -1061,7 +1061,7 @@ export default function AdminCollectionsPage() {
                             alt={item.title || item.name}
                             className="w-12 h-14 object-cover rounded-xl border border-white/10 bg-[#222] shrink-0"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = "/placeholder-product.svg";
+                              (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
                             }}
                           />
                           <div className="min-w-0 space-y-1">
@@ -1177,7 +1177,7 @@ export default function AdminCollectionsPage() {
                     );
                     const isSelected = selectedCatalogProductIds.includes(String(product.id));
                     const isAdding = productActionLoading === String(product.id);
-                    const img = product.imageUrl || product.image_url || product.image || "/placeholder-product.svg";
+                    const img = product.imageUrl || product.image_url || product.image || "/placeholder.webp";
 
                     return (
                       <div
@@ -1210,7 +1210,7 @@ export default function AdminCollectionsPage() {
                             alt={product.name || product.title}
                             className="w-12 h-14 object-cover rounded-xl border border-white/10 bg-[#222] shrink-0"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = "/placeholder-product.svg";
+                              (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
                             }}
                           />
                           <div className="min-w-0 space-y-0.5">

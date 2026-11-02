@@ -89,7 +89,7 @@ export default function ProductGallery({
     const unique = Array.from(new Set(list));
 
     if (unique.length === 0) {
-      unique.push("/placeholder-product.svg");
+      unique.push("/placeholder.webp");
     }
 
     return unique;
@@ -180,7 +180,7 @@ export default function ProductGallery({
     }
   };
 
-  const currentImage = images[currentIndex] || "/placeholder-product.svg";
+  const currentImage = images[currentIndex] || "/placeholder.webp";
 
   // Framer Motion slide variants
   const slideVariants = {
@@ -281,7 +281,7 @@ export default function ProductGallery({
                 decoding="async"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = "/placeholder-product.svg";
+                  e.currentTarget.src = "/placeholder.webp";
                 }}
                 draggable={false}
               />
@@ -383,7 +383,7 @@ export default function ProductGallery({
                     decoding="async"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
-                      e.currentTarget.src = "/placeholder-product.svg";
+                      e.currentTarget.src = "/placeholder.webp";
                     }}
                   />
                   {isActive && (

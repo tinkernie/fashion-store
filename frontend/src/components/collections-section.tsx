@@ -55,21 +55,17 @@ export function CollectionsSection({ initialCollections }: { initialCollections?
                 href={`/collections/${collection.slug || collection.id}`}
                 className="block group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white border border-sky-100 hover:border-[#0082CA] aspect-[4/3] transition-all shadow-md hover:shadow-xl"
               >
-                {/* Background Banner or Fallback Gradient */}
-                {bannerUrl ? (
-                  <img
-                    src={bannerUrl}
-                    alt={collection.name || collection.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-tr from-sky-100 via-sky-50 to-white" />
-                )}
+                {/* Background Banner or Fallback */}
+                <img
+                  src={bannerUrl || "/placeholder.webp"}
+                  alt={collection.name || collection.title}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  loading="lazy"
+                  decoding="async"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
+                  }}
+                />
 
                 {/* Gentle Aegean Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/85 via-[#0B192C]/25 to-transparent z-10 transition-opacity duration-300" />

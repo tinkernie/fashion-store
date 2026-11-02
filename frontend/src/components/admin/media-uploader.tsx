@@ -259,7 +259,7 @@ export default function MediaUploader({
                   alt="Preview"
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/placeholder-product.svg";
+                    (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
                   }}
                 />
               </div>

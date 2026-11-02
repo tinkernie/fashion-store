@@ -268,8 +268,12 @@ export default function AdminLayout({
             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-[#0082CA]/20 via-[#0082CA] to-[#0082CA]/20" />
 
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-[#1a1a1a] rounded-2xl mx-auto mb-4 border border-[#0082CA]/30 flex items-center justify-center text-[#0082CA] shadow-lg shadow-[#0082CA]/10">
-                <ShieldCheck className="w-8 h-8" />
+              <div className="w-16 h-16 rounded-full mx-auto mb-4 p-0.5 border border-[#0082CA]/40 flex items-center justify-center shadow-xl shadow-[#0082CA]/20 overflow-hidden bg-[#0a0a0a]">
+                <img
+                  src="/images/mavi-logo-circle.png"
+                  alt="لوگوی ماوی MAVI"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <h1 className="text-2xl font-black text-white mb-2">ورود به پنل مدیریت ماوی</h1>
               <p className="text-gray-400 text-xs leading-relaxed">
@@ -375,9 +379,11 @@ export default function AdminLayout({
         {/* Sidebar Brand Header */}
         <div className="h-20 px-6 border-b border-white/10 flex items-center justify-between">
           <Link href="/admin" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white text-[#0082CA] flex items-center justify-center font-black text-lg shadow-lg">
-              م
-            </div>
+            <img
+              src="/images/mavi-logo-circle.png"
+              alt="لوگوی ماوی MAVI"
+              className="w-10 h-10 rounded-full object-contain shadow-md shadow-[#0082CA]/30 shrink-0 hover:scale-105 transition-transform"
+            />
             <div>
               <span className="font-black text-base text-white tracking-wider block">پنل مدیریت ماوی</span>
               <div className="flex items-center gap-1.5 mt-0.5">

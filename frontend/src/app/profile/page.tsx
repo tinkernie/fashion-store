@@ -888,13 +888,13 @@ export default function ProfilePage() {
                       >
                         <div className="relative shrink-0">
                           <img
-                            src={item.imageUrl || "/placeholder-product.svg"}
+                            src={item.imageUrl || "/placeholder.webp"}
                             alt={item.name}
                             loading="lazy"
                             decoding="async"
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = "/placeholder-product.svg";
+                              e.currentTarget.src = "/placeholder.webp";
                             }}
                             className="w-20 h-24 object-cover rounded-2xl border border-sky-100 bg-sky-50"
                           />
@@ -1480,7 +1480,7 @@ export default function ProfilePage() {
                       finalImage = `${backendBase}${finalImage.startsWith("/") ? "" : "/"}${finalImage}`;
                     }
                     if (!finalImage) {
-                      finalImage = "/placeholder-product.svg";
+                      finalImage = "/placeholder.webp";
                     }
 
                     return (
@@ -1492,7 +1492,7 @@ export default function ProfilePage() {
                           decoding="async"
                           className="w-16 h-18 object-cover rounded-xl shrink-0 border border-sky-200 bg-white"
                           onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = "/placeholder-product.svg";
+                            (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
                           }}
                         />
                         <div className="flex-1 min-w-0">

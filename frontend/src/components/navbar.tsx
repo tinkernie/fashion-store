@@ -406,7 +406,7 @@ export default function Navbar() {
                                   className="flex gap-3 items-center flex-1 min-w-0 cursor-pointer text-right"
                                 >
                                   <img
-                                    src={item.imageUrl || "/placeholder-product.svg"}
+                                    src={item.imageUrl || "/placeholder.webp"}
                                     alt={item.name}
                                     className="w-16 h-20 object-cover rounded-xl border border-sky-100 shadow-sm group-hover:scale-102 transition-transform shrink-0"
                                   />
@@ -688,13 +688,13 @@ export default function Navbar() {
                     className="flex items-center gap-4 p-2.5 hover:bg-sky-50 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-sky-100"
                   >
                     <img
-                      src={product.imageUrl || product.image || "/placeholder-product.svg"}
+                      src={product.imageUrl || product.image || "/placeholder.webp"}
                       alt={product.name || product.title}
                       loading="lazy"
                       decoding="async"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/placeholder-product.svg";
+                        e.currentTarget.src = "/placeholder.webp";
                       }}
                       className="w-12 h-14 object-cover rounded-xl border border-sky-100 shrink-0 shadow-sm"
                     />

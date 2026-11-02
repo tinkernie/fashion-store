@@ -56,10 +56,13 @@ export default function ProductCard({
         <motion.img
           whileHover={{ scale: 1.05 }}
           transition={{ duration: 0.7, ease: [0.25, 1, 0.5, 1] }}
-          src={imageUrl}
+          src={imageUrl || "/placeholder.webp"}
           alt={name}
           className="h-full w-full object-cover object-center transition-transform"
           loading="lazy"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
+          }}
         />
       </div>
 

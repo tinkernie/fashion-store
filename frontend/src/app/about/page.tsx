@@ -40,7 +40,7 @@ export default function AboutPage() {
           decoding="async"
           onError={(e) => {
             e.currentTarget.onerror = null;
-            e.currentTarget.src = "/placeholder-product.svg";
+            e.currentTarget.src = "/placeholder.webp";
           }}
           className="w-full h-full object-cover opacity-90"
         />

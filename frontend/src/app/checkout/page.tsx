@@ -420,13 +420,13 @@ export default function CheckoutPage() {
                   className="flex gap-3 items-center bg-sky-50/50 p-2.5 rounded-2xl border border-sky-100"
                 >
                   <img
-                    src={item.imageUrl || "/placeholder-product.svg"}
+                    src={item.imageUrl || "/placeholder.webp"}
                     alt={item.name}
                     loading="lazy"
                     decoding="async"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
-                      e.currentTarget.src = "/placeholder-product.svg";
+                      e.currentTarget.src = "/placeholder.webp";
                     }}
                     className="w-14 h-16 object-cover rounded-xl shrink-0 border border-sky-100"
                   />

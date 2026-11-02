@@ -65,7 +65,7 @@ const PLACEHOLDER_HERO_SLIDE: HeroSlide = {
   badge: "ماوی MAVI",
   cta_label: "مشاهده محصولات",
   cta_link: "/products",
-  image_url: "/placeholder-product.svg",
+  image_url: "/placeholder.webp",
 };
 
 const DEFAULT_ADDITIONAL_SLIDES: HeroSlide[] = [
@@ -353,7 +353,7 @@ export default function HomeClient({
       const images = document.querySelectorAll<HTMLImageElement>("img[data-product-img]");
       images.forEach((img) => {
         if (img.complete && (img.naturalWidth === 0 || img.naturalHeight === 0)) {
-          img.src = "/placeholder-product.svg";
+          img.src = "/placeholder.webp";
         }
       });
     };
@@ -460,11 +460,14 @@ export default function HomeClient({
               >
                 {/* Background Photography with Rich Gradient Scrim */}
                 <img
-                  src={currentSlide.image_url}
+                  src={currentSlide.image_url || "/placeholder.webp"}
                   alt={currentSlide.title}
                   className="w-full h-full object-cover object-center transition-transform duration-1000 group-hover:scale-105"
                   loading="eager"
                   decoding="async"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0B192C]/90 via-[#0B192C]/35 to-transparent md:bg-gradient-to-l md:from-[#0B192C]/95 md:via-[#0B192C]/50 md:to-transparent" />
 
@@ -662,7 +665,7 @@ export default function HomeClient({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-4.5">
             {newestProducts.map((product, index) => {
               const disc = getDiscountInfo(product);
-              const productImg = product.imageUrl || product.image_url || product.image || "/placeholder-product.svg";
+              const productImg = product.imageUrl || product.image_url || product.image || "/placeholder.webp";
               return (
                 <motion.div
                   key={`newest-${product.id || index}`}
@@ -696,7 +699,7 @@ export default function HomeClient({
                       data-product-img="true"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/placeholder-product.svg";
+                        e.currentTarget.src = "/placeholder.webp";
                       }}
                     />
 
@@ -778,6 +781,9 @@ export default function HomeClient({
                   src={discountSection.background_image}
                   alt={discountSection.title || "کمپین تخفیفات ماوی"}
                   className="w-full h-full object-cover opacity-25 mix-blend-overlay"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#0B192C]/90 via-[#0B192C]/70 to-[#0082CA]/80" />
               </div>

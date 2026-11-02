@@ -1350,7 +1350,7 @@ export default function AdminProductsPage() {
                     p.image ||
                     (Array.isArray(p.metadata?.images) && p.metadata.images[0]) ||
                     (Array.isArray(p.images) && (typeof p.images[0] === "string" ? p.images[0] : p.images[0]?.url)) ||
-                    "/placeholder-product.svg";
+                    "/placeholder.webp";
                   const matchedCat = categories.find(
                     (c) => c.id === p.category_id || c.name === p.category || c.slug === p.category || c.id === p.category
                   );

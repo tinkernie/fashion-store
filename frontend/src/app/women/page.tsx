@@ -282,7 +282,7 @@ export default function WomenCategoryPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
               {filteredProducts.map((product, index) => {
-                const img = product.imageUrl || product.image || product.image_url || "/placeholder-product.svg";
+                const img = product.imageUrl || product.image || product.image_url || "/placeholder.webp";
                 const catLabel = product.category_name || product.category || "فشن استور";
                 const disc = getDiscountInfo(product);
 
@@ -309,7 +309,7 @@ export default function WomenCategoryPage() {
                         decoding="async"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
-                          e.currentTarget.src = "/placeholder-product.svg";
+                          e.currentTarget.src = "/placeholder.webp";
                         }}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />

@@ -43,7 +43,8 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
     collection.hero_banner ||
     collection.image_url ||
     collection.image ||
-    (collection as any).seo_metadata?.hero_banner;
+    (collection as any).seo_metadata?.hero_banner ||
+    "/placeholder.webp";
   const siteUrl = getSiteBaseUrl();
 
   const jsonLd = {
@@ -81,6 +82,9 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
               src={bannerImg}
               alt={collection.name || collection.title}
               className="w-full h-full object-cover object-center"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = "/placeholder.webp";
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-4 sm:p-6 md:p-10">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] sm:text-xs text-white font-bold w-max mb-2">

@@ -361,7 +361,7 @@ export default function AdminDashboardPage() {
                         (typeof searchedProduct.images[0] === "string"
                           ? searchedProduct.images[0]
                           : searchedProduct.images[0]?.url)) ||
-                      "/placeholder-product.svg"
+                      "/placeholder.webp"
                     }
                     alt={searchedProduct.name || searchedProduct.title || "تصویر محصول"}
                     className="w-14 h-16 object-cover rounded-xl border border-white/10"

@@ -720,7 +720,7 @@ function SearchContent() {
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 md:gap-5">
                 {products.map((product) => {
                   const isWishlisted = wishlistItems.some((w) => w.id === product.id);
-                  const img = product.image || product.imageUrl || "/placeholder-product.svg";
+                  const img = product.image || product.imageUrl || "/placeholder.webp";
                   const disc = getDiscountInfo(product);
 
                   return (
@@ -742,7 +742,7 @@ function SearchContent() {
                             decoding="async"
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = "/placeholder-product.svg";
+                              e.currentTarget.src = "/placeholder.webp";
                             }}
                           />
                         </Link>

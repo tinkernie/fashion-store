@@ -710,6 +710,19 @@ export function AuthForm({
         </div>
       )}
 
+      {/* Brand Header with Circular Monogram */}
+      <div className="flex flex-col items-center justify-center text-center mb-6 pt-1">
+        <div className="w-14 h-14 rounded-full p-0.5 border border-[#0082CA]/30 shadow-lg shadow-[#0082CA]/20 bg-white flex items-center justify-center mb-2.5 hover:scale-105 transition-transform">
+          <img
+            src="/images/mavi-logo-circle.png"
+            alt="لوگوی ماوی MAVI"
+            className="w-full h-full object-contain"
+          />
+        </div>
+        <h2 className="text-lg font-black text-[#0B192C]">فروشگاه تخصصی مد و پوشاک ماوی</h2>
+        <p className="text-xs text-slate-500 mt-0.5">تجربه خرید مدرن و اصیل پوشاک</p>
+      </div>
+
       {/* Top Segmented Tabs (ورود / ثبت‌نام) */}
       {authMode !== 'reset' && (
         <div className="mb-6">

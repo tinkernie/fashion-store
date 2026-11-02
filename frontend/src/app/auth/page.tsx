@@ -426,10 +426,12 @@ export default function AuthPage() {
         <div className="w-full h-full bg-white flex flex-col justify-between p-6 sm:p-10 md:p-12">
           {/* Header Brand Badge */}
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-[#0082CA] text-white flex items-center justify-center shadow-md shadow-[#0082CA]/25">
-                <ShieldCheck className="w-5 h-5 text-white" />
-              </div>
+            <div className="flex items-center gap-3">
+              <img
+                src="/images/mavi-logo-circle.png"
+                alt="لوگوی ماوی MAVI"
+                className="w-11 h-11 rounded-full object-contain shadow-md shadow-[#0082CA]/25 hover:scale-105 transition-transform shrink-0"
+              />
               <div>
                 <span className="text-base font-black text-[#0B192C] tracking-wide block">
                   ماوی • MAVI
