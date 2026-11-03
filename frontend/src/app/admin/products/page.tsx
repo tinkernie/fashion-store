@@ -726,13 +726,23 @@ export default function AdminProductsPage() {
     let finalDiscountPrice: number | undefined = undefined;
     let finalDiscountPercent: number | null = null;
 
-    if (discountPercent.trim() !== "") {
-      if (!isValidDiscountPercent(discountPercent.trim())) {
-        toast.error("درصد تخفیف فقط باید یک عدد صحیح بین ۱ تا ۹۹ باشد (هر مقدار دیگری غیرمجاز است).");
+    const trimmedPct = discountPercent.trim();
+    if (trimmedPct !== "") {
+      const parsedPct = Number(trimmedPct);
+      if (parsedPct === 0) {
+        // 0 explicitly clears discount
+        finalDiscountPercent = 0;
+        finalDiscountPrice = undefined;
+      } else if (isValidDiscountPercent(parsedPct)) {
+        finalDiscountPercent = parsedPct;
+        finalDiscountPrice = calculateDiscountPrice(basePriceNum, finalDiscountPercent);
+      } else {
+        toast.error("درصد تخفیف باید عددی بین ۰ تا ۹۹ باشد (۰ برای حذف تخفیف).");
         return;
       }
-      finalDiscountPercent = Number(discountPercent.trim());
-      finalDiscountPrice = calculateDiscountPrice(basePriceNum, finalDiscountPercent);
+    } else {
+      finalDiscountPercent = 0;
+      finalDiscountPrice = undefined;
     }
 
     setIsLoading(true);
@@ -756,14 +766,16 @@ export default function AdminProductsPage() {
       category_id: validCatId,
       collection_id: validColId,
       price: Math.round(basePriceNum),
+      discount_percent: finalDiscountPercent,
       discount_price: finalDiscountPrice ? Math.round(finalDiscountPrice) : undefined,
       weight: parsedWeight,
       images: imageUrls,
       metadata: {
         ...(editingProduct?.metadata || {}),
         weight: parsedWeight,
-        discount_percent: finalDiscountPercent,
-        discount_remaining: finalDiscountPercent ? finalRemaining : null,
+        discount_percent: finalDiscountPercent && finalDiscountPercent > 0 ? finalDiscountPercent : null,
+        discount_price: finalDiscountPrice ? String(Math.round(finalDiscountPrice)) : null,
+        discount_remaining: finalDiscountPercent && finalDiscountPercent > 0 ? finalRemaining : null,
         images: imageUrls,
         color: clothingColor.trim() || undefined,
         size: clothingSize.trim() || undefined,
@@ -2236,12 +2248,12 @@ export default function AdminProductsPage() {
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-300 flex items-center justify-between">
-                  <span>درصد تخفیف (۱ تا ۹۹)</span>
-                  <span className="text-[10px] text-amber-400 font-normal">اختیاری</span>
+                  <span>درصد تخفیف (۰ تا ۹۹)</span>
+                  <span className="text-[10px] text-amber-400 font-normal">۰ = حذف تخفیف</span>
                 </label>
                 <Input
                   type="number"
-                  min={1}
+                  min={0}
                   max={99}
                   value={discountPercent}
                   onChange={(e) => {
@@ -2251,14 +2263,16 @@ export default function AdminProductsPage() {
                       setDiscountPrice("");
                     } else {
                       const num = parseInt(val, 10);
-                      if (num >= 1 && num <= 99) {
+                      if (num === 0) {
+                        setDiscountPrice("");
+                      } else if (num >= 1 && num <= 99) {
                         setDiscountPrice(String(calculateDiscountPrice(price, num)));
                       } else {
                         setDiscountPrice("");
                       }
                     }
                   }}
-                  placeholder="مثال: 20"
+                  placeholder="مثال: 20 (یا 0 برای حذف)"
                   className="bg-[#181818] border-white/10 h-11 text-xs text-white rounded-xl font-sans"
                   dir="ltr"
                 />
@@ -2287,9 +2301,13 @@ export default function AdminProductsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-bold text-white">پیش‌نمایش تخفیف و زمان اعتبار</span>
+                    <span className="text-xs font-bold text-white">پیش‌نمایش تخفیف و وضعیت</span>
                   </div>
-                  {isValidDiscountPercent(discountPercent) ? (
+                  {Number(discountPercent) === 0 ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-bold">
+                      بدون تخفیف (قیمت اصلی)
+                    </span>
+                  ) : isValidDiscountPercent(discountPercent) ? (
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
                       {discountPercent}٪ تخفیف معتبر
                     </span>
@@ -2300,7 +2318,19 @@ export default function AdminProductsPage() {
                   )}
                 </div>
 
-                {isValidDiscountPercent(discountPercent) ? (
+                {Number(discountPercent) === 0 ? (
+                  <div className="p-3 bg-sky-950/20 border border-sky-500/20 rounded-xl space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">قیمت نهایی محصول:</span>
+                      <span className="text-white font-black text-sm">
+                        {price ? formatPrice(price) : "قیمت پایه"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-sky-300/80 pt-1 border-t border-sky-500/10">
+                      تخفیف از این محصول حذف خواهد شد و کالا با قیمت اصلی به مشتریان عرضه می‌شود.
+                    </p>
+                  </div>
+                ) : isValidDiscountPercent(discountPercent) ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/5">
                     <div className="p-3 bg-emerald-950/20 border border-emerald-500/20 rounded-xl space-y-1">
                       <div className="flex items-center justify-between text-xs">
@@ -2334,7 +2364,7 @@ export default function AdminProductsPage() {
                   </div>
                 ) : (
                   <div className="p-2.5 bg-rose-950/40 border border-rose-500/30 rounded-xl text-rose-300 text-xs font-medium">
-                    ⚠️ توجه: درصد تخفیف فقط باید عددی بین ۱ تا ۹۹ باشد. سایر مقادیر قابل ثبت نیستند.
+                    ⚠️ توجه: درصد تخفیف باید عددی بین ۰ تا ۹۹ باشد (۰ برای حذف تخفیف).
                   </div>
                 )}
               </div>

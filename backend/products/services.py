@@ -51,6 +51,7 @@ class ProductService:
 
         price = data.pop("price", None)
         discount_price = data.pop("discount_price", None)
+        discount_percent = data.pop("discount_percent", None)
         image_url = data.pop("image_url", None)
         images = data.pop("images", None)
         collection_id = data.pop("collection_id", None)
@@ -59,7 +60,17 @@ class ProductService:
             data["metadata"] = {}
         if price is not None:
             data["metadata"]["price"] = str(price)
-        if discount_price is not None:
+        if discount_percent and discount_percent > 0:
+            data["discount_percent"] = discount_percent
+            data["discount_source"] = Product.DiscountSource.MANUAL
+            if discount_price is not None and discount_price > 0:
+                data["discount_price"] = discount_price
+            elif price is not None:
+                data["discount_price"] = round(float(price) * (1 - discount_percent / 100))
+            data["metadata"]["discount_percent"] = discount_percent
+            if data.get("discount_price"):
+                data["metadata"]["discount_price"] = str(int(data["discount_price"]))
+        elif discount_price is not None and discount_price > 0:
             data["metadata"]["discount_price"] = str(discount_price)
         if image_url:
             data["metadata"]["image_url"] = image_url
@@ -136,6 +147,8 @@ class ProductService:
                     data["category"] = category
 
         price = data.pop("price", None)
+        has_discount_input = "discount_percent" in data or "discount_price" in data
+        discount_percent = data.pop("discount_percent", None)
         discount_price = data.pop("discount_price", None)
         image_url = data.pop("image_url", None)
         images = data.pop("images", None)
@@ -147,7 +160,38 @@ class ProductService:
             meta.update(incoming_meta)
         if price is not None:
             meta["price"] = str(price)
-        if discount_price is not None:
+
+        if has_discount_input:
+            if discount_percent == 0 or (discount_percent is None and (discount_price is None or discount_price == 0)):
+                # 0 explicitly clears discount
+                product.clear_discount()
+                meta.pop("discount_percent", None)
+                meta.pop("discount_price", None)
+                meta.pop("discount_source", None)
+                meta.pop("discount_remaining", None)
+                meta.pop("discount_expires_in", None)
+            elif discount_percent and discount_percent > 0:
+                base = price if price is not None else self._base_price(product)
+                calc_discount_price = (
+                    discount_price
+                    if discount_price is not None and discount_price > 0
+                    else round(float(base) * (1 - discount_percent / 100))
+                )
+                product.discount_percent = discount_percent
+                product.discount_price = calc_discount_price
+                product.discount_source = Product.DiscountSource.MANUAL
+                product.discount_expires_at = None
+                meta["discount_percent"] = discount_percent
+                meta["discount_price"] = str(int(calc_discount_price))
+                meta["discount_source"] = Product.DiscountSource.MANUAL
+                product.metadata = meta
+                product.save(
+                    update_fields=[
+                        "discount_percent", "discount_price", "discount_source",
+                        "discount_expires_at", "metadata", "updated_at"
+                    ]
+                )
+        elif discount_price is not None:
             meta["discount_price"] = str(discount_price)
         if image_url:
             meta["image_url"] = image_url

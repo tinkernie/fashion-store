@@ -85,3 +85,36 @@ class TestProductService:
         ordered_urls = list(prod.images.order_by("position").values_list("image_url", flat=True))
         assert ordered_urls == ["https://cdn.example.com/img2.jpg", "https://cdn.example.com/img1.jpg"]
         assert prod.metadata.get("images") == ["https://cdn.example.com/img2.jpg", "https://cdn.example.com/img1.jpg"]
+
+    def test_update_product_discount_zero_clears_discount(self):
+        cat = CategoryFactory()
+        service = ProductService()
+        result = service.create_product(
+            {
+                "title": "Jacket",
+                "slug": "mavi-jacket-test",
+                "category_id": str(cat.id),
+                "price": 500000,
+                "discount_percent": 20,
+            }
+        )
+        prod_id = result["id"]
+        from products.models import Product
+        prod = Product.objects.get(id=prod_id)
+        assert prod.discount_percent == 20
+        assert prod.discount_price == 400000
+        assert prod.discount_source == Product.DiscountSource.MANUAL
+
+        # Now update with discount_percent = 0 to clear discount
+        service.update_product(
+            prod_id,
+            {
+                "discount_percent": 0,
+            },
+        )
+        prod.refresh_from_db()
+        assert prod.discount_percent is None
+        assert prod.discount_price is None
+        assert prod.discount_source is None
+        assert "discount_percent" not in (prod.metadata or {})
+        assert "discount_price" not in (prod.metadata or {})
