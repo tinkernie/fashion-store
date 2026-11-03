@@ -61,9 +61,12 @@ export default function ContactPage() {
                 <MapPin className="w-5 h-5 md:w-6 md:h-6" />
               </div>
               <div>
-                <h3 className="text-slate-900 font-bold mb-1 text-sm md:text-base">آدرس دفتر مرکزی</h3>
+                <h3 className="text-slate-900 font-bold mb-1 text-sm md:text-base">آدرس فروشگاه</h3>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
-                  تهران، خیابان ولیعصر، بالاتر از میدان ونک، برج نگین ماوی (MAVI)، طبقه پنجم، واحد ۵۰۲
+                  زنجان - قیدار - خیابان امام - روبروی تالار صدف - پوشاک ماوی
+                </p>
+                <p className="text-slate-400 text-[10px] md:text-xs mt-1">
+                  میدونم که انتخاب های زیادی داشتید ، ممنونم که ما رو انتخاب کردید❤️
                 </p>
               </div>
             </div>
