@@ -118,6 +118,8 @@ class Product(BaseModel):
             meta.pop("discount_percent", None)
             meta.pop("discount_price", None)
             meta.pop("discount_source", None)
+            meta.pop("discount_remaining", None)
+            meta.pop("discount_expires_in", None)
             self.metadata = meta
         self.save(
             update_fields=[

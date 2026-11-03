@@ -37,13 +37,14 @@ export default function Footer() {
                 <div className="w-8 h-8 rounded-lg bg-white/10 text-[#5CAFE7] flex items-center justify-center shrink-0 mt-0.5">
                   <MapPin className="w-4 h-4" />
                 </div>
-                <span className="text-sm leading-relaxed">شعبه ۱: تهران، خیابان ولیعصر، بالاتر از پارک وی، پلاک ۱۲۳</span>
-              </div>
-              <div className="flex items-start gap-3 text-sky-100/90">
-                <div className="w-8 h-8 rounded-lg bg-white/10 text-[#5CAFE7] flex items-center justify-center shrink-0 mt-0.5">
-                  <MapPin className="w-4 h-4" />
+                <div className="flex flex-col space-y-1.5">
+                  <span className="text-sm leading-relaxed font-medium">
+                    زنجان - قیدار - خیابان امام - روبروی تالار صدف - پوشاک ماوی
+                  </span>
+                  <p className="text-xs text-sky-200/80 leading-relaxed font-normal">
+                    میدونم که انتخاب های زیادی داشتید ، ممنونم که ما رو انتخاب کردید❤️
+                  </p>
                 </div>
-                <span className="text-sm leading-relaxed">شعبه ۲: تهران، بلوار اندرزگو، مجتمع تجاری سانا، طبقه همکف</span>
               </div>
               <div className="flex items-center gap-3 text-sky-100/90">
                 <div className="w-8 h-8 rounded-lg bg-white/10 text-[#5CAFE7] flex items-center justify-center shrink-0">

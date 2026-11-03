@@ -324,3 +324,54 @@ class TestCollectionDiscountAdminAPI:
         product.refresh_from_db()
         assert not product.is_discount_active
         assert CollectionProduct.objects.filter(collection=collection).count() == 1
+
+
+    def test_campaign_deactivate_clears_metadata_completely(self):
+        product = _make_catalog_product()
+        ProductService().activate_discount_section([str(product.id)], 35)
+        product.refresh_from_db()
+        assert product.discount_percent == 35
+        assert product.metadata.get("discount_percent") == 35
+        assert product.metadata.get("discount_source") == "campaign"
+
+        ProductService().deactivate_discount_section()
+        product.refresh_from_db()
+        assert product.discount_percent is None
+        assert product.discount_price is None
+        assert not product.is_discount_active
+        assert not (product.metadata or {}).get("discount_percent")
+        assert not (product.metadata or {}).get("discount_price")
+        assert not (product.metadata or {}).get("discount_source")
+
+    def test_collection_model_soft_delete_clears_discounts(self):
+        collection = CollectionFactory()
+        product = _make_catalog_product()
+        ProductService.apply_collection_discount(
+            [product], 25, _future(), collection_id=collection.id
+        )
+        product.refresh_from_db()
+        assert product.discount_percent == 25
+        assert product.metadata.get("discount_percent") == 25
+
+        collection.delete()
+        product.refresh_from_db()
+        assert not product.is_discount_active
+        assert product.discount_percent is None
+        assert product.discount_source is None
+        assert not (product.metadata or {}).get("discount_percent")
+
+    def test_collection_hard_delete_clears_discounts(self):
+        collection = CollectionFactory()
+        product = _make_catalog_product()
+        ProductService.apply_collection_discount(
+            [product], 15, _future(), collection_id=collection.id
+        )
+        product.refresh_from_db()
+        assert product.discount_percent == 15
+
+        collection.hard_delete()
+        product.refresh_from_db()
+        assert not product.is_discount_active
+        assert product.discount_percent is None
+        assert product.discount_source is None
+        assert not (product.metadata or {}).get("discount_percent")

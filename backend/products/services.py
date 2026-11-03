@@ -294,13 +294,18 @@ class ProductService:
     @classmethod
     def clear_collection_discounts(cls, collection_id) -> int:
         """Reverts every discount owned by the given collection."""
+        from django.db.models import Q
+
         rows = list(
             Product.objects.filter(
                 deleted_at__isnull=True,
-                discount_source=Product.DiscountSource.COLLECTION,
-                discount_collection_id=collection_id,
-                discount_percent__isnull=False,
             )
+            .filter(
+                Q(discount_collection_id=collection_id)
+                | Q(collections__id=collection_id, discount_source=Product.DiscountSource.COLLECTION)
+                | Q(collections__id=collection_id, discount_collection_id=collection_id)
+            )
+            .distinct()
         )
         for product in rows:
             product.clear_discount()
@@ -547,22 +552,26 @@ class ProductService:
     def deactivate_discount_section(self) -> dict:
         """Bulk revert: clear discounts on every campaign-owned discounted product
         (prices restore automatically). Collection-owned discounts are untouched."""
+        from django.db.models import Q
+
         qs = (
             Product.objects.select_for_update()
-            .filter(deleted_at__isnull=True, discount_percent__isnull=False)
-            .exclude(discount_source=Product.DiscountSource.COLLECTION)
+            .filter(deleted_at__isnull=True)
+            .filter(
+                Q(discount_source=Product.DiscountSource.CAMPAIGN)
+                | (
+                    Q(discount_percent__isnull=False)
+                    & ~Q(discount_source=Product.DiscountSource.COLLECTION)
+                )
+                | Q(metadata__discount_source="campaign")
+            )
+            .distinct()
         )
-        count = qs.count()
-        qs.update(
-            discount_percent=None,
-            discount_price=None,
-            discount_expires_at=None,
-            discount_source=None,
-            discount_collection_id=None,
-            updated_at=timezone.now(),
-        )
+        products = list(qs)
+        for product in products:
+            product.clear_discount()
         self._purge_campaign_caches()
-        return {"message": f"Discount removed from {count} products.", "cleared_count": count}
+        return {"message": f"Discount removed from {len(products)} products.", "cleared_count": len(products)}
 
     def archive_product(self, product_id) -> dict:
         product = ProductSelector.get_product_by_id(product_id)
@@ -708,9 +717,8 @@ def variant_effective_price(variant):
 
 def cleanup_expired_discounts() -> dict:
     """Nulls discount rows (campaign and collection alike) whose owner-entered
-    expiry date has passed. Pricing already ignores them via is_discount_active
-    (date-aware); this keeps the stored data clean instead of letting stale
-    numbers linger in the database."""
+    expiry date has passed, plus clears orphaned collection discounts whose
+    collections no longer exist."""
     from datetime import timedelta
 
     cutoff = timezone.now() - timedelta(seconds=60)
@@ -724,6 +732,25 @@ def cleanup_expired_discounts() -> dict:
     )
     for product in rows:
         product.clear_discount()
+
+    # Self-healing: clear orphan collection discounts whose collection was deleted
+    try:
+        from store_collections.models import Collection
+        active_col_ids = set(
+            Collection.objects.filter(deleted_at__isnull=True).values_list("id", flat=True)
+        )
+        orphans = list(
+            Product.objects.filter(
+                deleted_at__isnull=True,
+                discount_source=Product.DiscountSource.COLLECTION,
+            ).exclude(discount_collection_id__in=active_col_ids)
+        )
+        for product in orphans:
+            product.clear_discount()
+            rows.append(product)
+    except Exception:
+        pass
+
     if rows:
         ProductService._purge_campaign_caches()
     return {"cleared": len(rows)}

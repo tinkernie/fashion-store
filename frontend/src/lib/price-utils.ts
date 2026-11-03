@@ -177,6 +177,18 @@ export function getDiscountInfo(product: any): ProductDiscountInfo {
   }
 
   let basePrice = parsePrice(product.price);
+
+  // If backend explicitly reports discount is inactive, revert to base price immediately
+  if (product.is_discount_active === false) {
+    return {
+      hasDiscount: false,
+      basePrice,
+      discountPrice: basePrice,
+      discountPercent: 0,
+      savings: 0,
+    };
+  }
+
   let rawDiscountPrice = parsePrice(product.discount_price ?? product.discountPrice);
 
   // If compare_at_price is higher than price, price is the discounted price
@@ -187,11 +199,19 @@ export function getDiscountInfo(product: any): ProductDiscountInfo {
   }
 
   let discountPercent = 0;
-  if (isValidDiscountPercent(product.metadata?.discount_percent)) {
-    discountPercent = Number(product.metadata.discount_percent);
-  } else if (isValidDiscountPercent(product.discount_percent ?? product.discountPercent)) {
+  if (isValidDiscountPercent(product.discount_percent ?? product.discountPercent)) {
     discountPercent = Number(product.discount_percent ?? product.discountPercent);
-  } else if (rawDiscountPrice > 0 && rawDiscountPrice < basePrice) {
+  } else if (
+    product.discount_percent === undefined &&
+    isValidDiscountPercent(product.metadata?.discount_percent)
+  ) {
+    discountPercent = Number(product.metadata.discount_percent);
+  } else if (
+    product.discount_price !== null &&
+    product.discountPrice !== null &&
+    rawDiscountPrice > 0 &&
+    rawDiscountPrice < basePrice
+  ) {
     discountPercent = calculateDiscountPercent(basePrice, rawDiscountPrice);
   }
 

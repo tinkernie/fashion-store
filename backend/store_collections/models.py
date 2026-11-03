@@ -42,10 +42,25 @@ class Collection(BaseModel):
     def delete(self, *args, **kwargs):
         # Soft delete: hide from all selectors (deleted_at) and mark inactive.
         from django.utils import timezone
+        from products.services import ProductService
+
+        try:
+            ProductService.clear_collection_discounts(self.id)
+        except Exception:
+            pass
 
         self.is_active = False
         self.deleted_at = timezone.now()
         self.save(update_fields=["is_active", "deleted_at", "updated_at"])
+
+    def hard_delete(self):
+        from products.services import ProductService
+
+        try:
+            ProductService.clear_collection_discounts(self.id)
+        except Exception:
+            pass
+        super().hard_delete()
 
 
 class CollectionProduct(models.Model):
