@@ -1,72 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   FileText,
   Plus,
-  Pencil,
   Trash2,
   Eye,
-  CheckCircle2,
-  AlertCircle,
   Save,
-  Globe,
   Sparkles,
   ExternalLink,
-  Layers,
   Megaphone,
   LayoutTemplate,
-  PhoneCall,
   Search,
-  Check,
-  X,
   ChevronUp,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Image as ImageIcon,
   Sliders,
   BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { adminApi, CMSPage, HeroSlideData } from "@/lib/admin-api";
+import { adminApi, HeroSlideData } from "@/lib/admin-api";
 import { getApiErrorMessage } from "@/lib/error-utils";
-import { formatShamsiDate } from "@/lib/jalali";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import MediaUploader from "@/components/admin/media-uploader";
 
 export default function AdminCMSPage() {
 
   const [activeTab, setActiveTab] = useState("site-content");
   const [isLoading, setIsLoading] = useState(false);
-  const [deleteConfirmSlug, setDeleteConfirmSlug] = useState<string | null>(null);
-
-  // Pages state
-  const [pages, setPages] = useState<CMSPage[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isPageModalOpen, setIsPageModalOpen] = useState(false);
-  const [editingPage, setEditingPage] = useState<CMSPage | null>(null);
-
-  // Page Form State
-  const [pageTitle, setPageTitle] = useState("");
-  const [pageSlug, setPageSlug] = useState("");
-  const [pageStatus, setPageStatus] = useState<"draft" | "published">("published");
-  const [pageMetaTitle, setPageMetaTitle] = useState("");
-  const [pageMetaDesc, setPageMetaDesc] = useState("");
-  const [pageBlocks, setPageBlocks] = useState<Array<{ heading: string; body: string }>>([
-    { heading: "مقدمه", body: "" },
-  ]);
 
   // Site Content States
   const [announcement, setAnnouncement] = useState({
@@ -107,14 +72,6 @@ export default function AdminCMSPage() {
   ]);
   const [previewSlideIndex, setPreviewSlideIndex] = useState(0);
 
-  const [footerInfo, setFooterInfo] = useState({
-    description: "فروشگاه تخصصی پوشاک مد و فشن با تمرکز بر کیفیت برتر، طراحی مدرن و ارسال سریع.",
-    phone: "۰۲۱-۸۸۸۸۷۷۶۶",
-    email: "info@fashionstore.com",
-    address: "تهران، خیابان ولیعصر، برج مد و تجارت، طبقه ۵",
-    working_hours: "شنبه تا پنج‌شنبه: ۹ صبح الی ۹ شب",
-  });
-
   // Discount Campaign & Storefront Banner State
   const [discountSection, setDiscountSection] = useState({
     enabled: false,
@@ -144,26 +101,17 @@ export default function AdminCMSPage() {
     max_items: 3,
   });
 
-  useEffect(() => {
-    loadAllCmsData();
-  }, []);
-
-  const loadAllCmsData = async () => {
+  const loadAllCmsData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [pagesData, announceData, heroData, footerData, discountData, productsData, blogSecData] = await Promise.allSettled([
-        adminApi.getPages(),
+      const [announceData, heroData, discountData, productsData, blogSecData] = await Promise.allSettled([
         adminApi.getSiteContent("announcement"),
         adminApi.getSiteContent("hero"),
-        adminApi.getSiteContent("footer"),
         adminApi.getSiteContent("discount_section"),
         adminApi.getProducts(),
         adminApi.getSiteContent("homepage_blog_section"),
       ]);
 
-      if (pagesData.status === "fulfilled") {
-        setPages(pagesData.value);
-      }
       if (blogSecData.status === "fulfilled" && blogSecData.value) {
         setBlogSection((prev) => ({
           ...prev,
@@ -202,9 +150,6 @@ export default function AdminCMSPage() {
           } catch {}
         }
       }
-      if (footerData.status === "fulfilled" && footerData.value) {
-        setFooterInfo((prev) => ({ ...prev, ...footerData.value }));
-      }
       if (discountData.status === "fulfilled" && discountData.value) {
         const sec = discountData.value;
         setDiscountSection((prev) => ({ ...prev, ...sec }));
@@ -227,7 +172,11 @@ export default function AdminCMSPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadAllCmsData();
+  }, [loadAllCmsData]);
 
   // --- Site Content Savers ---
   const saveAnnouncement = async () => {
@@ -337,19 +286,6 @@ export default function AdminCMSPage() {
     }
   };
 
-  const saveFooterInfo = async () => {
-    setIsLoading(true);
-    try {
-      await adminApi.updateSiteContent("footer", footerInfo);
-      toast.success("اطلاعات تماس و فوتر با موفقیت ذخیره شد");
-    } catch (e: any) {
-      const msg = e?.response?.data?.detail || e?.response?.data?.error?.message || "خطا در ذخیره اطلاعات فوتر. اطمینان حاصل کنید با حساب ادمین وارد شده‌اید.";
-      toast.error(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const saveBlogSection = async () => {
     setIsLoading(true);
     try {
@@ -436,114 +372,6 @@ export default function AdminCMSPage() {
     }
   };
 
-  // --- Page Handlers ---
-  const handleOpenCreatePage = () => {
-    setEditingPage(null);
-    setPageTitle("");
-    setPageSlug("");
-    setPageStatus("published");
-    setPageMetaTitle("");
-    setPageMetaDesc("");
-    setPageBlocks([{ heading: "توضیحات اصلی", body: "" }]);
-    setIsPageModalOpen(true);
-  };
-
-  const handleOpenEditPage = (page: CMSPage) => {
-    setEditingPage(page);
-    setPageTitle(page.title || "");
-    setPageSlug(page.slug || "");
-    setPageStatus(page.status || "draft");
-    setPageMetaTitle(page.seo_metadata?.meta_title || "");
-    setPageMetaDesc(page.seo_metadata?.meta_description || "");
-    if (page.content && Array.isArray(page.content) && page.content.length > 0) {
-      setPageBlocks(
-        page.content.map((b) => ({
-          heading: b.heading || "",
-          body: b.body || "",
-        }))
-      );
-    } else {
-      setPageBlocks([{ heading: "توضیحات اصلی", body: "" }]);
-    }
-    setIsPageModalOpen(true);
-  };
-
-  const handleSavePage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pageTitle.trim() || !pageSlug.trim()) {
-      toast.error("عنوان و شناسه لینک (Slug) الزامی است");
-      return;
-    }
-
-    setIsLoading(true);
-    const pageData: Partial<CMSPage> = {
-      title: pageTitle,
-      slug: pageSlug.trim().toLowerCase().replace(/\s+/g, "-"),
-      status: pageStatus,
-      seo_metadata: {
-        meta_title: pageMetaTitle || pageTitle,
-        meta_description: pageMetaDesc,
-      },
-      content: pageBlocks,
-    };
-
-    try {
-      if (editingPage) {
-        await adminApi.updatePage(editingPage.slug, pageData);
-        toast.success("برگه با موفقیت بروزرسانی شد");
-      } else {
-        await adminApi.createPage(pageData);
-        toast.success("برگه جدید با موفقیت ساخته شد");
-      }
-      setIsPageModalOpen(false);
-      loadAllCmsData();
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "خطا در ذخیره برگه";
-      toast.error(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeletePage = (slug: string) => {
-    setDeleteConfirmSlug(slug);
-  };
-
-  const executeDeletePage = async () => {
-    if (!deleteConfirmSlug) return;
-    const slug = deleteConfirmSlug;
-    try {
-      await adminApi.deletePage(slug);
-      toast.success("برگه با موفقیت حذف شد");
-      setPages((prev) => prev.filter((p) => p.slug !== slug));
-    } catch {
-      toast.error("خطا در حذف برگه");
-    }
-  };
-
-  const handleTogglePublish = async (page: CMSPage) => {
-    const newStatus = page.status === "published" ? "draft" : "published";
-    try {
-      if (newStatus === "published") {
-        await adminApi.publishPage(page.slug);
-      } else {
-        await adminApi.updatePage(page.slug, { status: "draft" });
-      }
-      toast.success(newStatus === "published" ? "برگه منتشر شد" : "برگه به پیش‌نویس تبدیل شد");
-      setPages((prev) =>
-        prev.map((p) => (p.slug === page.slug ? { ...p, status: newStatus } : p))
-      );
-    } catch {
-      toast.error("خطا در تغییر وضعیت برگه");
-    }
-  };
-
-  const filteredPages = pages.filter(
-    (p) =>
-      p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.slug?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -554,19 +382,9 @@ export default function AdminCMSPage() {
             سیستم مدیریت محتوا (CMS)
           </h1>
           <p className="text-xs md:text-sm text-gray-400 mt-1">
-            ویرایش بنرها، نوار اطلاعیه، فوتر و ساخت برگه‌های نامحدود بدون نیاز به دانش کدنویسی
+            مدیریت بنرهای اسلایدر، نوار اطلاعیه، کمپین تخفیفات و بخش مقالات فروشگاه
           </p>
         </div>
-
-        {activeTab === "pages" && (
-          <Button
-            onClick={handleOpenCreatePage}
-            className="h-11 px-5 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs flex items-center gap-2 shadow-lg shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            ساخت برگه جدید
-          </Button>
-        )}
       </div>
 
       {/* Tabs */}
@@ -578,13 +396,6 @@ export default function AdminCMSPage() {
           >
             <LayoutTemplate className="w-4 h-4" />
             بنرها و بخش‌های اصلی سایت
-          </TabsTrigger>
-          <TabsTrigger
-            value="pages"
-            className="rounded-xl px-5 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 font-bold text-xs md:text-sm transition-all flex items-center gap-2"
-          >
-            <FileText className="w-4 h-4" />
-            برگه‌های مستقل ({pages.length})
           </TabsTrigger>
           <TabsTrigger
             value="discount-campaign"
@@ -950,77 +761,7 @@ export default function AdminCMSPage() {
             </div>
           </div>
 
-          {/* Section 3: Footer & Contact Info */}
-          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
-                <PhoneCall className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base md:text-lg font-bold text-white">اطلاعات تماس و فوتر فروشگاه</h3>
-                <p className="text-xs text-gray-400">تلفن پشتیبانی، نشانی و ساعات کاری نمایش داده شده در انتهای سایت</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">تلفن پشتیبانی</label>
-                <Input
-                  value={footerInfo.phone}
-                  onChange={(e) => setFooterInfo({ ...footerInfo, phone: e.target.value })}
-                  placeholder="۰۲۱-۸۸۸۸..."
-                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-                  dir="ltr"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">ایمیل تماس</label>
-                <Input
-                  value={footerInfo.email}
-                  onChange={(e) => setFooterInfo({ ...footerInfo, email: e.target.value })}
-                  placeholder="info@fashionstore.com"
-                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">آدرس فیزیکی فروشگاه یا دفتر مرکزی</label>
-                <Input
-                  value={footerInfo.address}
-                  onChange={(e) => setFooterInfo({ ...footerInfo, address: e.target.value })}
-                  placeholder="تهران، خیابان..."
-                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">ساعات پاسخگویی پشتیبانی</label>
-                <Input
-                  value={footerInfo.working_hours}
-                  onChange={(e) => setFooterInfo({ ...footerInfo, working_hours: e.target.value })}
-                  placeholder="شنبه تا پنج‌شنبه ۹ الی ۲۱"
-                  className="bg-[#0a0a0a] border-white/10 h-11 text-white text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <Button
-                onClick={saveFooterInfo}
-                disabled={isLoading}
-                className="h-11 px-6 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-xs flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                ذخیره اطلاعات فوتر
-              </Button>
-            </div>
-          </div>
-
-          {/* Section 4: Homepage Blog / Journal Section */}
+          {/* Section 3: Homepage Blog / Journal Section */}
           <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 md:p-8 shadow-xl space-y-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1475,311 +1216,7 @@ export default function AdminCMSPage() {
             </div>
           </div>
         </TabsContent>
-
-        {/* --- Tab 2: Custom Pages Management --- */}
-        <TabsContent value="pages" className="space-y-6 outline-none mt-0">
-          {/* Search bar */}
-          <div className="flex items-center gap-4 bg-[#111111] border border-white/10 rounded-2xl p-3">
-            <Search className="w-5 h-5 text-gray-500 mr-2 shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="جستجوی عنوان برگه یا اسلاگ لینک..."
-              className="flex-1 bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-600"
-            />
-          </div>
-
-          {/* Pages Table */}
-          <div className="bg-[#111111] border border-white/10 rounded-3xl overflow-hidden shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-right text-xs">
-                <thead className="bg-[#161616] text-gray-400 border-b border-white/10">
-                  <tr>
-                    <th className="p-4 md:p-5 font-bold">عنوان برگه</th>
-                    <th className="p-4 md:p-5 font-bold">لینک صفحه (Slug)</th>
-                    <th className="p-4 md:p-5 font-bold">وضعیت</th>
-                    <th className="p-4 md:p-5 font-bold">آخرین تغییرات</th>
-                    <th className="p-4 md:p-5 font-bold text-left">عملیات</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredPages.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-12 text-gray-500">
-                        هیچ برگه‌ای یافت نشد. برای ایجاد روی "ساخت برگه جدید" کلیک کنید.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredPages.map((page) => (
-                      <tr key={page.slug} className="hover:bg-white/5 transition-colors">
-                        <td className="p-4 md:p-5 font-bold text-white">
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-gray-400" />
-                            <span>{page.title}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 md:p-5 font-mono text-gray-300" dir="ltr">
-                          /pages/{page.slug}
-                        </td>
-                        <td className="p-4 md:p-5">
-                          <button
-                            onClick={() => handleTogglePublish(page)}
-                            className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
-                              page.status === "published"
-                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
-                                : "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
-                            }`}
-                            title="برای تغییر وضعیت کلیک کنید"
-                          >
-                            {page.status === "published" ? "منتشر شده" : "پیش‌نویس"}
-                          </button>
-                        </td>
-                        <td className="p-4 md:p-5 text-gray-300 font-sans">
-                          {page.updated_at ? formatShamsiDate(page.updated_at, { mode: "full" }) : "—"}
-                        </td>
-
-                        <td className="p-4 md:p-5 text-left">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link
-                              href={`/pages/${page.slug}`}
-                              target="_blank"
-                              className="p-2 rounded-lg bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                              title="مشاهده برگه در سایت"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </Link>
-                            <button
-                              onClick={() => handleOpenEditPage(page)}
-                              className="p-2 rounded-lg bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                              title="ویرایش محتوا"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeletePage(page.slug)}
-                              className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                              title="حذف برگه"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </TabsContent>
       </Tabs>
-
-      {/* --- Page Create / Edit Modal --- */}
-      <Dialog open={isPageModalOpen} onOpenChange={setIsPageModalOpen}>
-        <DialogContent
-          className="bg-[#0e0e0e] border border-white/10 text-white sm:max-w-2xl p-6 max-h-[90vh] overflow-y-auto"
-          dir="rtl"
-        >
-          <DialogHeader className="border-b border-white/10 pb-4">
-            <DialogTitle className="text-xl font-black flex items-center gap-2">
-              <FileText className="w-5 h-5 text-amber-400" />
-              {editingPage ? `ویرایش برگه "${editingPage.title}"` : "ساخت برگه جدید"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleSavePage} className="space-y-6 mt-4">
-            {/* Title & Slug */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">عنوان برگه (فارسی)</label>
-                <Input
-                  value={pageTitle}
-                  onChange={(e) => {
-                    setPageTitle(e.target.value);
-                    if (!editingPage) {
-                      setPageSlug(
-                        e.target.value
-                          .trim()
-                          .toLowerCase()
-                          .replace(/[^\w\u0600-\u06FF\s-]/g, "")
-                          .replace(/\s+/g, "-")
-                      );
-                    }
-                  }}
-                  placeholder="مثال: راهنمای سایز و خرید"
-                  required
-                  className="bg-[#141414] border-white/10 h-11 text-white text-xs"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">شناسه آدرس اینترنتی (Slug)</label>
-                <Input
-                  value={pageSlug}
-                  onChange={(e) => setPageSlug(e.target.value)}
-                  placeholder="size-guide"
-                  required
-                  className="bg-[#141414] border-white/10 h-11 text-white text-xs font-mono"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            {/* Status Selector */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-300">وضعیت انتشار</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPageStatus("published")}
-                  className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                    pageStatus === "published"
-                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
-                      : "bg-[#141414] border-white/10 text-gray-400"
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  انتشار فوری در سایت
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPageStatus("draft")}
-                  className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                    pageStatus === "draft"
-                      ? "bg-amber-500/20 border-amber-500 text-amber-400"
-                      : "bg-[#141414] border-white/10 text-gray-400"
-                  }`}
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  ذخیره به عنوان پیش‌نویس
-                </button>
-              </div>
-            </div>
-
-            {/* Content Blocks Builder */}
-            <div className="space-y-4 pt-2 border-t border-white/10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-bold text-white">بخش‌های متنی برگه</h4>
-                  <p className="text-[11px] text-gray-400">تیترها و پاراگراف‌های متنی برگه را اینجا اضافه کنید</p>
-                </div>
-                <Button
-                  type="button"
-                  onClick={() => setPageBlocks([...pageBlocks, { heading: "", body: "" }])}
-                  className="h-8 px-3 rounded-lg bg-white/10 text-white hover:bg-white/20 text-xs font-bold flex items-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  افزودن بخش جدید
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                {pageBlocks.map((block, index) => (
-                  <div
-                    key={index}
-                    className="p-4 rounded-2xl bg-[#141414] border border-white/10 space-y-3 relative group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-gray-400">بخش شماره {index + 1}</span>
-                      {pageBlocks.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setPageBlocks(pageBlocks.filter((_, i) => i !== index))}
-                          className="text-gray-500 hover:text-red-400 p-1 text-xs"
-                          title="حذف این بخش"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-
-                    <Input
-                      value={block.heading}
-                      onChange={(e) => {
-                        const updated = [...pageBlocks];
-                        updated[index].heading = e.target.value;
-                        setPageBlocks(updated);
-                      }}
-                      placeholder="عنوان این بخش (اختیاری)..."
-                      className="bg-[#0a0a0a] border-white/10 h-10 text-white text-xs font-bold"
-                    />
-
-                    <textarea
-                      value={block.body}
-                      onChange={(e) => {
-                        const updated = [...pageBlocks];
-                        updated[index].body = e.target.value;
-                        setPageBlocks(updated);
-                      }}
-                      placeholder="متن کامل این بخش و توضیحات..."
-                      rows={4}
-                      className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl p-3 text-white text-xs placeholder:text-gray-600 outline-none focus:border-white/30 resize-y"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* SEO Metadata */}
-            <div className="space-y-3 pt-2 border-t border-white/10">
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <Globe className="w-4 h-4 text-emerald-400" />
-                تنظیمات سئو (گوگل)
-              </h4>
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">عنوان سئو (Meta Title)</label>
-                <Input
-                  value={pageMetaTitle}
-                  onChange={(e) => setPageMetaTitle(e.target.value)}
-                  placeholder="عنوان نمایشی در نتایج جستجو..."
-                  className="bg-[#141414] border-white/10 h-10 text-white text-xs"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">توضیحات متا (Meta Description)</label>
-                <textarea
-                  value={pageMetaDesc}
-                  onChange={(e) => setPageMetaDesc(e.target.value)}
-                  placeholder="خلاصه ۱ الی ۲ جمله‌ای برای موتورهای جستجو..."
-                  rows={2}
-                  className="w-full bg-[#141414] border border-white/10 rounded-xl p-3 text-white text-xs placeholder:text-gray-600 outline-none focus:border-white/30 resize-none"
-                />
-              </div>
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex gap-3 pt-4 border-t border-white/10">
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 h-12 rounded-xl bg-white text-black hover:bg-gray-200 font-bold text-sm"
-              >
-                {editingPage ? "ذخیره تغییرات برگه" : "ایجاد و ثبت برگه"}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setIsPageModalOpen(false)}
-                variant="ghost"
-                className="h-12 rounded-xl text-gray-400 hover:text-white"
-              >
-                انصراف
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog
-        open={!!deleteConfirmSlug}
-        onOpenChange={(open) => !open && setDeleteConfirmSlug(null)}
-        title="حذف برگه"
-        description={`آیا از حذف برگه «${deleteConfirmSlug || ""}» مطمئن هستید؟ این عملیات غیرقابل بازگشت است.`}
-        confirmText="حذف برگه"
-        cancelText="انصراف"
-        variant="destructive"
-        onConfirm={executeDeletePage}
-      />
     </div>
   );
 }

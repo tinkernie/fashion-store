@@ -49,7 +49,13 @@ export default function Footer() {
                 <div className="w-8 h-8 rounded-lg bg-white/10 text-[#5CAFE7] flex items-center justify-center shrink-0">
                   <Phone className="w-4 h-4" />
                 </div>
-                <span className="text-sm font-sans" dir="ltr">021 - 8888 8888</span>
+                <a
+                  href="tel:09355880027"
+                  className="text-sm font-sans hover:text-white transition-colors"
+                  dir="ltr"
+                >
+                  ۰۹۳۵ ۵۸۸ ۰۰۲۷
+                </a>
               </div>
             </div>
           </div>
@@ -110,7 +116,13 @@ export default function Footer() {
             <span className="text-sky-200 font-bold">besporman</span>
           </div>
           <div className="flex items-center gap-4 text-sky-300/70">
-            <Link href="https://instagram.com/your_username" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+            <Link
+              href="https://instagram.com/Mavi_posh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors"
+              aria-label="صفحه اینستاگرام ماوی"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"

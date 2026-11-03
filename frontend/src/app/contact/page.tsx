@@ -74,9 +74,13 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="text-slate-900 font-bold mb-1 text-sm md:text-base">شماره تماس</h3>
-                <p className="text-slate-700 text-xs md:text-sm text-right font-bold">
-                  ۰۲۱ - ۸۸۸۸۸۸۸۸
-                </p>
+                <a
+                  href="tel:09355880027"
+                  className="text-slate-700 hover:text-[#0082CA] transition-colors text-xs md:text-sm text-right font-bold block"
+                  dir="ltr"
+                >
+                  ۰۹۳۵ ۵۸۸ ۰۰۲۷
+                </a>
                 <p className="text-slate-400 text-[10px] md:text-xs mt-1">پاسخگویی: شنبه تا چهارشنبه، ۹ صبح تا ۱۷ عصر</p>
               </div>
             </div>
