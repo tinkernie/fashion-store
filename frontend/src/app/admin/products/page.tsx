@@ -2202,17 +2202,7 @@ export default function AdminProductsPage() {
             {/* Category, Price & Weight */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-gray-300">دسته‌بندی</label>
-                  <button
-                    type="button"
-                    onClick={() => setIsCategoryModalOpen(true)}
-                    className="text-[11px] text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3" />
-                    مدیریت دسته‌بندی
-                  </button>
-                </div>
+                <label className="text-xs font-bold text-gray-300">دسته‌بندی</label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
@@ -2247,10 +2237,7 @@ export default function AdminProductsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300 flex items-center justify-between">
-                  <span>درصد تخفیف (۰ تا ۹۹)</span>
-                  <span className="text-[10px] text-amber-400 font-normal">۰ = حذف تخفیف</span>
-                </label>
+                <label className="text-xs font-bold text-gray-300">درصد تخفیف</label>
                 <Input
                   type="number"
                   min={0}
@@ -2279,10 +2266,7 @@ export default function AdminProductsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-300 flex items-center justify-between">
-                  <span>وزن کالا (گرم)</span>
-                  <span className="text-[10px] text-amber-400 font-normal">محاسبه پست</span>
-                </label>
+                <label className="text-xs font-bold text-gray-300">وزن کالا (گرم)</label>
                 <Input
                   type="number"
                   value={weight}
