@@ -68,19 +68,39 @@ def insurance_rials(declared_rials: int) -> int:
 
 def quote(province_name: str, weight_grams: int, subtotal_tomans,
           method_code: str = None) -> dict:
-    """Full quote: both methods (default first) or one. Tomans throughout."""
-    zone = resolve_zone(province_name)
-    pct = surcharge_percent(province_name)
+    """Full quote: offered methods (default pishtaz, plus in-person pickup) or one. Tomans throughout."""
+    if method_code == rates.METHOD_PICKUP:
+        zone = "store"
+        pct = 0
+    else:
+        zone = resolve_zone(province_name)
+        pct = surcharge_percent(province_name)
     try:
         declared_rials = max(0, int(round(float(subtotal_tomans))) * 10)
     except Exception:
         declared_rials = 0
-    codes = [method_code] if method_code else [rates.METHOD_PISHTAZ, rates.METHOD_VIZHEH]
+    codes = [method_code] if method_code else [rates.METHOD_PISHTAZ, rates.METHOD_PICKUP]
     options = []
     for code in codes:
         table = rates.METHODS.get(code)
         if not table:
             raise BusinessException(f"Unknown shipping method '{code}'.")
+        if code == rates.METHOD_PICKUP:
+            options.append({
+                "method": table["code"],
+                "name": table["name"],
+                "name_en": table["name_en"],
+                "eta_days": table["eta_days"],
+                "zone": "store",
+                "base_fare": 0,
+                "surcharge": 0,
+                "surcharge_percent": 0,
+                "insurance": 0,
+                "total": 0,
+                "currency": "Toman",
+            })
+            continue
+
         if weight_grams <= 0:
             raise BusinessException("Parcel weight must be positive.")
         extra_units = max(0, weight_grams - 1000)

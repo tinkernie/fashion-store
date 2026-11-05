@@ -23,7 +23,7 @@ class ShippingViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["get"], url_path="methods")
     def methods(self, request):
-        """Static catalog of the two offered methods (no address needed)."""
+        """Static catalog of the offered methods (no address needed)."""
         return Response({
             "default_method": services.rates.METHOD_PISHTAZ,
             "methods": [
@@ -34,19 +34,26 @@ class ShippingViewSet(viewsets.GenericViewSet):
                     "eta_days": m["eta_days"],
                 }
                 for m in (METHODS[services.rates.METHOD_PISHTAZ],
-                          METHODS[services.rates.METHOD_VIZHEH])
+                          METHODS[services.rates.METHOD_PICKUP])
             ],
         })
 
     @action(detail=False, methods=["get", "post"])
     def quote(self, request):
-        """Price both methods for the current cart.
+        """Price offered methods for the current cart.
 
         GET/POST params: address_id (preferred) or province_id.
+        If shipping_method=pickup, address is waived and returns 0 Toman.
         Response: selected (default pishtaz) + options[] with full
-        Toman breakdown (base[includes folded packaging+store fee]/surcharge/insurance/total).
+        Toman breakdown.
         """
         data = request.query_params if request.method == "GET" else (request.data or {})
+        requested_method = data.get("shipping_method") or data.get("method")
+        weight_grams, subtotal = services.cart_totals(request.user, self._cart_key(request))
+
+        if requested_method == services.rates.METHOD_PICKUP:
+            return Response(services.quote(province_name=None, weight_grams=weight_grams, subtotal_tomans=subtotal, method_code=services.rates.METHOD_PICKUP))
+
         address_id = data.get("address_id")
         province_id = data.get("province_id")
         province_name = None
@@ -68,5 +75,4 @@ class ShippingViewSet(viewsets.GenericViewSet):
                 {"detail": "address_id or province_id is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        weight_grams, subtotal = services.cart_totals(request.user, self._cart_key(request))
-        return Response(services.quote(province_name, weight_grams, subtotal))
+        return Response(services.quote(province_name, weight_grams, subtotal, method_code=requested_method))

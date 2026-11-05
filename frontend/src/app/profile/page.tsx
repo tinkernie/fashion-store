@@ -31,6 +31,7 @@ import {
   Loader2,
   CreditCard,
   Calendar,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,14 +104,16 @@ const getStepIndex = (status: string) => {
   return 0;
 };
 
-const getProfileStatusBadge = (status: string) => {
+const getProfileStatusBadge = (status: string, shippingMethod?: string) => {
   const s = (status || "").toLowerCase();
   switch (s) {
     case "delivered":
       return { label: "تحویل داده شده", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" };
     case "shipping":
     case "shipped":
-      return { label: "تحویل به پست", bg: "bg-sky-50 text-sky-700 border-sky-200" };
+      return shippingMethod === "pickup"
+        ? { label: "آماده تحویل در فروشگاه", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" }
+        : { label: "تحویل به پست", bg: "bg-sky-50 text-sky-700 border-sky-200" };
     case "packing":
     case "processing":
       return { label: "در حال بسته‌بندی", bg: "bg-blue-50 text-[#0082CA] border-sky-200" };
@@ -865,10 +868,10 @@ export default function ProfilePage() {
                             ) : (
                               <span
                                 className={`px-3 py-1 rounded-full text-xs font-black border ${
-                                  getProfileStatusBadge(order.status).bg
+                                  getProfileStatusBadge(order.status, order.shipping_method).bg
                                 }`}
                               >
-                                {getProfileStatusBadge(order.status).label}
+                                {getProfileStatusBadge(order.status, order.shipping_method).label}
                               </span>
                             )}
                             <Button
@@ -889,6 +892,12 @@ export default function ProfilePage() {
                               {ORDER_STEPS.map((step, idx) => {
                                 const isPassed = idx <= currentStep;
                                 const isCurrent = idx === currentStep;
+                                const label =
+                                  (order.shipping_method === "pickup" ||
+                                    order.shipping_address?.type === "pickup") &&
+                                  step.key === "shipping"
+                                    ? "آماده تحویل"
+                                    : step.label;
 
                                 return (
                                   <div key={step.key} className="flex flex-col items-center text-center space-y-2">
@@ -910,7 +919,7 @@ export default function ProfilePage() {
                                         isCurrent ? "text-[#0082CA] font-black" : isPassed ? "text-slate-800" : "text-slate-400"
                                       }`}
                                     >
-                                      {step.label}
+                                      {label}
                                     </span>
                                   </div>
                                 );
@@ -1576,19 +1585,36 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Shipping Address Box */}
-              {selectedOrder.shipping_address && (
+              {/* Shipping / Pickup Box */}
+              {selectedOrder.shipping_method === "pickup" || selectedOrder.shipping_address?.type === "pickup" ? (
+                <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 space-y-2 text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                    <Store className="w-4 h-4 text-emerald-700" />
+                    <span>شیوه تحویل: تحویل به صورت حضوری در فروشگاه ماوی</span>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed font-medium">
+                    نشانی فروشگاه: زنجان - قیدار - خیابان امام - روبروی تالار صدف - پوشاک ماوی
+                  </p>
+                  <p className="text-slate-500 text-[11px]">
+                    ساعات کاری جهت تحویل: ۱۰:۰۰ الی ۲۱:۰۰ (بدون نیاز به کد رهگیری پستی)
+                  </p>
+                </div>
+              ) : selectedOrder.shipping_address ? (
                 <div className="bg-sky-50/60 border border-sky-100 rounded-2xl p-4 space-y-2 text-xs">
                   <span className="font-bold text-slate-700 block">نشانی تحویل گیرنده:</span>
                   <p className="text-slate-600 leading-relaxed">
-                    {selectedOrder.shipping_address.province} - {selectedOrder.shipping_address.city}،{" "}
+                    {selectedOrder.shipping_address.province ? `${selectedOrder.shipping_address.province} - ` : ""}
+                    {selectedOrder.shipping_address.city ? `${selectedOrder.shipping_address.city}، ` : ""}
                     {selectedOrder.shipping_address.address}
                   </p>
-                  <p className="text-slate-500">
-                    تحویل‌گیرنده: {selectedOrder.shipping_address.full_name} ({selectedOrder.shipping_address.phone})
-                  </p>
+                  {selectedOrder.shipping_address.full_name && (
+                    <p className="text-slate-500">
+                      تحویل‌گیرنده: {selectedOrder.shipping_address.full_name}{" "}
+                      {selectedOrder.shipping_address.phone ? `(${selectedOrder.shipping_address.phone})` : ""}
+                    </p>
+                  )}
                 </div>
-              )}
+              ) : null}
 
                             {/* Payment Information Box */}
               {selectedOrder.payment_info || selectedOrder.payments?.length ? (
@@ -1743,10 +1769,10 @@ export default function ProfilePage() {
                     <span
                       className={cn(
                         "px-3 py-1 rounded-full text-xs font-bold border",
-                        getProfileStatusBadge(selectedOrder.status).bg
+                        getProfileStatusBadge(selectedOrder.status, selectedOrder.shipping_method).bg
                       )}
                     >
-                      {getProfileStatusBadge(selectedOrder.status).label}
+                      {getProfileStatusBadge(selectedOrder.status, selectedOrder.shipping_method).label}
                     </span>
                   )}
                 </div>

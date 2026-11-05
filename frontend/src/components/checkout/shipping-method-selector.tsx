@@ -3,13 +3,15 @@
 import React, { useState } from "react";
 import {
   Truck,
-  Zap,
+  Store,
   Info,
   ChevronDown,
   ChevronUp,
   Check,
   Loader2,
   ShieldCheck,
+  Clock,
+  MapPin,
 } from "lucide-react";
 import { ShippingQuoteResponse, ShippingBreakdownOption } from "@/lib/address-shipping-api";
 import { formatPrice } from "@/lib/price-utils";
@@ -47,31 +49,46 @@ export function ShippingMethodSelector({
     );
   }
 
-  if (!shippingQuote) {
-    return (
-      <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-4">
-        <div className="flex items-center gap-3 border-b border-sky-100 pb-4">
-          <Truck className="w-6 h-6 text-[#0082CA]" />
-          <div>
-            <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">روش و هزینه ارسال</h2>
-          </div>
-        </div>
-        <div className="p-5 bg-sky-50/50 rounded-2xl border border-sky-100 text-slate-600 text-xs flex items-center gap-2">
-          <Info className="w-4 h-4 text-[#0082CA] shrink-0" />
-          <span>لطفاً آدرس تحویل سفارش را مشخص کنید تا هزینه ارسال پستی محاسبه گردد.</span>
-        </div>
-      </div>
-    );
-  }
+  // Filter out 'vizheh' if present, and ensure 'pickup' is available
+  const rawOptions = shippingQuote?.options || [];
+  const pishtazOption = rawOptions.find((o) => o.method === "pishtaz");
+  const pickupOption = rawOptions.find((o) => o.method === "pickup") || {
+    method: "pickup",
+    name: "تحویل به صورت حضوری",
+    name_en: "Store Pickup",
+    eta_days: 0,
+    zone: "store",
+    base_fare: 0,
+    surcharge: 0,
+    surcharge_percent: 0,
+    insurance: 0,
+    total: 0,
+    currency: "Toman",
+  };
+
+  const optionsToRender: ShippingBreakdownOption[] = [
+    pishtazOption || {
+      method: "pishtaz",
+      name: "پیشتاز",
+      name_en: "Pishtaz Express",
+      eta_days: 3,
+      zone: "intra",
+      base_fare: 0,
+      surcharge: 0,
+      surcharge_percent: 0,
+      insurance: 0,
+      total: 0,
+      currency: "Toman",
+    },
+    pickupOption,
+  ];
 
   const selectedOption: ShippingBreakdownOption | undefined =
-    shippingQuote.options.find((o) => o.method === selectedMethod) ||
-    shippingQuote.selected ||
-    shippingQuote.options[0];
+    optionsToRender.find((o) => o.method === selectedMethod) || optionsToRender[0];
 
   const getCleanMethodName = (opt?: { name?: string; method?: string }) => {
     if (!opt) return "";
-    if (opt.method === "vizheh") return "ویژه";
+    if (opt.method === "pickup") return "تحویل به صورت حضوری";
     return (opt.name || "").replace("بین‌شهری", "").replace("بین شهری", "").trim() || (opt.name || "");
   };
 
@@ -85,15 +102,16 @@ export function ShippingMethodSelector({
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">روش و هزینه ارسال</h2>
+            <p className="text-xs text-slate-500 mt-0.5">شیوه دریافت سفارش خود را انتخاب نمایید</p>
           </div>
         </div>
       </div>
 
       {/* Methods Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {shippingQuote.options.map((option) => {
+        {optionsToRender.map((option) => {
           const isSelected = option.method === selectedMethod;
-          const isVizheh = option.method === "vizheh";
+          const isPickup = option.method === "pickup";
           const displayName = getCleanMethodName(option);
 
           return (
@@ -109,26 +127,28 @@ export function ShippingMethodSelector({
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    {isVizheh ? (
-                      <Zap className="w-4 h-4 text-amber-500 shrink-0 fill-amber-500" />
+                    {isPickup ? (
+                      <Store className="w-4 h-4 text-emerald-600 shrink-0" />
                     ) : (
                       <Truck className="w-4 h-4 text-[#0082CA] shrink-0" />
                     )}
                     <span className="text-sm font-black text-[#0B192C]">
                       {displayName}
                     </span>
-                    {isVizheh ? (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold">
-                        تحویل سریع
+                    {isPickup ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                        دریافت در فروشگاه
                       </span>
                     ) : (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-[#0082CA] font-bold">
-                        استاندارد
+                        ارسال پستی
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-slate-500">
-                    مدت زمان تقریبی تحویل: {option.eta_days.toLocaleString("fa-IR")} روز کاری
+                    {isPickup
+                      ? "تحویل حضوری در شعبه ماوی • بدون نیاز به آدرس پستی"
+                      : `مدت زمان تقریبی تحویل: ${option.eta_days.toLocaleString("fa-IR")} روز کاری`}
                   </p>
                 </div>
 
@@ -145,8 +165,12 @@ export function ShippingMethodSelector({
 
               <div className="pt-3 border-t border-sky-100 flex items-center justify-between">
                 <span className="text-xs text-slate-500">هزینه نهایی ارسال:</span>
-                <span className="text-base font-black text-[#0082CA]">
-                  {formatPrice(option.total)}
+                <span className={`text-base font-black ${isPickup ? "text-emerald-600 font-bold" : "text-[#0082CA]"}`}>
+                  {isPickup
+                    ? "رایگان (۰ تومان)"
+                    : option.total > 0
+                    ? formatPrice(option.total)
+                    : "محاسبه در مرحله آدرس"}
                 </span>
               </div>
             </div>
@@ -154,13 +178,13 @@ export function ShippingMethodSelector({
         })}
       </div>
 
-      {/* Itemized Tariff Breakdown Accordion */}
-      {selectedOption && (
+      {/* Itemized Tariff Breakdown Accordion (Postal Pishtaz only) */}
+      {selectedMethod === "pishtaz" && selectedOption && selectedOption.total > 0 && (
         <div className="border border-sky-100 rounded-2xl bg-sky-50/40 p-4 space-y-3">
           <button
             type="button"
             onClick={() => setShowBreakdown(!showBreakdown)}
-            className="w-full flex items-center justify-between text-xs font-bold text-slate-700 hover:text-[#0082CA] transition-colors"
+            className="w-full flex items-center justify-between text-xs font-bold text-slate-700 hover:text-[#0082CA] transition-colors cursor-pointer"
           >
             <span className="flex items-center gap-1.5">
               <Info className="w-3.5 h-3.5 text-[#0082CA]" />
@@ -212,6 +236,23 @@ export function ShippingMethodSelector({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* In-Person Pickup Info Note */}
+      {selectedMethod === "pickup" && (
+        <div className="border border-emerald-100 rounded-2xl bg-emerald-50/50 p-4 flex items-start gap-3 text-xs text-slate-700">
+          <Store className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold text-slate-900 block">شرایط تحویل حضوری در فروشگاه ماوی:</span>
+            <p className="text-slate-600 leading-relaxed font-medium">
+              نشانی فروشگاه: زنجان - قیدار - خیابان امام - روبروی تالار صدف - پوشاک ماوی
+            </p>
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 pt-1">
+              <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>ساعات کاری: همه روزه از ساعت ۱۰:۰۰ الی ۲۱:۰۰ • نیازی به ثبت آدرس پستی وجود ندارد.</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -12,6 +12,9 @@ import {
   Truck,
   Loader2,
   LogIn,
+  Store,
+  MapPin,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,10 +148,13 @@ export default function CheckoutPage() {
   const discountAmount = getDiscountAmount();
 
   // Selected shipping method price
+  const isPickup = selectedShippingMethod === "pickup";
   const activeShippingOption = shippingQuote?.options.find(
     (o) => o.method === selectedShippingMethod
   );
-  const shippingCost = activeShippingOption?.total ?? (shippingQuote?.selected?.total || 0);
+  const shippingCost = isPickup
+    ? 0
+    : (activeShippingOption?.total ?? (shippingQuote?.selected?.total || 0));
   const finalPayable = Math.max(0, cartTotal - discountAmount) + shippingCost;
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
@@ -176,12 +182,12 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!selectedAddress) {
+    if (!isPickup && !selectedAddress) {
       toast.error("لطفاً آدرس تحویل سفارش را انتخاب یا ثبت نمایید.");
       return;
     }
 
-    if (!shippingQuote) {
+    if (!isPickup && !shippingQuote) {
       toast.error("در حال محاسبه هزینه ارسال مرسوله پستی، لطفاً شکیبا باشید.");
       return;
     }
@@ -197,7 +203,7 @@ export default function CheckoutPage() {
       const orderRes = await api.post(
         "/api/orders/checkout/",
         {
-          address_id: selectedAddress.id,
+          address_id: isPickup ? undefined : selectedAddress?.id,
           shipping_method: selectedShippingMethod || "pishtaz",
           session_key: guestKey,
         },
@@ -317,7 +323,7 @@ export default function CheckoutPage() {
             <div>
               <h3 className="text-sm font-black text-slate-900">ورود به حساب کاربری</h3>
               <p className="text-xs text-slate-600 mt-0.5">
-                برای ثبت آدرس تحویل و تکمیل سفارش، ابتدا وارد حساب کاربری خود شوید.
+                برای تکمیل فرآیند خرید و ثبت سفارش، ابتدا وارد حساب کاربری خود شوید.
               </p>
             </div>
           </div>
@@ -337,29 +343,6 @@ export default function CheckoutPage() {
           animate={{ opacity: 1, y: 0 }}
           className="lg:col-span-8 space-y-8"
         >
-          {/* Shipping Address Selection Card */}
-          <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm">
-            <AddressSelector
-              addresses={addresses}
-              selectedAddressId={selectedAddress?.id || null}
-              onSelectAddress={(addr) => setSelectedAddress(addr)}
-              onAddressCreated={(newAddr) => {
-                setAddresses((prev) => [newAddr, ...prev]);
-                setSelectedAddress(newAddr);
-              }}
-              onAddressDeleted={(deletedId) => {
-                setAddresses((prev) => {
-                  const filtered = prev.filter((a) => a.id !== deletedId);
-                  if (selectedAddress?.id === deletedId) {
-                    setSelectedAddress(filtered[0] || null);
-                  }
-                  return filtered;
-                });
-              }}
-              isLoading={isLoadingAddresses}
-            />
-          </div>
-
           {/* Shipping Method & Rate Quote Card */}
           <ShippingMethodSelector
             shippingQuote={shippingQuote}
@@ -367,6 +350,71 @@ export default function CheckoutPage() {
             onSelectMethod={(method) => setSelectedShippingMethod(method)}
             isLoading={isLoadingShipping}
           />
+
+          {/* Conditional Address Selection or Store Pickup Card */}
+          {isPickup ? (
+            <div className="bg-white border border-emerald-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-4">
+              <div className="flex items-center gap-3 border-b border-emerald-100 pb-4">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/25 shrink-0">
+                  <Store className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-black text-[#0B192C]">
+                    تحویل حضوری در فروشگاه ماوی
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    سفارش شما در فروشگاه آماده تحویل می‌شود و نیازی به ثبت آدرس پستی نیست
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-3 text-right">
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-xs font-bold text-slate-500 block">نشانی تحویل سفارش:</span>
+                    <p className="text-sm font-black text-[#0B192C] mt-1 leading-relaxed">
+                      زنجان - قیدار - خیابان امام - روبروی تالار صدف - پوشاک ماوی
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2 border-t border-emerald-200/60 text-xs text-slate-600">
+                  <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>ساعات تحویل سفارش: همه روزه از ساعت ۱۰:۰۰ الی ۲۱:۰۰</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-sky-50 border border-sky-100 text-xs text-slate-600 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#0082CA] shrink-0" />
+                <span>
+                  پس از ثبت و نهایی‌سازی سفارش، پیامک آماده‌سازی کالا جهت تحویل حضوری برای شما ارسال خواهد شد.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm">
+              <AddressSelector
+                addresses={addresses}
+                selectedAddressId={selectedAddress?.id || null}
+                onSelectAddress={(addr) => setSelectedAddress(addr)}
+                onAddressCreated={(newAddr) => {
+                  setAddresses((prev) => [newAddr, ...prev]);
+                  setSelectedAddress(newAddr);
+                }}
+                onAddressDeleted={(deletedId) => {
+                  setAddresses((prev) => {
+                    const filtered = prev.filter((a) => a.id !== deletedId);
+                    if (selectedAddress?.id === deletedId) {
+                      setSelectedAddress(filtered[0] || null);
+                    }
+                    return filtered;
+                  });
+                }}
+                isLoading={isLoadingAddresses}
+              />
+            </div>
+          )}
 
           {/* Payment Method Selector */}
           <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 shadow-sm">
@@ -504,12 +552,19 @@ export default function CheckoutPage() {
                 <div className="flex flex-col">
                   <span className="text-[#0B192C] font-medium">هزینه ارسال:</span>
                   <span className="text-[10px] text-slate-400">
-                    {activeShippingOption?.name || "پست پیشتاز"} (
-                    {totalWeight.toLocaleString("fa-IR")} گرم)
+                    {isPickup
+                      ? "تحویل حضوری در فروشگاه ماوی"
+                      : `${activeShippingOption?.name || "پست پیشتاز"} (${totalWeight.toLocaleString("fa-IR")} گرم)`}
                   </span>
                 </div>
                 <span className="font-bold text-[#0B192C] text-sm">
-                  {shippingCost > 0 ? formatPrice(shippingCost) : "محاسبه در مرحله آدرس"}
+                  {isPickup ? (
+                    <span className="text-emerald-600 font-bold">رایگان (۰ تومان)</span>
+                  ) : shippingCost > 0 ? (
+                    formatPrice(shippingCost)
+                  ) : (
+                    "محاسبه در مرحله آدرس"
+                  )}
                 </span>
               </div>
 
@@ -523,7 +578,7 @@ export default function CheckoutPage() {
             <Button
               type="button"
               onClick={handleCheckoutSubmit}
-              disabled={isLoadingOrder || !selectedAddress || !shippingQuote}
+              disabled={isLoadingOrder || (!isPickup && (!selectedAddress || !shippingQuote))}
               className="w-full h-14 rounded-2xl bg-[#0082CA] text-white hover:bg-[#006CA8] text-sm md:text-base font-black transition-all shadow-md shadow-[#0082CA]/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isLoadingOrder ? (

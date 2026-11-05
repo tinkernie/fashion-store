@@ -32,10 +32,11 @@ class TestFoldedFeeBehavior:
             assert "flat_fee" not in option
 
     def test_base_fare_includes_folded_fees(self):
-        pishtaz, vizheh = _quote_tehran_10g()["options"]
-        # tariff 100,000 / 153,000 + packaging 15,000 + flat 35,000
+        pishtaz, pickup = _quote_tehran_10g()["options"]
+        # tariff 100,000 + packaging 15,000 + flat 35,000
         assert pishtaz["base_fare"] == 150_000
-        assert vizheh["base_fare"] == 203_000
+        assert pickup["base_fare"] == 0
+        assert pickup["total"] == 0
 
     def test_total_is_base_plus_surcharge_plus_insurance(self):
         for option in _quote_tehran_10g()["options"]:
@@ -45,8 +46,11 @@ class TestFoldedFeeBehavior:
             )
 
     def test_after_totals(self):
-        pishtaz, vizheh = _quote_tehran_10g()["options"]
+        pishtaz, pickup = _quote_tehran_10g()["options"]
         assert pishtaz["total"] == 181_000
+        assert pickup["total"] == 0
+        # Historical vizheh method check when explicitly queried
+        vizheh = services.quote("تهران", 10, 500_000, method_code="vizheh")["selected"]
         assert vizheh["total"] == 244_600
 
 
@@ -58,8 +62,10 @@ class TestBeforeVsAfter:
         before = _old_totals()
         assert before == {"pishtaz": 191_000, "vizheh": 254_600}
         result = _quote_tehran_10g()
-        pishtaz, vizheh = result["options"]
+        pishtaz, pickup = result["options"]
         assert pishtaz["total"] == before["pishtaz"] - 10_000
+        assert pickup["total"] == 0
+        vizheh = services.quote("تهران", 10, 500_000, method_code="vizheh")["selected"]
         assert vizheh["total"] == before["vizheh"] - 10_000
 
     def test_flat_fee_applies_inside_store_province_too(self):

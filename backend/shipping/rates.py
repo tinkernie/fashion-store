@@ -17,7 +17,8 @@ ZONE_NEIGHBOR = "neighbor"  # adjacent provinces
 ZONE_FAR = "far"  # everywhere else
 
 METHOD_PISHTAZ = "pishtaz"  # پیشتاز، D+3 (default)
-METHOD_VIZHEH = "vizheh"  # ویژه بین‌شهری، D+1 (paid upgrade)
+METHOD_PICKUP = "pickup"  # تحویل به صورت حضوری (store pickup, 0 Toman)
+METHOD_VIZHEH = "vizheh"  # ویژه بین‌شهری، D+1 (retained for backward compatibility)
 
 METHODS = {
     METHOD_PISHTAZ: {
@@ -29,6 +30,14 @@ METHODS = {
         "base_1kg": {ZONE_INTRA: 800_000, ZONE_NEIGHBOR: 900_000, ZONE_FAR: 1_000_000},
         # Per extra kg-or-fraction above 1kg (Rials).
         "per_kg": {ZONE_INTRA: 125_000, ZONE_NEIGHBOR: 155_000, ZONE_FAR: 175_000},
+    },
+    METHOD_PICKUP: {
+        "code": METHOD_PICKUP,
+        "name": "تحویل به صورت حضوری",
+        "name_en": "Store Pickup",
+        "eta_days": 0,
+        "base_1kg": {ZONE_INTRA: 0, ZONE_NEIGHBOR: 0, ZONE_FAR: 0},
+        "per_kg": {ZONE_INTRA: 0, ZONE_NEIGHBOR: 0, ZONE_FAR: 0},
     },
     METHOD_VIZHEH: {
         "code": METHOD_VIZHEH,

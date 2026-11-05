@@ -9,12 +9,13 @@ class CreateOrderSerializer(serializers.Serializer):
     shipping_address = serializers.JSONField(required=False)
     billing_address = serializers.JSONField(required=False)
     shipping_method = serializers.ChoiceField(
-        choices=["pishtaz", "vizheh"], required=False, default="pishtaz"
+        choices=["pishtaz", "pickup", "vizheh"], required=False, default="pishtaz"
     )
     session_key = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):
-        if not attrs.get("address_id") and not attrs.get("shipping_address"):
+        method = attrs.get("shipping_method", "pishtaz")
+        if method != "pickup" and not attrs.get("address_id") and not attrs.get("shipping_address"):
             raise serializers.ValidationError(
                 {"detail": "address_id or shipping_address is required."}
             )
@@ -53,6 +54,7 @@ class OrderListSerializer(serializers.ModelSerializer):
             "customer_phone",
             "status",
             "total",
+            "shipping_method",
             "placed_at",
             "items_count",
         )

@@ -37,7 +37,7 @@ export interface AddressInput {
 }
 
 export interface ShippingBreakdownOption {
-  method: "pishtaz" | "vizheh" | string;
+  method: "pishtaz" | "pickup" | "vizheh" | string;
   name: string;
   name_en: string;
   eta_days: number;

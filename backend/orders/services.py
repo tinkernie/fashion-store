@@ -62,21 +62,37 @@ class OrderService:
         session_key: str = None, address_id: str = None,
         shipping_method: str = "pishtaz",
     ) -> dict:
+        is_pickup = shipping_method == "pickup"
         address = None
-        if address_id:
-            from users.selectors import UserSelector as _US
-
-            address = _US.get_address_by_id(user, address_id)
-            if not address:
-                raise BusinessException(
-                    "Address not found in your address book.", code="address_not_found"
-                )
-            shipping_address = self._snapshot_from_address(address)
+        if is_pickup:
+            # In-person store pickup: no customer address needed; zero shipping fee
+            cust_name = f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip() or "مشتری گرامی"
+            shipping_address = {
+                "type": "pickup",
+                "title": "تحویل حضوری در فروشگاه",
+                "full_name": cust_name,
+                "phone": getattr(user, "phone_number", "") or "",
+                "province": "زنجان",
+                "city": "قیدار",
+                "address": "زنجان - قیدار - خیابان امام - روبروی تالار صدف - پوشاک ماوی",
+                "postal_code": "",
+            }
             billing_address = billing_address or dict(shipping_address)
-        if not shipping_address:
-            raise BusinessException(
-                "address_id or shipping_address is required.", code="address_required"
-            )
+        else:
+            if address_id:
+                from users.selectors import UserSelector as _US
+
+                address = _US.get_address_by_id(user, address_id)
+                if not address:
+                    raise BusinessException(
+                        "Address not found in your address book.", code="address_not_found"
+                    )
+                shipping_address = self._snapshot_from_address(address)
+                billing_address = billing_address or dict(shipping_address)
+            if not shipping_address:
+                raise BusinessException(
+                    "address_id or shipping_address is required.", code="address_required"
+                )
         # H5/H8: lock cart row to prevent duplicate order creation
         cart = Cart.objects.select_for_update().filter(user=user).first()
         
@@ -149,16 +165,32 @@ class OrderService:
         # destination province + weighed cart via the Post tariff engine.
         from shipping import services as shipping_services
 
-        ship_quote = shipping_services.quote(
-            province_name=(shipping_address or {}).get("province"),
-            weight_grams=sum(
-                int(getattr(item.variant, "weight", 0) or 0) * int(item.quantity)
-                for item in cart_items
-            ),
-            subtotal_tomans=subtotal,
-            method_code=shipping_method or "pishtaz",
-        )["selected"]
-        shipping_cost = Decimal(str(ship_quote["total"]))
+        if is_pickup:
+            ship_quote = {
+                "method": "pickup",
+                "name": "تحویل به صورت حضوری",
+                "name_en": "Store Pickup",
+                "eta_days": 0,
+                "zone": "store",
+                "base_fare": 0,
+                "surcharge": 0,
+                "surcharge_percent": 0,
+                "insurance": 0,
+                "total": 0,
+                "currency": "Toman",
+            }
+            shipping_cost = Decimal("0.00")
+        else:
+            ship_quote = shipping_services.quote(
+                province_name=(shipping_address or {}).get("province"),
+                weight_grams=sum(
+                    int(getattr(item.variant, "weight", 0) or 0) * int(item.quantity)
+                    for item in cart_items
+                ),
+                subtotal_tomans=subtotal,
+                method_code=shipping_method or "pishtaz",
+            )["selected"]
+            shipping_cost = Decimal(str(ship_quote["total"]))
         tax_amount = Decimal("0.00")
         total = subtotal - discount_amount + shipping_cost + tax_amount
         if total < Decimal("0.00"):
