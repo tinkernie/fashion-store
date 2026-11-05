@@ -276,28 +276,34 @@ export default function Navbar() {
         </div>
 
         {/* Left Side: Actions (User, Search Button, Cart Drawer, Mobile Menu) */}
-        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-white shrink-0">
-          {/* User Dropdown (Visible on all screens, compact on mobile) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-white shrink-0 flex-nowrap">
+          {/* User Dropdown (Visible on all screens, compact icon-only on mobile when logged in) */}
           <DropdownMenu dir="rtl">
             <DropdownMenuTrigger asChild>
               <button 
                 className={cn(
-                  "flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full transition-all outline-none cursor-pointer text-[10px] sm:text-xs font-semibold select-none shrink-0",
+                  "flex items-center gap-1 sm:gap-1.5 rounded-full transition-all outline-none cursor-pointer text-[10px] sm:text-xs font-semibold select-none shrink-0",
                   isLoggedIn 
-                    ? "bg-white/20 hover:bg-white/30 ring-1 ring-white/30 text-white" 
-                    : "bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                    ? "p-2 sm:px-3 sm:py-1.5 bg-white/20 hover:bg-white/30 ring-1 ring-white/30 text-white" 
+                    : "px-2.5 sm:px-3 py-1 sm:py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white"
                 )}
                 aria-label="حساب کاربری"
               >
                 <div className="relative flex items-center justify-center">
-                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <User className="w-4 h-4 shrink-0" />
                   {isLoggedIn && (
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
                   )}
                 </div>
-                <span className="truncate max-w-[70px] xs:max-w-[85px] sm:max-w-[110px]">
-                  {isLoggedIn ? (userDisplayName || "حساب کاربری") : "ورود / ثبت‌نام"}
-                </span>
+                {isLoggedIn ? (
+                  <span className="hidden sm:inline truncate max-w-[110px]">
+                    {userDisplayName || "حساب کاربری"}
+                  </span>
+                ) : (
+                  <span className="truncate max-w-[70px] xs:max-w-[85px] sm:max-w-[110px]">
+                    ورود / ثبت‌نام
+                  </span>
+                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-white border border-sky-100 text-slate-800 w-52 rounded-2xl shadow-2xl mt-2 p-2 font-sans">
