@@ -275,8 +275,18 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Left Side: Actions (User, Search Button, Cart Drawer, Mobile Menu) */}
+        {/* Left Side: Actions (Search Button, User, Cart Drawer, Mobile Menu) */}
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-white shrink-0 flex-nowrap">
+          {/* Circular Search Trigger Button (Visually on the right) */}
+          <button
+            type="button"
+            onClick={() => setIsSearchExpanded(true)}
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/25 flex items-center justify-center cursor-pointer transition-all shrink-0 hover:scale-105 active:scale-95"
+            aria-label="جستجو"
+          >
+            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+          </button>
+
           {/* User Dropdown (Visible on all screens, compact icon-only on mobile when logged in) */}
           <DropdownMenu dir="rtl">
             <DropdownMenuTrigger asChild>
@@ -348,16 +358,6 @@ export default function Navbar() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Circular Search Trigger Button */}
-          <button
-            type="button"
-            onClick={() => setIsSearchExpanded(true)}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/25 flex items-center justify-center cursor-pointer transition-all shrink-0 hover:scale-105 active:scale-95"
-            aria-label="جستجو"
-          >
-            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-          </button>
 
           {/* Customer Notifications (Strictly visible only when logged in, hidden for guests) */}
           {isLoggedIn && (
