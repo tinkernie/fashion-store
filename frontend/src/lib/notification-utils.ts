@@ -138,30 +138,53 @@ export function localizeNotification(notif: any): LocalizedNotification {
   // 1. Order status change localization
   if (rawType === "order_status_change" || (rawSubject.toLowerCase().includes("order") && (newStatus || rawSubject.toLowerCase().includes("status") || rawSubject.toLowerCase().includes("is now")))) {
     if (newStatusFa) {
-      title = orderNumber
-        ? `وضعیت سفارش ${orderNumber}: ${newStatusFa}`
-        : `وضعیت سفارش شما: ${newStatusFa}`;
+      if (newStatus.toLowerCase() === "paid") {
+        title = orderNumber
+          ? `پرداخت سفارش ${orderNumber} تایید شد`
+          : "پرداخت سفارش با موفقیت تایید شد";
+        body = orderNumber
+          ? `کاربر گرامی، پرداخت سفارش شما با شماره ${orderNumber} با موفقیت تایید گردید و سفارش جهت آماده‌سازی و ارسال به واحد انبارداری تحویل داده شد.`
+          : "کاربر گرامی، پرداخت سفارش شما با موفقیت تایید گردید و جهت آماده‌سازی به واحد انبارداری تحویل داده شد.";
+        statusLabel = "پرداخت شده";
+      } else {
+        title = orderNumber
+          ? `وضعیت سفارش ${orderNumber}: ${newStatusFa}`
+          : `وضعیت سفارش شما: ${newStatusFa}`;
 
-      body = orderNumber
-        ? oldStatusFa
-          ? `کاربر گرامی، وضعیت سفارش ${orderNumber} از «${oldStatusFa}» به «${newStatusFa}» تغییر یافت.`
-          : `کاربر گرامی، سفارش شما به شماره ${orderNumber} اکنون در وضعیت «${newStatusFa}» قرار دارد.`
-        : `کاربر گرامی، وضعیت سفارش شما به «${newStatusFa}» تغییر یافت.`;
+        body = orderNumber
+          ? oldStatusFa
+            ? `کاربر گرامی، وضعیت سفارش ${orderNumber} از «${oldStatusFa}» به «${newStatusFa}» تغییر یافت.`
+            : `کاربر گرامی، سفارش شما به شماره ${orderNumber} اکنون در وضعیت «${newStatusFa}» قرار دارد.`
+          : `کاربر گرامی، وضعیت سفارش شما به «${newStatusFa}» تغییر یافت.`;
+      }
     } else {
       title = orderNumber ? `بروزرسانی وضعیت سفارش ${orderNumber}` : "بروزرسانی وضعیت سفارش";
       body = "کاربر گرامی، وضعیت یکی از سفارش‌های شما تغییر کرده است. لطفاً بخش سفارش‌ها را بررسی فرمایید.";
     }
   }
 
-  // 2. Order confirmation localization
+  // 2. Order confirmation localization (accurately distinguishes pending vs paid)
   else if (rawType === "order_confirmation" || rawSubject.toLowerCase().includes("confirmed") || rawSubject.includes("ثبت شد")) {
-    title = orderNumber
-      ? `سفارش ${orderNumber} با موفقیت ثبت شد`
-      : "سفارش شما با موفقیت ثبت شد";
-    body = orderNumber
-      ? `کاربر گرامی، سفارش شما با شماره ${orderNumber} با موفقیت در سیستم ثبت گردید و جهت آماده‌سازی به واحد انبارداری تحویل داده شد.`
-      : "کاربر گرامی، سفارش شما با موفقیت در سیستم ثبت گردید و در حال آماده‌سازی است.";
-    statusLabel = "ثبت شده";
+    const rawStatus = String(context.status || context.order_status || notif.status || "").toLowerCase();
+    const isPaid = rawStatus === "paid" || rawStatus === "packing" || rawStatus === "shipping" || rawStatus === "delivered" || rawBody.includes("پرداخت شد") || rawSubject.includes("پرداخت شد");
+
+    if (isPaid) {
+      title = orderNumber
+        ? `پرداخت سفارش ${orderNumber} تایید شد`
+        : "پرداخت سفارش با موفقیت تایید شد";
+      body = orderNumber
+        ? `کاربر گرامی، پرداخت سفارش ${orderNumber} با موفقیت تایید گردید و سفارش جهت آماده‌سازی و ارسال به واحد انبارداری تحویل داده شد.`
+        : "کاربر گرامی، پرداخت سفارش شما تایید گردید و جهت آماده‌سازی به واحد انبارداری تحویل داده شد.";
+      statusLabel = "پرداخت شده";
+    } else {
+      title = orderNumber
+        ? `سفارش ${orderNumber} در انتظار پرداخت`
+        : "سفارش شما در انتظار پرداخت";
+      body = orderNumber
+        ? `کاربر گرامی، سفارش شما با شماره ${orderNumber} با موفقیت در سیستم ثبت گردید و هم‌اکنون در انتظار پرداخت است. پس از تکمیل فرآیند پرداخت، سفارش جهت آماده‌سازی و ارسال به واحد انبارداری تحویل داده خواهد شد.`
+        : "کاربر گرامی، سفارش شما در سیستم ثبت گردید و در انتظار پرداخت است. پس از تکمیل پرداخت، سفارش جهت آماده‌سازی به واحد انبارداری ارسال خواهد شد.";
+      statusLabel = "در انتظار پرداخت";
+    }
   }
 
   // 3. Shipping update localization

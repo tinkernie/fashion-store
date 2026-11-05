@@ -96,6 +96,30 @@ def order_status_changed_handler(sender, order, old_status, new_status, **kwargs
             )
         )
 
+    # In-app notification for order payment confirmation
+    try:
+        service = NotificationService()
+        in_app_context = {
+            "order_number": order.order_number,
+            "user_name": _display_name(order.user),
+            "old_status": old_status,
+            "new_status": new_status,
+            "old_status_fa": "در انتظار پرداخت",
+            "new_status_fa": "پرداخت شده",
+            "status": "paid",
+            "total": str(order.total),
+            "tracking_code": tracking,
+            "frontend_url": settings.FRONTEND_URL,
+            "invoice_url": f"{settings.FRONTEND_URL}/orders/{order.order_number}",
+        }
+        transaction.on_commit(
+            lambda: service.send_notification(
+                order.user, "order_status_change", in_app_context, send_sms_flag=False
+            )
+        )
+    except Exception as e:
+        logger.warning("order_status_changed_handler: failed to create in-app notification: %s", e)
+
 
 def order_placed_handler(sender, user, order, items_data, **kwargs):
     """In-app order confirmation at checkout (no SMS, no email).

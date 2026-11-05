@@ -4,8 +4,8 @@ from notifications.models import NotificationTemplate
 DEFAULT_TEMPLATES = [
     {
         'type': 'order_confirmation',
-        'subject_template': 'سفارش {{ order_number }} با موفقیت ثبت شد — فروشگاه تخصصی ماوی',
-        'body_template': '{{ user_name }} عزیز، سفارش شما به شماره {{ order_number }} با مبلغ {{ total }} تومان با موفقیت ثبت گردید و در حال آماده‌سازی است. مشاهده فاکتور: {{ invoice_url }}',
+        'subject_template': 'سفارش {{ order_number }} در انتظار پرداخت — فروشگاه تخصصی ماوی',
+        'body_template': '{{ user_name }} عزیز، سفارش شما به شماره {{ order_number }} با مبلغ {{ total }} تومان در سیستم ثبت گردید و در انتظار پرداخت است. پس از تکمیل فرآیند پرداخت، سفارش جهت آماده‌سازی به واحد انبارداری ارسال خواهد شد. مشاهده فاکتور: {{ invoice_url }}',
     },
     {
         'type': 'order_status_change',
