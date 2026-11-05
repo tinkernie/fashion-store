@@ -58,6 +58,7 @@ import {
   deleteUserAddress,
   setDefaultUserAddress,
 } from "@/lib/address-shipping-api";
+import { PaymentInitiateResponse } from "@/lib/payment-types";
 import { IranGeoSelect } from "@/components/ui/iran-geo-select";
 import {
   StockAlert,
@@ -178,6 +179,7 @@ export default function ProfilePage() {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
 
   const { items: wishlistItems, removeItem: removeWishlistItem } = useWishlist();
 
@@ -485,6 +487,41 @@ export default function ProfilePage() {
       setIsOrderModalOpen(true);
     } catch (error) {
       toast.error("دریافت جزئیات سفارش ناموفق بود");
+    }
+  };
+
+  const handlePayOrder = async (order: { id?: string; order_number?: string }) => {
+    const targetId = order?.id || order?.order_number;
+    if (!targetId) {
+      toast.error("شناسه سفارش جهت پرداخت یافت نشد.");
+      return;
+    }
+    setPayingOrderId(targetId);
+    try {
+      toast.loading("در حال انتقال به درگاه پرداخت بانکی...");
+      const res = await api.post<PaymentInitiateResponse>("/api/payments/initiate/", {
+        order_id: targetId,
+        gateway: "zarinpal",
+      });
+
+      const payData = res.data;
+      if (payData?.redirect_url) {
+        window.location.href = payData.redirect_url;
+        return;
+      }
+
+      if (payData?.status === "succeeded") {
+        toast.success("سفارش با موفقیت تسویه گردید.");
+        router.push(`/payment-result?order=${encodeURIComponent(order.order_number || targetId)}&status=succeeded`);
+        return;
+      }
+
+      toast.error("آدرس درگاه پرداخت دریافت نشد. لطفاً دوباره تلاش کنید.");
+    } catch (err: unknown) {
+      console.error("Payment initiation failed:", err);
+      toast.error(getApiErrorMessage(err, "خطا در اتصال به درگاه پرداخت"));
+    } finally {
+      setPayingOrderId(null);
     }
   };
 
@@ -802,14 +839,38 @@ export default function ProfilePage() {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-3">
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-black border ${
-                                getProfileStatusBadge(order.status).bg
-                              }`}
-                            >
-                              {getProfileStatusBadge(order.status).label}
-                            </span>
+                          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                            {order.status === "pending" || order.status === "awaiting_payment" ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePayOrder(order);
+                                }}
+                                disabled={payingOrderId === (order.id || order.order_number)}
+                                title="برای پرداخت و اتصال مستقیم به درگاه بانکی کلیک کنید"
+                                aria-label={`پرداخت سفارش ${orderId} و انتقال به درگاه بانکی`}
+                                className="group relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black border bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 hover:border-amber-400 active:scale-95 transition-all shadow-xs cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-60 disabled:cursor-wait"
+                              >
+                                {payingOrderId === (order.id || order.order_number) ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
+                                ) : (
+                                  <CreditCard className="w-3.5 h-3.5 text-amber-600 transition-transform group-hover:scale-110" />
+                                )}
+                                <span>در انتظار پرداخت</span>
+                                <span className="text-[10px] bg-amber-200/90 text-amber-900 px-1.5 py-0.5 rounded-md font-bold transition-colors group-hover:bg-amber-300">
+                                  پرداخت اکنون
+                                </span>
+                              </button>
+                            ) : (
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-black border ${
+                                  getProfileStatusBadge(order.status).bg
+                                }`}
+                              >
+                                {getProfileStatusBadge(order.status).label}
+                              </span>
+                            )}
                             <Button
                               onClick={() => fetchOrderDetails(orderId)}
                               variant="outline"
@@ -1541,16 +1602,26 @@ export default function ProfilePage() {
                           <CreditCard className="w-4 h-4 text-[#0082CA]" />
                           اطلاعات و تراکنش پرداخت
                         </span>
-                        <span
-                          className={cn(
-                            "px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
-                            isPaid
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
-                          )}
-                        >
-                          {isPaid ? "پرداخت موفق" : "در انتظار پرداخت"}
-                        </span>
+                        {isPaid ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
+                            پرداخت موفق
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handlePayOrder(selectedOrder)}
+                            disabled={payingOrderId === (selectedOrder.id || selectedOrder.order_number)}
+                            title="برای پرداخت سفارش و انتقال به درگاه بانکی کلیک کنید"
+                            className="group inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 hover:border-amber-400 cursor-pointer transition-all active:scale-95 disabled:opacity-60"
+                          >
+                            {payingOrderId === (selectedOrder.id || selectedOrder.order_number) ? (
+                              <Loader2 className="w-3 h-3 animate-spin text-amber-700" />
+                            ) : (
+                              <CreditCard className="w-3 h-3 text-amber-600" />
+                            )}
+                            <span>در انتظار پرداخت (پرداخت اکنون)</span>
+                          </button>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-slate-600">
@@ -1599,6 +1670,12 @@ export default function ProfilePage() {
                           </div>
                         ) : null}
                       </div>
+
+                      {!isPaid && (
+                        <p className="text-[11px] text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-xl p-2.5 leading-relaxed">
+                          این سفارش در انتظار پرداخت است. جهت تکمیل خرید و ثبت نهایی، می‌توانید هم‌اکنون از طریق درگاه پرداخت بانکی اقدام فرمایید.
+                        </p>
+                      )}
                     </div>
                   );
                 })()
@@ -1615,20 +1692,63 @@ export default function ProfilePage() {
                   </div>
                   <p className="text-slate-600 text-[11px]">این سفارش از طریق درگاه پرداخت الکترونیک تسویه گردیده است.</p>
                 </div>
+              ) : (selectedOrder.status === "pending" || selectedOrder.status === "awaiting_payment") ? (
+                <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 space-y-2 text-xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-amber-200/80">
+                    <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                      <CreditCard className="w-4 h-4 text-amber-600" />
+                      وضعیت پرداخت سفارش
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handlePayOrder(selectedOrder)}
+                      disabled={payingOrderId === (selectedOrder.id || selectedOrder.order_number)}
+                      title="برای پرداخت سفارش و انتقال به درگاه بانکی کلیک کنید"
+                      className="group inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200 cursor-pointer transition-all active:scale-95 disabled:opacity-60"
+                    >
+                      {payingOrderId === (selectedOrder.id || selectedOrder.order_number) ? (
+                        <Loader2 className="w-3 h-3 animate-spin text-amber-700" />
+                      ) : (
+                        <CreditCard className="w-3 h-3 text-amber-700" />
+                      )}
+                      <span>در انتظار پرداخت (پرداخت اکنون)</span>
+                    </button>
+                  </div>
+                  <p className="text-amber-800 text-[11px] leading-relaxed">
+                    این سفارش ثبت شده و منتظر پرداخت است. می‌توانید با کلیک روی دکمه پرداخت، مستقیماً به درگاه متصل شده و سفارش خود را تکمیل کنید.
+                  </p>
+                </div>
               ) : null}
 
               {/* Financial Totals */}
               <div className="border-t border-sky-100 pt-4 space-y-3 text-xs">
                 <div className="flex justify-between items-center text-slate-500">
                   <span>وضعیت سفارش:</span>
-                  <span
-                    className={cn(
-                      "px-3 py-1 rounded-full text-xs font-bold border",
-                      getProfileStatusBadge(selectedOrder.status).bg
-                    )}
-                  >
-                    {getProfileStatusBadge(selectedOrder.status).label}
-                  </span>
+                  {selectedOrder.status === "pending" || selectedOrder.status === "awaiting_payment" ? (
+                    <button
+                      type="button"
+                      onClick={() => handlePayOrder(selectedOrder)}
+                      disabled={payingOrderId === (selectedOrder.id || selectedOrder.order_number)}
+                      title="برای پرداخت سفارش و اتصال به درگاه بانکی کلیک کنید"
+                      className="group inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 hover:border-amber-400 cursor-pointer transition-all active:scale-95 disabled:opacity-60"
+                    >
+                      {payingOrderId === (selectedOrder.id || selectedOrder.order_number) ? (
+                        <Loader2 className="w-3 h-3 animate-spin text-amber-700" />
+                      ) : (
+                        <CreditCard className="w-3 h-3 text-amber-600" />
+                      )}
+                      <span>در انتظار پرداخت (پرداخت اکنون)</span>
+                    </button>
+                  ) : (
+                    <span
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs font-bold border",
+                        getProfileStatusBadge(selectedOrder.status).bg
+                      )}
+                    >
+                      {getProfileStatusBadge(selectedOrder.status).label}
+                    </span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center text-base font-black text-slate-900 pt-2 border-t border-sky-100">
                   <span>مبلغ کل پرداختی:</span>
@@ -1636,6 +1756,29 @@ export default function ProfilePage() {
                     {formatPrice(selectedOrder.total || selectedOrder.total_amount)}
                   </span>
                 </div>
+
+                {(selectedOrder.status === "pending" || selectedOrder.status === "awaiting_payment") && (
+                  <div className="pt-2">
+                    <Button
+                      type="button"
+                      onClick={() => handlePayOrder(selectedOrder)}
+                      disabled={payingOrderId === (selectedOrder.id || selectedOrder.order_number)}
+                      className="w-full h-12 rounded-xl bg-[#0082CA] text-white font-black hover:bg-[#0072B5] shadow-md shadow-[#0082CA]/20 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                    >
+                      {payingOrderId === (selectedOrder.id || selectedOrder.order_number) ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                          <span>در حال انتقال به درگاه بانکی...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4" />
+                          <span>پرداخت سفارش و انتقال به درگاه بانکی</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           ) : (

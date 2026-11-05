@@ -14,8 +14,20 @@ class PaymentService:
     def initiate_payment(self, user, order_id: str, gateway: str = 'zarinpal', request=None) -> dict:
         from orders.selectors import OrderSelector
         # H5/H10: lock order to prevent double payment race
+        # Support lookup by either internal UUID or human-readable order_number
+        import uuid
+        is_uuid = False
         try:
-            order = Order.objects.select_for_update().get(id=str(order_id))
+            uuid.UUID(str(order_id))
+            is_uuid = True
+        except (ValueError, AttributeError):
+            pass
+
+        try:
+            if is_uuid:
+                order = Order.objects.select_for_update().get(id=str(order_id))
+            else:
+                order = Order.objects.select_for_update().get(order_number=str(order_id))
         except Order.DoesNotExist:
             raise BusinessException("Order not found.")
         if order.user_id != user.id and not user.is_staff:

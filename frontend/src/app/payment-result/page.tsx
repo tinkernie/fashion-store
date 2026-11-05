@@ -334,9 +334,20 @@ function PaymentResultContent() {
 
               <div className="flex justify-between items-center">
                 <span className="text-slate-600">وضعیت فعلی:</span>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
-                  در انتظار پرداخت
-                </span>
+                <button
+                  type="button"
+                  onClick={handleRetryPayment}
+                  disabled={isRetrying}
+                  className="group inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 cursor-pointer active:scale-95 transition-all disabled:opacity-60"
+                  title="کلیک برای پرداخت مجدد و اتصال به درگاه بانکی"
+                >
+                  {isRetrying ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
+                  ) : (
+                    <CreditCard className="w-3.5 h-3.5 text-amber-700" />
+                  )}
+                  <span>در انتظار پرداخت (پرداخت اکنون)</span>
+                </button>
               </div>
             </div>
 
