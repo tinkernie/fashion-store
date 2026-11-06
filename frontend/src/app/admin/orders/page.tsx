@@ -33,13 +33,12 @@ import { formatShamsiDate } from "@/lib/jalali";
 import { formatPrice, parsePrice } from "@/lib/price-utils";
 
 const STATUS_TABS = [
-  { id: "all", label: "تمام سفارشات" },
-  { id: "pending", label: "در انتظار پرداخت" },
-  { id: "paid", label: "پرداخت شده" },
+  { id: "all", label: "تمام سفارشات پرداخت‌شده" },
+  { id: "paid", label: "پرداخت شده (جدید)" },
   { id: "packing", label: "در حال بسته‌بندی" },
   { id: "shipping", label: "ارسال شده به پست" },
   { id: "delivered", label: "تحویل مشتری" },
-  { id: "cancelled", label: "لغو شده" },
+  { id: "cancelled", label: "لغو شده / مرجوعی" },
 ];
 
 export default function AdminOrdersPage() {

@@ -316,7 +316,18 @@ class OrderService:
     def transition_status(self, order_id: str, new_status: str, note: str = "", actor=None) -> dict:
         # H5: lock order row
         try:
-            order = Order.objects.select_for_update().get(id=order_id)
+            import uuid
+            is_uuid = False
+            try:
+                uuid.UUID(str(order_id))
+                is_uuid = True
+            except Exception:
+                pass
+
+            if is_uuid:
+                order = Order.objects.select_for_update().get(id=order_id)
+            else:
+                order = Order.objects.select_for_update().get(order_number=order_id)
         except Order.DoesNotExist:
             raise BusinessException("Order not found.")
 
@@ -374,7 +385,7 @@ class OrderService:
         return [self._serialize_order(order) for order in orders]
 
     def get_order_by_number(self, order_number: str, user=None) -> dict:
-        order = OrderSelector.get_order_by_number(order_number)
+        order = OrderSelector.get_order_by_id(order_number) or OrderSelector.get_order_by_number(order_number)
         if not order or (user and order.user_id != user.id and not user.is_staff):
             raise BusinessException("Order not found.")
         return self._serialize_order(order)
@@ -476,6 +487,53 @@ class OrderService:
                 "paid_at": active_payment["created_at"],
             }
 
+        user_full_name = ""
+        user_phone = ""
+        user_email = ""
+        user_id_str = None
+        if order.user:
+            user_id_str = str(order.user.id)
+            user_full_name = f"{getattr(order.user, 'first_name', '')} {getattr(order.user, 'last_name', '')}".strip()
+            user_phone = getattr(order.user, "phone_number", "") or ""
+            user_email = getattr(order.user, "email", "") or ""
+
+        customer_info = {
+            "id": user_id_str,
+            "first_name": getattr(order.user, "first_name", "") if order.user else "",
+            "last_name": getattr(order.user, "last_name", "") if order.user else "",
+            "full_name": user_full_name or "کاربر سایت",
+            "phone": user_phone,
+            "email": user_email,
+        }
+
+        # Enrich shipping_address if it's missing recipient details
+        shipping_addr = dict(order.shipping_address) if isinstance(order.shipping_address, dict) else {}
+        if not shipping_addr.get("full_name") and user_full_name:
+            shipping_addr["full_name"] = user_full_name
+        if not shipping_addr.get("phone") and user_phone:
+            shipping_addr["phone"] = user_phone
+
+        # Fallback to order.address or user default address if street/address missing
+        if not shipping_addr.get("address"):
+            linked_addr = order.address
+            if not linked_addr and order.user:
+                try:
+                    linked_addr = order.user.addresses.filter(is_default=True).first() or order.user.addresses.first()
+                except Exception:
+                    linked_addr = None
+            if linked_addr:
+                if not shipping_addr.get("full_name"):
+                    shipping_addr["full_name"] = linked_addr.recipient_name or user_full_name
+                if not shipping_addr.get("phone"):
+                    shipping_addr["phone"] = linked_addr.recipient_phone or user_phone
+                shipping_addr.setdefault("province", linked_addr.province_name)
+                shipping_addr.setdefault("city", linked_addr.city_name)
+                shipping_addr.setdefault("address", f"{linked_addr.street} {linked_addr.building_no}".strip())
+                shipping_addr.setdefault("postal_code", linked_addr.postal_code)
+
+        customer_display_name = shipping_addr.get("full_name") or user_full_name or "کاربر سایت"
+        customer_display_phone = shipping_addr.get("phone") or user_phone
+
         return {
             "id": str(order.id),
             "order_number": order.order_number,
@@ -485,8 +543,11 @@ class OrderService:
             "tax_amount": int(round(float(order.tax_amount))) if order.tax_amount is not None else 0,
             "shipping_cost": int(round(float(order.shipping_cost))) if order.shipping_cost is not None else 0,
             "total": int(round(float(order.total))) if order.total is not None else 0,
-            "shipping_address": order.shipping_address,
-            "billing_address": order.billing_address,
+            "shipping_address": shipping_addr,
+            "billing_address": order.billing_address or shipping_addr,
+            "customer": customer_info,
+            "customer_name": customer_display_name,
+            "customer_phone": customer_display_phone,
             "address_id": str(order.address_id) if order.address_id else None,
             "shipping_method": order.shipping_method,
             "shipping_detail": order.shipping_detail,

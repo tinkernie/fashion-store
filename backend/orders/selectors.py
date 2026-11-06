@@ -1,4 +1,4 @@
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from .models import Order, OrderItem
 
 
@@ -18,6 +18,7 @@ class OrderSelector:
             return None
         return (
             Order.objects.filter(order_number=order_number)
+            .select_related("user", "address")
             .prefetch_related(Prefetch("items", queryset=OrderItem.objects.all()), "status_history")
             .first()
         )
@@ -37,6 +38,7 @@ class OrderSelector:
         if is_valid_uuid:
             order = (
                 Order.objects.filter(id=order_id)
+                .select_related("user", "address")
                 .prefetch_related(
                     Prefetch("items", queryset=OrderItem.objects.all()), "status_history"
                 )
@@ -47,6 +49,7 @@ class OrderSelector:
 
         return (
             Order.objects.filter(order_number=order_id)
+            .select_related("user", "address")
             .prefetch_related(
                 Prefetch("items", queryset=OrderItem.objects.all()), "status_history"
             )
@@ -55,6 +58,20 @@ class OrderSelector:
 
     @staticmethod
     def get_all_orders() -> list[Order]:
-        return Order.objects.prefetch_related(
-            Prefetch("items", queryset=OrderItem.objects.all())
-        ).order_by("-placed_at")
+        return (
+            Order.objects.filter(
+                Q(status__in=[
+                    Order.Status.PAID,
+                    Order.Status.PACKING,
+                    Order.Status.SHIPPING,
+                    Order.Status.DELIVERED,
+                    Order.Status.RETURNED,
+                    Order.Status.REFUNDED,
+                ])
+                | Q(paid_at__isnull=False)
+            )
+            .exclude(status__in=[Order.Status.PENDING, Order.Status.AWAITING_PAYMENT])
+            .select_related("user", "address")
+            .prefetch_related(Prefetch("items", queryset=OrderItem.objects.all()))
+            .order_by("-placed_at")
+        )

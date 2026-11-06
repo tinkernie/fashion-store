@@ -55,3 +55,71 @@ class TestAdminEndpoints:
         )
         assert resp.status_code == 200
         assert resp.data["status"] == "awaiting_payment"
+
+    def test_list_orders_as_admin_includes_customer_and_address(self):
+        admin = User.objects.create_superuser("09129999998", "pass")
+        customer = User.objects.create_user("09351234567", "pass", first_name="علی", last_name="رضایی")
+        order = OrderFactory(
+            user=customer,
+            status=Order.Status.PAID,
+            shipping_address={"full_name": "علی رضایی", "phone": "09351234567", "city": "Tehran", "address": "خیابان آزادی"}
+        )
+        from orders.tests.factories import OrderItemFactory
+        OrderItemFactory(order=order)
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        resp = client.get("/api/admin/orders/")
+        assert resp.status_code == 200
+        assert len(resp.data) >= 1
+        found = next((o for o in resp.data if o["id"] == str(order.id)), None)
+        assert found is not None
+        assert found["customer_name"] == "علی رضایی"
+        assert found["customer_phone"] == "09351234567"
+        assert found["shipping_address"]["city"] == "Tehran"
+        assert found["items_count"] == 1
+
+    def test_retrieve_order_as_admin_by_id_and_by_number(self):
+        admin = User.objects.create_superuser("09129999997", "pass")
+        customer = User.objects.create_user("09359876543", "pass", first_name="سارا", last_name="احمدی")
+        order = OrderFactory(
+            user=customer,
+            order_number="MAVI-TEST-SARAH-01",
+            shipping_address={"full_name": "سارا احمدی", "phone": "09359876543", "address": "پلاک ۱۰", "city": "اصفهان"}
+        )
+        from orders.tests.factories import OrderItemFactory
+        OrderItemFactory(order=order, product_snapshot={"title": "مانتو بهاره", "options": "سایز L"})
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+
+        # 1. Retrieve by UUID
+        resp_id = client.get(f"/api/admin/orders/{order.id}/")
+        assert resp_id.status_code == 200
+        assert resp_id.data["order_number"] == "MAVI-TEST-SARAH-01"
+        assert resp_id.data["customer"]["full_name"] == "سارا احمدی"
+        assert resp_id.data["customer"]["phone"] == "09359876543"
+        assert resp_id.data["shipping_address"]["city"] == "اصفهان"
+        assert len(resp_id.data["items"]) == 1
+        assert resp_id.data["items"][0]["product_snapshot"]["title"] == "مانتو بهاره"
+
+        # 2. Retrieve by order_number
+        resp_num = client.get(f"/api/admin/orders/{order.order_number}/")
+        assert resp_num.status_code == 200
+        assert resp_num.data["id"] == str(order.id)
+        assert resp_num.data["customer"]["full_name"] == "سارا احمدی"
+        assert len(resp_num.data["items"]) == 1
+
+    def test_admin_order_list_excludes_unpaid_orders(self):
+        admin = User.objects.create_superuser("09128888888", "pass")
+        unpaid_pending = OrderFactory(status=Order.Status.PENDING, paid_at=None)
+        unpaid_awaiting = OrderFactory(status=Order.Status.AWAITING_PAYMENT, paid_at=None)
+        paid_order = OrderFactory(status=Order.Status.PAID)
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        resp = client.get("/api/admin/orders/")
+        assert resp.status_code == 200
+        order_numbers = [o["order_number"] for o in resp.data]
+        assert paid_order.order_number in order_numbers
+        assert unpaid_pending.order_number not in order_numbers
+        assert unpaid_awaiting.order_number not in order_numbers
