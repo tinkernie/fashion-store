@@ -59,19 +59,7 @@ class OrderSelector:
     @staticmethod
     def get_all_orders() -> list[Order]:
         return (
-            Order.objects.filter(
-                Q(status__in=[
-                    Order.Status.PAID,
-                    Order.Status.PACKING,
-                    Order.Status.SHIPPING,
-                    Order.Status.DELIVERED,
-                    Order.Status.RETURNED,
-                    Order.Status.REFUNDED,
-                ])
-                | Q(paid_at__isnull=False)
-            )
-            .exclude(status__in=[Order.Status.PENDING, Order.Status.AWAITING_PAYMENT])
-            .select_related("user", "address")
+            Order.objects.select_related("user", "address")
             .prefetch_related(Prefetch("items", queryset=OrderItem.objects.all()))
             .order_by("-placed_at")
         )

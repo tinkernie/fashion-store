@@ -109,17 +109,3 @@ class TestAdminEndpoints:
         assert resp_num.data["id"] == str(order.id)
         assert resp_num.data["customer"]["full_name"] == "سارا احمدی"
         assert len(resp_num.data["items"]) == 1
-
-    def test_admin_order_list_excludes_unpaid_orders(self):
-        admin = User.objects.create_superuser("09128888888", "pass")
-        unpaid_pending = OrderFactory(status=Order.Status.PENDING, paid_at=None)
-        unpaid_awaiting = OrderFactory(status=Order.Status.AWAITING_PAYMENT, paid_at=None)
-        paid_order = OrderFactory(status=Order.Status.PAID)
-        client = APIClient()
-        client.force_authenticate(user=admin)
-        resp = client.get("/api/admin/orders/")
-        assert resp.status_code == 200
-        order_numbers = [o["order_number"] for o in resp.data]
-        assert paid_order.order_number in order_numbers
-        assert unpaid_pending.order_number not in order_numbers
-        assert unpaid_awaiting.order_number not in order_numbers

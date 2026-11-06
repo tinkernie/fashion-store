@@ -17,6 +17,8 @@ import {
   ShoppingBag,
   Send,
   XCircle,
+  Loader2,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +52,7 @@ export default function AdminOrdersPage() {
   // Order Details Modal
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [transitionNote, setTransitionNote] = useState("");
 
   useEffect(() => {
@@ -69,10 +72,28 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const handleOpenDetails = (order: any) => {
+  const handleOpenDetails = async (order: any) => {
     setSelectedOrder(order);
     setTransitionNote("");
     setIsModalOpen(true);
+    setIsLoadingDetails(true);
+
+    try {
+      const lookupKey = order.order_number || order.id;
+      const fullOrder = await adminApi.getOrder(lookupKey);
+      if (fullOrder) {
+        setSelectedOrder((prev: any) => ({
+          ...(prev || {}),
+          ...fullOrder,
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch full order details:", err);
+      // Keep optimistic basic order open, show subtle notification
+      toast.error("خطا در بارگذاری جزئیات کامل سفارش");
+    } finally {
+      setIsLoadingDetails(false);
+    }
   };
 
   const handleStatusTransition = async (orderId: string, newStatus: string) => {
@@ -157,8 +178,10 @@ export default function AdminOrdersPage() {
 
   const filteredOrders = orders.filter((o) => {
     const orderNum = (o.order_number || o.id || "").toLowerCase();
-    const customer = (o.shipping_address?.full_name || "").toLowerCase();
-    const matchesSearch = orderNum.includes(searchQuery.toLowerCase()) || customer.includes(searchQuery.toLowerCase());
+    const customer = (o.customer_name || o.shipping_address?.full_name || "").toLowerCase();
+    const phone = (o.customer_phone || o.shipping_address?.phone || "").toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q || orderNum.includes(q) || customer.includes(q) || phone.includes(q);
     
     let matchesTab = activeStatusTab === "all";
     if (!matchesTab) {
@@ -243,9 +266,9 @@ export default function AdminOrdersPage() {
                   const orderId = order.order_number || order.id?.substring(0, 8) || "سفارش";
                   const badge = getStatusBadge(order.status);
                   const Icon = badge.icon;
-                  const customer = order.shipping_address?.full_name || "کاربر سایت";
+                  const customer = order.customer_name || order.shipping_address?.full_name || "کاربر سایت";
                   const phone = order.customer_phone || order.shipping_address?.phone || "";
-                  const itemCount = order.items?.length || 1;
+                  const itemCount = order.items_count ?? order.items?.length ?? 1;
 
                   return (
                     <tr key={order.id || order.order_number} className="hover:bg-white/5 transition-colors">
@@ -309,7 +332,7 @@ export default function AdminOrdersPage() {
       {/* --- Order Details & Lifecycle Modal --- */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent
-          className="bg-[#0e0e0e] border border-white/10 text-white sm:max-w-2xl p-6 max-h-[90vh] overflow-y-auto"
+          className="bg-[#0e0e0e] border border-white/10 text-white w-[95vw] sm:max-w-4xl md:max-w-5xl p-6 max-h-[90vh] overflow-y-auto"
           dir="rtl"
         >
           <DialogHeader className="border-b border-white/10 pb-4">
@@ -413,51 +436,118 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* Shipping & Recipient Details */}
-              <div className="p-4 rounded-2xl bg-[#141414] border border-white/10 space-y-3">
-                <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  اطلاعات تحویل‌گیرنده و نشانی پستی
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <span className="text-gray-500 block">نام تحویل‌گیرنده:</span>
-                    <span className="text-white font-bold">
-                      {selectedOrder.shipping_address?.full_name || "ثبت نشده"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 block">تلفن همراه:</span>
-                    <span className="text-white font-mono" dir="ltr">
-                      {selectedOrder.shipping_address?.phone || "—"}
-                    </span>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <span className="text-gray-500 block">نشانی پستی:</span>
-                    <span className="text-gray-200 leading-relaxed">
-                      {selectedOrder.shipping_address?.address || "آدرس ثبت نشده"}
-                      {selectedOrder.shipping_address?.city ? ` (${selectedOrder.shipping_address.city})` : ""}
-                    </span>
-                  </div>
-                  {selectedOrder.shipping_address?.postal_code && (
+              {/* Customer Account & Shipping Details Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Account Owner Card */}
+                <div className="p-4 rounded-2xl bg-[#141414] border border-white/10 space-y-3">
+                  <h4 className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+                    <User className="w-4 h-4 text-blue-400" />
+                    مشخصات حساب کاربری خریدار
+                  </h4>
+                  <div className="space-y-2.5 text-xs">
                     <div>
-                      <span className="text-gray-500 block">کد پستی:</span>
-                      <span className="text-white font-mono" dir="ltr">
-                        {selectedOrder.shipping_address.postal_code}
+                      <span className="text-gray-500 block text-[11px]">نام خریدار:</span>
+                      <span className="text-white font-bold block mt-0.5">
+                        {selectedOrder.customer?.full_name || selectedOrder.customer_name || selectedOrder.shipping_address?.full_name || "کاربر سایت"}
                       </span>
                     </div>
-                  )}
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">شماره همراه حساب:</span>
+                      <span className="text-white font-mono block mt-0.5" dir="ltr">
+                        {selectedOrder.customer?.phone || selectedOrder.customer_phone || selectedOrder.shipping_address?.phone || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">ایمیل خریدار:</span>
+                      <span className="text-gray-300 font-mono text-[11px] block mt-0.5" dir="ltr">
+                        {selectedOrder.customer?.email || selectedOrder.customer_email || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">روش ارسال انتخابی:</span>
+                      <span className="text-amber-400 font-bold block mt-0.5">
+                        {selectedOrder.shipping_method === "pickup"
+                          ? "تحویل حضوری در فروشگاه (قیدار)"
+                          : selectedOrder.shipping_method === "vizheh"
+                          ? "پست ویژه (سریع)"
+                          : "پست پیشتاز"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recipient & Postal Address Card */}
+                <div className="p-4 rounded-2xl bg-[#141414] border border-white/10 space-y-3">
+                  <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    اطلاعات تحویل‌گیرنده و نشانی پستی
+                  </h4>
+                  <div className="space-y-2.5 text-xs">
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">نام تحویل‌گیرنده:</span>
+                      <span className="text-white font-bold block mt-0.5">
+                        {selectedOrder.shipping_address?.full_name || selectedOrder.customer?.full_name || selectedOrder.customer_name || "ثبت نشده"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">تلفن تماس تحویل‌گیرنده:</span>
+                      <span className="text-white font-mono block mt-0.5" dir="ltr">
+                        {selectedOrder.shipping_address?.phone || selectedOrder.customer?.phone || selectedOrder.customer_phone || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">استان و شهر:</span>
+                      <span className="text-gray-200 block mt-0.5">
+                        {[selectedOrder.shipping_address?.province, selectedOrder.shipping_address?.city].filter(Boolean).join("، ") || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">نشانی کامل پستی:</span>
+                      <span className="text-gray-200 leading-relaxed block mt-0.5">
+                        {selectedOrder.shipping_address?.address || "آدرس ثبت نشده"}
+                      </span>
+                    </div>
+                    {selectedOrder.shipping_address?.postal_code && (
+                      <div>
+                        <span className="text-gray-500 block text-[11px]">کد پستی:</span>
+                        <span className="text-white font-mono block mt-0.5" dir="ltr">
+                          {selectedOrder.shipping_address.postal_code}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Items in Order */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                  <ShoppingBag className="w-4 h-4 text-gray-400" />
-                  اقلام سفارش داده شده
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                    <ShoppingBag className="w-4 h-4 text-gray-400" />
+                    اقلام سفارش داده شده
+                  </h4>
+                  {isLoadingDetails && (
+                    <span className="text-[11px] text-blue-400 flex items-center gap-1.5 animate-pulse">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      در حال دریافت ریز اقلام...
+                    </span>
+                  )}
+                </div>
                 <div className="p-4 rounded-2xl bg-[#141414] border border-white/10 space-y-3">
-                  {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                  {isLoadingDetails && (!selectedOrder.items || selectedOrder.items.length === 0) ? (
+                    <div className="space-y-3 py-2">
+                      <div className="flex items-center justify-between animate-pulse">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-12 rounded-lg bg-white/5" />
+                          <div className="space-y-2">
+                            <div className="w-32 h-3 rounded bg-white/10" />
+                            <div className="w-20 h-2.5 rounded bg-white/5" />
+                          </div>
+                        </div>
+                        <div className="w-16 h-3 rounded bg-white/10" />
+                      </div>
+                    </div>
+                  ) : selectedOrder.items && selectedOrder.items.length > 0 ? (
                     selectedOrder.items.map((item: any, idx: number) => {
                       const snap = item.product_snapshot || {};
                       const itemTitle = snap.title || item.product_title || item.name || `کالای شماره ${idx + 1}`;
@@ -506,12 +596,49 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* Total Summary */}
-              <div className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/10">
-                <span className="text-sm font-bold text-gray-300">مبلغ کل قابل پرداخت:</span>
-                <span className="text-lg font-black text-white">
-                  {formatPrice(selectedOrder.total)}
-                </span>
+              {/* Total & Payment Summary */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                <div className="space-y-1.5 text-xs text-gray-400 border-b border-white/10 pb-3">
+                  {selectedOrder.subtotal !== undefined && selectedOrder.subtotal > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span>جمع اقلام:</span>
+                      <span className="text-white font-mono">{formatPrice(selectedOrder.subtotal)}</span>
+                    </div>
+                  )}
+                  {selectedOrder.discount_amount !== undefined && selectedOrder.discount_amount > 0 && (
+                    <div className="flex justify-between items-center text-emerald-400">
+                      <span>تخفیف کوپن:</span>
+                      <span className="font-mono">-{formatPrice(selectedOrder.discount_amount)}</span>
+                    </div>
+                  )}
+                  {selectedOrder.shipping_cost !== undefined && (
+                    <div className="flex justify-between items-center">
+                      <span>هزینه ارسال:</span>
+                      <span className="text-white font-mono">
+                        {selectedOrder.shipping_cost > 0 ? formatPrice(selectedOrder.shipping_cost) : "رایگان"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-sm font-bold text-gray-300">مبلغ کل قابل پرداخت:</span>
+                  <span className="text-lg font-black text-white">
+                    {formatPrice(selectedOrder.total)}
+                  </span>
+                </div>
+
+                {selectedOrder.payment_info?.tracking_code && (
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-gray-400">
+                    <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                      <CreditCard className="w-3.5 h-3.5" />
+                      کد پیگیری پرداخت بانکی:
+                    </span>
+                    <span className="font-mono text-white" dir="ltr">
+                      {selectedOrder.payment_info.tracking_code}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
