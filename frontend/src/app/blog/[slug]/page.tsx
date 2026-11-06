@@ -254,7 +254,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
         {/* Article Body Content */}
         <div
-          className="prose prose-slate max-w-none bg-white rounded-3xl border border-sky-100 p-6 sm:p-10 shadow-sm leading-relaxed text-slate-800 font-sans text-sm sm:text-base space-y-4"
+          className="prose max-w-none bg-white rounded-3xl border border-sky-100 p-6 sm:p-10 shadow-sm leading-relaxed text-slate-800 font-sans text-sm sm:text-base"
           dir={isRtl ? "rtl" : "ltr"}
           dangerouslySetInnerHTML={{ __html: post.body_html }}
         />

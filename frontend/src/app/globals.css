@@ -386,3 +386,86 @@ input[type="number"] {
   mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
 }
+
+/* Blog & Editorial Article Typography */
+.prose {
+  color: #1e293b;
+  line-height: 1.85;
+}
+
+.prose p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose b,
+.prose strong {
+  font-weight: 700;
+  color: inherit;
+}
+
+.prose h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  color: #0f172a;
+}
+
+.prose h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #0f172a;
+}
+
+.prose h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #0f172a;
+}
+
+.prose ul {
+  list-style-type: disc;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-right: 1.5rem;
+}
+
+.prose ol {
+  list-style-type: decimal;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-right: 1.5rem;
+}
+
+.prose li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.prose blockquote {
+  border-right: 3px solid #0082CA;
+  margin: 1.25rem 0;
+  color: #475569;
+  font-style: italic;
+  background-color: #f8fafc;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.prose a {
+  color: #0082CA;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose img {
+  border-radius: 1rem;
+  margin: 1.5rem auto;
+  max-width: 100%;
+  height: auto;
+}

@@ -78,10 +78,11 @@ export default function BlogRichEditor({
   value,
   onChange,
   placeholder = "محتوای مقاله را اینجا بنویسید...",
-  minHeight = "400px",
+  minHeight = "480px",
   dir = "rtl",
 }: BlogRichEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const lastHtmlRef = useRef<string | null>(null);
   const [isSourceMode, setIsSourceMode] = useState(false);
   const [sourceCode, setSourceCode] = useState(value || "");
 
@@ -106,11 +107,12 @@ export default function BlogRichEditor({
   const [mediaEmbedUrl, setMediaEmbedUrl] = useState("");
   const [mediaType, setMediaType] = useState<"embed" | "video">("embed");
 
-  // Sync incoming value to contentEditable on initial mount or when switching modes
+  // Sync incoming value to contentEditable on initial mount or when external prop changes (e.g. switching posts/tabs)
   useEffect(() => {
     if (editorRef.current && !isSourceMode) {
-      if (editorRef.current.innerHTML !== (value || "")) {
+      if (value !== lastHtmlRef.current) {
         editorRef.current.innerHTML = value || "";
+        lastHtmlRef.current = value || "";
       }
     }
   }, [value, isSourceMode]);
@@ -122,6 +124,17 @@ export default function BlogRichEditor({
 
     // Remove scripts and style tags
     doc.querySelectorAll("script, style, link, meta").forEach((el) => el.remove());
+
+    // Convert font tags to span with color style
+    doc.querySelectorAll("font").forEach((fontEl) => {
+      const span = doc.createElement("span");
+      const color = fontEl.getAttribute("color");
+      if (color) {
+        span.style.color = color;
+      }
+      span.innerHTML = fontEl.innerHTML;
+      fontEl.replaceWith(span);
+    });
 
     // Convert any h1 to h2 (h1 is reserved for page title)
     doc.querySelectorAll("h1").forEach((el) => {
@@ -144,9 +157,18 @@ export default function BlogRichEditor({
     if (!editorRef.current) return;
     const rawHtml = editorRef.current.innerHTML;
     const cleaned = sanitizeClientHtml(rawHtml);
+    lastHtmlRef.current = cleaned;
     setSourceCode(cleaned);
     onChange(cleaned);
   }, [onChange]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" && e.shiftKey) {
+      e.preventDefault();
+      execCmd("insertLineBreak");
+      return;
+    }
+  };
 
   const handleSourceChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newVal = e.target.value;
@@ -200,7 +222,17 @@ export default function BlogRichEditor({
 
   const handleApplyColor = (color: string) => {
     if (!color || isSourceMode) return;
+    try {
+      document.execCommand("styleWithCSS", false, "true");
+    } catch {
+      // fallback
+    }
     execCmd("foreColor", color);
+    try {
+      document.execCommand("styleWithCSS", false, "false");
+    } catch {
+      // fallback
+    }
   };
 
   const handleInsertLink = () => {
@@ -594,7 +626,7 @@ export default function BlogRichEditor({
             onChange={handleSourceChange}
             dir="ltr"
             className="w-full h-full font-mono text-xs text-slate-800 bg-slate-900 text-emerald-400 p-4 rounded-xl outline-none resize-y"
-            style={{ minHeight: "360px" }}
+            style={{ minHeight }}
             placeholder="<p>HTML محتوا را اینجا وارد کنید...</p>"
           />
         ) : (
@@ -602,10 +634,11 @@ export default function BlogRichEditor({
             ref={editorRef}
             contentEditable
             onInput={handleInput}
+            onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             dir={dir}
-            className="prose prose-slate max-w-none outline-none focus:outline-none min-h-[360px] text-slate-800 leading-relaxed font-sans text-sm selection:bg-sky-100"
-            style={{ minHeight: "360px" }}
+            className="prose max-w-none outline-none focus:outline-none min-h-[480px] text-slate-800 leading-relaxed font-sans text-sm selection:bg-sky-100"
+            style={{ minHeight }}
             data-placeholder={placeholder}
           />
         )}

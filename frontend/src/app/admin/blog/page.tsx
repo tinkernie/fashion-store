@@ -262,6 +262,14 @@ export default function AdminBlogPage() {
     }
   };
 
+  // Helper to prune recurring ghost empty paragraph tags
+  const cleanHtmlPayload = (raw: string): string => {
+    if (!raw) return "";
+    return raw
+      .replace(/<p(?:\s+[^>]*)?>\s*(?:<br(?:\s*\/?>|\s*><\/br>)|&nbsp;|\s)*<\/p>/gi, "")
+      .trim();
+  };
+
   // Save Post (Create or Update)
   const handleSavePost = async () => {
     if (!postTitle.trim()) {
@@ -286,7 +294,7 @@ export default function AdminBlogPage() {
           title: enTitle.trim(),
           slug: enSlug.trim() || undefined,
           excerpt: enExcerpt.trim(),
-          body_html: enBodyHtml.trim() || "<p></p>",
+          body_html: cleanHtmlPayload(enBodyHtml) || "<p></p>",
           meta_title: enMetaTitle.trim() || undefined,
           meta_description: enMetaDesc.trim() || undefined,
         });
@@ -298,7 +306,7 @@ export default function AdminBlogPage() {
           title: arTitle.trim(),
           slug: arSlug.trim() || undefined,
           excerpt: arExcerpt.trim(),
-          body_html: arBodyHtml.trim() || "<p></p>",
+          body_html: cleanHtmlPayload(arBodyHtml) || "<p></p>",
           meta_title: arMetaTitle.trim() || undefined,
           meta_description: arMetaDesc.trim() || undefined,
         });
@@ -308,7 +316,7 @@ export default function AdminBlogPage() {
         title: postTitle.trim(),
         slug: postSlug.trim(),
         excerpt: postExcerpt.trim(),
-        body_html: postBodyHtml.trim() || "<p></p>",
+        body_html: cleanHtmlPayload(postBodyHtml) || "<p></p>",
         cover_image: postCoverImage.trim() || undefined,
         status: postStatus,
         meta_title: postMetaTitle.trim() || undefined,
@@ -782,7 +790,7 @@ export default function AdminBlogPage() {
 
       {/* Post Authoring Modal (Full screen / large) */}
       <Dialog open={isPostModalOpen} onOpenChange={setIsPostModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto p-6 font-sans" dir="rtl">
+        <DialogContent className="w-[96vw] max-w-7xl sm:max-w-7xl max-h-[94vh] overflow-y-auto p-6 md:p-8 font-sans" dir="rtl">
           <DialogHeader className="border-b border-sky-100 pb-4">
             <div className="flex items-center justify-between">
               <div>

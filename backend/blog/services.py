@@ -215,9 +215,14 @@ class BlogService:
         )
         translation_rows = self._prepare_translations(data.get("translations") or [])
         tag_rows = self._resolve_tags(data.get("tags") or [])
+        if not tag_rows and data.get("tag_ids"):
+            tag_rows = list(Tag.objects.filter(id__in=data.get("tag_ids")))
+        initial_status = Post.Status.PUBLISHED if data.get("status") == "published" else Post.Status.DRAFT
+        published_at = timezone.now() if initial_status == Post.Status.PUBLISHED else None
         with transaction.atomic():
             post = Post.objects.create(
-                status=Post.Status.DRAFT,
+                status=initial_status,
+                published_at=published_at,
                 title=title,
                 slug=slug,
                 body_html=body,
@@ -285,6 +290,8 @@ class BlogService:
                 )
             if "tags" in data:
                 post.tags.set(self._resolve_tags(data.get("tags") or []))
+            elif "tag_ids" in data:
+                post.tags.set(list(Tag.objects.filter(id__in=data.get("tag_ids") or [])))
             self._apply_translation_updates(post, data.get("translations"), old_tr_slugs)
         self._invalidate(post)
         return self.serialize_admin(post)

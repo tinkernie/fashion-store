@@ -6,7 +6,7 @@ TRANSLATION_LANGS = ("en", "ar")
 
 class AdminTagSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=120)
-    slug = serializers.SlugField(required=False, allow_blank=True, max_length=140)
+    slug = serializers.SlugField(required=False, allow_blank=True, max_length=140, allow_unicode=True)
     name_en = serializers.CharField(max_length=120, required=False, allow_blank=True)
     name_ar = serializers.CharField(max_length=120, required=False, allow_blank=True)
 
@@ -18,7 +18,7 @@ class AdminTagUpdateSerializer(AdminTagSerializer):
 class TranslationInputSerializer(serializers.Serializer):
     language = serializers.ChoiceField(choices=TRANSLATION_LANGS)
     title = serializers.CharField(max_length=300, required=False, allow_blank=True)
-    slug = serializers.SlugField(required=False, allow_blank=True, max_length=320)
+    slug = serializers.SlugField(required=False, allow_blank=True, max_length=320, allow_unicode=True)
     body_html = serializers.CharField(required=False)
     excerpt = serializers.CharField(max_length=500, required=False, allow_blank=True)
     meta_title = serializers.CharField(max_length=200, required=False, allow_blank=True)
@@ -27,28 +27,36 @@ class TranslationInputSerializer(serializers.Serializer):
 
 class AdminPostSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=300)
-    slug = serializers.SlugField(required=False, allow_blank=True, max_length=320)
+    slug = serializers.SlugField(required=False, allow_blank=True, max_length=320, allow_unicode=True)
     body_html = serializers.CharField(required=False, allow_blank=True)
     excerpt = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=["draft", "published"], required=False, default="published")
     meta_title = serializers.CharField(max_length=200, required=False, allow_blank=True)
     meta_description = serializers.CharField(max_length=320, required=False, allow_blank=True)
     cover_image = serializers.CharField(max_length=1000, required=False, allow_blank=True)
     tags = serializers.ListField(
         child=serializers.CharField(), required=False, allow_empty=True, max_length=50
     )
+    tag_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False, allow_empty=True
+    )
     translations = TranslationInputSerializer(many=True, required=False, default=[])
 
 
 class AdminPostUpdateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=300, required=False, allow_blank=False)
-    slug = serializers.SlugField(required=False, allow_blank=True, max_length=320)
+    slug = serializers.SlugField(required=False, allow_blank=True, max_length=320, allow_unicode=True)
     body_html = serializers.CharField(required=False, allow_blank=True)
     excerpt = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=["draft", "published"], required=False)
     meta_title = serializers.CharField(max_length=200, required=False, allow_blank=True)
     meta_description = serializers.CharField(max_length=320, required=False, allow_blank=True)
     cover_image = serializers.CharField(max_length=1000, required=False, allow_blank=True)
     tags = serializers.ListField(
         child=serializers.CharField(), required=False, allow_empty=True, max_length=50
+    )
+    tag_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False, allow_empty=True
     )
     translations = TranslationInputSerializer(many=True, required=False)
 

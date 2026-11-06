@@ -47,6 +47,7 @@ _COLOR_RE = re.compile(
     re.IGNORECASE,
 )
 _ALIGN_RE = re.compile(r"^(?:start|end|left|right|center|justify|inherit)$", re.IGNORECASE)
+_FONT_WEIGHT_RE = re.compile(r"^(?:bold|bolder|normal|lighter|[1-9]00)$", re.IGNORECASE)
 _DIR_RE = re.compile(r"^(?:rtl|ltr|auto)$", re.IGNORECASE)
 
 _GENERIC_URL_RE = re.compile(r"^(?:https?:|/|#|mailto:)[^<>\s\"']*$", re.IGNORECASE)
@@ -92,6 +93,9 @@ def sanitize_css_style(value: str) -> str:
         elif prop == "color":
             if _COLOR_RE.match(val):
                 kept.append("color: {}".format(val))
+        elif prop == "font-weight":
+            if _FONT_WEIGHT_RE.match(val):
+                kept.append("font-weight: {}".format(val.lower()))
         elif prop == "text-align":
             if _ALIGN_RE.match(val):
                 kept.append("text-align: {}".format(val))
@@ -192,6 +196,22 @@ class _Rewriter(HTMLParser):
     # -- token handlers -------------------------------------------
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
+        if tag == "font":
+            tag = "span"
+            new_attrs = []
+            font_styles = []
+            for n, v in attrs:
+                n_lower = str(n).lower()
+                if n_lower == "color" and _COLOR_RE.match(str(v).strip()):
+                    font_styles.append("color: {}".format(str(v).strip()))
+                elif n_lower == "style":
+                    font_styles.append(str(v))
+                elif n_lower in ("dir", "id", "class"):
+                    new_attrs.append((n, v))
+            if font_styles:
+                new_attrs.append(("style", "; ".join(font_styles)))
+            attrs = new_attrs
+
         if self.opaque_depth:
             if tag in OPAQUE_TAGS:
                 self.opaque_depth += 1
@@ -207,6 +227,8 @@ class _Rewriter(HTMLParser):
 
     def handle_startendtag(self, tag, attrs):
         tag = tag.lower()
+        if tag == "font":
+            tag = "span"
         if self.opaque_depth:
             return
         if tag not in ALLOWED_TAGS or not self._would_render(tag, attrs):
@@ -219,6 +241,8 @@ class _Rewriter(HTMLParser):
 
     def handle_endtag(self, tag):
         tag = tag.lower()
+        if tag == "font":
+            tag = "span"
         if self.opaque_depth:
             if tag in OPAQUE_TAGS:
                 self.opaque_depth -= 1
@@ -263,6 +287,12 @@ class _Rewriter(HTMLParser):
         return "".join(self.out)
 
 
+_EMPTY_P_RE = re.compile(
+    r"<p(?:\s+[^>]*)?>\s*(?:<br(?:\s*/?>|\s*></br>)|&nbsp;|\s)*</p>",
+    re.IGNORECASE,
+)
+
+
 def sanitize_html(raw) -> str:
     if not raw:
         return ""
@@ -272,7 +302,10 @@ def sanitize_html(raw) -> str:
     rewriter = _Rewriter()
     rewriter.feed(raw)
     rewriter.close()
-    return rewriter.result()
+    res = rewriter.result()
+    # Prune ghost empty paragraph tags (e.g. <p><br></p>) that create unwanted gaps
+    res = _EMPTY_P_RE.sub("", res).strip()
+    return res
 
 
 _TEXT_STRIP_RE = re.compile(r"<[^>]*>")

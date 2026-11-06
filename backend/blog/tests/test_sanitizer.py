@@ -96,6 +96,25 @@ class TestSanitizeHtml:
         out = sanitizer.sanitize_html('<a href="https://x.com" target="_blank">X</a>')
         assert 'rel="noopener"' in out
 
+    def test_font_color_normalized_to_span(self):
+        out = sanitizer.sanitize_html('<font color="#0082CA">متن آبی ماوی</font>')
+        assert '<span style="color: #0082CA">متن آبی ماوی</span>' in out
+
+    def test_font_weight_preserved(self):
+        out = sanitizer.sanitize_html('<span style="font-weight: bold; color: #0082CA;">متن بولد</span>')
+        assert "font-weight: bold" in out
+        assert "color: #0082CA" in out
+        out_num = sanitizer.sanitize_html('<span style="font-weight: 700;">متن</span>')
+        assert "font-weight: 700" in out_num
+
+    def test_empty_paragraphs_pruned(self):
+        out = sanitizer.sanitize_html('<p>پاراگراف ۱</p><p><br></p><p><br></br></p><p>پاراگراف ۲</p>')
+        assert out == '<p>پاراگراف ۱</p><p>پاراگراف ۲</p>'
+
+    def test_inner_br_preserved(self):
+        out = sanitizer.sanitize_html('<p>خط ۱<br>خط ۲</p>')
+        assert 'خط ۱<br>خط ۲' in out
+
     def test_too_long_rejected(self):
         with pytest.raises(ValueError):
             sanitizer.sanitize_html("<p>" + "x" * (sanitizer.MAX_HTML_LENGTH + 1) + "</p>")
