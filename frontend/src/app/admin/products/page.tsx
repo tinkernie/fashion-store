@@ -2527,8 +2527,8 @@ export default function AdminProductsPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="جنس پارچه، راهنمای شستشو، جزئیات استایل و..."
-                rows={3}
-                className="w-full bg-[#181818] border border-white/10 text-xs text-white rounded-xl p-3 outline-none resize-none focus:border-amber-400/50"
+                rows={4}
+                className="w-full bg-[#181818] border border-white/10 text-xs text-white rounded-xl p-3 outline-none resize-y min-h-[100px] focus:border-amber-400/50"
               />
             </div>
 

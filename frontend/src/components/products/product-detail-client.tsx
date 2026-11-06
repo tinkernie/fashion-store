@@ -786,9 +786,10 @@ export default function ProductDetailClient({
           )}
 
           {/* Description */}
-          <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-            {product.description ||
-              "طراحی اختصاصی با برترین متریال‌های ارگانیک و دوخت سفارشی پریمیوم، مناسب برای استایل‌های روزمره، رسمی و ترند روز."}
+          <p className="text-xs md:text-sm text-slate-600 leading-relaxed whitespace-pre-line break-words">
+            {(product.description
+              ? product.description.replace(/\\n/g, "\n").trim()
+              : "طراحی اختصاصی با برترین متریال‌های ارگانیک و دوخت سفارشی پریمیوم، مناسب برای استایل‌های روزمره، رسمی و ترند روز.")}
           </p>
 
           {/* Dynamic Product Options (Colors, Sizes, etc.) */}
