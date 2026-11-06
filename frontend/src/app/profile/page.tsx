@@ -1504,7 +1504,7 @@ export default function ProfilePage() {
 
       {/* --- Detailed Order Modal --- */}
       <Dialog open={isOrderModalOpen} onOpenChange={setIsOrderModalOpen}>
-        <DialogContent className="bg-white border border-sky-100 text-slate-900 sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-2xl" dir="rtl">
+        <DialogContent className="bg-white border border-sky-100 text-slate-900 w-[95vw] sm:max-w-2xl md:max-w-3xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-2">
               <Package className="w-5 h-5 text-[#0082CA]" />
@@ -1815,7 +1815,7 @@ export default function ProfilePage() {
 
       {/* --- Address Edit/Create Modal --- */}
       <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
-        <DialogContent className="bg-white border border-sky-100 text-slate-900 sm:max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-2xl" dir="rtl">
+        <DialogContent className="bg-white border border-sky-100 text-slate-900 w-[95vw] sm:max-w-2xl md:max-w-3xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black">
               {editingAddress ? "ویرایش آدرس" : "افزودن آدرس جدید"}

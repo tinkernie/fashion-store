@@ -542,7 +542,7 @@ export default function AdminUsersPage() {
       {/* User Orders & Profile Detailed Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent
-          className="bg-[#0a0a0a] border border-white/10 text-white sm:max-w-3xl p-6 max-h-[90vh] overflow-y-auto"
+          className="bg-[#0a0a0a] border border-white/10 text-white w-[95vw] sm:max-w-4xl md:max-w-5xl p-6 max-h-[90vh] overflow-y-auto"
           dir="rtl"
         >
           <DialogHeader>
@@ -929,7 +929,7 @@ export default function AdminUsersPage() {
       </Dialog>
       {/* Quick Create Customer Modal */}
       <Dialog open={isQuickCreateOpen} onOpenChange={setIsQuickCreateOpen}>
-        <DialogContent className="bg-[#111111] border border-white/10 text-white sm:max-w-md p-6 rounded-3xl shadow-2xl" dir="rtl">
+        <DialogContent className="bg-[#111111] border border-white/10 text-white w-[95vw] sm:max-w-lg md:max-w-xl p-6 rounded-3xl shadow-2xl" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black flex items-center gap-2.5 text-white">
               <UserPlus className="w-5 h-5 text-emerald-400" />

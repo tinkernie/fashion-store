@@ -218,7 +218,7 @@ export default function AdminCouponsPage() {
       {/* --- Add Coupon Modal with Shamsi Date Picker --- */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent
-          className="bg-[#0e0e0e] border border-white/10 text-white sm:max-w-lg p-6"
+          className="bg-[#0e0e0e] border border-white/10 text-white w-[95vw] sm:max-w-xl md:max-w-2xl p-6"
           dir="rtl"
         >
           <DialogHeader className="border-b border-white/10 pb-4">

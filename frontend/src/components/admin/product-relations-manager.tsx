@@ -271,7 +271,7 @@ export default function ProductRelationsManager({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[90vh] flex flex-col bg-[#0f0f0f] border border-white/10 text-white p-0 overflow-hidden rounded-2xl shadow-2xl"
+        className="w-[95vw] sm:max-w-5xl md:max-w-6xl max-h-[90vh] flex flex-col bg-[#0f0f0f] border border-white/10 text-white p-0 overflow-hidden rounded-2xl shadow-2xl"
         dir="rtl"
       >
         {/* Modal Header */}

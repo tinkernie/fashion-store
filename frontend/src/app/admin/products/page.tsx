@@ -1601,7 +1601,7 @@ export default function AdminProductsPage() {
       {/* --- Options & Variants Manager Modal --- */}
       <Dialog open={isVariantModalOpen} onOpenChange={setIsVariantModalOpen}>
         <DialogContent
-          className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-3xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
+          className="bg-[#0f0f0f] border border-white/10 text-white w-[95vw] sm:max-w-4xl md:max-w-5xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
           dir="rtl"
         >
           <DialogHeader className="border-b border-white/10 pb-4">
@@ -2154,7 +2154,7 @@ export default function AdminProductsPage() {
         <DialogContent
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
-          className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
+          className="bg-[#0f0f0f] border border-white/10 text-white w-[95vw] sm:max-w-5xl md:max-w-6xl p-6 md:p-8 max-h-[90vh] overflow-y-auto"
           dir="rtl"
         >
           <DialogHeader>
@@ -2641,7 +2641,7 @@ export default function AdminProductsPage() {
       <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
         <DialogContent
           onPointerDownOutside={(e) => e.stopPropagation()}
-          className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-3xl p-6 md:p-8 max-h-[90vh] overflow-y-auto z-[70]"
+          className="bg-[#0f0f0f] border border-white/10 text-white w-[95vw] sm:max-w-4xl md:max-w-5xl p-6 md:p-8 max-h-[90vh] overflow-y-auto z-[70]"
           dir="rtl"
         >
           <DialogHeader className="border-b border-white/10 pb-4">

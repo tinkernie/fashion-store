@@ -1165,7 +1165,7 @@ export default function AdminBlogPage() {
 
       {/* Tag Manager Dialog */}
       <Dialog open={isTagModalOpen} onOpenChange={setIsTagModalOpen}>
-        <DialogContent className="max-w-2xl p-6 font-sans" dir="rtl">
+        <DialogContent className="w-[95vw] sm:max-w-3xl md:max-w-4xl p-6 font-sans" dir="rtl">
           <DialogHeader className="border-b border-sky-100 pb-3">
             <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <TagIcon className="w-5 h-5 text-[#0082CA]" />

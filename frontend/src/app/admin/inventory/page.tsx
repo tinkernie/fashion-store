@@ -593,7 +593,7 @@ export default function AdminInventoryPage() {
 
       {/* Safety Stock Config Modal */}
       <Dialog open={isSafetyModalOpen} onOpenChange={setIsSafetyModalOpen}>
-        <DialogContent className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-md p-6" dir="rtl">
+        <DialogContent className="bg-[#0f0f0f] border border-white/10 text-white w-[95vw] sm:max-w-lg md:max-w-xl p-6" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-lg font-black flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-amber-400" />
@@ -643,7 +643,7 @@ export default function AdminInventoryPage() {
 
       {/* Custom Stock Adjustment Modal */}
       <Dialog open={isCustomModalOpen} onOpenChange={setIsCustomModalOpen}>
-        <DialogContent className="bg-[#0f0f0f] border border-white/10 text-white sm:max-w-md p-6" dir="rtl">
+        <DialogContent className="bg-[#0f0f0f] border border-white/10 text-white w-[95vw] sm:max-w-lg md:max-w-xl p-6" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-lg font-black flex items-center gap-2">
               <PackagePlus className="w-5 h-5 text-amber-400" />
