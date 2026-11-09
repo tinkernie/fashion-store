@@ -53,7 +53,7 @@ ALLOWED_HOSTS = _HOSTS or ["127.0.0.1", "localhost", "testserver", "*"]
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = _env_bool("CORS_ALLOW_ALL_ORIGINS", False)
 CORS_ALLOW_CREDENTIALS = True
-CORS_EXPOSE_HEADERS = ["Content-Disposition"]
+CORS_EXPOSE_HEADERS = ["Content-Disposition", "X-Label-Rows"]
 CORS_ALLOWED_ORIGINS = _env_list(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001",

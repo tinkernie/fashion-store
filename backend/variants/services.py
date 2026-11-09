@@ -1,4 +1,6 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
+from .barcodes import validate_ean13
 from .repositories import VariantRepository
 from .selectors import VariantSelector
 from .models import Variant
@@ -11,6 +13,7 @@ class VariantService:
         # Options are fully free-form: a variant may combine any subset of
         # the product's defined options (all of them, only color, color +
         # size, none at all, ...). No combination is mandatory.
+        self._validate_barcode_field(data)
         option_assignments = data.pop("option_values", []) or []
         if option_assignments:
             self._validate_option_assignments(option_assignments, product_id=product_id)
@@ -22,7 +25,10 @@ class VariantService:
             )
         except IntegrityError as e:
             if "unique" in str(e).lower():
-                raise BusinessException("SKU or barcode already exists.")
+                raise BusinessException(
+                    "SKU or barcode already exists. Barcodes are permanent "
+                    "and cannot be reused, even from deleted variants."
+                )
             raise
         return self._serialize_variant(variant)
 
@@ -31,6 +37,7 @@ class VariantService:
         if not variant:
             raise BusinessException("Variant not found.")
 
+        self._validate_barcode_field(data)
         option_assignments = data.pop("option_values", None)
         # Update scalar fields
         try:
@@ -55,6 +62,17 @@ class VariantService:
             raise BusinessException("Variant not found.")
         VariantRepository.delete_variant(variant)
         return {"message": f"Variant {variant.sku} deleted."}
+
+    @staticmethod
+    def _validate_barcode_field(data: dict) -> None:
+        """Reject hand-typed codes that a scanner could not read as EAN-13.
+        Empty/omitted values are fine: a sequential code is assigned on save."""
+        if "barcode" not in data:
+            return
+        try:
+            validate_ean13(data["barcode"])
+        except DjangoValidationError as exc:
+            raise BusinessException(exc.messages[0])
 
     def _validate_option_assignments(self, assignments: list[dict], product_id: str = None):
         """Free-form validation: every assignment must reference an existing

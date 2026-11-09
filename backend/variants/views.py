@@ -10,6 +10,7 @@ from .serializers import (
     VariantDetailSerializer,
 )
 from products.selectors import ProductSelector
+from .exports import build_label_response, label_queryset, truthy
 
 
 class PublicVariantViewSet(viewsets.GenericViewSet):
@@ -103,3 +104,54 @@ class AdminVariantViewSet(viewsets.GenericViewSet):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = VariantDetailSerializer(variant)
         return Response(serializer.data)
+
+    @action(detail=False, methods=["get"], url_path=r"by-barcode/(?P<barcode>[^/.]+)")
+    def by_barcode(self, request, barcode=None):
+        """GET /api/admin/variants/by-barcode/<code>/ — physical scanner
+        lookup at the counter. Read-only, lean payload."""
+        variant = VariantSelector.get_variant_by_barcode(barcode)
+        if not variant:
+            return Response(
+                {"detail": "Barcode not found.", "code": "barcode_not_found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        inventory = getattr(variant, "inventory", None)
+        return Response(
+            {
+                "id": str(variant.id),
+                "barcode": variant.barcode,
+                "sku": variant.sku,
+                "product_id": str(variant.product_id),
+                "product_title": variant.product.title,
+                "product_slug": variant.product.slug,
+                "price": int(variant.price),
+                "status": variant.status,
+                "availability": variant.availability,
+                "is_active": variant.deleted_at is None and variant.product.deleted_at is None,
+                "stock": inventory.available_quantity if inventory else 0,
+                "options": [
+                    {
+                        "option_name": item.option.name,
+                        "value": item.option_value.value,
+                    }
+                    for item in variant.variantoption_set.all()
+                ],
+            }
+        )
+
+    @action(detail=False, methods=["get"], url_path="export-labels")
+    def export_labels(self, request):
+        """GET /api/admin/variants/export-labels/?format=tsv|csv
+
+        Barcode label sheet for BarTender (TSV default, CSV optional).
+        Filters: product_id, status, availability, include_out_of_stock=1.
+        """
+        queryset = label_queryset(
+            product_id=request.query_params.get("product_id"),
+            status=request.query_params.get("status"),
+            availability=request.query_params.get("availability"),
+            include_out_of_stock=truthy(
+                request.query_params.get("include_out_of_stock", "")
+            ),
+        )
+        return build_label_response(queryset, fmt=request.query_params.get("format", "tsv"))

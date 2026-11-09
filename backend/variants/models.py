@@ -1,5 +1,6 @@
-from django.db import models
+from django.db import IntegrityError, models, transaction
 from common.models import BaseModel
+from .barcodes import allocate_barcode
 
 
 class Variant(BaseModel):
@@ -19,9 +20,14 @@ class Variant(BaseModel):
         related_name="variants",
         db_index=True,
     )
-    # Partial uniqueness (see Meta.constraints): soft-deleted variants never
-    # block re-using the same SKU/barcode.
+    # SKU uniqueness is partial (see Meta.constraints): soft-deleted variants
+    # never block re-using the same SKU. Barcode uniqueness is *permanent*:
+    # once a code is printed on a physical tag it must never be reissued to
+    # another variant, even after the owning variant is soft-deleted.
     sku = models.CharField(max_length=100, db_index=True)
+    # max_length stays 100 so legacy/hand-typed values keep fitting; newly
+    # generated and API-supplied values are validated as EAN-13 in the
+    # serializers/services layer.
     barcode = models.CharField(
         max_length=100, db_index=True, null=True, blank=True
     )
@@ -67,15 +73,27 @@ class Variant(BaseModel):
                 condition=models.Q(deleted_at__isnull=True),
                 name="uq_variant_sku_active",
             ),
+            # No deleted_at condition on purpose: a barcode lives on physical
+            # labels, so soft deletion must not free it for reuse.
             models.UniqueConstraint(
                 fields=["barcode"],
-                condition=models.Q(deleted_at__isnull=True),
-                name="uq_variant_barcode_active",
+                name="uq_variant_barcode",
             ),
         ]
 
     def __str__(self):
         return f"{self.product.title} – {self.sku}"
+
+    def save(self, *args, **kwargs):
+        """Assign a barcode on every creation path, and make sure it is
+        actually written when the caller saves with `update_fields` (a signal
+        alone cannot widen `update_fields`)."""
+        if not self.barcode:
+            self.barcode = allocate_barcode()
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None and "barcode" not in update_fields:
+                kwargs["update_fields"] = list(update_fields) + ["barcode"]
+        super().save(*args, **kwargs)
 
     @property
     def is_placeholder(self) -> bool:
@@ -83,6 +101,39 @@ class Variant(BaseModel):
         variant products/services.py seeds at creation; it is never itself
         purchasable and must not hold inventory."""
         return self.sku.endswith("-DEFAULT")
+
+
+class BarcodeSequence(models.Model):
+    """Single counter row per GS1 prefix, used for sequential in-store EAN-13
+    allocation (`20` + 10 zero-padded digits + check digit).
+
+    Allocation locks the row with SELECT FOR UPDATE, so two concurrent
+    creations are serialized before the unique constraint is even consulted
+    — no retry loop needed. Gaps are harmless (a failed insert rolls the
+    counter back with the surrounding transaction).
+    """
+
+    prefix = models.CharField(max_length=3, unique=True)
+    last_value = models.PositiveBigIntegerField(default=0)
+
+    class Meta:
+        db_table = "barcode_sequence"
+
+    @classmethod
+    def next_value(cls, prefix: str = "20") -> int:
+        with transaction.atomic():
+            # First allocation for a prefix: create the row. The nested atomic
+            # keeps a concurrent-create IntegrityError from poisoning the
+            # outer transaction.
+            try:
+                with transaction.atomic():
+                    cls.objects.create(prefix=prefix, last_value=0)
+            except IntegrityError:
+                pass
+            row = cls.objects.select_for_update().get(prefix=prefix)
+            row.last_value += 1
+            row.save(update_fields=["last_value"])
+            return row.last_value
 
 
 class VariantOption(models.Model):

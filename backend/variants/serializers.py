@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from .barcodes import validate_ean13
 from .models import Variant
 
 
@@ -9,7 +11,15 @@ class OptionAssignmentSerializer(serializers.Serializer):
 
 class VariantCreateSerializer(serializers.Serializer):
     sku = serializers.CharField(max_length=100)
-    barcode = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    # Omitted/blank = a sequential in-store EAN-13 is assigned on save.
+    # Supplied values must be scannable EAN-13 (13 digits + valid check digit).
+    barcode = serializers.CharField(
+        max_length=13,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        validators=[validate_ean13],
+    )
     price = serializers.DecimalField(max_digits=10, decimal_places=2)
     weight = serializers.IntegerField(min_value=1, required=False, default=1)
     dimensions = serializers.JSONField(required=False, default=dict)
@@ -41,7 +51,13 @@ class VariantCreateSerializer(serializers.Serializer):
 
 class VariantUpdateSerializer(serializers.Serializer):
     sku = serializers.CharField(max_length=100, required=False)
-    barcode = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    barcode = serializers.CharField(
+        max_length=13,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        validators=[validate_ean13],
+    )
     price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
     weight = serializers.IntegerField(min_value=0, required=False)
     dimensions = serializers.JSONField(required=False)

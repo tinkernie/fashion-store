@@ -5,6 +5,6 @@ class VariantsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "variants"
 
-    def ready(self):
-        # Registers the pre_save hook that gives every variant a barcode.
-        from . import signals  # noqa: F401
+    # Barcode auto-generation now lives in Variant.save() (see
+    # variants/models.py) instead of a pre_save receiver: a receiver cannot
+    # widen save(update_fields=[...]), which could silently drop the value.

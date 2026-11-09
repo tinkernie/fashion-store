@@ -38,6 +38,25 @@ class VariantSelector:
         )
 
     @staticmethod
+    def get_variant_by_barcode(barcode: str) -> Variant or None:
+        """Physical scanner lookup (index seek on the unique barcode).
+
+        Uses `all_objects` on purpose: a code printed on an old tag must
+        resolve to *something*, so the caller can tell "discontinued /
+        deleted" apart from "unknown code" instead of returning a bare 404.
+        """
+        if not barcode:
+            return None
+        return (
+            Variant.all_objects.filter(barcode=str(barcode).strip())
+            .select_related("product", "inventory")
+            .prefetch_related(
+                "variantoption_set__option", "variantoption_set__option_value"
+            )
+            .first()
+        )
+
+    @staticmethod
     def get_variant_by_id(variant_id: str) -> Variant or None:
         return (
             Variant.objects.filter(
