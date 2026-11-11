@@ -28,6 +28,8 @@ import {
   Hash,
   Copy,
   Barcode,
+  FileSpreadsheet,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,6 +184,28 @@ export default function AdminProductsPage() {
     confirmText: "حذف",
     onConfirm: () => {},
   });
+
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+
+  const handleExportCsv = async () => {
+    setIsExportingCsv(true);
+    try {
+      const { blob, filename, rowsCount } = await adminApi.exportVariantLabels(undefined, "csv", true);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      toast.success(`فایل CSV کاتالوگ و بارکدها دانلود شد (${rowsCount.toLocaleString("fa-IR")} ردیف کالا)`);
+    } catch (err: any) {
+      toast.error(getApiErrorMessage(err, "خطا در دانلود فایل CSV"));
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
 
   useEffect(() => {
     loadCatalogData();
@@ -1166,6 +1190,21 @@ export default function AdminProductsPage() {
           >
             <Layers className="w-4 h-4 text-amber-400" />
             مدیریت دسته‌بندی‌ها ({categories.length})
+          </Button>
+
+          <Button
+            onClick={handleExportCsv}
+            disabled={isExportingCsv}
+            variant="outline"
+            className="h-11 px-4 rounded-xl border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 font-bold text-xs flex items-center gap-2 shrink-0 transition-all"
+            title="دانلود فایل CSV تمام بارکدها و تنوع‌ها برای اکسل یا لیبل‌پرینتر"
+          >
+            {isExportingCsv ? (
+              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
+            )}
+            <span>خروجی CSV بارکدها</span>
           </Button>
 
           <Button

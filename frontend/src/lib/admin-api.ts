@@ -691,15 +691,32 @@ export const adminApi = {
     return { blob: res.data as Blob, filename };
   },
 
-  async exportVariantLabels(variantIds?: string[], format: 'csv' | 'tsv' = 'csv'): Promise<{ blob: Blob; rowsCount: number }> {
-    const query = `?format=${format}`;
+  async exportVariantLabels(
+    variantIds?: string[],
+    format: 'csv' | 'tsv' = 'csv',
+    includeOutOfStock: boolean = true
+  ): Promise<{ blob: Blob; filename: string; rowsCount: number }> {
+    const params = new URLSearchParams();
+    params.set('format', format);
+    if (includeOutOfStock) {
+      params.set('include_out_of_stock', '1');
+    }
+    const query = `?${params.toString()}`;
     const payload = variantIds && variantIds.length > 0 ? { variant_ids: variantIds } : {};
     const res = await api.post(`/api/admin/variants/export-labels/${query}`, payload, {
       responseType: 'blob',
     });
     const rowsHeader = res.headers['x-label-rows'] || res.headers['X-Label-Rows'];
     const rowsCount = rowsHeader ? parseInt(rowsHeader, 10) : 0;
-    return { blob: res.data as Blob, rowsCount };
+    let filename = `variant-labels-${new Date().toISOString().slice(0, 10)}.${format}`;
+    const disposition = res.headers['content-disposition'] || res.headers['Content-Disposition'];
+    if (disposition) {
+      const match = String(disposition).match(/filename="?([^";]+)"?/i);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+    return { blob: res.data as Blob, filename, rowsCount };
   },
 };
 

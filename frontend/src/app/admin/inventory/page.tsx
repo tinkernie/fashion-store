@@ -18,6 +18,8 @@ import {
   ArrowDownRight,
   Equal,
   Barcode,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +53,29 @@ export default function AdminInventoryPage() {
   const [customStockMode, setCustomStockMode] = useState<"add" | "subtract" | "set">("add");
   const [customAmountVal, setCustomAmountVal] = useState("50");
   const [isSubmittingCustomStock, setIsSubmittingCustomStock] = useState(false);
+
+  // CSV Export State & Handler
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+
+  const handleExportCsv = async () => {
+    setIsExportingCsv(true);
+    try {
+      const { blob, filename, rowsCount } = await adminApi.exportVariantLabels(undefined, "csv", true);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      toast.success(`فایل CSV بارکدهای انبار دانلود شد (${rowsCount.toLocaleString("fa-IR")} ردیف کالا)`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "خطا در دانلود فایل CSV بارکدها");
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
 
   useEffect(() => {
     loadInventoryData();
@@ -200,14 +225,31 @@ export default function AdminInventoryPage() {
           </p>
         </div>
 
-        <Button
-          onClick={loadInventoryData}
-          variant="outline"
-          className="h-11 px-5 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 font-bold text-xs flex items-center gap-2 shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-          بروزرسانی وضعیت انبار
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleExportCsv}
+            disabled={isExportingCsv}
+            variant="outline"
+            className="h-11 px-4 rounded-xl border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 font-bold text-xs flex items-center gap-2 shrink-0 transition-all"
+            title="دانلود فایل CSV تمام بارکدها و تنوع‌های انبار"
+          >
+            {isExportingCsv ? (
+              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
+            )}
+            <span>خروجی CSV بارکدها</span>
+          </Button>
+
+          <Button
+            onClick={loadInventoryData}
+            variant="outline"
+            className="h-11 px-5 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 font-bold text-xs flex items-center gap-2 shrink-0"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            بروزرسانی وضعیت انبار
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}
