@@ -1,27 +1,72 @@
 import uuid
-from django.db import models, transaction
+from django.db import IntegrityError, models, transaction
 from django.conf import settings
 from django.utils import timezone
 from common.models import BaseModel
 
 
-class OrderSequence(models.Model):
-    """Ensures unique sequential order numbers per day."""
+class OrderChannel(models.TextChoices):
+    """Where an order was created. Kept module-level because OrderSequence
+    needs it before Order is defined."""
 
-    date = models.DateField(unique=True)
+    ONLINE = "online", "Online store"
+    POS = "pos", "In-store counter"
+
+
+# Order-number prefixes per channel: MAVI-20261111-000042 / POS-20261111-000001
+SEQUENCE_PREFIX = {
+    OrderChannel.ONLINE: "MAVI",
+    OrderChannel.POS: "POS",
+}
+
+
+class OrderSequence(models.Model):
+    """Ensures unique sequential order numbers per day *per channel*.
+
+    Counter sales and online sales count independently, so a busy POS day
+    never consumes online numbers (and vice versa)."""
+
+    date = models.DateField()
+    channel = models.CharField(
+        max_length=10, choices=OrderChannel.choices, default=OrderChannel.ONLINE
+    )
     last_sequence = models.PositiveIntegerField(default=0)
 
     class Meta:
         db_table = "order_sequence"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["date", "channel"],
+                name="unique_order_sequence_date_channel",
+            )
+        ]
 
     @classmethod
-    def get_next_number(cls) -> str:
+    def get_next_number(cls, channel: str = OrderChannel.ONLINE) -> str:
         today = timezone.localdate()
+        channel = channel or OrderChannel.ONLINE
         with transaction.atomic():
-            seq, _ = cls.objects.select_for_update().get_or_create(date=today)
+            try:
+                seq = cls.objects.select_for_update().get(date=today, channel=channel)
+            except cls.DoesNotExist:
+                # First order of the day for this channel. The savepoint keeps
+                # a concurrent creator's IntegrityError from poisoning the
+                # surrounding transaction (PostgreSQL).
+                try:
+                    with transaction.atomic():
+                        seq = cls.objects.create(
+                            date=today, channel=channel, last_sequence=0
+                        )
+                except IntegrityError:
+                    seq = cls.objects.select_for_update().get(
+                        date=today, channel=channel
+                    )
+                else:
+                    seq = cls.objects.select_for_update().get(pk=seq.pk)
             seq.last_sequence += 1
-            seq.save()
-            return f"MAVI-{today.strftime('%Y%m%d')}-{seq.last_sequence:06d}"
+            seq.save(update_fields=["last_sequence"])
+            prefix = SEQUENCE_PREFIX.get(channel, "MAVI")
+            return f"{prefix}-{today.strftime('%Y%m%d')}-{seq.last_sequence:06d}"
 
 
 class Order(BaseModel):
@@ -36,12 +81,40 @@ class Order(BaseModel):
         RETURNED = "returned", "Returned"
         REFUNDED = "refunded", "Refunded"
 
+    Channel = OrderChannel
+
+    # Nullable: in-store (POS) sales may be fully anonymous walk-ins.
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="orders",
+        null=True,
+        blank=True,
         db_index=True,
     )
+    channel = models.CharField(
+        max_length=10,
+        choices=OrderChannel.choices,
+        default=OrderChannel.ONLINE,
+        db_index=True,
+    )
+    # Who rang the sale. Null for online orders.
+    cashier = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="pos_sales",
+        null=True,
+        blank=True,
+    )
+    # Cash-register terminal label (single store, so a plain string).
+    pos_terminal = models.CharField(max_length=64, blank=True, default="")
+    # Client-generated idempotency key: retrying "Confirm Sale" after a
+    # timeout must not create a second sale.
+    client_reference = models.CharField(
+        max_length=64, null=True, blank=True, unique=True
+    )
+    # Optional phone typed at the counter for anonymous purchases.
+    customer_phone = models.CharField(max_length=15, blank=True, default="")
     order_number = models.CharField(max_length=30, unique=True, editable=False)
     status = models.CharField(
         max_length=20,

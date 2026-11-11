@@ -78,6 +78,19 @@ class TestOrderCreation:
 
 
 @pytest.mark.django_db
+class TestOrderSequence:
+    def test_channels_have_independent_sequences(self):
+        from orders.models import OrderChannel, OrderSequence
+
+        online = OrderSequence.get_next_number(OrderChannel.ONLINE)
+        pos = OrderSequence.get_next_number(OrderChannel.POS)
+        assert online.startswith("MAVI-") and online.endswith("000001")
+        assert pos.startswith("POS-") and pos.endswith("000001")
+        assert OrderSequence.get_next_number(OrderChannel.POS).endswith("000002")
+        assert OrderSequence.get_next_number(OrderChannel.ONLINE).endswith("000002")
+
+
+@pytest.mark.django_db
 class TestStatusTransitions:
     def test_valid_transition(self):
         order = OrderFactory(status=Order.Status.PENDING)

@@ -1,12 +1,12 @@
 from django.db import transaction
-from .models import Order, OrderItem, OrderStatusHistory, OrderSequence
+from .models import Order, OrderChannel, OrderItem, OrderStatusHistory, OrderSequence
 from common.exceptions import BusinessException
 
 
 class OrderRepository:
     @staticmethod
-    def generate_order_number() -> str:
-        return OrderSequence.get_next_number()
+    def generate_order_number(channel: str = OrderChannel.ONLINE) -> str:
+        return OrderSequence.get_next_number(channel)
 
     @staticmethod
     @transaction.atomic

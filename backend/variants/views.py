@@ -10,7 +10,13 @@ from .serializers import (
     VariantDetailSerializer,
 )
 from products.selectors import ProductSelector
-from .exports import build_label_response, label_queryset, truthy
+from .lookup import scanner_payload
+from .exports import (
+    build_label_response,
+    label_queryset,
+    parse_variant_ids,
+    truthy,
+)
 
 
 class PublicVariantViewSet(viewsets.GenericViewSet):
@@ -115,37 +121,30 @@ class AdminVariantViewSet(viewsets.GenericViewSet):
                 {"detail": "Barcode not found.", "code": "barcode_not_found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        inventory = getattr(variant, "inventory", None)
-        return Response(
-            {
-                "id": str(variant.id),
-                "barcode": variant.barcode,
-                "sku": variant.sku,
-                "product_id": str(variant.product_id),
-                "product_title": variant.product.title,
-                "product_slug": variant.product.slug,
-                "price": int(variant.price),
-                "status": variant.status,
-                "availability": variant.availability,
-                "is_active": variant.deleted_at is None and variant.product.deleted_at is None,
-                "stock": inventory.available_quantity if inventory else 0,
-                "options": [
-                    {
-                        "option_name": item.option.name,
-                        "value": item.option_value.value,
-                    }
-                    for item in variant.variantoption_set.all()
-                ],
-            }
-        )
+        return Response(scanner_payload(variant))
 
-    @action(detail=False, methods=["get"], url_path="export-labels")
+    @action(detail=False, methods=["get", "post"], url_path="export-labels")
     def export_labels(self, request):
-        """GET /api/admin/variants/export-labels/?format=tsv|csv
+        """GET|POST /api/admin/variants/export-labels/?format=tsv|csv
 
         Barcode label sheet for BarTender (TSV default, CSV optional).
         Filters: product_id, status, availability, include_out_of_stock=1.
+
+        Selective export: send `variant_ids` (repeated, comma-separated, or a
+        JSON list in the POST body) to print only the rows ticked in the admin
+        grid. When present it wins, and out-of-stock variants are included.
         """
+        try:
+            variant_ids = parse_variant_ids(request)
+        except ValueError as exc:
+            return Response(
+                {
+                    "detail": f"Invalid variant id: {exc}",
+                    "code": "invalid_variant_ids",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        fmt = request.query_params.get("format") or "tsv"
         queryset = label_queryset(
             product_id=request.query_params.get("product_id"),
             status=request.query_params.get("status"),
@@ -153,5 +152,6 @@ class AdminVariantViewSet(viewsets.GenericViewSet):
             include_out_of_stock=truthy(
                 request.query_params.get("include_out_of_stock", "")
             ),
+            variant_ids=variant_ids,
         )
-        return build_label_response(queryset, fmt=request.query_params.get("format", "tsv"))
+        return build_label_response(queryset, fmt=fmt)

@@ -5,7 +5,7 @@ from inventory.services import InventoryService
 from inventory.selectors import InventorySelector
 from .factories import InventoryFactory
 from variants.tests.factories import VariantFactory
-from inventory.models import Inventory, Reservation
+from inventory.models import Inventory, Reservation, StockMovement
 
 
 @pytest.mark.django_db
@@ -17,6 +17,54 @@ class TestInventoryService:
         assert result["available_quantity"] == 15
         inventory.refresh_from_db()
         assert inventory.available_quantity == 15
+
+    def test_apply_movement_records_ledger_row(self):
+        inventory = InventoryFactory(available_quantity=10)
+        service = InventoryService()
+        result = service.apply_movement(
+            str(inventory.variant_id), -3, StockMovement.Reason.SALE
+        )
+        assert result["quantity_delta"] == -3
+        assert result["available_quantity"] == 7
+        movement = StockMovement.objects.get(pk=result["movement_id"])
+        assert movement.quantity_after == 7
+        assert movement.reason == StockMovement.Reason.SALE
+
+    def test_apply_movement_rejects_overdraw(self):
+        inventory = InventoryFactory(available_quantity=2)
+        service = InventoryService()
+        with pytest.raises(BusinessException):
+            service.apply_movement(
+                str(inventory.variant_id), -3, StockMovement.Reason.SALE
+            )
+        assert StockMovement.objects.count() == 0
+
+    def test_apply_movement_respects_reserved_units(self):
+        inventory = InventoryFactory(available_quantity=5, reserved_quantity=3)
+        service = InventoryService()
+        with pytest.raises(BusinessException):
+            service.apply_movement(
+                str(inventory.variant_id),
+                -3,
+                StockMovement.Reason.SALE,
+                enforce_sellable=True,
+            )
+        # 2 sellable units can still be sold.
+        result = service.apply_movement(
+            str(inventory.variant_id),
+            -2,
+            StockMovement.Reason.SALE,
+            enforce_sellable=True,
+        )
+        assert result["sellable_quantity"] == 0
+
+    def test_adjust_stock_writes_ledger_row(self):
+        inventory = InventoryFactory(available_quantity=10)
+        InventoryService().adjust_stock(str(inventory.variant_id), 5)
+        movement = StockMovement.objects.get(inventory=inventory)
+        assert movement.reason == StockMovement.Reason.ADJUSTMENT
+        assert movement.quantity_delta == 5
+        assert movement.quantity_after == 15
 
     def test_adjust_stock_remove_insufficient(self):
         inventory = InventoryFactory(available_quantity=5)

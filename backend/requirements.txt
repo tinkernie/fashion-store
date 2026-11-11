@@ -21,6 +21,9 @@ Pillow==11.3.0
 pillow-heif==1.8.1
 boto3==1.42.97
 
+# Invoice PDF rendering (system libs: libpango-1.0-0, libpangoft2-1.0-0)
+weasyprint==66.0
+
 gunicorn==23.0.0
 whitenoise==6.11.0
 uvicorn==0.39.0

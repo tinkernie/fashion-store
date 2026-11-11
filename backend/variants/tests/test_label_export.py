@@ -93,7 +93,7 @@ class TestLabelExportEndpoint:
         assert text.startswith("\ufeff")
         lines = [line for line in text.split("\r\n") if line]
         assert lines[0].lstrip("\ufeff") == (
-            "barcode\tproduct_name\toptions_summary\tstock_count"
+            "barcode\tproduct_name\toptions_summary"
         )
 
     def test_default_excludes_out_of_stock_and_placeholder(self, catalog):
@@ -122,8 +122,8 @@ class TestLabelExportEndpoint:
             catalog["in_stock"].barcode,
             "پیراهن مردانه",
             "رنگ: سفید | سایز: L",
-            "4",
         ]
+        assert len(row) == 3
 
     def test_csv_format(self, catalog):
         response = _staff_client().get(LABELS_URL + "?format=csv")
@@ -132,7 +132,7 @@ class TestLabelExportEndpoint:
         assert ".csv" in response["Content-Disposition"]
         lines = [l for l in response.content.decode("utf-8").split("\r\n") if l]
         assert lines[0].lstrip("\ufeff") == (
-            "barcode,product_name,options_summary,stock_count"
+            "barcode,product_name,options_summary"
         )
         assert len(lines) == 2
 
@@ -151,6 +151,50 @@ class TestLabelExportEndpoint:
         rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
         assert len(rows) == 1
         assert "شلوار" not in response.content.decode("utf-8")
+
+    def test_selected_ids_export_only_those_rows(self, catalog):
+        other = _add_options(ProductFactory(title="شلوار"))
+        selected = _make_variant(other, "PICK-1", 301, stock=1)
+        response = _staff_client().get(
+            f"{LABELS_URL}?variant_ids={selected.id},{catalog['in_stock'].id}"
+        )
+        rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
+        assert {row.split("\t")[0] for row in rows} == {
+            selected.barcode,
+            catalog["in_stock"].barcode,
+        }
+
+    def test_selected_ids_include_out_of_stock(self, catalog):
+        response = _staff_client().get(
+            f"{LABELS_URL}?variant_ids={catalog['sold_out'].id}"
+        )
+        rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
+        assert len(rows) == 1
+        assert rows[0].split("\t")[0] == catalog["sold_out"].barcode
+
+    def test_selected_ids_via_repeated_param(self, catalog):
+        response = _staff_client().get(
+            f"{LABELS_URL}?variant_ids={catalog['sold_out'].id}"
+            f"&variant_ids={catalog['in_stock'].id}"
+        )
+        rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
+        assert len(rows) == 2
+
+    def test_selected_ids_via_post_json(self, catalog):
+        response = _staff_client().post(
+            LABELS_URL,
+            {"variant_ids": [str(catalog["sold_out"].id)]},
+            format="json",
+        )
+        assert response.status_code == 200
+        rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
+        assert len(rows) == 1
+        assert rows[0].split("\t")[0] == catalog["sold_out"].barcode
+
+    def test_invalid_variant_id_is_400(self, catalog):
+        response = _staff_client().get(f"{LABELS_URL}?variant_ids=not-a-uuid")
+        assert response.status_code == 400
+        assert response.data["code"] == "invalid_variant_ids"
 
 
 @pytest.mark.django_db

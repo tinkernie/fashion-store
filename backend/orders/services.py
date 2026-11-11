@@ -380,6 +380,10 @@ class OrderService:
         )
         return self._serialize_order(order)
 
+    def serialize_order(self, order: Order) -> dict:
+        """Public wrapper used by POS (and anything else outside this service)."""
+        return self._serialize_order(order)
+
     def get_user_orders(self, user) -> list[dict]:
         orders = OrderSelector.get_user_orders(user)
         return [self._serialize_order(order) for order in orders]
@@ -496,12 +500,16 @@ class OrderService:
             user_full_name = f"{getattr(order.user, 'first_name', '')} {getattr(order.user, 'last_name', '')}".strip()
             user_phone = getattr(order.user, "phone_number", "") or ""
             user_email = getattr(order.user, "email", "") or ""
+        # Counter sales may carry a phone typed by the cashier, no account.
+        user_phone = getattr(order, "customer_phone", "") or user_phone
 
+        is_pos = getattr(order, "channel", "online") == "pos"
+        anonymous_name = "مشتری حضوری" if is_pos else "کاربر سایت"
         customer_info = {
             "id": user_id_str,
             "first_name": getattr(order.user, "first_name", "") if order.user else "",
             "last_name": getattr(order.user, "last_name", "") if order.user else "",
-            "full_name": user_full_name or "کاربر سایت",
+            "full_name": user_full_name or anonymous_name,
             "phone": user_phone,
             "email": user_email,
         }
@@ -531,13 +539,30 @@ class OrderService:
                 shipping_addr.setdefault("address", f"{linked_addr.street} {linked_addr.building_no}".strip())
                 shipping_addr.setdefault("postal_code", linked_addr.postal_code)
 
-        customer_display_name = shipping_addr.get("full_name") or user_full_name or "کاربر سایت"
+        customer_display_name = (
+            shipping_addr.get("full_name") or user_full_name or anonymous_name
+        )
         customer_display_phone = shipping_addr.get("phone") or user_phone
 
         return {
             "id": str(order.id),
             "order_number": order.order_number,
             "status": order.status,
+            "channel": getattr(order, "channel", "online"),
+            "pos_terminal": getattr(order, "pos_terminal", ""),
+            "client_reference": getattr(order, "client_reference", None),
+            "cashier": (
+                {
+                    "id": str(order.cashier_id),
+                    "name": (
+                        f"{getattr(order.cashier, 'first_name', '')} "
+                        f"{getattr(order.cashier, 'last_name', '')}"
+                    ).strip()
+                    or getattr(order.cashier, "phone_number", ""),
+                }
+                if order.cashier_id and order.cashier
+                else None
+            ),
             "subtotal": int(round(float(order.subtotal))) if order.subtotal is not None else 0,
             "discount_amount": int(round(float(order.discount_amount))) if order.discount_amount is not None else 0,
             "tax_amount": int(round(float(order.tax_amount))) if order.tax_amount is not None else 0,

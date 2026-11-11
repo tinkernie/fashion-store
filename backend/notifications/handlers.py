@@ -28,9 +28,15 @@ def order_status_changed_handler(sender, order, old_status, new_status, **kwargs
     Both are skipped when the order never went through the payment gateway
     (zero-total / admin-jumped orders) and fired exactly once (PAID is a
     one-time transition). In-app + preference gating are untouched."""
-    from orders.models import Order
+    from orders.models import Order, OrderChannel
 
     if new_status != Order.Status.PAID or old_status == Order.Status.PAID:
+        return
+    # Counter sales have no online customer account and no payment gateway:
+    # the SMS/in-app flows below would address a None user.
+    if getattr(order, "channel", OrderChannel.ONLINE) != OrderChannel.ONLINE:
+        return
+    if order.user_id is None:
         return
 
     from payments.models import Payment
@@ -126,6 +132,9 @@ def order_placed_handler(sender, user, order, items_data, **kwargs):
 
     SMS moved to the PAID transition (order_status_changed_handler), which
     uses the owner-approved sms.ir template 321934."""
+    if user is None:
+        # Anonymous counter sale — nothing to notify.
+        return
     service = NotificationService()
     normalized_items = []
     for item in (items_data or []):

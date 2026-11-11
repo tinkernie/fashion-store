@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>فاکتور {{ invoice_number }}</title>
+<style>
+  @font-face {
+    font-family: "Vazirmatn";
+    src: url("{{ font_regular }}") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: "Vazirmatn";
+    src: url("{{ font_bold }}") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+  }
+
+  @page {
+    size: A5 portrait;
+    margin: 9mm 9mm 10mm 9mm;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Vazirmatn", sans-serif;
+    font-size: 8.2pt;
+    line-height: 1.65;
+    color: #2b2a28;
+    direction: rtl;
+  }
+
+  table { border-collapse: collapse; width: 100%; }
+  td, th { vertical-align: middle; }
+
+  .masthead td { padding: 0; }
+  .brand-cell { width: 58%; }
+  .meta-cell { width: 42%; }
+
+  .brand-name {
+    font-size: 17pt;
+    font-weight: 700;
+    letter-spacing: -0.2pt;
+    color: #1d1c1a;
+  }
+  .brand-sub {
+    font-size: 8pt;
+    color: #8a8478;
+    margin-top: 0.5mm;
+  }
+
+  .meta-line {
+    font-size: 7.6pt;
+    margin-bottom: 0.6mm;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .meta-label { color: #948d80; margin-left: 2mm; }
+  .meta-value { font-weight: 700; color: #2b2a28; }
+  .meta-value.num { direction: ltr; unicode-bidi: embed; }
+
+  .accent {
+    height: 0.9mm;
+    background: #b08d4f;
+    margin: 3mm 0 3.2mm 0;
+  }
+
+  .details {
+    background: #faf8f3;
+    border: 0.3pt solid #e6dfd0;
+    padding: 2.4mm 2.6mm;
+    margin-bottom: 3.4mm;
+  }
+  .details td { width: 25%; padding: 0.7mm 2mm; }
+  .details td:first-child { padding-right: 0; }
+  .details td:last-child { padding-left: 0; }
+  .detail-label {
+    display: block;
+    font-size: 7pt;
+    color: #9a927f;
+  }
+  .detail-value {
+    display: block;
+    font-size: 8pt;
+    font-weight: 700;
+    color: #2b2a28;
+  }
+  .detail-value.muted { font-weight: 400; color: #6e6a60; }
+
+  .items thead th {
+    font-size: 7.4pt;
+    font-weight: 700;
+    color: #6b6659;
+    text-align: right;
+    padding: 0 1.2mm 1.6mm 1.2mm;
+    border-bottom: 0.6pt solid #2b2a28;
+  }
+  .items thead th.center { text-align: center; }
+  .items thead th.left { text-align: left; }
+
+  .items tbody td {
+    padding: 2.1mm 1.2mm;
+    border-bottom: 0.3pt dotted #d8d2c4;
+    font-size: 8pt;
+  }
+  .items tbody tr { break-inside: avoid; }
+  .col-index { width: 7%; text-align: center; color: #9a927f; font-size: 7.4pt; }
+  .col-title { width: 49%; }
+  .col-qty { width: 9%; text-align: center; }
+  .col-unit { width: 17%; text-align: left; white-space: nowrap; }
+  .col-total { width: 18%; text-align: left; white-space: nowrap; font-weight: 700; }
+
+  .item-title { font-weight: 700; }
+  .item-options { font-size: 7.2pt; color: #7d776b; margin-top: 0.3mm; }
+  .item-sku { font-size: 6.8pt; color: #a39c8c; direction: ltr; text-align: right; }
+
+  .totals { margin-top: 3.2mm; }
+  .totals td { padding: 1.1mm 1.2mm; font-size: 8pt; }
+  .totals .label { text-align: right; color: #6b6659; }
+  .totals .value { text-align: left; white-space: nowrap; }
+  .totals tr.spacer td { padding: 0; height: 1.4mm; }
+  .totals .grand td {
+    background: #f1ece1;
+    border-top: 0.6pt solid #b08d4f;
+    border-bottom: 0.6pt solid #b08d4f;
+    font-size: 10pt;
+    font-weight: 700;
+    padding: 2.2mm 1.2mm;
+  }
+  .totals .grand .label { color: #2b2a28; }
+
+  .notes {
+    margin-top: 3mm;
+    font-size: 7.4pt;
+    color: #6b6659;
+    border-right: 0.9mm solid #e6dfd0;
+    padding: 0.6mm 2mm;
+  }
+  .notes-label { font-weight: 700; color: #8a8478; }
+
+  .policy {
+    margin-top: 3.6mm;
+    border: 0.5pt dashed #c2ab7f;
+    background: #fbf7ee;
+    padding: 2.6mm 3mm;
+    text-align: center;
+    font-size: 8.2pt;
+    font-weight: 700;
+    color: #6f5a33;
+  }
+  .policy-note {
+    display: block;
+    margin-top: 0.8mm;
+    font-size: 7pt;
+    font-weight: 400;
+    color: #9a8a6d;
+  }
+
+  .footer {
+    margin-top: 4mm;
+    text-align: center;
+    font-size: 7pt;
+    color: #9a927f;
+    line-height: 1.7;
+  }
+  .footer .thanks { color: #6b6659; font-size: 7.6pt; }
+  .footer .address { margin-top: 0.8mm; }
+</style>
+</head>
+<body>
+
+  <header class="masthead">
+    <table>
+      <tr>
+        <td class="brand-cell">
+          <div class="brand-name">{{ store_name }}</div>
+          <div class="brand-sub">{% if is_pos %}فاکتور فروش حضوری{% else %}فاکتور فروش{% endif %}</div>
+        </td>
+        <td class="meta-cell">
+          <div class="meta-line"><span class="meta-label">شماره فاکتور</span><span class="meta-value num">{{ invoice_number }}</span></div>
+          <div class="meta-line"><span class="meta-label">تاریخ صدور</span><span class="meta-value">{{ issued_at }}</span></div>
+          <div class="meta-line"><span class="meta-label">وضعیت</span><span class="meta-value">{{ status_label }}</span></div>
+        </td>
+      </tr>
+    </table>
+  </header>
+
+  <div class="accent"></div>
+
+  <section class="details">
+    <table>
+      <tr>
+        <td>
+          <span class="detail-label">مشتری</span>
+          <span class="detail-value">{{ customer_display }}</span>
+        </td>
+        <td>
+          <span class="detail-label">تلفن</span>
+          {% if customer_phone %}
+            <span class="detail-value num" dir="ltr">{{ customer_phone }}</span>
+          {% else %}
+            <span class="detail-value muted">ثبت نشده</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="detail-label">فروشنده</span>
+          <span class="detail-value">{% if cashier_name %}{{ cashier_name }}{% else %}—{% endif %}</span>
+        </td>
+        <td>
+          <span class="detail-label">صندوق</span>
+          <span class="detail-value {% if not terminal %}muted{% endif %}">{{ terminal|default:"—" }}</span>
+        </td>
+      </tr>
+    </table>
+  </section>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th class="col-index center">#</th>
+        <th class="col-title">شرح کالا</th>
+        <th class="col-qty center">تعداد</th>
+        <th class="col-unit left">قیمت واحد</th>
+        <th class="col-total left">مبلغ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="col-index">{{ forloop.counter }}</td>
+        <td class="col-title">
+          <div class="item-title">{{ item.title }}</div>
+          {% if item.options %}<div class="item-options">{{ item.options }}</div>{% endif %}
+          {% if item.sku %}<div class="item-sku">{{ item.sku }}</div>{% endif %}
+        </td>
+        <td class="col-qty">{{ item.quantity }}</td>
+        <td class="col-unit">{{ item.unit_price }}</td>
+        <td class="col-total">{{ item.line_total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr>
+      <td class="label">جمع کالاها ({{ item_count }} قلم)</td>
+      <td class="value">{{ subtotal }}</td>
+    </tr>
+    {% if has_discount %}
+    <tr>
+      <td class="label">تخفیف</td>
+      <td class="value">− {{ discount }}</td>
+    </tr>
+    {% endif %}
+    {% if has_tax %}
+    <tr>
+      <td class="label">مالیات</td>
+      <td class="value">{{ tax }}</td>
+    </tr>
+    {% endif %}
+    {% if has_shipping %}
+    <tr>
+      <td class="label">هزینه ارسال</td>
+      <td class="value">{{ shipping }}</td>
+    </tr>
+    {% endif %}
+    <tr class="spacer"><td colspan="2"></td></tr>
+    <tr class="grand">
+      <td class="label">مبلغ قابل پرداخت</td>
+      <td class="value">{{ total }}</td>
+    </tr>
+  </table>
+
+  {% if notes %}
+  <div class="notes"><span class="notes-label">یادداشت:</span> {{ notes }}</div>
+  {% endif %}
+
+  <div class="policy">
+    {{ return_policy }}
+    <span class="policy-note">کالا باید در وضعیت اولیه و با ارائه همین فاکتور بازگردانده شود.</span>
+  </div>
+
+  <footer class="footer">
+    <div class="thanks">با تشکر از خرید شما</div>
+    <div class="address">{{ store_name }} — {{ store_address }}</div>
+  </footer>
+
+</body>
+</html>

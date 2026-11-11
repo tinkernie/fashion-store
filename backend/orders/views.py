@@ -1,7 +1,10 @@
+from django.http import HttpResponse
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from .invoice import InvoiceRenderError, render_invoice_pdf
+from .selectors import OrderSelector
 from .services import OrderService
 from .serializers import (
     CreateOrderSerializer,
@@ -63,6 +66,32 @@ class AdminOrderViewSet(viewsets.GenericViewSet):
         # pk is order_number
         result = self.service.get_order_by_number(pk)  # no user restriction
         return Response(result)
+
+    @action(detail=True, methods=["get"], url_path="invoice.pdf")
+    def invoice_pdf(self, request, pk=None):
+        """GET /api/admin/orders/<id-or-number>/invoice.pdf (A5 receipt)."""
+        order = OrderSelector.get_order_by_id(pk)
+        if not order:
+            return Response(
+                {"detail": "Order not found.", "code": "order_not_found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        try:
+            pdf = render_invoice_pdf(order)
+        except InvoiceRenderError:
+            return Response(
+                {
+                    "detail": "Invoice PDF rendering is unavailable on this server.",
+                    "code": "invoice_render_unavailable",
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'attachment; filename="{order.order_number}.pdf"'
+        )
+        response["Cache-Control"] = "private, no-store"
+        return response
 
     @action(detail=True, methods=["post"], serializer_class=StatusTransitionSerializer)
     def transition(self, request, pk=None):

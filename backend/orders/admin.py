@@ -16,8 +16,8 @@ class StatusHistoryInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ["order_number", "user", "status", "total", "placed_at"]
-    list_filter = ["status", "placed_at"]
-    search_fields = ["order_number", "user__email"]
+    list_display = ["order_number", "channel", "user", "status", "total", "placed_at"]
+    list_filter = ["channel", "status", "placed_at"]
+    search_fields = ["order_number", "user__email", "customer_phone", "pos_terminal"]
     inlines = [OrderItemInline, StatusHistoryInline]
     readonly_fields = ["order_number"]

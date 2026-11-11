@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.db import transaction
 from common.exceptions import BusinessException
-from .models import Inventory, Reservation
+from .models import Inventory, Reservation, StockMovement
 from .repositories import InventoryRepository, ReservationRepository
 from .selectors import InventorySelector
 from django.db import models
@@ -17,6 +17,99 @@ class InventoryService:
             return Inventory.Status.LOW_STOCK
         else:
             return Inventory.Status.IN_STOCK
+
+    @staticmethod
+    def _status_for(available: int, reserved: int, safety_stock: int) -> str:
+        sellable = available - reserved
+        if sellable <= 0:
+            return Inventory.Status.OUT_OF_STOCK
+        if sellable <= safety_stock:
+            return Inventory.Status.LOW_STOCK
+        return Inventory.Status.IN_STOCK
+
+    def _record_movement(
+        self,
+        inventory: Inventory,
+        delta: int,
+        reason: str,
+        *,
+        order=None,
+        reservation=None,
+        actor=None,
+        note: str = "",
+    ) -> StockMovement:
+        """Write one immutable ledger row for a balance change already applied."""
+        return StockMovement.objects.create(
+            inventory=inventory,
+            quantity_delta=delta,
+            quantity_after=inventory.available_quantity,
+            reason=reason,
+            order=order,
+            reservation=reservation,
+            actor=actor,
+            note=note,
+        )
+
+    @transaction.atomic
+    def apply_movement(
+        self,
+        variant_id: str,
+        delta: int,
+        reason: str,
+        *,
+        order=None,
+        reservation=None,
+        actor=None,
+        note: str = "",
+        enforce_sellable: bool = False,
+    ) -> dict:
+        """Single entry point for every stock change.
+
+        Locks the inventory row, rejects an overdraw, recomputes the status
+        from the new balance, then appends the StockMovement row. Callers in
+        POS code pass `enforce_sellable=True` so units reserved by online
+        customers are not sold over the counter.
+        """
+        delta = int(delta)
+        if delta == 0:
+            raise BusinessException("Stock movement delta must not be zero.")
+
+        inventory = InventoryRepository.lock_inventory(str(variant_id))
+        new_available = inventory.available_quantity + delta
+        if new_available < 0:
+            raise BusinessException("Insufficient stock.")
+        if enforce_sellable and delta < 0:
+            new_sellable = new_available - inventory.reserved_quantity
+            if new_sellable < 0:
+                raise BusinessException(
+                    "Not enough unreserved stock: units are reserved for online orders."
+                )
+
+        updated = InventoryRepository.update_fields(
+            inventory,
+            available_quantity=new_available,
+            status=self._status_for(
+                new_available, inventory.reserved_quantity, inventory.safety_stock
+            ),
+        )
+        movement = self._record_movement(
+            updated,
+            delta,
+            reason,
+            order=order,
+            reservation=reservation,
+            actor=actor,
+            note=note,
+        )
+        return {
+            "movement_id": str(movement.id),
+            "reason": reason,
+            "quantity_delta": delta,
+            "available_quantity": updated.available_quantity,
+            "reserved_quantity": updated.reserved_quantity,
+            "sellable_quantity": updated.available_quantity - updated.reserved_quantity,
+            "status": updated.status,
+        }
 
     @transaction.atomic
     def adjust_stock(self, variant_id: str, delta: int) -> dict:
@@ -52,6 +145,9 @@ class InventoryService:
             available_quantity=new_qty,
             status=new_status,
         )
+        self._record_movement(
+            updated, delta, StockMovement.Reason.ADJUSTMENT, note="admin adjust"
+        )
         return self._serialize(updated)
 
     @transaction.atomic
@@ -84,11 +180,16 @@ class InventoryService:
             new_status = Inventory.Status.LOW_STOCK
         else:
             new_status = Inventory.Status.IN_STOCK
+        delta = new_qty - inventory.available_quantity
         updated = InventoryRepository.update_fields(
             inventory,
             available_quantity=new_qty,
             status=new_status,
         )
+        if delta:
+            self._record_movement(
+                updated, delta, StockMovement.Reason.ADJUSTMENT, note="admin set"
+            )
         return self._serialize(updated)
 
     def set_safety_stock(self, variant_id: str, value: int) -> dict:
@@ -196,6 +297,12 @@ class InventoryService:
             available_quantity=new_available,
             reserved_quantity=new_reserved,
             status=new_status,
+        )
+        self._record_movement(
+            updated,
+            -reservation.quantity,
+            StockMovement.Reason.ONLINE_SALE,
+            reservation=reservation,
         )
         return {"message": "Reservation committed."}
 

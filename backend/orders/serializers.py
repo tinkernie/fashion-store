@@ -59,6 +59,7 @@ class OrderListSerializer(serializers.ModelSerializer):
             "customer_email",
             "shipping_address",
             "status",
+            "channel",
             "total",
             "shipping_method",
             "placed_at",
@@ -75,6 +76,8 @@ class OrderListSerializer(serializers.ModelSerializer):
                 return fn
         if getattr(obj, "address", None) and obj.address.recipient_name:
             return obj.address.recipient_name
+        if getattr(obj, "channel", "online") == "pos":
+            return "مشتری حضوری"
         return "کاربر سایت"
 
     def get_customer_phone(self, obj):
@@ -83,6 +86,8 @@ class OrderListSerializer(serializers.ModelSerializer):
             return addr["phone"]
         if obj.user and getattr(obj.user, "phone_number", None):
             return obj.user.phone_number
+        if getattr(obj, "customer_phone", ""):
+            return obj.customer_phone
         if getattr(obj, "address", None) and obj.address.recipient_phone:
             return obj.address.recipient_phone
         return ""
