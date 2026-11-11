@@ -142,3 +142,4 @@ CLAUDE.original.md
 AUDIT_FINDINGS.md
 
 assets/*
+backend/db.sqlite3
