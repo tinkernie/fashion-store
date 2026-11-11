@@ -176,6 +176,24 @@ class TestLabelExportEndpoint:
         assert not rows[1][0].startswith("=")
         assert '"' not in rows[1][0]
 
+    @pytest.mark.parametrize("query", ["", "?format=tsv", "?format=TSV"])
+    def test_every_printer_format_spelling_is_unwrapped(self, catalog, query):
+        # The default request and both spellings of the printer format must be
+        # byte-identical: BarTender renders anything else as literal payload.
+        content = _staff_client().get(LABELS_URL + query).content
+        assert content.startswith(b"\xef\xbb\xbf")
+        assert b'="' not in content
+        assert catalog["in_stock"].barcode.encode() in content
+
+    def test_csv_only_query_flag_never_reaches_tsv(self, catalog):
+        # Regression guard: the Excel wrapper must be gated on the format, not
+        # on any other request attribute.
+        client = _staff_client()
+        tsv = _tsv_rows(client.get(LABELS_URL))
+        csv = _csv_rows(client.get(LABELS_URL + "?format=csv"))
+        assert tsv[1][0] == catalog["in_stock"].barcode
+        assert csv[1][0] == f'="{catalog["in_stock"].barcode}"'
+
     def test_escaping_does_not_leak_into_the_other_columns(self, catalog):
         row = _csv_rows(_staff_client().get(LABELS_URL + "?format=csv"))[1]
         assert row[1:] == ["پیراهن مردانه", "رنگ: سفید | سایز: L"]

@@ -46,6 +46,11 @@ barcode<TAB>product_name<TAB>options_summary
 2060243168255<TAB>پیراهن مردانه<TAB>رنگ: سفید | سایز: L
 ```
 
+**Ten-second pre-flight check:** open the downloaded file in Notepad. The TSV
+must contain **no `=` and no `"` characters at all** — the barcode column is bare
+digits. Any `="…"` in the file means you are holding the CSV; download the TSV
+again and repoint BarTender at it (§4.1.1).
+
 Placeholder `-DEFAULT` variants are always excluded. Out-of-stock variants are
 excluded unless `include_out_of_stock=1`. An explicit `variant_ids` selection
 (admin grid checkboxes) is honoured regardless of stock or the other filters.
@@ -111,25 +116,79 @@ with a device font — that path is exactly case 1 above.
 
 ### 4.1 Database connection (UTF-8)
 
-`File → Database Connection → Text File` (or the `.tsv` created by the export):
+`File → Database Connection Setup` → **Add new connection** → `Text File` →
+`Next`. Fill the wizard pages exactly like this (names from BarTender 2019+; the
+2016/10.1 dialog uses the *Options* tab instead of the wizard — same settings):
 
-* **File name:** the downloaded `.tsv` (copy it to a fixed local path BarTender
-  can always see; never point BarTender at a browser download folder).
-* **Encoding:** `UTF-8` — with BOM detection enabled if the option exists
-  (`UTF-8` / `Unicode (UTF-8)` / `65001`). Do **not** leave it on `ANSI`,
-  `Windows-1256`, `Arabic`, or `Automatic`.
-* **Delimiter:** `Tab`. **Text qualifier:** none (or `"`).
-* **First row contains field names:** enabled — the header is
-  `barcode`, `product_name`, `options_summary`.
-* After changing encoding, **delete and recreate the connection** (or use
-  `Refresh`) — BarTender caches the parsed schema per connection, so an
-  encoding fix applied in place often appears to do nothing.
+| Wizard page | Setting | Value |
+| --- | --- | --- |
+| Select the text file | File name | the downloaded `.tsv` — copy it to a fixed local path; **never** point BarTender at a browser download folder |
+| Specify field delimitation | Delimitation type | **Tab** (not `Mixed Quote and Comma`, not `Fixed Width` → see §4.1.1) |
+| Specify field delimitation | Field delimiter / Text qualifier | `Tab`; qualifier **`<none>`** |
+| Select the format of the first row | The first row is a header containing field names | **Yes** (header is `barcode`, `product_name`, `options_summary`) |
+| Field names (if shown) | Names | read from the header; if any name looks wrong, overwrite it with the exact lowercase name |
+| Finish → *Options* tab | Encoding | `UTF-8` / `Unicode (UTF-8)` / codepage `65001` |
+| *Options* tab | Number of fields | `3` |
 
-**BOM gotcha:** a few BarTender builds keep the BOM attached to the first header,
-so the field list shows `﻿barcode` and the mapping silently resolves to nothing.
-If the first field looks "empty but present", re-select the field name from the
-dropdown rather than retyping it. Do not remove the BOM from the file — Excel
-needs it to auto-detect UTF-8 on double-click.
+* **Encoding:** do **not** leave it on `ANSI`, `Windows-1256`, `Arabic`, or
+  `Automatic`. `UTF-8` with BOM detection enabled if the option exists.
+* After changing encoding or delimiters, **delete and recreate the connection**
+  (or use `Configure Connection` → `Refresh`) — BarTender caches the parsed
+  schema per connection, so an encoding fix applied in place often appears to do
+  nothing.
+* Confirm the connection actually parsed three columns before touching the
+  label: `Database Setup` → expand the connection → **Fields**. It must list
+  `barcode`, `product_name`, `options_summary`. If it lists one field, or
+  `Field 1 / Field 2`, the delimiter was misdetected — redo the row above; do
+  not try to fix it in the label template.
+
+**BOM gotcha:** the export is UTF-8 **with BOM** on purpose (Excel needs it to
+auto-detect UTF-8 on double-click, and BarTender uses it for encoding detection).
+The BOM is consumed as encoding information and does **not** remove or merge
+columns. A few BarTender builds do keep it attached to the first header, so the
+field list shows `﻿barcode` (invisible leading character) and a hand-typed
+mapping silently resolves to nothing. If the first field looks "present but
+empty", re-select it from the field dropdown instead of retyping it, or set the
+first-row option to `No` and name `Field 1` → `barcode` yourself. Do not strip
+BOM from the file.
+
+### 4.1.1 Why only `product_name` shows in the Select Records dialog
+
+This is BarTender behaviour, not a malformed export. `Select Records` (and the
+record picker in `Print Preview`) **shows only the columns for fields that are
+actually used by an object on the label** — BarTender's own documentation states
+that when no field is in use all columns appear, and each field you bind reduces
+the list. If the label currently binds only `product_name`, that is the single
+column you will see. The file still has three fields.
+
+Resolution, in order:
+
+1. **Prove the parse first:** `Database Setup` → `Record Browser`. With no
+   filter, every field must appear as its own column. If `barcode` and
+   `options_summary` are missing here as well, it is a delimiter/field-count
+   problem, not the dialog → apply the check in §4.1 (Tab, 3 fields, header row
+   = Yes, then recreate the connection).
+2. **Open up the dialog:** in the `Select Records` window, **right-click the
+   column header area** → the context menu lets you add/remove/choose which
+   columns are displayed ("choose columns"/"customize"). Add `barcode` and
+   `options_summary`. This preference is stored in the label document.
+3. **Or bind the fields:** add the barcode object (bound to `barcode`) and the
+   options text object (bound to `options_summary`) — once they are in use they
+   appear in the dialog automatically.
+
+Two file-side causes can masquerade as this and are worth ruling out in ten
+seconds:
+
+* **Wrong file in the connection.** `Database Setup` → `Connection Properties`
+  → the file name must end in `.tsv`, **not** `.csv` and not
+  `variant-labels-excel-…`. A CSV barcode cell is `="2060243168255"`; BarTender
+  reads `=`, `"` as data and the label prints them literally (§1).
+* **Delimiter auto-detected as something else.** BarTender guesses the format
+  from the sample. A file whose first data column starts with `=` can be
+  classified as *Name/Value Pairs* (`=` is its pair separator), which collapses
+  the row; a `.tsv` whose tabs were replaced by spaces can be classified as
+  *Fixed Width*. Both produce a short field list. Force `Tab` +
+  `Number of Fields = 3` and re-read the header.
 
 ### 4.2 Text objects (the Persian fields)
 
@@ -166,11 +225,13 @@ what the label shows is what the counter will scan.
 | --- | --- | --- |
 | Label shows `="2060243168255"` | CSV was loaded instead of TSV | Reconnect to `variant-labels-….tsv` |
 | Barcode shows `2.06024E+12` (Excel) | CSV opened as numbers | Expected — the cell is escaped; use the TSV for printing |
-| `﻿barcode` in the field list, object prints nothing | BOM attached to first header | Re-pick the field name from the dropdown |
+| `﻿barcode` in the field list, object prints nothing | BOM attached to first header | Re-pick the field name from the dropdown (§4.1) |
+| Only `product_name` in **Select Records** | Dialog lists only fields used on the label | Right-click its column header → choose columns; or bind the other objects (§4.1.1) |
+| `barcode` / `options_summary` missing from **Record Browser** too | Delimiter or field count misdetected (auto-guess, BOM name, `=` in a CSV) | Set Tab, Number of Fields = 3, header row = Yes, recreate the connection (§4.1.1) |
 | Boxes / `?????` instead of Persian | Device/printer font | Switch object to Vazirmatn/Tahoma + TrueType-as-graphics (§3.2, §4.2) |
 | `Ù¾ÛŒØ±Ø§Ù‡Ù†` mojibake | Connection read as ANSI | Set encoding UTF-8, recreate the connection |
 | Correct letters, but disconnected/reversed | No Arabic shaping | Raster/TrueType path; remove device-font substitution |
-| All columns in one field / blank fields | Delimiter mismatch | Set delimiter to Tab, re-read the header |
+| All columns in one field / `Field 1…n` names | Delimiter misdetected (Fixed Width / Name-Value Pairs) | Force `Tab`, `Number of Fields = 3`, `Get Field Names`, recreate |
 | Only the first rows print, rest stale | BarTender keeps the old file open | Close/overwrite the file, `Refresh` the database connection |
 | Persian clipped at the right edge | Object too narrow, autofit off | Enable autofit, widen the object |
 | Last row missing | File still being written | Wait for the download to finish, then reconnect |
