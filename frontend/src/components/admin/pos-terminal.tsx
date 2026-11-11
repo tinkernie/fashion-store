@@ -817,3 +817,4 @@ export function PosTerminal({ isModal = false, onClose }: PosTerminalProps) {
     </div>
   );
 }
+
