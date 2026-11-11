@@ -7,6 +7,17 @@ string, so leading zeros and Persian text survive untouched and nobody can
 users; both are UTF-8 with BOM (utf-8-sig) so Windows/Excel/BarTender render
 Persian correctly.
 
+The two formats are deliberately not interchangeable:
+
+* **TSV (machine-facing, BarTender)** — the barcode is the raw digit string.
+  A direct database reader must receive clean tokens, so nothing is wrapped.
+* **CSV (human-facing, Excel)** — a bare 13-digit EAN-13 is coerced by Excel
+  into scientific notation (``2.06024E+12``) and can be persisted that way on
+  save. The barcode cell is therefore written as an Excel text formula,
+  ``="2060243168255"``, which forces the cell to stay text on double-click.
+  The CSV filename is prefixed ``variant-labels-excel-`` so a file meant for a
+  keyboard cannot be mistaken for one meant for the printer.
+
 Label copy counts are deliberately not part of the file: labels are printed
 one per row and the printer/counter decides how many to run.
 
@@ -31,11 +42,24 @@ from .models import Variant, VariantOption
 LABEL_COLUMNS = ("barcode", "product_name", "options_summary")
 DEFAULT_SKU_SUFFIX = "-DEFAULT"
 OPTIONS_SEPARATOR = " | "
+EXCEL_TEXT = '="{barcode}"'
 
 
 def _clean(value) -> str:
     """Collapse tabs/newlines so one variant can never break the file's rows."""
     return " ".join(str(value if value is not None else "").replace("\t", " ").split())
+
+
+def excel_text(value: str) -> str:
+    """Wrap a barcode so Excel keeps it as text instead of a number.
+
+    Only plain ASCII digits are wrapped. The result is a live formula, so
+    anything else (empty, user-supplied, punctuation) is returned untouched
+    rather than being turned into formula syntax.
+    """
+    if value and value.isascii() and value.isdigit():
+        return EXCEL_TEXT.format(barcode=value)
+    return value
 
 
 def optimize_label_queryset(queryset):
@@ -89,10 +113,16 @@ def options_summary(variant) -> str:
     return OPTIONS_SEPARATOR.join(p for p in parts if p.strip())
 
 
-def label_rows(queryset):
+def label_rows(queryset, *, excel_barcode: bool = False):
+    """Yield `(barcode, product_name, options_summary)` per variant.
+
+    `excel_barcode=True` (CSV only) escapes the barcode as a spreadsheet text
+    formula; TSV keeps the raw string for BarTender.
+    """
     for variant in queryset:
+        barcode = variant.barcode or ""
         yield (
-            variant.barcode or "",
+            excel_text(barcode) if excel_barcode else barcode,
             _clean(variant.product.title if variant.product_id else ""),
             _clean(options_summary(variant)),
         )
@@ -109,14 +139,16 @@ def build_label_response(queryset, fmt: str = "tsv") -> HttpResponse:
         buffer, delimiter=delimiter, lineterminator="\r\n", quoting=csv.QUOTE_MINIMAL
     )
     writer.writerow(LABEL_COLUMNS)
-    for row in label_rows(queryset):
+    for row in label_rows(queryset, excel_barcode=is_csv):
         writer.writerow(row)
 
-    extension = "csv" if is_csv else "tsv"
-    content_type = "text/csv" if is_csv else "text/tab-separated-values"
-    filename = (
-        f"variant-labels-{timezone.localtime():%Y%m%d-%H%M}.{extension}"
-    )
+    stamp = f"{timezone.localtime():%Y%m%d-%H%M}"
+    if is_csv:
+        content_type = "text/csv"
+        filename = f"variant-labels-excel-{stamp}.csv"
+    else:
+        content_type = "text/tab-separated-values"
+        filename = f"variant-labels-{stamp}.tsv"
     response = HttpResponse(buffer.getvalue(), content_type=f"{content_type}; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     response["X-Label-Rows"] = str(buffer.getvalue().count("\r\n") - 1)

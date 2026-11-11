@@ -1,4 +1,7 @@
 """Label export (BarTender) and scanner lookup regression tests."""
+import csv
+import io
+
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
@@ -22,6 +25,15 @@ def _staff_client():
     client = APIClient()
     client.force_authenticate(user)
     return client
+
+
+def _csv_rows(response):
+    return list(csv.reader(io.StringIO(response.content.decode("utf-8-sig"))))
+
+
+def _tsv_rows(response):
+    text = response.content.decode("utf-8-sig")
+    return [line.split("\t") for line in text.split("\r\n") if line]
 
 
 def _make_variant(product, sku, counter, stock, with_options=True):
@@ -135,6 +147,70 @@ class TestLabelExportEndpoint:
             "barcode,product_name,options_summary"
         )
         assert len(lines) == 2
+
+    def test_csv_filename_is_prefixed_for_excel(self, catalog):
+        response = _staff_client().get(LABELS_URL + "?format=csv")
+        disposition = response["Content-Disposition"]
+        assert 'filename="variant-labels-excel-' in disposition
+        assert disposition.endswith('.csv"')
+
+    def test_tsv_filename_stays_plain_for_bartender(self, catalog):
+        response = _staff_client().get(LABELS_URL)
+        disposition = response["Content-Disposition"]
+        assert 'filename="variant-labels-' in disposition
+        assert "excel" not in disposition
+        assert disposition.endswith('.tsv"')
+
+    def test_csv_barcode_is_escaped_as_excel_text(self, catalog):
+        barcode = catalog["in_stock"].barcode
+        assert len(barcode) == 13  # EAN-13, the value Excel mangles
+        rows = _csv_rows(_staff_client().get(LABELS_URL + "?format=csv"))
+        assert len(rows) == 2
+        assert len(rows[1]) == 3
+        assert rows[1][0] == f'="{barcode}"'
+
+    def test_tsv_barcode_stays_raw_for_bartender(self, catalog):
+        barcode = catalog["in_stock"].barcode
+        rows = _tsv_rows(_staff_client().get(LABELS_URL))
+        assert rows[1][0] == barcode
+        assert not rows[1][0].startswith("=")
+        assert '"' not in rows[1][0]
+
+    def test_escaping_does_not_leak_into_the_other_columns(self, catalog):
+        row = _csv_rows(_staff_client().get(LABELS_URL + "?format=csv"))[1]
+        assert row[1:] == ["پیراهن مردانه", "رنگ: سفید | سایز: L"]
+
+    def test_non_digit_barcode_is_never_wrapped_in_a_formula(self, catalog):
+        # Defensive: `="…"` is a live formula, so only digits may be wrapped.
+        Variant.objects.filter(pk=catalog["in_stock"].pk).update(barcode="2060ABC")
+        row = _csv_rows(_staff_client().get(LABELS_URL + "?format=csv"))[1]
+        assert row[0] == "2060ABC"
+        assert not row[0].startswith("=")
+
+    def test_missing_barcode_cell_stays_empty(self, catalog):
+        Variant.objects.filter(pk=catalog["in_stock"].pk).update(barcode=None)
+        row = _csv_rows(_staff_client().get(LABELS_URL + "?format=csv"))[1]
+        assert row[0] == ""
+
+    @pytest.mark.parametrize("fmt", ["tsv", "csv"])
+    def test_file_is_utf8_bom_with_crlf_only(self, catalog, fmt):
+        content = _staff_client().get(f"{LABELS_URL}?format={fmt}").content
+        assert content.startswith(b"\xef\xbb\xbf")
+        assert content.count(b"\xef\xbb\xbf") == 1  # one BOM, at byte 0 only
+        body = content[3:].replace(b"\r\n", b"")
+        assert b"\n" not in body
+        assert b"\r" not in body
+        assert content.endswith(b"\r\n")
+
+    def test_persian_text_never_splits_a_row(self, catalog):
+        product = _add_options(ProductFactory(title="پیراهن\nمردانه\tکرم"))
+        _make_variant(product, "NL-1", 401, stock=1)
+        response = _staff_client().get(f"{LABELS_URL}?product_id={product.id}")
+        rows = _tsv_rows(response)
+        assert len(rows) == 2  # header + exactly one row, not three
+        assert rows[1][1] == "پیراهن مردانه کرم"
+        assert "پیراهن مردانه کرم".encode("utf-8") in response.content
+        assert response["X-Label-Rows"] == "1"
 
     def test_export_is_not_n_plus_one(self, catalog, django_assert_max_num_queries):
         # variants (+ product/inventory JOIN) + one option prefetch.
