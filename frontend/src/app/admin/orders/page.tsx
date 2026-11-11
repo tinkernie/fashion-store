@@ -19,6 +19,8 @@ import {
   XCircle,
   Loader2,
   CreditCard,
+  Printer,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,6 +125,28 @@ export default function AdminOrdersPage() {
       toast.error(getApiErrorMessage(err, "خطا در تغییر وضعیت سفارش"));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = async (orderRef: string) => {
+    try {
+      const { blob, filename } = await adminApi.downloadInvoicePdf(orderRef);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      toast.success("فاکتور رسمی A5 آماده دانلود شد");
+    } catch (err: any) {
+      if (err?.response?.status === 503) {
+        toast.error("سیستم رندر PDF فاکتور روی سرور در دسترس نیست.");
+      } else {
+        toast.error(getApiErrorMessage(err, "خطا در دانلود فاکتور"));
+      }
     }
   };
 
@@ -269,14 +293,23 @@ export default function AdminOrdersPage() {
                   const customer = order.customer_name || order.shipping_address?.full_name || "کاربر سایت";
                   const phone = order.customer_phone || order.shipping_address?.phone || "";
                   const itemCount = order.items_count ?? order.items?.length ?? 1;
+                  const isPos = order.channel === "pos" || String(order.order_number || "").startsWith("POS-");
 
                   return (
                     <tr key={order.id || order.order_number} className="hover:bg-white/5 transition-colors">
                       <td className="p-4 md:p-5 font-bold text-white">
                         <div className="space-y-0.5">
-                          <span className="font-mono text-sm block" dir="ltr">
-                            #{orderId}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-sm block" dir="ltr">
+                              #{orderId}
+                            </span>
+                            {isPos && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                                <Store className="w-2.5 h-2.5" />
+                                حضوری
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10px] text-gray-400 font-sans">
                             {formatShamsiDate(order.placed_at || order.created_at, { mode: "full", withTime: true })}
                           </span>
@@ -312,13 +345,30 @@ export default function AdminOrdersPage() {
                       </td>
 
                       <td className="p-4 md:p-5 text-left">
-                        <Button
-                          onClick={() => handleOpenDetails(order)}
-                          className="h-9 px-3.5 rounded-xl bg-white/10 text-white hover:bg-white hover:text-black font-bold text-xs transition-all flex items-center gap-1.5 ml-auto"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          مشاهده و تغییر وضعیت
-                        </Button>
+                        <div className="flex items-center gap-2 justify-end">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadInvoice(order.order_number || order.id);
+                            }}
+                            className="h-9 px-2.5 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-cyan-400 hover:text-cyan-300 font-bold text-xs flex items-center gap-1.5 transition-all"
+                            title="دانلود فاکتور A5 (PDF)"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span className="hidden xl:inline">فاکتور</span>
+                          </Button>
+
+                          <Button
+                            onClick={() => handleOpenDetails(order)}
+                            className="h-9 px-3.5 rounded-xl bg-white/10 text-white hover:bg-white hover:text-black font-bold text-xs transition-all flex items-center gap-1.5"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>جزئیات</span>
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -336,21 +386,36 @@ export default function AdminOrdersPage() {
           dir="rtl"
         >
           <DialogHeader className="border-b border-white/10 pb-4">
-            <DialogTitle className="text-xl font-black flex items-center justify-between">
-              <span className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <DialogTitle className="text-xl font-black flex items-center gap-2">
                 <Package className="w-5 h-5 text-blue-400" />
                 جزئیات سفارش #{selectedOrder?.order_number || selectedOrder?.id}
-              </span>
-              {selectedOrder && (
-                <span
-                  className={`text-xs px-3 py-1 rounded-full font-bold border ${
-                    getStatusBadge(selectedOrder.status).bg
-                  }`}
-                >
-                  {getStatusBadge(selectedOrder.status).label}
-                </span>
-              )}
-            </DialogTitle>
+              </DialogTitle>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                {selectedOrder && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => handleDownloadInvoice(selectedOrder.order_number || selectedOrder.id)}
+                    className="h-8 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>چاپ فاکتور PDF</span>
+                  </Button>
+                )}
+
+                {selectedOrder && (
+                  <span
+                    className={`text-xs px-3 py-1 rounded-full font-bold border ${
+                      getStatusBadge(selectedOrder.status).bg
+                    }`}
+                  >
+                    {getStatusBadge(selectedOrder.status).label}
+                  </span>
+                )}
+              </div>
+            </div>
           </DialogHeader>
 
           {selectedOrder && (

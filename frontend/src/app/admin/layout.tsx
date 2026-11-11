@@ -24,7 +24,8 @@ import {
   Lock,
   ArrowRight,
   Phone,
-  BookOpen
+  BookOpen,
+  Barcode
 } from "lucide-react";
 import { MaviWordmark } from "@/components/ui/mavi-wordmark";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,12 @@ const NAV_ITEMS = [
     href: "/admin/orders",
     icon: Package,
     badge: null,
+  },
+  {
+    title: "صندوق فروش حضوری (بارکد)",
+    href: "/admin/pos",
+    icon: Barcode,
+    badge: "صندوق",
   },
   {
     title: "موجودی و انبار",

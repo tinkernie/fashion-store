@@ -26,7 +26,9 @@ import {
   Edit3,
   Loader2,
   X,
+  Barcode,
 } from "lucide-react";
+import { PosTerminal } from "@/components/admin/pos-terminal";
 import { Button } from "@/components/ui/button";
 import { adminApi } from "@/lib/admin-api";
 import { api } from "@/lib/api";
@@ -66,6 +68,9 @@ export default function AdminDashboardPage() {
   const [quickPhone, setQuickPhone] = useState("");
   const [quickBirthDate, setQuickBirthDate] = useState("");
   const [isSubmittingQuickCreate, setIsSubmittingQuickCreate] = useState(false);
+
+  // Quick POS & Barcode Scanner Modal State
+  const [isPosModalOpen, setIsPosModalOpen] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -333,12 +338,21 @@ export default function AdminDashboardPage() {
             )}
           </div>
 
-          {/* Quick Add Customer Action Button */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          {/* Quick Actions (Add Customer & Barcode Scanner) */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+            <Button
+              type="button"
+              onClick={() => setIsPosModalOpen(true)}
+              className="h-10 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+            >
+              <Barcode className="w-4 h-4 text-black" />
+              <span>بارکد خوان (صندوق حضوری)</span>
+            </Button>
+
             <Button
               type="button"
               onClick={() => setIsQuickUserOpen(true)}
-              className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+              className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
             >
               <UserPlus className="w-4 h-4 text-white" />
               <span>افزودن سریع مشتری</span>
@@ -881,6 +895,13 @@ export default function AdminDashboardPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick In-Store POS & Barcode Scanner Dialog */}
+      <Dialog open={isPosModalOpen} onOpenChange={setIsPosModalOpen}>
+        <DialogContent className="max-w-4xl bg-[#141414] border-white/15 text-white rounded-3xl p-2 sm:p-4 overflow-hidden" dir="rtl">
+          <PosTerminal isModal={true} onClose={() => setIsPosModalOpen(false)} />
         </DialogContent>
       </Dialog>
     </div>

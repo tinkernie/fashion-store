@@ -658,7 +658,121 @@ export const adminApi = {
     const res = await api.post(`/api/admin/collections/${collectionId}/add-products/`, data);
     return res.data;
   },
+
+  // POS (Point of Sale) & In-store Counter Terminal
+  async scanPosBarcode(barcode: string): Promise<PosVariant> {
+    const clean = encodeURIComponent(barcode.trim());
+    const res = await api.get(`/api/admin/pos/scan/${clean}/`);
+    return res.data;
+  },
+
+  async checkoutPosSale(payload: PosCheckoutPayload): Promise<PosSaleResponse> {
+    const res = await api.post('/api/admin/pos/sales/', payload);
+    return res.data;
+  },
+
+  async updatePosSale(saleId: string, payload: PosSaleUpdatePayload): Promise<PosSaleResponse> {
+    const res = await api.patch(`/api/admin/pos/sales/${saleId}/`, payload);
+    return res.data;
+  },
+
+  async downloadInvoicePdf(orderRef: string): Promise<{ blob: Blob; filename: string }> {
+    const res = await api.get(`/api/admin/orders/${encodeURIComponent(orderRef)}/invoice.pdf`, {
+      responseType: 'blob',
+    });
+    let filename = `invoice-${orderRef}.pdf`;
+    const disposition = res.headers['content-disposition'] || res.headers['Content-Disposition'];
+    if (disposition) {
+      const match = String(disposition).match(/filename="?([^";]+)"?/i);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+    return { blob: res.data as Blob, filename };
+  },
+
+  async exportVariantLabels(variantIds?: string[], format: 'csv' | 'tsv' = 'csv'): Promise<{ blob: Blob; rowsCount: number }> {
+    const query = `?format=${format}`;
+    const payload = variantIds && variantIds.length > 0 ? { variant_ids: variantIds } : {};
+    const res = await api.post(`/api/admin/variants/export-labels/${query}`, payload, {
+      responseType: 'blob',
+    });
+    const rowsHeader = res.headers['x-label-rows'] || res.headers['X-Label-Rows'];
+    const rowsCount = rowsHeader ? parseInt(rowsHeader, 10) : 0;
+    return { blob: res.data as Blob, rowsCount };
+  },
 };
+
+export interface PosVariant {
+  id: string;
+  barcode: string;
+  sku: string;
+  product_id: string;
+  product_title: string;
+  product_slug?: string;
+  price: number;
+  status: string;
+  availability: string;
+  is_active: boolean;
+  stock: number;
+  reserved: number;
+  sellable: number;
+  is_sellable: boolean;
+  options?: Array<{ option_name: string; value: string }>;
+}
+
+export interface PosCheckoutItem {
+  variant_id: string;
+  quantity: number;
+}
+
+export interface PosCheckoutPayload {
+  client_reference: string;
+  pos_terminal?: string;
+  allow_reserved_override?: boolean;
+  items: PosCheckoutItem[];
+}
+
+export interface PosSaleUpdatePayload {
+  customer_phone?: string;
+  discount_type?: 'percent' | 'flat';
+  discount_value?: string;
+  notes?: string;
+}
+
+export interface PosSaleResponse {
+  id: string;
+  order_number: string;
+  status: string;
+  channel: string;
+  pos_terminal?: string;
+  client_reference: string;
+  cashier?: { id: string; name: string };
+  subtotal: number;
+  discount_amount: number;
+  tax_amount: number;
+  shipping_cost: number;
+  total: number;
+  customer?: { id: string | null; full_name: string; phone: string; email: string };
+  customer_name?: string;
+  customer_phone?: string;
+  shipping_method?: string;
+  placed_at: string;
+  paid_at: string;
+  items: Array<{
+    id: string;
+    product_snapshot: {
+      title: string;
+      options: string;
+      sku: string;
+      image?: string;
+    };
+    quantity: number;
+    price: number;
+    line_total: number;
+  }>;
+  replayed?: boolean;
+}
 
 export interface ProductReview {
   id: string;
