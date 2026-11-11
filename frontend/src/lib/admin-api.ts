@@ -693,7 +693,7 @@ export const adminApi = {
 
   async exportVariantLabels(
     variantIds?: string[],
-    format: 'csv' | 'tsv' = 'csv',
+    format: 'csv' | 'tsv' = 'tsv',
     includeOutOfStock: boolean = true
   ): Promise<{ blob: Blob; filename: string; rowsCount: number }> {
     const params = new URLSearchParams();

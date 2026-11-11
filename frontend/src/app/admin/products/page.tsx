@@ -185,12 +185,12 @@ export default function AdminProductsPage() {
     onConfirm: () => {},
   });
 
-  const [isExportingCsv, setIsExportingCsv] = useState(false);
+  const [isExportingTsv, setIsExportingTsv] = useState(false);
 
-  const handleExportCsv = async () => {
-    setIsExportingCsv(true);
+  const handleExportTsv = async () => {
+    setIsExportingTsv(true);
     try {
-      const { blob, filename, rowsCount } = await adminApi.exportVariantLabels(undefined, "csv", true);
+      const { blob, filename, rowsCount } = await adminApi.exportVariantLabels(undefined, "tsv", true);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -199,11 +199,11 @@ export default function AdminProductsPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      toast.success(`فایل CSV کاتالوگ و بارکدها دانلود شد (${rowsCount.toLocaleString("fa-IR")} ردیف کالا)`);
+      toast.success(`فایل TSV بارکدها برای BarTender دانلود شد (${rowsCount.toLocaleString("fa-IR")} ردیف کالا)`);
     } catch (err: any) {
-      toast.error(getApiErrorMessage(err, "خطا در دانلود فایل CSV"));
+      toast.error(getApiErrorMessage(err, "خطا در دانلود فایل TSV"));
     } finally {
-      setIsExportingCsv(false);
+      setIsExportingTsv(false);
     }
   };
 
@@ -1193,18 +1193,18 @@ export default function AdminProductsPage() {
           </Button>
 
           <Button
-            onClick={handleExportCsv}
-            disabled={isExportingCsv}
+            onClick={handleExportTsv}
+            disabled={isExportingTsv}
             variant="outline"
             className="h-11 px-4 rounded-xl border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 font-bold text-xs flex items-center gap-2 shrink-0 transition-all"
-            title="دانلود فایل CSV تمام بارکدها و تنوع‌ها برای اکسل یا لیبل‌پرینتر"
+            title="دانلود فایل TSV تمام بارکدها برای چاپ در BarTender"
           >
-            {isExportingCsv ? (
+            {isExportingTsv ? (
               <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
             ) : (
               <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
             )}
-            <span>خروجی CSV بارکدها</span>
+            <span>خروجی TSV بارکدها (BarTender)</span>
           </Button>
 
           <Button

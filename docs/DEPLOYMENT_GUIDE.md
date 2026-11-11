@@ -32,6 +32,8 @@
 | **Email Backend** | `EMAIL_BACKEND=smtp.EmailBackend` | **Enforced** (`backend/.env`) | Console email backend is disabled; only live SMTP is used. |
 | **Security Headers** | `SESSION_COOKIE_SECURE=True`<br>`CSRF_COOKIE_SECURE=True` | **Enforced** (`backend/.env`) | Cookies transmitted only over encrypted TLS channels (`maviposh.com`). |
 | **Frontend API Target** | `NEXT_PUBLIC_API_URL=https://maviposh.com` | **Enforced** (`.env.production`) | Baked into Next.js static build; zero localhost or test endpoints in client bundles. |
+| **Invoice & POS PDF** | WeasyPrint + Pango host libraries | **Enforced** (`libpango*`, `requirements.txt`) | Official PDF invoice generation with embedded Vazirmatn fonts and native RTL Persian text shaping. |
+| **Stock Ledger** | `StockMovement` immutable audit | **Enforced** (Database) | Every POS sale, online order, and restock is permanently recorded in the inventory audit ledger. |
 
 ---
 
@@ -67,7 +69,8 @@ Both states are approvals held by the store owner; neither is a technical unknow
 ssh root@185.226.119.184
 apt update && apt upgrade -y
 apt install -y python3-venv python3-dev build-essential libpq-dev \
-               postgresql postgresql-contrib redis-server nginx git curl ufw
+               postgresql postgresql-contrib redis-server nginx git curl ufw \
+               libpango-1.0-0 libpangoft2-1.0-0 libpangocairo-1.0-0
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt install -y nodejs
 npm install -g pm2
 
@@ -163,8 +166,8 @@ ZARINPAL_SANDBOX=False
 ZARINPAL_CURRENCY=IRT
 ZARINPAL_RETURN_PATH=/payment-result
 EOF
-chmod 600 /var/www/fashion-store/backend/.env
-chown root:root /var/www/fashion-store/backend/.env
+chmod 640 /var/www/fashion-store/backend/.env
+chown root:www-data /var/www/fashion-store/backend/.env
 ```
 (Leave mock lines' values exactly as §0 — flip lines double as approval-day checklist.)
 
@@ -200,7 +203,6 @@ ufw allow OpenSSH && ufw allow 'Nginx Full' && ufw --force enable
 ### 2.10 Frontend
 ```bash
 cd /var/www/fashion-store/frontend
-cp ../deploy/frontend/env.production.example .env.production
 cp ../deploy/frontend/env.production.example .env.production
 npm ci && npm run build
 pm2 start npm --name fashion-frontend -- start -- -p 3000
@@ -260,3 +262,15 @@ equirements.txt.
    It registers the HEIF decoder with Pillow on startup, enabling seamless upload of iPhone 15 Pro Max
    photos (.heic, .heif) and immediate conversion to .webp. On production VPS (deploy.sh), binary
    wheels are installed automatically during pip install -r requirements.txt.
+8. **WeasyPrint PDF rendering runtime (Pango/Cairo) for Invoices & POS:**
+   `weasyprint==66.0` generates official customer and in-store POS receipts/invoices (`/api/admin/orders/<id>/invoice/pdf/`).
+   It requires Ubuntu system libraries `libpango-1.0-0`, `libpangoft2-1.0-0`, and `libpangocairo-1.0-0`. Without these
+   shared libraries, WeasyPrint raises `OSError: dlopen()` when loading the font/pango layout engine. Embedded Vazirmatn
+   fonts (`backend/static/fonts/Vazirmatn-Bold.ttf`, `Vazirmatn-Regular.ttf`) ensure proper Persian/Farsi RTL glyph shaping
+   and HarfBuzz text rendering on headless Linux servers.
+9. **In-Store Barcode POS Counter Terminal & BarTender Label Export:**
+   The POS counter terminal operates under `/admin/pos` with USB HID barcode scanner support and immediate offline-safe
+   cash/POS register transactions under the `POS` order channel. Permanent unique GS1 barcodes and thermal label
+   catalogs can be exported directly from `/admin/products` and `/admin/inventory` in TSV/CSV format with UTF-8 BOM
+   for direct thermal printing in BarTender and Zebra Designer (see `backend/docs/LABEL_PRINTING.md`).
+
