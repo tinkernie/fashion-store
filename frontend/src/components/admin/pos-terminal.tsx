@@ -14,7 +14,6 @@ import {
   RotateCcw,
   Sparkles,
   Layers,
-  Phone,
   Percent,
   FileText,
   Loader2,
@@ -107,7 +106,6 @@ export function PosTerminal({ isModal = false, onClose }: PosTerminalProps) {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   // Post-sale invoice enrichment fields
-  const [customerPhone, setCustomerPhone] = useState("");
   const [discountType, setDiscountType] = useState<"percent" | "flat">("percent");
   const [discountValue, setDiscountValue] = useState("");
   const [saleNotes, setSaleNotes] = useState("");
@@ -288,7 +286,6 @@ export function PosTerminal({ isModal = false, onClose }: PosTerminalProps) {
 
       setCompletedSale(result);
       setIsSuccessModalOpen(true);
-      setCustomerPhone("");
       setDiscountType("percent");
       setDiscountValue("");
       setSaleNotes("");
@@ -357,14 +354,7 @@ export function PosTerminal({ isModal = false, onClose }: PosTerminalProps) {
     e.preventDefault();
     if (!completedSale) return;
 
-    const cleanPhone = normalizePersianDigits(customerPhone.trim());
-    if (cleanPhone && !/^09\d{9}$/.test(cleanPhone)) {
-      toast.error("شماره موبایل مشتری باید ۱۱ رقم بوده و با 09 آغاز شود.");
-      return;
-    }
-
     const payload: any = {};
-    if (cleanPhone) payload.customer_phone = cleanPhone;
     if (saleNotes.trim()) payload.notes = saleNotes.trim();
 
     if (discountValue.trim()) {
@@ -700,38 +690,24 @@ export function PosTerminal({ isModal = false, onClose }: PosTerminalProps) {
                   <span>اطلاعات تکمیلی فاکتور (اختیاری):</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-gray-400">شماره موبایل مشتری:</label>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-gray-400">تخفیف اعمال شده:</label>
+                  <div className="flex gap-1.5">
+                    <select
+                      value={discountType}
+                      onChange={(e) => setDiscountType(e.target.value as any)}
+                      className="bg-[#181818] border border-white/10 rounded-xl px-2.5 text-xs text-white h-9 outline-none cursor-pointer"
+                    >
+                      <option value="percent">درصد %</option>
+                      <option value="flat">مبلغ (تومان)</option>
+                    </select>
                     <Input
                       type="text"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      placeholder="09123456789"
-                      className="bg-[#181818] border-white/10 h-9 text-xs text-white rounded-xl font-mono text-left"
-                      dir="ltr"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                      placeholder={discountType === "percent" ? "مثلاً 10" : "مثلاً 50000"}
+                      className="bg-[#181818] border-white/10 h-9 text-xs text-white rounded-xl font-mono flex-1"
                     />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] text-gray-400">تخفیف اعمال شده:</label>
-                    <div className="flex gap-1.5">
-                      <select
-                        value={discountType}
-                        onChange={(e) => setDiscountType(e.target.value as any)}
-                        className="bg-[#181818] border border-white/10 rounded-xl px-2 text-xs text-white h-9 outline-none"
-                      >
-                        <option value="percent">درصد %</option>
-                        <option value="flat">مبلغ (تومان)</option>
-                      </select>
-                      <Input
-                        type="text"
-                        value={discountValue}
-                        onChange={(e) => setDiscountValue(e.target.value)}
-                        placeholder={discountType === "percent" ? "مثلاً 10" : "مثلاً 50000"}
-                        className="bg-[#181818] border-white/10 h-9 text-xs text-white rounded-xl font-mono"
-                      />
-                    </div>
                   </div>
                 </div>
 
@@ -746,12 +722,12 @@ export function PosTerminal({ isModal = false, onClose }: PosTerminalProps) {
                   />
                 </div>
 
-                {(customerPhone || discountValue || saleNotes) && (
+                {(discountValue.trim() || saleNotes.trim()) && (
                   <Button
                     type="submit"
                     disabled={isUpdatingInvoice}
                     variant="outline"
-                    className="w-full h-9 rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-white font-bold text-xs"
+                    className="w-full h-9 rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-white font-bold text-xs cursor-pointer"
                   >
                     {isUpdatingInvoice ? "در حال ثبت..." : "بروزرسانی مشخصات فاکتور"}
                   </Button>
