@@ -130,6 +130,10 @@ class AdminVariantViewSet(viewsets.GenericViewSet):
         Barcode label sheet for BarTender (TSV default, CSV optional).
         Filters: product_id, status, availability, include_out_of_stock=1.
 
+        `copies=stock` (default) repeats each row once per unit on hand, so a
+        variant with 10 units produces 10 labels; `copies=1` produces one row
+        per variant.
+
         Selective export: send `variant_ids` (repeated, comma-separated, or a
         JSON list in the POST body) to print only the rows ticked in the admin
         grid. When present it wins, and out-of-stock variants are included.
@@ -154,4 +158,8 @@ class AdminVariantViewSet(viewsets.GenericViewSet):
             ),
             variant_ids=variant_ids,
         )
-        return build_label_response(queryset, fmt=fmt)
+        return build_label_response(
+            queryset,
+            fmt=fmt,
+            copies=request.query_params.get("copies", "stock"),
+        )

@@ -51,9 +51,40 @@ must contain **no `=` and no `"` characters at all** — the barcode column is b
 digits. Any `="…"` in the file means you are holding the CSV; download the TSV
 again and repoint BarTender at it (§4.1.1).
 
-Placeholder `-DEFAULT` variants are always excluded. Out-of-stock variants are
-excluded unless `include_out_of_stock=1`. An explicit `variant_ids` selection
-(admin grid checkboxes) is honoured regardless of stock or the other filters.
+### How many rows (copies = stock)
+
+**One row = one physical label.** A variant with 10 units on hand produces 10
+identical rows, so the sheet is a print run and BarTender needs no counter setup:
+print all, stick all. Stock is `Inventory.available_quantity` (on-hand, not
+reserved). A variant with 0 on hand still gets **one** row when it is in the file
+at all (`include_out_of_stock=1` or an explicit selection), so reprint runs do
+not come out empty.
+
+Add `?copies=1` when you want the old one-row-per-variant catalog instead of a
+print run:
+
+| URL | Rows for a variant with 4 on hand |
+| --- | --- |
+| `?format=tsv` (default) | 4 |
+| `?format=tsv&copies=1` | 1 |
+
+The `X-Label-Rows` header (and the admin toast) counts **labels**, i.e. rows
+after the expansion.
+
+### One row per option combination
+
+Two variants of the same product with the same options print the same label, so
+the export keeps only one of them — the one with the most stock, newest on a
+tie. This matters after editing a product: the product editor creates the
+variants of a newly generated option matrix but does not retire the variants
+removed from it, so the old and the new variant of one combination can both be
+active, each with its own barcode. The sheet prints the survivor once.
+
+Placeholder `-DEFAULT` variants are always excluded, as are variants whose
+product was soft-deleted (a removed product must not be reprinted).
+Out-of-stock variants are excluded unless `include_out_of_stock=1`. An explicit
+`variant_ids` selection (admin grid checkboxes) is honoured regardless of stock
+or the other filters.
 
 ---
 

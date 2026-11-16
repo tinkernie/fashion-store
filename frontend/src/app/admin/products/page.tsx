@@ -199,7 +199,7 @@ export default function AdminProductsPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      toast.success(`فایل TSV بارکدها برای BarTender دانلود شد (${rowsCount.toLocaleString("fa-IR")} ردیف کالا)`);
+      toast.success(`فایل TSV بارکدها برای BarTender دانلود شد (${rowsCount.toLocaleString("fa-IR")} برچسب)`);
     } catch (err: any) {
       toast.error(getApiErrorMessage(err, "خطا در دانلود فایل TSV"));
     } finally {

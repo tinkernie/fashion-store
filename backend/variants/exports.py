@@ -18,12 +18,24 @@ The two formats are deliberately not interchangeable:
   The CSV filename is prefixed ``variant-labels-excel-`` so a file meant for a
   keyboard cannot be mistaken for one meant for the printer.
 
-Label copy counts are deliberately not part of the file: labels are printed
-one per row and the printer/counter decides how many to run.
+Copies: a variant with 10 units on hand gets **10 identical rows**, because a
+label sheet is a print run, not a catalog list — one tag per physical item.
+Stock comes from `Inventory.available_quantity`; a variant with no inventory
+row, or with 0 on hand (only reachable via `include_out_of_stock=1` or an
+explicit selection), still gets one row so the owner can reprint a tag.
+Pass `copies=1` to get exactly one row per variant instead.
+
+One row per option combination: editing a product in the admin can leave the
+previous variant of a combination active next to its replacement (the product
+editor creates the rows for a new matrix but does not retire the ones removed
+from it), and each keeps its own barcode. Two rows that print the same product
+title and the same options are the same physical label, so only the best
+candidate is exported — most stock on hand first, newest on a tie.
 
 Placeholder `-DEFAULT` variants (price basis, never sold, no inventory) are
-always excluded. Out-of-stock variants are excluded unless
-`include_out_of_stock=1` is passed (reprinting tags for a restock).
+always excluded, as are variants whose product was soft-deleted (the tags of a
+removed product must not be reprinted). Out-of-stock variants are excluded
+unless `include_out_of_stock=1` is passed (reprinting tags for a restock).
 
 An explicit `variant_ids` selection (rows ticked in the admin grid) is
 honoured as-is: those variants are exported regardless of stock level or the
@@ -64,11 +76,16 @@ def excel_text(value: str) -> str:
 
 def optimize_label_queryset(queryset):
     """Add everything needed for 3 queries total, no N+1:
-    product via JOIN, option rows via one prefetch."""
+    product and inventory via JOIN, option rows via one prefetch."""
     return (
-        queryset.filter(deleted_at__isnull=True)
+        queryset.filter(
+            deleted_at__isnull=True,
+            # A soft-deleted product leaves its variants untouched; exporting
+            # them would resurrect the tags of a product that is gone.
+            product__deleted_at__isnull=True,
+        )
         .exclude(sku__endswith=DEFAULT_SKU_SUFFIX)
-        .select_related("product")
+        .select_related("product", "inventory")
         .prefetch_related(
             Prefetch(
                 "variantoption_set",
@@ -113,22 +130,76 @@ def options_summary(variant) -> str:
     return OPTIONS_SEPARATOR.join(p for p in parts if p.strip())
 
 
-def label_rows(queryset, *, excel_barcode: bool = False):
-    """Yield `(barcode, product_name, options_summary)` per variant.
+def available_quantity(variant) -> int:
+    """On-hand units for one variant (0 when it has no inventory row)."""
+    inventory = getattr(variant, "inventory", None)
+    return int(getattr(inventory, "available_quantity", 0) or 0)
+
+
+def copies_for(variant, mode: str = "stock") -> int:
+    """How many identical labels this variant needs.
+
+    Default is one per unit on hand (a print run). `1` switches back to one
+    row per variant. Never fewer than one: a zero-stock variant that made it
+    into the file (reprint / explicit selection) still deserves its tag.
+    """
+    if str(mode).strip().lower() in {"1", "one", "single"}:
+        return 1
+    return max(1, available_quantity(variant))
+
+
+def _option_signature(variant) -> tuple:
+    """Order-independent identity of a variant's printed options."""
+    return tuple(
+        sorted(
+            (str(item.option_id), str(item.option_value_id))
+            for item in variant.variantoption_set.all()
+        )
+    )
+
+
+def _one_per_combination(queryset) -> list:
+    """Collapse variants that would print an identical label.
+
+    Order is preserved (first appearance wins the slot) and the candidate kept
+    for a slot is the one with the most stock, then the most recently updated:
+    a stale duplicate that kept its barcode but lost its inventory must not
+    replace the variant the store is actually selling.
+    """
+    chosen = {}
+    order = []
+    for variant in queryset:
+        key = (str(variant.product_id), _option_signature(variant))
+        score = (available_quantity(variant), variant.updated_at)
+        if key not in chosen:
+            order.append(key)
+            chosen[key] = (score, variant)
+        elif score > chosen[key][0]:
+            chosen[key] = (score, variant)
+    return [chosen[key][1] for key in order]
+
+
+def label_rows(queryset, *, excel_barcode: bool = False, copies: str = "stock"):
+    """Yield `(barcode, product_name, options_summary)` rows for printing.
 
     `excel_barcode=True` (CSV only) escapes the barcode as a spreadsheet text
-    formula; TSV keeps the raw string for BarTender.
+    formula; TSV keeps the raw string for BarTender. Each distinct option
+    combination yields `copies_for(variant, copies)` identical rows.
     """
-    for variant in queryset:
+    for variant in _one_per_combination(queryset):
         barcode = variant.barcode or ""
-        yield (
+        row = (
             excel_text(barcode) if excel_barcode else barcode,
             _clean(variant.product.title if variant.product_id else ""),
             _clean(options_summary(variant)),
         )
+        for _ in range(copies_for(variant, copies)):
+            yield row
 
 
-def build_label_response(queryset, fmt: str = "tsv") -> HttpResponse:
+def build_label_response(
+    queryset, fmt: str = "tsv", copies: str = "stock"
+) -> HttpResponse:
     fmt = (fmt or "tsv").lower()
     is_csv = fmt == "csv"
     delimiter = "," if is_csv else "\t"
@@ -139,7 +210,7 @@ def build_label_response(queryset, fmt: str = "tsv") -> HttpResponse:
         buffer, delimiter=delimiter, lineterminator="\r\n", quoting=csv.QUOTE_MINIMAL
     )
     writer.writerow(LABEL_COLUMNS)
-    for row in label_rows(queryset, excel_barcode=is_csv):
+    for row in label_rows(queryset, excel_barcode=is_csv, copies=copies):
         writer.writerow(row)
 
     stamp = f"{timezone.localtime():%Y%m%d-%H%M}"

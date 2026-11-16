@@ -36,7 +36,7 @@ def _tsv_rows(response):
     return [line.split("\t") for line in text.split("\r\n") if line]
 
 
-def _make_variant(product, sku, counter, stock, with_options=True):
+def _make_variant(product, sku, counter, stock, with_options=True, size="L"):
     variant = VariantFactory(
         product=product,
         sku=sku,
@@ -44,7 +44,10 @@ def _make_variant(product, sku, counter, stock, with_options=True):
         option_values=(
             [
                 {"option": product.options.get(name="رنگ"), "value": _color_value(product)},
-                {"option": product.options.get(name="سایز"), "value": _size_value(product)},
+                {
+                    "option": product.options.get(name="سایز"),
+                    "value": product.options.get(name="سایز").values.get(value=size),
+                },
             ]
             if with_options
             else []
@@ -59,6 +62,7 @@ def _add_options(product):
     OptionValueFactory(option=color, value="سفید", display_order=0)
     size = ProductOptionFactory(product=product, name="سایز", display_order=1)
     OptionValueFactory(option=size, value="L", display_order=0)
+    OptionValueFactory(option=size, value="M", display_order=1)
     return product
 
 
@@ -70,11 +74,14 @@ def _size_value(product):
     return product.options.get(name="سایز").values.get(value="L")
 
 
+
 @pytest.fixture
 def catalog(db):
     product = _add_options(ProductFactory(title="پیراهن مردانه"))
     in_stock = _make_variant(product, "EXP-1", 101, stock=4)
-    sold_out = _make_variant(product, "EXP-2", 102, stock=0)
+    # A different size, so it is its own option combination (dedupe keeps one
+    # label per combination, not one per stock level).
+    sold_out = _make_variant(product, "EXP-2", 102, stock=0, size="M")
     placeholder = Variant.objects.create(
         product=product,
         sku="placeholder-DEFAULT",
@@ -111,14 +118,15 @@ class TestLabelExportEndpoint:
     def test_default_excludes_out_of_stock_and_placeholder(self, catalog):
         response = _staff_client().get(LABELS_URL)
         rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
-        assert len(rows) == 1
-        assert rows[0].split("\t")[0] == catalog["in_stock"].barcode
+        # One label per unit on hand: the fixture holds 4.
+        assert len(rows) == 4
+        assert {row.split("\t")[0] for row in rows} == {catalog["in_stock"].barcode}
         assert "placeholder-DEFAULT" not in response.content.decode("utf-8")
 
     def test_include_out_of_stock_reprints_zero_stock_tags(self, catalog):
         response = _staff_client().get(LABELS_URL + "?include_out_of_stock=1")
         rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
-        assert len(rows) == 2
+        assert len(rows) == 5  # 4 in-stock copies + 1 reprint tag
         barcodes = {row.split("\t")[0] for row in rows}
         assert barcodes == {
             catalog["in_stock"].barcode,
@@ -146,7 +154,7 @@ class TestLabelExportEndpoint:
         assert lines[0].lstrip("\ufeff") == (
             "barcode,product_name,options_summary"
         )
-        assert len(lines) == 2
+        assert len(lines) == 5
 
     def test_csv_filename_is_prefixed_for_excel(self, catalog):
         response = _staff_client().get(LABELS_URL + "?format=csv")
@@ -165,7 +173,7 @@ class TestLabelExportEndpoint:
         barcode = catalog["in_stock"].barcode
         assert len(barcode) == 13  # EAN-13, the value Excel mangles
         rows = _csv_rows(_staff_client().get(LABELS_URL + "?format=csv"))
-        assert len(rows) == 2
+        assert len(rows) == 5
         assert len(rows[1]) == 3
         assert rows[1][0] == f'="{barcode}"'
 
@@ -243,7 +251,7 @@ class TestLabelExportEndpoint:
             f"{LABELS_URL}?product_id={catalog['product'].id}"
         )
         rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
-        assert len(rows) == 1
+        assert len(rows) == 4
         assert "شلوار" not in response.content.decode("utf-8")
 
     def test_selected_ids_export_only_those_rows(self, catalog):
@@ -272,7 +280,7 @@ class TestLabelExportEndpoint:
             f"&variant_ids={catalog['in_stock'].id}"
         )
         rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
-        assert len(rows) == 2
+        assert len(rows) == 5
 
     def test_selected_ids_via_post_json(self, catalog):
         response = _staff_client().post(
@@ -284,6 +292,51 @@ class TestLabelExportEndpoint:
         rows = [r for r in response.content.decode("utf-8").split("\r\n")[1:] if r]
         assert len(rows) == 1
         assert rows[0].split("\t")[0] == catalog["sold_out"].barcode
+
+    def test_one_label_per_unit_on_hand(self, catalog):
+        # A label sheet is a print run: 4 units on hand -> 4 identical labels.
+        response = _staff_client().get(LABELS_URL)
+        rows = _tsv_rows(response)
+        assert len(rows) == 5  # header + 4 copies
+        assert {row[0] for row in rows[1:]} == {catalog["in_stock"].barcode}
+        assert response["X-Label-Rows"] == "4"
+
+    def test_copies_one_opts_out_of_stock_expansion(self, catalog):
+        response = _staff_client().get(LABELS_URL + "?copies=1")
+        rows = _tsv_rows(response)
+        assert len(rows) == 2
+        assert response["X-Label-Rows"] == "1"
+
+    def test_zero_stock_variant_gets_a_single_reprint_tag(self, catalog):
+        rows = _tsv_rows(
+            _staff_client().get(LABELS_URL + "?copies=1&include_out_of_stock=1")
+        )
+        assert len(rows) == 3  # header + one tag per variant, never zero copies
+        assert {row[0] for row in rows[1:]} == {
+            catalog["in_stock"].barcode,
+            catalog["sold_out"].barcode,
+        }
+
+    def test_duplicate_option_combination_prints_once(self, catalog):
+        # Editing a product can leave the previous variant of a combination
+        # active next to its replacement; both are real rows with their own
+        # barcode, but they print the same label.
+        _make_variant(catalog["product"], "EXP-OLD", 501, stock=4)
+        current = _make_variant(catalog["product"], "EXP-NEW", 502, stock=7)
+        rows = _tsv_rows(
+            _staff_client().get(f"{LABELS_URL}?product_id={catalog['product'].id}")
+        )
+        assert {row[0] for row in rows[1:]} == {current.barcode}
+        assert len(rows) == 8  # header + 7 labels for the variant holding stock
+
+    def test_variants_of_a_deleted_product_are_not_exported(self, catalog):
+        product = _add_options(ProductFactory(title="محصول حذف‌شده"))
+        _make_variant(product, "GONE-1", 601, stock=3)
+        product.delete()  # soft delete; the variant row survives
+        content = _staff_client().get(
+            f"{LABELS_URL}?product_id={product.id}"
+        ).content.decode("utf-8")
+        assert "محصول حذف‌شده" not in content
 
     def test_invalid_variant_id_is_400(self, catalog):
         response = _staff_client().get(f"{LABELS_URL}?variant_ids=not-a-uuid")

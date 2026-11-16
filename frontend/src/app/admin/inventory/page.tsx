@@ -69,7 +69,7 @@ export default function AdminInventoryPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      toast.success(`فایل TSV بارکدهای انبار برای BarTender دانلود شد (${rowsCount.toLocaleString("fa-IR")} ردیف کالا)`);
+      toast.success(`فایل TSV بارکدهای انبار برای BarTender دانلود شد (${rowsCount.toLocaleString("fa-IR")} برچسب)`);
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "خطا در دانلود فایل TSV بارکدها");
     } finally {
