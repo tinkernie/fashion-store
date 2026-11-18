@@ -1,17 +1,23 @@
-"""Printable order invoice (A5 receipt).
+"""Printable order invoice.
 
-The HTML is built first and rendered to PDF on demand; nothing is stored, so a
-re-download always reflects the current order (phone, discount, notes).
+Counter (POS) sales print on a 3" x 6" till-roll receipt (``invoice_pos.html``);
+online orders keep the A5 sheet (``invoice.html``). The HTML is built first and
+rendered to PDF on demand; nothing is stored, so a re-download always reflects
+the current order (phone, discount, notes).
 """
 
+import re
 from pathlib import Path
 
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from common.jalali import format_jalali, format_money
+from common.jalali import format_jalali, format_money, to_persian_digits
 from .models import Order, OrderChannel
+
+POS_INVOICE_TEMPLATE = "orders/invoice_pos.html"
+ONLINE_INVOICE_TEMPLATE = "orders/invoice.html"
 
 STORE_NAME = "پوشاک ماوی"
 STORE_ADDRESS = "زنجان - قیدار - خیابان امام - روبروی تالار صدف"
@@ -37,48 +43,96 @@ class InvoiceRenderError(Exception):
     """WeasyPrint (or its Pango runtime) is unavailable on this host."""
 
 
-def _options_text(snapshot: dict) -> str:
+OPTION_SEPARATORS = re.compile(r"[،,]")
+
+
+def _make_part(name: str, value: str) -> dict:
+    """One option as name/value; numeric values print left-to-right.
+
+    A size like `44-135` is reversed by the bidi algorithm inside RTL text unless
+    the value itself is marked LTR, so the flag travels with the chunk.
+    """
+    name = (name or "").strip()
+    value = (value or "").strip()
+    return {"name": name, "value": value, "ltr": value[:1].isdigit()}
+
+
+def _option_parts(snapshot: dict) -> list[dict]:
+    """Each option as its own chunk (kept unbreakable in print).
+
+    POS and checkout store the snapshot as one pre-joined string, so it is split
+    back apart here; a size like `44-135` must stay on a single line.
+    """
     options = snapshot.get("options")
     if not options:
-        return ""
+        return []
     if isinstance(options, str):
-        return options
-    if isinstance(options, (list, tuple)):
-        parts = []
+        chunks = [
+            part.strip() for part in OPTION_SEPARATORS.split(options) if part.strip()
+        ]
+    elif isinstance(options, (list, tuple)):
+        chunks = []
         for item in options:
             if isinstance(item, dict):
                 name = item.get("option_name") or item.get("name") or ""
                 value = item.get("value") or item.get("option_value") or ""
-                parts.append(f"{name}: {value}".strip(": "))
+                text = f"{name}: {value}".strip(": ")
+                if text:
+                    chunks.append(text)
             else:
-                parts.append(str(item))
-        return "، ".join(part for part in parts if part)
-    return str(options)
+                text = str(item).strip()
+                if text:
+                    chunks.append(text)
+    else:
+        chunks = [str(options)]
+
+    parts = []
+    for chunk in chunks:
+        name, _, value = chunk.partition(":")
+        parts.append(_make_part(name, value) if value.strip() else _make_part("", chunk))
+    return parts
+
+
+def _options_text(snapshot: dict) -> str:
+    return "، ".join(
+        f"{part['name']}: {part['value']}" if part["name"] else part["value"]
+        for part in _option_parts(snapshot)
+    )
 
 
 def _line_items(order: Order) -> list[dict]:
     lines = []
-    for index, item in enumerate(order.items.all(), start=1):
+    # Stable row order: the invoice must list items in the order they were sold.
+    for index, item in enumerate(order.items.order_by("created_at", "id"), start=1):
         snapshot = item.product_snapshot if isinstance(item.product_snapshot, dict) else {}
         title = snapshot.get("title") or ""
         sku = snapshot.get("sku") or ""
-        options = _options_text(snapshot)
+        parts = _option_parts(snapshot)
         variant = item.variant if getattr(item, "variant_id", None) else None
         if variant is not None:
             title = title or getattr(variant.product, "title", "")
             sku = sku or variant.sku
-            if not options:
-                options = "، ".join(
-                    f"{vo.option.name}: {vo.option_value.value}"
+            if not parts:
+                parts = [
+                    _make_part(vo.option.name, vo.option_value.value)
                     for vo in variant.variantoption_set.all()
-                )
+                ]
+        options = "، ".join(
+            f"{part['name']}: {part['value']}" if part["name"] else part["value"]
+            for part in parts
+        )
+        title = title or "کالا"
         lines.append(
             {
                 "index": index,
-                "title": title or "کالا",
+                "title": title,
                 "options": options,
+                # Receipt layout prints one dense line: title - color, size, fabric.
+                "description": f"{title} - {options}" if options else title,
+                "option_parts": parts,
                 "sku": sku,
                 "quantity": item.quantity,
+                "quantity_display": to_persian_digits(str(item.quantity)),
                 "unit_price": format_money(item.price_snapshot),
                 "line_total": format_money(item.line_total),
             }
@@ -105,6 +159,7 @@ def build_invoice_context(order: Order) -> dict:
         customer_phone = order.shipping_address.get("phone", "") or customer_phone
 
     items = _line_items(order)
+    item_count = sum(line["quantity"] for line in items)
     return {
         "order": order,
         "store_name": STORE_NAME,
@@ -120,7 +175,8 @@ def build_invoice_context(order: Order) -> dict:
         "customer_display": customer_name or "مشتری حضوری",
         "terminal": getattr(order, "pos_terminal", "") or "",
         "items": items,
-        "item_count": sum(line["quantity"] for line in items),
+        "item_count": item_count,
+        "item_count_display": to_persian_digits(str(item_count)),
         "subtotal": format_money(order.subtotal),
         "discount": format_money(order.discount_amount),
         "has_discount": bool(order.discount_amount),
@@ -135,10 +191,15 @@ def build_invoice_context(order: Order) -> dict:
     }
 
 
+def invoice_template(order: Order) -> str:
+    """Counter sales get the 3" x 6" receipt, online orders the A5 sheet."""
+    if getattr(order, "channel", "online") == OrderChannel.POS:
+        return POS_INVOICE_TEMPLATE
+    return ONLINE_INVOICE_TEMPLATE
+
+
 def render_invoice_html(order: Order) -> str:
-    return render_to_string(
-        "orders/invoice.html", build_invoice_context(order)
-    )
+    return render_to_string(invoice_template(order), build_invoice_context(order))
 
 
 def render_invoice_pdf(order: Order) -> bytes:

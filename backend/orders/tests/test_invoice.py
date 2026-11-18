@@ -21,6 +21,9 @@ from inventory.models import Inventory
 from orders.invoice import RETURN_POLICY, build_invoice_context, render_invoice_html
 from orders.pos_services import PosService
 from orders.tests.factories import OrderFactory
+from product_options.tests.factories import OptionValueFactory, ProductOptionFactory
+from products.tests.factories import ProductFactory
+from variants.models import VariantOption
 from variants.tests.factories import VariantFactory
 
 User = get_user_model()
@@ -87,22 +90,66 @@ def sale(db, staff):
 
 @pytest.mark.django_db
 class TestInvoiceContent:
-    def test_html_has_store_items_totals_and_policy(self, sale):
+    def test_pos_receipt_uses_3x6_page_and_four_columns(self, sale):
         from orders.models import Order
 
         order = Order.objects.get(id=sale["id"])
         html = render_invoice_html(order)
 
+        assert "size: 3in 6in" in html
+        assert "margin: 0.3in 0.5in" in html
         assert "پوشاک ماوی" in html
         assert order.order_number in html
         assert "فاکتور فروش حضوری" in html
-        assert "زهرا" in html  # cashier
-        assert "09121234567" in html
-        assert "تحویل به آقای احمدی" in html
+        for header in ("شرح کالا", "قیمت واحد", "تعداد", "مبلغ"):
+            assert header in html
+        assert "جمع کالاها (۲ قلم)" in html
+        assert "مبلغ قابل پرداخت" in html
         assert "۴۵۰٬۰۰۰ تومان" in html  # 500,000 - 50,000
         assert "۵۰٬۰۰۰ تومان" in html  # discount line
-        assert RETURN_POLICY in html
-        assert "counter-2" in html
+        assert "با تشکر از خرید شما" in html
+
+    def test_pos_receipt_omits_identity_policy_and_sku(self, sale):
+        from orders.models import Order
+
+        order = Order.objects.get(id=sale["id"])
+        html = render_invoice_html(order)
+
+        assert RETURN_POLICY not in html
+        for dropped in ("مشتری", "تلفن", "فروشنده", "صندوق"):
+            assert dropped not in html
+        assert "09121234567" not in html
+        assert "زهرا" not in html  # cashier
+        assert "counter-2" not in html
+        assert "INV-1" not in html  # internal SKU
+        assert "تحویل به آقای احمدی" not in html  # POS notes stay internal
+
+    def test_pos_receipt_description_joins_title_and_options(self, db, staff):
+        from orders.models import Order
+
+        product = ProductFactory(title="پالتو فوتر الیزه 3 دکمه")
+        option = ProductOptionFactory(product=product, name="سایز")
+        value = OptionValueFactory(option=option, value="44")
+        variant = VariantFactory(
+            product=product, sku="DESC-1", barcode="DESC-BAR-1", price=Decimal("250000.00")
+        )
+        VariantOption.objects.create(variant=variant, option=option, option_value=value)
+        Inventory.objects.create(variant=variant, available_quantity=2)
+        sale = PosService().checkout(
+            cashier=staff, items=[{"variant_id": variant.id, "quantity": 1}]
+        )
+
+        order = Order.objects.get(id=sale["id"])
+        context = build_invoice_context(order)
+        assert context["items"][0]["description"] == "پالتو فوتر الیزه 3 دکمه - سایز: 44"
+        assert context["items"][0]["option_parts"] == [
+            {"name": "سایز", "value": "44", "ltr": True}
+        ]
+
+        html = render_invoice_html(order)
+        assert "پالتو فوتر الیزه 3 دکمه" in html
+        # numeric sizes are marked LTR so bidi cannot reverse "44-135"
+        assert '<span class="val" dir="ltr">44</span>' in html
 
     def test_html_contains_jalali_issue_date(self, sale):
         from orders.models import Order

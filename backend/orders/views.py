@@ -69,7 +69,7 @@ class AdminOrderViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=["get"], url_path="invoice.pdf")
     def invoice_pdf(self, request, pk=None):
-        """GET /api/admin/orders/<id-or-number>/invoice.pdf (A5 receipt)."""
+        """GET /api/admin/orders/<id-or-number>/invoice.pdf (POS 3"x6" receipt, A5 online)."""
         order = OrderSelector.get_order_by_id(pk)
         if not order:
             return Response(
